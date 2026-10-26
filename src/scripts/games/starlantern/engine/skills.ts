@@ -359,6 +359,8 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
         const lost = dealDamage(target, amount, { ledger: ctx.ledger, log: ctx.log });
         unmask(target, ctx);
         ctx.lastHit = { target: target.key, amount: lost };
+        // A fight with a foe that borrows blows keeps the party's last one (roster plan B8, M6); no other fight does.
+        if (actor.side === 'party' && target.side === 'enemy' && ctx.battle?.enemies.some((e) => e.mirrors)) ctx.battle.lastPartyHit = { by: actor.key, element: eff.element, power: eff.power };
         // A foe whose weakness turns tells the bestiary nothing (roster plan B7, M5).
         if (target.side === 'enemy' && !target.prism) reveal(ctx.revealed, target.defId, eff.element);
         ctx.log.push({ type: 'damage', target: target.key, amount: lost, element: eff.element, mult, ...(crit ? { crit } : {}) });

@@ -148,6 +148,10 @@ export interface Combatant {
   adapt?: number;
   /** Roster plan B7 (M16): the element it adapted to, the rounds left (0: over, never again), and whether it was a weakness. */
   adapted?: { el: Element; turns: number; weak?: true };
+  /** Roster plan B8 (M6): it borrows the party's blows, so the fight keeps the last one (`BattleState.lastPartyHit`). */
+  mirrors?: true;
+  /** Roster plan B8 (M7): the percent a hit on it lands at while a part or a guard of its stands (syncParts). */
+  cut?: number;
 }
 
 /** Roster plan B3–B4: a foe mechanic's moment in the log (battleLines words it). */
@@ -324,6 +328,8 @@ export function hitAmount(a: Combatant, t: Combatant, spec: DamageSpec, r: HitRo
   mult *= 1 - tx(spec.melee ? 'meleeDR' : 'rangedDR') / 100;
   if (t.defending) mult *= 0.5;
   if (t.shock) mult *= 1 + AILMENT.shockPct / 100;
+  // A body behind its parts (roster plan B8, M7): absent on every other foe.
+  if (t.cut !== undefined) mult *= t.cut / 100;
   // Keystones (data/talents.ts): a factor only when held, and no draws, so a fight without them keeps its sequence.
   if (a.keystones.includes('last-stand') && a.hp < a.max.hp * KEYSTONE_VALUES.lastStandHp) mult *= 1 + KEYSTONE_VALUES.lastStandPct / 100;
   if (t.keystones.includes('taunt-guard') && t.taunt > 0) mult *= 1 - KEYSTONE_VALUES.tauntGuardPct / 100;

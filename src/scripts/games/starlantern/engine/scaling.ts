@@ -57,7 +57,7 @@ export const enemyLevelAt = (depth: number): number =>
 /** The deep road's extra multiplier on an enemy's hp, atk and mag: 1 up to DEEP_ENEMIES.fromDepth, then 1 + DEEP_ENEMIES.power. */
 export const deepPower = (depth: number): number => (depth <= DEEP_ENEMIES.fromDepth ? 1 : 1 + DEEP_ENEMIES.power);
 
-function growth(def: EnemyDef, depth: number): Partial<Record<StatKey, number>> {
+export function growth(def: EnemyDef, depth: number): Partial<Record<StatKey, number>> {
   const home = homeLevel(def);
   const lv = Math.max(home, enemyLevelAt(depth));
   if (lv === home) return {};

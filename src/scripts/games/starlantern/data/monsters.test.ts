@@ -180,17 +180,19 @@ describe('one hundred roster foes (roster plan Task A2, spec §5)', () => {
   it('only plain effects and the mechanics built so far', () => {
     // Spec §1.4's kinds, and the mechanics plan B has built: M1's wind-up (B2), M2's guard (a foe's `cover` on an ally,
     // B2), M24's hunt (B2), M13's steal after a hit on one member (B3), M4's call of a foe that exists (B4) and M22's
-    // fold-back of a fallen ally (B4). The later mechanics (B2 PR) add their own fields.
+    // fold-back of a fallen ally (B4). The B2 PR adds its own: M6's borrowed blow (B8), and every stage's skills (B7) are
+    // held to the same rules.
     const DAMAGE_KEYS = new Set(['kind', 'power', 'element', 'scale', 'melee', 'hits', 'crit', 'execute', 'wounded']);
     const SKILL_KEYS = new Set(['name', 'chance', 'target', 'effects', 'windup', 'when', 'oncePerFight']);
-    for (const id of rosterIds()) for (const s of ENEMIES[id].skills) {
+    for (const id of rosterIds()) for (const s of [...ENEMIES[id].skills, ...(ENEMIES[id].stages ?? []).flatMap((st) => st.skills)]) {
       expect(['enemy', 'enemies', 'row', 'column', 'cross', 'self', 'ally', 'allies', 'deadAlly'], `${id} ${s.name}`).toContain(s.target);
       expect(s.target === 'deadAlly', `${id} ${s.name}`).toBe(s.when === 'deadAlly');
       expect(s.chance > 0 && s.chance <= 1, `${id} ${s.name}`).toBe(true);
       for (const k of Object.keys(s)) expect(SKILL_KEYS.has(k), `${id} ${s.name} ${k}`).toBe(true);
       if (s.windup !== undefined) expect(s.windup.length > 0 && s.windup !== s.name, `${id} ${s.name}`).toBe(true);
       for (const e of s.effects) {
-        expect(['damage', 'inflict', 'buff', 'heal', 'cover', 'hunt', 'steal', 'summon', 'revive'], `${id} ${s.name}`).toContain(e.kind);
+        expect(['damage', 'inflict', 'buff', 'heal', 'cover', 'hunt', 'steal', 'summon', 'revive', 'mirror'], `${id} ${s.name}`).toContain(e.kind);
+        if (e.kind === 'mirror') expect([s.target, s.effects.length, e.cap > 0], `${id} ${s.name}`).toEqual(['enemy', 1, true]);
         if (e.kind === 'summon') expect([s.target, s.effects.length, !!ENEMIES[e.id], e.max === undefined || e.max > 0], `${id} ${s.name}`).toEqual(['self', 1, true, true]);
         if (e.kind === 'revive') expect(s.when, `${id} ${s.name}`).toBe('deadAlly');
         if (e.kind === 'steal') expect([s.target, s.effects[0].kind, e.perDepth], `${id} ${s.name}`).toEqual(['enemy', 'damage', 5]);

@@ -61,6 +61,8 @@ const call = (name: string, id: string, max: number | undefined, chance = 0.25):
 /** Plan B4 (M22): it folds a fallen ally back up at 30% HP, once a fight for the whole flock (B1 review item 6). */
 const refold = (name: string, chance: number): EnemySkill => ({ ...sk(name, chance, 'deadAlly', { kind: 'revive', hpPct: 0.3 }), when: 'deadAlly', oncePerFight: true });
 const poison = (chance: number): Effect => ({ kind: 'inflict', status: 'poison', chance });
+/** Plan B8 (M6): it strikes back at whoever landed the party's last blow, in that element, at up to `cap` power. */
+const mirror = (name: string, cap: number, chance = 0.3): EnemySkill => sk(name, chance, 'enemy', { kind: 'mirror', cap });
 
 /** The elements of a region, for its own foes (data/regions.ts REGIONS: `scaleEnemy` gives these in the region anyway). */
 const REGION_ELEMENTS: Record<Exclude<RegionId, 'mainline'>, [Element[], Element[]]> = {
@@ -111,6 +113,7 @@ interface Spec {
   fleeAfter?: number; opener?: EnemyDef['opener'];
   decoys?: number; onFall?: EnemyDef['onFall']; rise?: EnemyDef['rise']; shareWith?: string;
   prism?: EnemyDef['prism']; adapt?: number; stages?: EnemyDef['stages']; stageEvery?: number;
+  parts?: EnemyDef['parts']; mimic?: number;
 }
 
 function foe(id: string, s: Spec): EnemyDef {
@@ -127,6 +130,7 @@ function foe(id: string, s: Spec): EnemyDef {
     ...(s.shareWith ? { shareWith: s.shareWith } : {}),
     ...(s.prism ? { prism: s.prism } : {}), ...(s.adapt ? { adapt: s.adapt } : {}),
     ...(s.stages ? { stages: s.stages } : {}), ...(s.stageEvery ? { stageEvery: s.stageEvery } : {}),
+    ...(s.parts ? { parts: s.parts } : {}), ...(s.mimic ? { mimic: s.mimic } : {}),
   };
 }
 
@@ -150,7 +154,7 @@ const MAINLINE: [string, Spec][] = [
   ['tongueless-bell', { name: '無舌鐘', arch: 'caster', mul: { spd: DOWN }, weak: ['ice'], resist: ['thunder'], band: 'C', inscribe: 'tpCost',
     skills: [sk('無聲的鐘鳴', 0.35, 'row', hit(80, 'thunder'))] }],
   ['hollow-hunter', { name: '空殼獵人', arch: 'std', weak: ['thunder'], band: 'C', inscribe: 'critDmg', remnant: true,
-    skills: [sk('借來的招式', 0.3, 'enemy', hit(150))] }],
+    skills: [mirror('借來的招式', 150, 0.35), sk('空殼之刃', 0.25, 'enemy', hit(130))] }],
   ['mist-twin', { name: '霧雙子', arch: 'swarm', weak: ['fire'], resist: ['ice'], band: 'C', inscribe: 'multi',
     onFall: { name: '雙生之怒', target: 'allies', effects: [buff('atk', 40, 3)] },
     skills: [sk('雙影', 0.3, 'enemy', hit(100))] }],
@@ -178,7 +182,7 @@ const MAINLINE: [string, Spec][] = [
     onFall: { name: '燭爆', target: 'enemies', effects: [hit(40, 'fire')] },
     skills: [sk('燭火', 0.3, 'enemy', hit(90, 'fire'))] }],
   ['keeper-echo', { name: '無名的提燈人', arch: 'caster', weak: ['phys'], band: 'E', inscribe: 'gauge', lore: 'hero', remnant: true,
-    skills: [windup(sk('燈火之誓', 0.2, 'enemies', hit(120, 'fire')), '舉燈')] }],
+    skills: [windup(sk('燈火之誓', 0.2, 'enemies', hit(120, 'fire')), '舉燈'), mirror('照回的燈影', 120)] }],
   ['ember-maw', { name: '餘燼之口', arch: 'heavy', weak: ['thunder'], resist: ['ice'], band: 'E', inscribe: 'fireDmg',
     skills: [call('點燃燭芯', 'wick-shade', 2), sk('吞吐', 0.3, 'row', hit(90, 'fire'))] }],
   ['sorrow-crystal', { name: '悲傷結晶', arch: 'std', weak: ['phys'], band: 'E', inscribe: 'iceRes', adapt: 3,
@@ -190,7 +194,7 @@ const MAINLINE: [string, Spec][] = [
     skills: [sk('搖籃曲', 0.25, 'row', sleep(0.3)), sk('演奏', 0.3, 'allies', heal(30))] }],
   ['paper-cranes', { name: '千紙鶴群', arch: 'swarm', weak: ['fire'], band: 'F', inscribe: 'agi',
     skills: [refold('重摺', 0.5), sk('紙刃', 0.3, 'enemy', hit(90, 'phys', { melee: false }))] }],
-  ['lost-shadow', { name: '走失的影子', arch: 'std', weak: ['phys'], band: 'F', inscribe: 'str',
+  ['lost-shadow', { name: '走失的影子', arch: 'std', weak: ['phys'], band: 'F', inscribe: 'str', mimic: 60,
     skills: [sk('影擊', 0.3, 'enemy', hit(140))] }],
   ['returning-light', { name: '歸途之光', arch: 'support', mul: { hp: DOWNDOWN }, band: 'F', inscribe: 'expBonus',
     skills: [sk('守望', 0.5, 'allies', buff('def', 30, 2))] }],
@@ -238,7 +242,7 @@ const NATIVE: [string, Spec][] = [
   ['spore-moth', { name: '孢子蛾', arch: 'swarm', home: 'mire', inscribe: 'tp', skills: [sk('孢子', 0.3, 'enemy', poison(0.4))],
     onFall: { name: '孢子四散', target: 'cross', effects: [poison(0.5)] } }],
   // 暗影迴廊
-  ['mirror-thief', { name: '鏡中竊影', arch: 'std', home: 'shade', inscribe: 'crit', skills: [sk('鏡擊', 0.3, 'enemy', hit(130))] }],
+  ['mirror-thief', { name: '鏡中竊影', arch: 'std', home: 'shade', inscribe: 'crit', skills: [mirror('鏡擊', 130, 0.35)] }],
   ['veil-stalker', { name: '帷幕潛行者', arch: 'std', home: 'shade', inscribe: 'critDmg', skills: [sk('背刺', 0.3, 'enemy', hit(120, 'phys', { crit: 'always' }))] }],
   ['hush-acolyte', { name: '靜默侍者', arch: 'caster', home: 'shade', inscribe: 'tpCost', lore: 'rin', remnant: true,
     skills: [sk('靜默', 0.3, 'cross', hit(80, 'ice'))] }],
@@ -273,7 +277,7 @@ const WARDENS: [string, Spec][] = [
     skills: [call('孵化', 'lantern-larva', undefined, 1), sk('蜷縮', 1, 'self', buff('def', 20, 2))] }],
   ['mirage-lead', { name: '蜃樓的領舞者', arch: 'std', rank: 'warden', home: 'blaze', lore: 'safira', remnant: true, opener: 'decoy', decoys: 2,
     skills: [sk('轉拍', 0.3, 'allies', buff('spd', 30, 3)), sk('領舞', 0.3, 'enemy', hit(130))] }],
-  ['ice-shrine', { name: '冰中的拜殿', arch: 'heavy', rank: 'warden', home: 'frost', lore: 'chizuru',
+  ['ice-shrine', { name: '冰中的拜殿', arch: 'heavy', rank: 'warden', home: 'frost', lore: 'chizuru', parts: { cutPct: 50, by: ['ice-komainu'] },
     skills: [call('喚醒狛犬', 'ice-komainu', 2), sk('寒光', 0.3, 'column', hit(100, 'ice'))] }],
   ['burning-page', { name: '燃燒的那一頁', arch: 'std', rank: 'warden', home: 'storm', lore: 'noel',
     onFall: { name: '最後一頁', target: 'enemies', effects: [{ kind: 'restore', tp: 20 }] },
@@ -297,9 +301,11 @@ const BOSSES: [string, Spec][] = [
     skills: [windup(sk('霧門落下', 0.25, 'enemies', hit(130)), '霧門升起'), sk('霧壓', 0.3, 'row', buff('def', -25, 2))] }],
   ['silent-bell', { name: '啞鐘', arch: 'boss', mul: { hp: 1.05, spd: DOWN }, weak: ['ice'], resist: ['thunder'],
     skills: [sk('無聲的轟鳴', 0.35, 'row', hit(110, 'thunder')), sk('鐘擊', 0.3, 'enemy', hit(160))] }],
+  // Spec §5.6: borrowed blows; at 40% it breaks out a hundred styles of the sword (M6, M8).
   ['hollow-champion', { name: '空殼勇者', arch: 'boss', mul: { atk: UPUP }, weak: ['thunder'], remnant: true,
-    skills: [sk('一百種劍法', 0.3, 'enemy', hit(60, 'phys', { hits: 3 })), sk('勇者之擊', 0.3, 'enemy', hit(160))] }],
-  ['old-city-archon', { name: '古城執政像', arch: 'boss', hp: 800, weak: ['thunder'], resist: ['fire'], skills: pair('審判', 'fire', '王權') }],
+    skills: [mirror('借來的劍招', 160, 0.35), sk('勇者之擊', 0.3, 'enemy', hit(160))],
+    stages: [{ below: 40, skills: [sk('一百種劍法', 0.4, 'enemy', hit(60, 'phys', { hits: 3 })), mirror('借來的劍招', 160, 0.3), sk('勇者之擊', 0.3, 'enemy', hit(160))] }] }],
+  ['old-city-archon', { name: '古城執政像', arch: 'boss', hp: 800, weak: ['thunder'], resist: ['fire'], parts: { cutPct: 50 }, skills: pair('審判', 'fire', '王權') }],
   ['gorged-beast', { name: '飽食之獸', arch: 'boss', mul: { hp: 1.08 }, weak: ['ice'], resist: ['fire'],
     skills: [call('吐出燭芯', 'wick-shade', 2), ...pair('吞光', 'fire', '啃食')] }],
   ['forgotten-festival', { name: '被遺忘的祭典', arch: 'boss', weak: ['ice'], skills: pair('祭典之火', 'fire', '狐火') }],
@@ -311,10 +317,10 @@ const BOSSES: [string, Spec][] = [
   ['ember-tyrant', { name: '焚城之焰', arch: 'boss', home: 'blaze', skills: pair('焚城', 'fire', '烈焰之拳') }],
   ['sandstorm-maw', { name: '沙暴之口', arch: 'boss', mul: { spd: UP }, home: 'blaze', lore: 'safira',
     skills: [sk('沙暴', 0.3, 'enemies', hit(100, 'phys', { melee: false }), buff('spd', -20, 2)), sk('沙之顎', 0.3, 'enemy', hit(160))] }],
-  ['mirage-city', { name: '蜃樓之城', arch: 'boss', hp: 960, home: 'blaze', lore: 'safira',
+  ['mirage-city', { name: '蜃樓之城', arch: 'boss', hp: 960, home: 'blaze', lore: 'safira', parts: { cutPct: 50, by: ['mirage-dancer'] },
     skills: [call('舞者登場', 'mirage-dancer', 2), ...pair('幻之火', 'fire', '城門崩落')] }],
   // 霜凍之地
-  ['rime-sovereign', { name: '永凍之守', arch: 'boss', hp: 820, home: 'frost', skills: pair('永凍', 'ice', '冰槌') }],
+  ['rime-sovereign', { name: '永凍之守', arch: 'boss', hp: 820, home: 'frost', parts: { cutPct: 50 }, skills: pair('永凍', 'ice', '冰槌') }],
   ['white-silence', { name: '白色寂靜', arch: 'boss', home: 'frost',
     skills: [sk('寂靜', 0.3, 'enemies', buff('spd', -10, 3)), sk('雪幕', 0.35, 'cross', hit(110, 'ice'))] }],
   ['rift-maw', { name: '迷宮的裂口', arch: 'boss', home: 'frost', lore: 'chizuru',
@@ -332,7 +338,7 @@ const BOSSES: [string, Spec][] = [
   ['bog-leviathan', { name: '沼底巨口', arch: 'boss', mul: { hp: 1.1 }, home: 'mire',
     skills: [sk('巨口', 0.3, 'enemy', hit(170)), sk('沼氣', 0.3, 'cross', poison(0.5))] }],
   // 暗影迴廊
-  ['faceless-host', { name: '無面之主', arch: 'boss', home: 'shade', skills: [call('鏡中人', 'mirror-thief', 2), ...pair('影刃', 'ice', '無面之擊')] }],
+  ['faceless-host', { name: '無面之主', arch: 'boss', home: 'shade', skills: [call('鏡中人', 'mirror-thief', 2), mirror('無面的回禮', 150), ...pair('影刃', 'ice', '無面之擊')] }],
   ['vault-dragon', { name: '金庫之龍', arch: 'boss', mul: { hp: 1.1 }, home: 'shade',
     skills: [sk('金幣吐息', 0.35, 'row', hit(120, 'fire')), sk('龍爪', 0.3, 'enemy', hit(160), steal(5))] }],
   ['shadow-parade', { name: '影之行列', arch: 'boss', home: 'shade', skills: pair('夜行', 'ice', '影之鞭') }],

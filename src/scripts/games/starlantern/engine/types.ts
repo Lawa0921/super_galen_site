@@ -111,7 +111,12 @@ export type Effect =
    * The foe calls a foe `id` into the fight (roster plan B4, M4): no more than `max` a fight, only while the fight has room
    * (its group cap; 4 in a boss fight) and only one already live; otherwise it attacks instead. The newcomer pays nothing.
    */
-  | { kind: 'summon'; id: string; max?: number };
+  | { kind: 'summon'; id: string; max?: number }
+  /**
+   * Roster plan B8 (M6): the foe strikes back at whoever landed the party's last blow, in that blow's element, at its power
+   * up to `cap`, with its own numbers; with no such blow on record (or its caster down) it is a plain attack.
+   */
+  | { kind: 'mirror'; cap: number };
 /**
  * A skill's part in its owner's mechanic: `release` spends Chizuru's barrier for power; `coin-power` and `coin-hits` spend
  * Liz's coins for power or for hits; `consume-aim` spends Sylvie's aim for power; `ember-power` spends Scarlet's embers
@@ -273,6 +278,13 @@ export interface EnemyDef {
   stages?: EnemyStage[];
   /** Roster plan B7 (M8): it turns through its own skills and each stage, this many rounds each. */
   stageEvery?: number;
+  /**
+   * Roster plan B8 (M7): while a foe shields it, every hit on it lands at `cutPct`% (hitAmount). The shields are the
+   * foes of the ids in `by` (summoned ones), else any part (`rank: 'part'`) in the fight.
+   */
+  parts?: { cutPct: number; by?: string[] };
+  /** Roster plan B8 (M18): as it is met it takes this percent of the strongest member's atk and mag (by atk), then every multiplier but growth. */
+  mimic?: number;
 }
 export interface ItemDef {
   id: string; name: string; price: number; target: Target | null; effects: Effect[]; battle: boolean; returnToTown?: boolean; desc: string;

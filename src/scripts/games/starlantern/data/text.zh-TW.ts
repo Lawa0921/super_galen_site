@@ -198,6 +198,8 @@ export const T = {
         flee: (n: number) => `溜走${n}`, hunted: '被宣告',
         /** Roster plan B7: a turning weakness now (M5), an adaptation in force (M16); `el` is the element's name. */
         weak: (el: string) => `弱${el}`, adapted: (el: string) => `抗${el}`,
+        /** Roster plan B8 (M7): a body its parts shield. */
+        cut: '減傷',
       },
     },
     /** The part of the gold a felled thief gave back (roster plan B3, M13), already counted in the gold line. */
@@ -321,6 +323,8 @@ export const T = {
         stolen: (n: number) => `偷走了 ${n} 金，打倒就會還回來`,
         flee: (n: number) => `再 ${n} 回合就會溜走`,
         shared: (mate: string) => `和${mate}同心：受到的傷害兩隻平分`,
+        /** Roster plan B8 (M7): a body behind its parts or guards. */
+        cut: (pct: number) => `有東西護著牠：只受 ${pct}% 傷害，先打倒護著牠的`,
       },
     },
     memory: {

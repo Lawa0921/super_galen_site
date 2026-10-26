@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { BOSS_GROUP_CAP, ROW_MAX, createBattle, intentLabel, planEnemies, resolveRound, rewards, skillsOf, turnOrder, type Action, type BattleState } from './battle';
 import { scaleEnemy } from './scaling';
 import { REGIONS } from '../data/regions';
-import { guardTargets } from './foes';
+import { guardTargets, syncParts } from './foes';
 import { constRng, fullParty, makeBattle, makeCombatant, withRosterLive } from './testing';
 import { LEGACY_LINEUP, activeIds } from './party';
 import { wardenGroup } from '../data/monsters';
@@ -846,5 +846,109 @@ describe('M8 stages (roster plan B7)', () => {
     expect(lists).toEqual([bright, eclipse, eclipse, bright, bright, eclipse]);
     expect(bright.some((n) => n.includes('月明'))).toBe(true);
     expect(eclipse.some((n) => n.includes('月蝕'))).toBe(true);
+  });
+});
+
+describe('M6 a borrowed blow (roster plan B8)', () => {
+  const mirror = (cap: number): EnemySkill => ({ name: '借來的招式', chance: 1, target: 'enemy', effects: [{ kind: 'mirror', cap }] });
+  const field = (cap: number, rec?: BattleState['lastPartyHit']) => {
+    const s = makeBattle([P('scarlet', { max: { hp: 9999 } as never }), P('noel', { max: { hp: 9999 } as never })], [E('e0', { mirrors: true, max: { atk: 40, mag: 40 } as never })],
+      { enemyDefs: { e0: def([mirror(cap)]) }, ...(rec ? { lastPartyHit: rec } : {}) });
+    s.intents = { e0: { kind: 'enemy-skill', index: 0, target: 'scarlet' } };
+    return s;
+  };
+  const blowOn = (s: BattleState, key: string) => s.log.find((e) => e.type === 'damage' && e.target === key) as { amount: number; element: string } | undefined;
+
+  it('returns the last element at most cap', () => {
+    const rec = { by: 'noel', element: 'fire' as const, power: 140 };
+    const r = resolveRound(field(999, rec), defend(field(999, rec)), constRng(0.5));
+    // It struck back at the one who cast it (noel, not the scarlet it drew), in her element.
+    expect(acted(r, 'e0')).toEqual(['借來的招式']);
+    expect(blowOn(r, 'scarlet')).toBeUndefined();
+    expect(blowOn(r, 'noel')?.element).toBe('fire');
+    const capped = resolveRound(field(50, rec), defend(field(50, rec)), constRng(0.5));
+    const at140 = resolveRound(field(140, rec), defend(field(140, rec)), constRng(0.5));
+    expect(blowOn(capped, 'noel')!.amount).toBeLessThan(blowOn(r, 'noel')!.amount);
+    expect(blowOn(at140, 'noel')!.amount).toBe(blowOn(r, 'noel')!.amount);
+  });
+
+  it('remembers the last blow the party landed', () => {
+    const s = field(999);
+    s.party[0].tp = 50;
+    const r = resolveRound(s, { scarlet: { kind: 'skill', skill: 'ice-star', target: 'e0' }, noel: { kind: 'defend' } }, constRng(0.5));
+    expect(r.lastPartyHit).toMatchObject({ by: 'scarlet', element: 'ice' });
+    // A fight with no foe that borrows keeps no record.
+    const plain = makeBattle([P('scarlet', { tp: 50 })], [E('e0', { max: { hp: 9999 } as never })]);
+    const r2 = resolveRound(plain, { scarlet: { kind: 'skill', skill: 'ice-star', target: 'e0' } }, constRng(0.5));
+    expect(r2.lastPartyHit).toBeUndefined();
+  });
+
+  it('without a record it is an attack', () => {
+    const r = resolveRound(field(999), defend(field(999)), constRng(0.5));
+    expect(acted(r, 'e0')).toEqual(['攻擊']);
+    expect(blowOn(r, 'scarlet')?.element).toBe('phys');
+    // Nor when the one who cast it is down.
+    const gone = field(999, { by: 'noel', element: 'fire', power: 140 });
+    gone.party[1].alive = false;
+    gone.party[1].hp = 0;
+    expect(acted(resolveRound(gone, defend(gone), constRng(0.5)), 'e0')).toEqual(['攻擊']);
+  });
+});
+
+describe('M7 parts (roster plan B8)', () => {
+  const body = (handUp: boolean) => {
+    const s = makeBattle([P('scarlet', { max: { atk: 60 } as never })], [E('e0', { max: { hp: 9999 } as never }), E('e1', { defId: 'archon-hand', alive: handUp, hp: handUp ? 100 : 0 })],
+      { enemyDefs: { e0: def([], { parts: { cutPct: 50 } }), e1: def([], { rank: 'part' }) } });
+    syncParts(s, (c) => s.enemyDefs![c.key]);
+    return s;
+  };
+  const dealt = (s: BattleState) => (s.log.find((e) => e.type === 'damage' && e.target === 'e0') as { amount: number }).amount;
+
+  it('half while a part stands', () => {
+    const up = body(true), down = body(false);
+    expect(up.enemies[0].cut).toBe(50);
+    expect(down.enemies[0].cut).toBeUndefined();
+    const a = dealt(resolveRound(up, { scarlet: { kind: 'attack', target: 'e0' } }, constRng(0.5)));
+    const b = dealt(resolveRound(down, { scarlet: { kind: 'attack', target: 'e0' } }, constRng(0.5)));
+    expect(a).toBe(Math.floor(b / 2));
+    // The part itself takes its blows whole.
+    const onHand = resolveRound(body(true), { scarlet: { kind: 'attack', target: 'e1' } }, constRng(0.5));
+    expect(onHand.log.some((e) => e.type === 'damage' && e.target === 'e1')).toBe(true);
+  });
+
+  it('drops with the last part', () => {
+    const s = body(true);
+    s.enemies[1].hp = 1;
+    const r = resolveRound(s, { scarlet: { kind: 'attack', target: 'e1' } }, constRng(0.5));
+    expect(r.enemies[1].alive).toBe(false);
+    expect(r.enemies[0].cut).toBeUndefined();
+    // The real bodies: the archon's hands and the sovereign's pillars.
+    expect(ENEMIES['old-city-archon'].parts).toEqual({ cutPct: 50 });
+    expect(ENEMIES['rime-sovereign'].parts).toEqual({ cutPct: 50 });
+  });
+});
+
+describe('M18 mimic (roster plan B8)', () => {
+  const shadow = (ids: Parameters<typeof fullParty>[0]) => createBattle({ party: fullParty(ids), enemyIds: ['lost-shadow'], inventory: {}, revealed: {} });
+
+  it('copies the strongest member', () => {
+    expect(ENEMIES['lost-shadow'].mimic).toBe(60);
+    const s = shadow(LEGACY_LINEUP);
+    const top = s.party.reduce((a, b) => (b.max.atk > a.max.atk ? b : a));
+    // A full party: no other multiplier at its home depth.
+    expect(s.enemies[0].max.atk).toBe(Math.round(top.max.atk * 0.6));
+    expect(s.enemies[0].max.mag).toBe(Math.round(top.max.mag * 0.6));
+    expect(s.enemies[0].max.hp).toBe(ENEMIES['lost-shadow'].stats.hp);
+  });
+
+  it('scales with party size', () => {
+    const solo = shadow(['hero']);
+    const k = solo.partyScale!;
+    expect(k).toBeLessThan(1);
+    expect(solo.enemies[0].max.atk).toBe(Math.round(solo.party[0].max.atk * 0.6 * k));
+    // And at depth, as every foe grows, so does the copy's multiplier (an elite's, a depth's power), never its growth.
+    const deep = createBattle({ party: fullParty(LEGACY_LINEUP), enemyIds: ['lost-shadow'], inventory: {}, revealed: {}, scale: { depth: 20, region: 'mainline', elite: 'lost-shadow' } });
+    const top = deep.party.reduce((a, b) => (b.max.atk > a.max.atk ? b : a));
+    expect(deep.enemies[0].max.atk).toBeGreaterThan(Math.round(top.max.atk * 0.6));
   });
 });

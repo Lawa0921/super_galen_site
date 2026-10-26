@@ -28,6 +28,7 @@ export function foeNotes(s: BattleState, e: Combatant, defOf: (c: Combatant) => 
   if (after !== undefined && after > s.round) out.push(N.flee(after - s.round));
   const mate = e.share ? s.enemies.find((x) => x.key === e.share && x.alive) : undefined;
   if (mate) out.push(N.shared(mate.name));
+  if (e.cut !== undefined) out.push(N.cut(e.cut));
   return out;
 }
 
@@ -165,6 +166,35 @@ export const PRISM_CYCLE: readonly Element[] = ['phys', 'fire', 'ice', 'thunder'
 export function foeTraits(c: Combatant, d: EnemyDef): void {
   if (d.prism) c.prism = true;
   if (d.adapt) c.adapt = d.adapt;
+  if ([...d.skills, ...(d.stages ?? []).flatMap((st) => st.skills)].some((k) => k.effects.some((e) => e.kind === 'mirror'))) c.mirrors = true;
+}
+
+/**
+ * M7, drawing nothing: each body's cut while a foe that shields it stands (one of its `by` ids, else any part), none once
+ * they are all down. Only a body with `parts` is touched.
+ */
+export function syncParts(s: BattleState, defOf: (c: Combatant) => EnemyDef | undefined): void {
+  for (const e of s.enemies) {
+    const parts = defOf(e)?.parts;
+    if (!parts) continue;
+    const shielded = e.alive && s.enemies.some((o) => o !== e && o.alive && !o.decoyOf && (parts.by ? parts.by.includes(o.defId) : defOf(o)?.rank === 'part'));
+    if (shielded) e.cut = parts.cutPct; else delete e.cut;
+  }
+}
+
+/**
+ * M18: a mimic's atk and mag as it is met: `mimic`% of the strongest living member's (the most atk; the first of equals),
+ * times the multipliers its scaled definition `met` carries but growth (elite, condition, tier, compensation), times the
+ * fight's `power` (party size, a boss's power, the deep road's). `raw` is its plain definition, `growth` its growth at the
+ * fight's depth (none without a scale). Neither growth nor ENEMY_POWER: the copy already has the party's. Draws nothing;
+ * undefined for a foe that mimics no one, or a fight with no one standing.
+ */
+export function mimicStats(raw: EnemyDef, met: EnemyDef, party: Combatant[], growth: Partial<Record<'atk' | 'mag', number>>, power: number): { atk: number; mag: number } | undefined {
+  const up = party.filter((c) => c.alive);
+  if (!raw.mimic || !up.length) return undefined;
+  const top = up.reduce((a, b) => (b.max.atk > a.max.atk ? b : a));
+  const one = (k: 'atk' | 'mag') => Math.max(1, Math.round((top.max[k] * raw.mimic! / 100) * (met.stats[k] / (raw.stats[k] * (growth[k] ?? 1))) * power));
+  return { atk: one('atk'), mag: one('mag') };
 }
 
 /** M8: the stage `e` fights `round` in: by its HP share (never back) or, with `stageEvery`, by the round. */

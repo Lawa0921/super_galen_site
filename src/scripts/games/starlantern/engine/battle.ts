@@ -12,12 +12,12 @@ import { SKILLS } from '../data/skills';
 import { addBuff, stat, dealDamage, gaugeGain, type BattleEvent, type Combatant } from './combatant';
 import { activeIds, hasPassive, powersOf, sheetOf, statsOf } from './party';
 import { pick, type Rng } from './rng';
-import { abyssPct, bossPartyScale, deepPower, empower, enemyLevelAt, groupCap, homeLevel, mul, partyScale, regionTint, scaleEnemy } from './scaling';
+import { abyssPct, bossPartyScale, deepPower, empower, enemyLevelAt, groupCap, growth, homeLevel, mul, partyScale, regionTint, scaleEnemy } from './scaling';
 import { SECONDARY_KEYS } from './stats';
 import { applyEffect, patchSkill, pctOf, type EffectContext } from './skills';
 import { afterAction, afterFoe, castCost, castDef, extraAction, initMechs, mechBeforeTicks, mechRoundEnd, payMech, watchAction, type CastDef } from './mechanics/index';
 import { AILMENT, ageAilments, shockTick, tickAilments } from './ailments';
-import { BOSS_GROUP_CAP, ROW_MAX, canSummon, decoysLeave, foeGuard, foeTraits, foesRoundEnd, foesRoundStart, foesStage, guardTargets, huntedIn, linkShares, openWith, returnedGold, settleThieves, spentKey, syncDecoys, usableNow, wakeUp } from './foes';
+import { BOSS_GROUP_CAP, ROW_MAX, canSummon, decoysLeave, foeGuard, foeTraits, foesRoundEnd, foesRoundStart, foesStage, guardTargets, huntedIn, linkShares, mimicStats, openWith, returnedGold, settleThieves, spentKey, syncDecoys, syncParts, usableNow, wakeUp } from './foes';
 import { countCast, credit, lossOf, type Ledger } from './ledger';
 import { AIM, barrierPower, type Barrier } from './mech';
 import type { MoonPhase } from './mechanics/moon';
@@ -73,6 +73,11 @@ export interface BattleState {
   meet?: Meeting & { cap: number };
   /** B1 review item 6: the once-a-fight skills used, by `spentKey`; absent until one is. */
   spent?: string[];
+  /**
+   * Roster plan B8 (M6): the last blow the party landed on a foe (who, its element, its power), kept only in a fight with a
+   * foe that borrows blows; absent until one lands.
+   */
+  lastPartyHit?: { by: string; element: Element; power: number };
   /** The barriers over the party (engine/mech.ts); the old roster raises none. */
   barriers?: Barrier[];
   /** The last plain skill a companion cast, for the hero's echo (engine/mechanics/echo.ts): who, in which round, as cast, at what TP. */
@@ -261,6 +266,7 @@ export function createBattle(o: {
   syncDecoys(s);
   linkShares(s, (c) => enemyDef(s, c));
   foesStage(s, 1, (c) => enemyDef(s, c));   // a turning weakness or a stage as the fight opens (roster plan B7)
+  syncParts(s, (c) => enemyDef(s, c));   // a body behind its parts (roster plan B8, M7)
   const enemies = s.enemies;
   if (o.survive) {
     s.survive = o.survive;
@@ -304,7 +310,10 @@ export function meetEnemy(s: BattleState, id: string, m: Meeting, as: MeetAs = {
   const empowered = empower(met, level);
   const power = m.k * (m.bossPower ?? 1) * (sc ? deepPower(sc.depth) : 1);
   const scaled = power === 1 ? empowered : { ...empowered, stats: mul(empowered.stats, { hp: power, atk: power, mag: power }) };
-  const d = m.names?.[id] ? { ...scaled, name: m.names[id] } : scaled;
+  // A mimic copies the strongest member (roster plan B8, M18); none on the old roster.
+  const copy = ENEMIES[id].mimic ? mimicStats(ENEMIES[id], met, s.party, sc ? growth(ENEMIES[id], sc.depth) : {}, power) : undefined;
+  const own = copy ? { ...scaled, stats: { ...scaled.stats, ...copy } } : scaled;
+  const d = m.names?.[id] ? { ...own, name: m.names[id] } : own;
   const key = `e${s.enemies.length}`;
   if (s.enemyDefs) s.enemyDefs[key] = d;
   const name = as.letter ? `${d.name} ${as.letter}` : d.name;
@@ -573,6 +582,12 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
     if (act.kind === 'enemy-skill') {
       const used = skills[act.index];
       if (used?.oncePerFight) (s.spent ??= []).push(spentKey(actor, used));
+      // A borrowed blow (roster plan B8, M6) goes back at whoever landed the party's last one; with none on record, or
+      // its caster down, it is a plain attack. A taunt, a challenge, a hunt or a cover still turns it (below).
+      if (used?.effects.some((e) => e.kind === 'mirror')) {
+        const by = lender(s);
+        act = by ? { ...act, target: by.key } : { kind: 'attack', target: act.target };
+      }
     }
   }
   if (actor.side === 'enemy') {
@@ -610,7 +625,11 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
       s.log.push({ type: 'act', actor: actor.key, label: sk.name });
       // A guard (M2) covers the ally most hurt but itself; any other skill finds its targets as it always has.
       const targets = guardTargets(s, actor, sk) ?? resolveTargets(s, actor, sk.target, act.target, rng, skillIsMelee(sk.effects), sentTo);
-      for (const t of targets) for (const eff of sk.effects) if (eff.kind === 'summon') summon(s, actor, eff.id); else applyEffect(actor, t, eff, ctx);
+      for (const t of targets) for (const eff of sk.effects) {
+        if (eff.kind === 'summon') summon(s, actor, eff.id);
+        else if (eff.kind === 'mirror') { const blow = borrowedBlow(s, eff.cap); if (blow) applyEffect(actor, t, blow, ctx); }
+        else applyEffect(actor, t, eff, ctx);
+      }
       return null;
     }
     case 'skill': {
@@ -853,6 +872,19 @@ function endOfRound(s: BattleState, ctx: EffectContext, rng: Rng): void {
 }
 
 
+/** Roster plan B8 (M6): the member who landed the party's last blow, while she stands. */
+const lender = (s: BattleState): Combatant | undefined => {
+  const rec = s.lastPartyHit;
+  return rec ? s.party.find((c) => c.key === rec.by && c.alive) : undefined;
+};
+
+/** Roster plan B8 (M6): the party's last blow, borrowed: its element, its power up to `cap`, never touching (a foe's own numbers). */
+function borrowedBlow(s: BattleState, cap: number): Effect | undefined {
+  const rec = s.lastPartyHit;
+  if (!rec) return undefined;
+  return { kind: 'damage', power: Math.min(rec.power, cap), element: rec.element, scale: rec.element === 'phys' ? 'atk' : 'mag', melee: false };
+}
+
 /** Roster plan B4 (M4): a foe joins at the end of the line, lettered after its kind; it acts from the next round and pays nothing. */
 function summon(s: BattleState, actor: Combatant, id: string): void {
   if (!s.meet) return;
@@ -862,6 +894,7 @@ function summon(s: BattleState, actor: Combatant, id: string): void {
   actor.summons = (actor.summons ?? 0) + 1;
   s.log.push({ type: 'foe', actor: actor.key, cue: 'summon', target: c.key });
   linkShares(s, (x) => enemyDef(s, x));
+  syncParts(s, (x) => enemyDef(s, x));
 }
 
 /**
@@ -902,6 +935,7 @@ function settleFalls(s: BattleState): void {
   decoysLeave(s);
   settleThieves(s, (c) => enemyDef(s, c));
   syncDecoys(s);
+  syncParts(s, (c) => enemyDef(s, c));   // a body's cut goes with its last part (roster plan B8, M7)
 }
 
 /**
@@ -1040,7 +1074,9 @@ export function intentLabel(s: BattleState, key: string): string {
   const shown = a.shownTarget ?? a.target;
   // A guard names the ally it would guard as things stand (roster plan B6, M2); a hunt says it is one (M24).
   const guarded = e && sk ? guardTargets(s, e, sk)?.[0]?.name : undefined;
-  const who = guarded ?? (single && shown ? s.party.find((c) => c.key === shown)?.name : null);
+  // A borrowed blow names whoever it would go back at as things stand (roster plan B8, M6).
+  const lent = sk?.effects.some((x) => x.kind === 'mirror') && !a.shownTarget ? lender(s)?.name ?? null : undefined;
+  const who = guarded ?? (lent !== undefined ? lent : single && shown ? s.party.find((c) => c.key === shown)?.name : null);
   const tag = guarded !== undefined ? T.battle.foe.guardTag : sk?.effects.some((x) => x.kind === 'hunt') ? T.battle.foe.huntTag : '';
   const area = sk?.target === 'enemies' ? '（全體）' : sk?.target === 'row' ? '（整排）' : sk?.target === 'column' ? '（整列）' : sk?.target === 'cross' ? '（十字）' : '';
   return `${name}${tag}${area}${who ? ` → ${who}` : ''}`;
