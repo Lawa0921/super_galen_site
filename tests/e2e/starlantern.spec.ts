@@ -2563,7 +2563,8 @@ test.describe('starlantern', () => {
 
   test('the title still comes when the pixel font is slow (legibility Task 4)', { annotation: { type: 'font-blocked' } }, async ({ page }) => {
     // Timed from the document (the font's preload holds the load event itself back), against the same page with the font
-    // on time: the slow font may add at most 3.5s (the game waits 3s for it). The page's own boot is not the font's doing.
+    // on time: the game waits 3s for it, so the slow font adds about 3s, and well under the 5s the font is held back
+    // (4.5s: a busy machine's second boot alone has measured 3.5-3.7s). The page's own boot is not the font's doing.
     const title = page.locator('.slx-title [role=option]').first();
     const timeToTitle = async () => {
       await page.goto('/games/starlantern', { waitUntil: 'domcontentloaded' });
@@ -2576,9 +2577,10 @@ test.describe('starlantern', () => {
     await page.route('**/Cubic_11.woff2', async (r) => { asked++; await new Promise((ok) => setTimeout(ok, 5000)); await r.continue().catch(() => undefined); });
     const slow = await timeToTitle();
     expect(asked, 'the font was asked for (and held back)').toBeGreaterThanOrEqual(1);
-    // The game did wait for it (about 3s; without loadPixelFont the title would not wait at all), and not for longer.
+    // The game did wait for it (about 3s; without loadPixelFont the title would not wait at all), and gave up before the
+    // font came (waiting it out would take 5s or more).
     expect(slow - onTime, `the title took ${slow}ms with the font 5s late, ${onTime}ms with it on time`).toBeGreaterThan(2000);
-    expect(slow - onTime, `the title took ${slow}ms with the font 5s late, ${onTime}ms with it on time`).toBeLessThan(3500);
+    expect(slow - onTime, `the title took ${slow}ms with the font 5s late, ${onTime}ms with it on time`).toBeLessThan(4500);
   });
 
   test('five members with five ailments each never cover an enemy HP bar, at 1280x720 or 844x390 (one line each)', async ({ page }) => {
