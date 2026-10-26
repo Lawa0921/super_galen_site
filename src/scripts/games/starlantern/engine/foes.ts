@@ -3,7 +3,7 @@
  * decision here is made without a draw (spec §6.1); a combatant without these fields walks every path it walked before.
  */
 import type { BattleState } from './battle';
-import { addBuff, dealDamage, type BattleEvent, type Buff, type Combatant } from './combatant';
+import { addBuff, breakCharge, dealDamage, type BattleEvent, type Buff, type Combatant } from './combatant';
 import type { BuffStat, Element, EnemyDef, EnemySkill } from './types';
 import { T } from '../data/text.zh-TW';
 import { ENEMIES } from '../data/enemies';
@@ -158,10 +158,14 @@ export function linkShares(s: BattleState, defOf: (c: Combatant) => EnemyDef | u
 /**
  * Whether a skill can be used now (passed over after its draw when not, as a failed chance is): a `when: 'deadAlly'` one
  * only while an ally lies fallen, never raised, not gone (M22); a call only while it can happen (M4, B1 review item 2); a
- * once-a-fight one only before its kind has used it (B1 review item 6).
+ * once-a-fight one only before its kind has used it (B1 review item 6); a beat only on its rounds, a skill that needs its kin
+ * only while they stand (roster plan B11). `round` is the round it would be played in (the next one, as it is planned).
  */
-export function usableNow(s: BattleState, e: Combatant, sk: EnemySkill): boolean {
+export function usableNow(s: BattleState, e: Combatant, sk: EnemySkill, round = s.round): boolean {
   if (sk.when === 'deadAlly' && !s.enemies.some((c) => c !== e && !c.alive && !c.left && !c.rose && !c.decoyOf)) return false;
+  // Roster plan B11: a beat every N rounds; a skill that waits for its kin.
+  if (sk.every && round % sk.every !== 0) return false;
+  if (sk.needs && s.enemies.filter((c) => c !== e && c.alive && !c.decoyOf && c.defId === sk.needs!.id).length < sk.needs.n) return false;
   if (sk.oncePerFight && s.spent?.includes(spentKey(e, sk))) return false;
   return sk.effects.every((x) => x.kind !== 'summon' || canSummon(s, e, x.id, x.max));
 }
@@ -178,6 +182,7 @@ export function foeTraits(c: Combatant, d: EnemyDef): void {
   if (d.adapt) c.adapt = d.adapt;
   if ([...d.skills, ...(d.stages ?? []).flatMap((st) => st.skills)].some((k) => k.effects.some((e) => e.kind === 'mirror'))) c.mirrors = true;
   if (d.mend) c.mend = { ...d.mend };
+  if (d.dodgeUp) c.dodgeUp = d.dodgeUp;
 }
 
 /**
@@ -409,7 +414,7 @@ export function foesRoundEnd(s: BattleState, defOf: (c: Combatant) => EnemyDef |
     e.alive = false;
     e.left = true;
     delete e.cover;
-    delete e.winding;
+    breakCharge(e);
     s.log.push({ type: 'foe', actor: e.key, cue: 'flee' });
   }
   for (const e of s.enemies) ageAdapted(e, defOf(e));   // M16

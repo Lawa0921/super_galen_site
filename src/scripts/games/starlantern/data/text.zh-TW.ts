@@ -303,6 +303,8 @@ export const T = {
       thaw: (who: string) => `${who}身上的冰化開了！`,
       engulf: (who: string, other: string) => `${who}把${other}吞了下去！`,
       spit: (who: string, other: string) => `${who}把${other}吐了出來！`,
+      /** Roster plan B11: a fragile song cut short by a hit. */
+      break: (who: string) => `${who}的演奏被打斷了！`,
     },
     heal: (who: string, n: number) => `${who} 回復 ${n} HP`,
     tp: (who: string, n: number) => `${who} 回復 ${n} TP`,

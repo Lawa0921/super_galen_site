@@ -39,7 +39,9 @@ export type Effect =
   | { kind: 'damage'; power: number; element: Element; scale: 'atk' | 'mag'; melee: boolean; hits?: number; crit?: 'always'; execute?: number; wounded?: number; scatter?: true; aimPct?: number;
       onHit?: { status: AilmentId; chance: number }[]; aftermath?: true; armorBreak?: true; drainPct?: number; tpPerHit?: number; lift?: Lift;
       /** Roster plan B9: `tpDrain`, each landed hit takes that much TP from the target, never below 0 (M17); `vsPoisoned`, percent more on a poisoned target (M25). */
-      tpDrain?: number; vsPoisoned?: number }
+      tpDrain?: number; vsPoisoned?: number;
+      /** Roster plan B11: +1% power for each gold the foe holds stolen, up to +hoardPct% (the vault dragon's breath). */
+      hoardPct?: number }
   /** `overflowPct`: what the heal spills past max HP becomes a shield, up to this percent of max HP (the hero's 滿溢, plan 8d). */
   | { kind: 'heal'; power: number; overflowPct?: number; lift?: Lift }
   /** `hpPct` (roster plan B10): HP back as that percent of the target's max HP (歸途之光's farewell). */
@@ -48,7 +50,8 @@ export type Effect =
   | { kind: 'cure' }
   /** `turns`: a sleep's rounds when a variant sets them (Selene's 深眠, plan 8d); absent, the ailment's own. */
   | { kind: 'inflict'; status: AilmentId; chance: number; turns?: number }
-  | { kind: 'buff'; stat: BuffStat; pct: number; turns: number }
+  /** `stackTo` (roster plan B11): each cast deepens the held one of its stat and way by `pct`, no further than `stackTo`. */
+  | { kind: 'buff'; stat: BuffStat; pct: number; turns: number; stackTo?: number }
   /** `steady`: while it lasts the caster is never crit and no crit is rolled on him (the hero's 不動, plan 8d). */
   | { kind: 'taunt'; turns: number; steady?: true }
   /**
@@ -229,7 +232,16 @@ export interface CharacterDef {
  * Roster plan B4 (M22): `when: 'deadAlly'`, usable only while an ally lies fallen (and was never raised); its draw holds.
  * B1 review item 6: `oncePerFight`, used once a fight by all the foes of its kind together.
  */
-export interface EnemySkill { name: string; chance: number; target: Target; effects: Effect[]; windup?: string; when?: 'deadAlly'; oncePerFight?: true }
+/**
+ * Roster plan B11: `every`, usable only in rounds that are a multiple of it (a beat every N rounds; passed over after its
+ * draw on the others); `needs`, usable only while at least `n` other foes of `id` stand (the festival's lanterns);
+ * `windupRounds`, the turns spent winding (default 1), each giving `windupAllies` to every standing foe of its side, and
+ * `fragile`, a landed hit on it breaks the wind-up (the music box's song).
+ */
+export interface EnemySkill {
+  name: string; chance: number; target: Target; effects: Effect[]; windup?: string; when?: 'deadAlly'; oncePerFight?: true;
+  every?: number; needs?: { id: string; n: number }; windupRounds?: number; windupAllies?: Effect[]; fragile?: true;
+}
 /**
  * Roster plan B7 (M8): one stage of a foe's fight, in place of its own skills (and its elements, when it names them).
  * `below`: it comes once the foe's HP share is at or under this percent, seen when the foe's next turn is planned; a
@@ -302,6 +314,10 @@ export interface EnemyDef {
   rally?: Partial<Record<BuffStat, number>>;
   /** Roster plan B10 (M26): it has these percents as auras once for each foe of `id` standing (the shadow parade). */
   throng?: { id: string; per: Partial<Record<BuffStat, number>> };
+  /** Roster plan B11: each landed hit on it adds this much evasion (the gilded hoarder). */
+  dodgeUp?: number;
+  /** Roster plan B11 (M10): what it does to itself as each other foe falls (the fallen knight steels itself). */
+  onAllyFall?: { name: string; effects: Effect[] };
 }
 export interface ItemDef {
   id: string; name: string; price: number; target: Target | null; effects: Effect[]; battle: boolean; returnToTown?: boolean; desc: string;

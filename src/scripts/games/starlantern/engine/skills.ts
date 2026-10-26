@@ -1,4 +1,4 @@
-import { addBuff, dealDamage, hitAmount, isWeak, roll, rollHit, SLEEP_TURNS, stat, type BattleEvent, type Buff, type Combatant, type HitRolls } from './combatant';
+import { addBuff, breakCharge, dealDamage, hitAmount, isWeak, roll, rollHit, SLEEP_TURNS, stat, type BattleEvent, type Buff, type Combatant, type HitRolls } from './combatant';
 import type { SkillMod } from '../data/gear';
 import type { Rng } from './rng';
 import type { Effect, Element, SkillDef } from './types';
@@ -332,6 +332,9 @@ function shareWound(actor: Combatant, twin: Combatant, n: number, element: Eleme
  */
 function foeStruck(t: Combatant, el: Element, lost: number, ctx: EffectContext): void {
   if (t.mend?.stopBy === el) t.shorted = ctx.battle?.round ?? 0;
+  // Roster plan B11: a hit breaks a fragile song; each hit makes a skittish foe harder to hit.
+  if (t.windFragile && t.winding !== undefined && t.alive) { breakCharge(t); ctx.log.push({ type: 'foe', actor: t.key, cue: 'break' }); }
+  if (t.dodgeUp && t.alive) t.x.evasion = (t.x.evasion ?? 0) + t.dodgeUp;
   if (t.encased && el === 'fire') thaw(ctx, t);
   if (t.gulp && ctx.battle) {
     t.gulp = { ...t.gulp, taken: t.gulp.taken + lost };
@@ -475,8 +478,11 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
       const more = actor.keystones.includes('troupe-step') && target.side === actor.side ? MEMORY_KEYSTONE_VALUES.troupeTurns : 0;
       // A ledger that credits buff givers learns which cast of hers gave it (plan 8h Task 5b review).
       const skill = ctx.ledger?.buffGivers ? castOf(ctx, actor) : undefined;
-      addBuff(target, { stat: eff.stat, pct: eff.pct, turns: eff.turns + more, src: actor.key, ...(skill ? { skill } : {}) });
-      ctx.log.push({ type: 'buff', target: target.key, stat: eff.stat, pct: eff.pct });
+      // A slow that deepens (roster plan B11): the held one of its stat and way, `pct` deeper, no further than `stackTo`.
+      const held = eff.stackTo !== undefined ? target.buffs.find((b) => b.stat === eff.stat && Math.sign(b.pct) === Math.sign(eff.pct)) : undefined;
+      const pct = held ? (eff.pct < 0 ? Math.max(eff.stackTo!, held.pct + eff.pct) : Math.min(eff.stackTo!, held.pct + eff.pct)) : eff.pct;
+      addBuff(target, { stat: eff.stat, pct, turns: eff.turns + more, src: actor.key, ...(skill ? { skill } : {}) });
+      ctx.log.push({ type: 'buff', target: target.key, stat: eff.stat, pct });
       return;
     }
     case 'taunt': {

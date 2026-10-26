@@ -167,11 +167,18 @@ export interface Combatant {
   engulfed?: string;
   /** Roster plan B10 (M28): the member this foe holds, the round it lets her out at the end of, and the HP it has lost since. */
   gulp?: { key: string; until: number; taken: number };
+  /** Roster plan B11: the wind-up turns still to come after this one (a skill with `windupRounds`), and whether a hit breaks it. */
+  windLeft?: number;
+  windFragile?: true;
+  /** Roster plan B11: the evasion each landed hit adds to it (EnemyDef.dodgeUp). */
+  dodgeUp?: number;
+  /** Roster plan B11: its fall has been answered by the foes that steel themselves at an ally's fall (EnemyDef.onAllyFall). */
+  mourned?: true;
 }
 
 /** Roster plan B3–B4: a foe mechanic's moment in the log (battleLines words it). */
 export type FoeCue = 'flee' | 'steal' | 'wake' | 'reveal' | 'summon' | 'rise' | 'return' | 'vanish' | 'stage' | 'adapt' | 'drain' | 'dispel'
-  | 'short' | 'thaw' | 'engulf' | 'spit';
+  | 'short' | 'thaw' | 'engulf' | 'spit' | 'break';
 
 /** The aim stacks `a` holds on `t` (Sylvie; 0 for anyone else or any other foe). */
 const aimOn = (a: Combatant, t: Combatant): number => (a.mech?.kind === 'aim' && a.mech.target === t.key ? a.mech.stacks : 0);
@@ -211,6 +218,13 @@ export type BattleEvent =
   | { type: 'trigger'; actor: string; skill: string; rune: RuneId }
   /** A foe mechanic's moment (roster plan B3–B4): `target` the member or foe it touched, `amount` the gold it took. */
   | { type: 'foe'; actor: string; cue: FoeCue; target?: string; amount?: number };
+
+/** Roster plan B2, B11: a foe's charge is gone (sleep, a freeze, a forget, a lost turn, a hit on a fragile song, its fall). */
+export function breakCharge(c: Combatant): void {
+  delete c.winding;
+  delete c.windLeft;
+  delete c.windFragile;
+}
 
 export const MAX_BUFFS = 3;
 /** Roster plan B10 (M23): the def and res an encased foe has over its own (×2.5). */
@@ -414,6 +428,8 @@ export function dealDamage(t: Combatant, amount: number, opts: { dot?: true; led
     delete t.riposte;
     delete t.challenged;
     delete t.winding;
+    delete t.windLeft;
+    delete t.windFragile;
     delete t.hunted;
     delete t.dozing;
     delete t.engulfed;   // a member who falls inside is let out; a foe that falls lets hers out (foes.settleGulps)

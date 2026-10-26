@@ -1301,3 +1301,109 @@ describe('M28 engulf (roster plan B10)', () => {
     expect(choosable(r, healer, 'ally', true).map((c) => c.key)).toEqual(['scarlet', 'noel', 'chizuru']);
   });
 });
+
+describe('roster plan B11: the traits that needed one more rule', () => {
+  it('a skill every N rounds comes on those rounds only, and its draw holds on the others', () => {
+    const swing: EnemySkill = { name: '沙暴', chance: 1, target: 'enemies', every: 2, effects: [hit(10)] };
+    const s = makeBattle([P('scarlet', { max: { hp: 9999 } as never })], [E('e0')], { enemyDefs: { e0: def([swing]) } });
+    let r = s;
+    const names: string[][] = [];
+    for (let i = 0; i < 4; i++) { r = resolveRound(r, defend(r), constRng(0.5)); names.push(acted(r, 'e0')); }
+    expect(names).toEqual([['攻擊'], ['沙暴'], ['攻擊'], ['沙暴']]);
+    // Passed over, it still drew for its chance.
+    const a = counted(), b = counted();
+    planEnemies(makeBattle([P('scarlet')], [E('e0')], { enemyDefs: { e0: def([swing]) } }), a.rng);   // plans round 1: passed over
+    planEnemies(makeBattle([P('scarlet')], [E('e0')], { enemyDefs: { e0: def([{ ...swing, chance: 0 }]) } }), b.rng);
+    expect(a.n).toBe(b.n);
+  });
+
+  it('a wound-up skill that comes every N rounds lands the round after, off its beat', () => {
+    const dive: EnemySkill = { name: '吞沒', chance: 1, target: 'enemies', every: 3, windup: '深潛', effects: [hit(10)] };
+    let s = makeBattle([P('scarlet', { max: { hp: 9999 } as never })], [E('e0')], { enemyDefs: { e0: def([dive]) } });
+    const names: string[][] = [];
+    for (let i = 0; i < 4; i++) { s = resolveRound(s, defend(s), constRng(0.5)); names.push(acted(s, 'e0')); }
+    expect(names).toEqual([['攻擊'], ['攻擊'], ['深潛'], ['吞沒']]);
+  });
+
+  it('a skill that needs its kin waits for them', () => {
+    const fire: EnemySkill = { name: '祭典之火', chance: 1, target: 'enemies', needs: { id: 'lamp-wight', n: 2 }, effects: [hit(10)] };
+    const lit = (n: number) => makeBattle([P('scarlet', { max: { hp: 9999 } as never })], [E('e0'), ...Array.from({ length: n }, (_, i) => E(`e${i + 1}`, { defId: 'lamp-wight' }))],
+      { enemyDefs: { e0: def([fire]), ...Object.fromEntries(Array.from({ length: n }, (_, i) => [`e${i + 1}`, def([])])) } });
+    expect(acted(resolveRound(lit(1), defend(lit(1)), constRng(0.5)), 'e0')).toEqual(['攻擊']);
+    expect(acted(resolveRound(lit(2), defend(lit(2)), constRng(0.5)), 'e0')).toEqual(['祭典之火']);
+  });
+
+  describe('the music box plays for two rounds', () => {
+    const play: EnemySkill = { name: '搖籃曲', chance: 1, target: 'enemies', windup: '演奏', windupRounds: 2, fragile: true,
+      windupAllies: [{ kind: 'restore', hpPct: 10 }], effects: [{ kind: 'inflict', status: 'sleep', chance: 1 }] };
+    const box = () => makeBattle([P('scarlet', { max: { hp: 9999 } as never })], [E('e0'), E('e1', { hp: 50 })], { enemyDefs: { e0: def([play]), e1: def([]) } });
+
+    it('two turns of playing mend its kin, then the row sleeps', () => {
+      let s = box();
+      s = resolveRound(s, defend(s), constRng(0.5));
+      expect(acted(s, 'e0')).toEqual(['演奏']);
+      expect(s.enemies[1].hp).toBe(60);
+      expect(intentLabel(s, 'e0')).toBe(T.battle.foe.windup('搖籃曲'));
+      s = resolveRound(s, defend(s), constRng(0.5));
+      expect(acted(s, 'e0')).toEqual(['演奏']);
+      expect(s.enemies[1].hp).toBe(70);
+      s = resolveRound(s, defend(s), constRng(0.5));
+      expect(acted(s, 'e0')).toEqual(['搖籃曲']);
+      expect(s.log).toContainEqual({ type: 'status', target: 'scarlet', status: 'sleep' });
+      expect(s.enemies[0].windLeft).toBeUndefined();
+    });
+
+    it('a landed hit breaks the song', () => {
+      let s = box();
+      s = resolveRound(s, defend(s), constRng(0.5));
+      s = resolveRound(s, { scarlet: { kind: 'attack', target: 'e0' } }, constRng(0.5));
+      expect(s.enemies[0].winding).toBeUndefined();
+      expect(s.log).toContainEqual({ type: 'foe', actor: 'e0', cue: 'break' });
+      s = resolveRound(s, defend(s), constRng(0.5));
+      expect(acted(s, 'e0')).toEqual(['演奏']);   // it starts over
+    });
+  });
+
+  it('each blow makes the gilded hoarder harder to hit', () => {
+    const s = makeBattle([P('scarlet', { max: { atk: 1 } as never })], [E('e0', { dodgeUp: 10, max: { hp: 9999 } as never })]);
+    const r = resolveRound(s, { scarlet: { kind: 'attack', target: 'e0' } }, constRng(0.5));
+    expect(r.enemies[0].x.evasion).toBe(10);
+    const r2 = resolveRound(r, { scarlet: { kind: 'attack', target: 'e0' } }, constRng(0.5));
+    expect(r2.enemies[0].x.evasion).toBe(20);
+    expect(ENEMIES['gilded-hoarder'].dodgeUp).toBe(10);
+  });
+
+  it('the fallen knight steels itself as an ally falls', () => {
+    const steel = { name: '騎士的誓言', effects: [{ kind: 'buff', stat: 'def', pct: 30, turns: 3 } as Effect] };
+    const s = makeBattle([P('scarlet', { max: { atk: 999 } as never })], [E('e0', { max: { hp: 9999 } as never }), E('e1', { hp: 1 })],
+      { enemyDefs: { e0: def([], { onAllyFall: steel }), e1: def([]) } });
+    const r = resolveRound(s, { scarlet: { kind: 'attack', target: 'e1' } }, constRng(0.5));
+    expect(acted(r, 'e0')).toContain('騎士的誓言');
+    expect(r.enemies[0].buffs.some((b) => b.stat === 'def' && b.pct === 30)).toBe(true);
+    // Once for each fall.
+    const r2 = resolveRound(r, defend(r), constRng(0.5));
+    expect(acted(r2, 'e0')).not.toContain('騎士的誓言');
+    expect(ENEMIES['fallen-knight'].onAllyFall).toBeDefined();
+  });
+
+  it('the white silence slows the party a little more each time, to its floor', () => {
+    const hush: Effect = { kind: 'buff', stat: 'spd', pct: -10, turns: 3, stackTo: -30 };
+    const m = P('scarlet');
+    const ctx = { rng: constRng(0.5), itemBoost: false, revealed: {}, log: [] as BattleEvent[] };
+    for (const want of [-10, -20, -30, -30]) {
+      applyEffect(E('e0'), m, hush, ctx);
+      expect(m.buffs.find((b) => b.stat === 'spd')!.pct).toBe(want);
+    }
+  });
+
+  it("the vault dragon's breath grows with what it stole", () => {
+    const breath: EnemySkill = { name: '金幣吐息', chance: 1, target: 'enemy', effects: [{ ...hit(100), hoardPct: 100 } as Effect] };
+    const blow = (stolen: number) => {
+      const s = makeBattle([P('scarlet', { max: { hp: 9999 } as never })], [E('e0', { stolen })], { enemyDefs: { e0: def([breath]) } });
+      s.intents = { e0: { kind: 'enemy-skill', index: 0, target: 'scarlet' } };
+      return (resolveRound(s, defend(s), constRng(0.5)).log.find((e) => e.type === 'damage' && e.target === 'scarlet') as { amount: number }).amount;
+    };
+    expect(blow(50) / blow(0)).toBeCloseTo(1.5, 1);
+    expect(blow(500)).toBe(blow(100));   // up to +100%
+  });
+});

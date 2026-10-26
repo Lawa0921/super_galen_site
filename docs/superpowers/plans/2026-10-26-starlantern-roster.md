@@ -566,6 +566,7 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 - Modify：`data/enemies.roster.ts`（每一隻照 spec §5 的「特性」欄補上機制欄位與技能）、`engine/scaling.ts`（`DEEP_TRAITS`：`bat` 伏擊、`beetle` 守護、`golem` 蓄力「重踏」；只在 `encounterTable` 回傳新表時套用：`scaleEnemy` 收一個 `deep: boolean`，由呼叫端依 `isRosterTable(region, depth)` 傳）、`data/monsters.ts`。
 - Test：`data/monsters.test.ts`、`engine/scaling.test.ts`。
 
+- **B11 實作修正**（原計畫漏列）：§5 有幾條特性不是任何一個 M 代號能表達的，引擎要加小規則才做得到，所以本任務也改 `engine/types.ts`、`engine/battle.ts`、`engine/skills.ts`、`engine/foes.ts`、`engine/combatant.ts`、`data/text.zh-TW.ts`：`EnemySkill.every`、`needs`、`windupRounds`／`windupAllies`／`fragile`（音樂盒）、`EnemyDef.dodgeUp`（金箔拾憶鼠）、`onAllyFall`（騎士殘影）、`buff.stackTo`（白色寂靜）、`damage.hoardPct`（金庫之龍）、`restore.hpPct`（歸途之光，B10 先加）；`DEEP_TRAITS` 由 `meetEnemy` 依 `isRosterTable`（放在 `engine/scaling.ts`）傳 `deep`。祭典的燈籠、行列的影子、灰枯的孢子莢不新增敵人 id，分別用提燈幽影、走失的影子、孢子蛾。`every summon names a roster foe…` 也接受舊的一般怪（泥沼母體照 spec §5.4 召喚苔蘚史萊姆＝`slime`），只要求不是頭目、守關者或部件。測試另加在 `engine/foes.test.ts`、`engine/mechanics/foeWords.test.ts`。
 - [ ] **Step 1**：`every trait is implemented`（spec §5 每一列的機制代號 → 該定義有對應欄位或技能；表寫在測試裡）；`every summon names a roster foe that summons nothing deeper than one level`；`deep traits only on a roster table`（舊表與 nothing-live 下 `bat`、`beetle`、`golem` 逐欄相同）。
 - [ ] **Step 2–5**：commit：`feat(starlantern): every roster foe fights the way the roster says`。
 

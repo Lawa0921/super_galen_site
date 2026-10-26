@@ -5,7 +5,7 @@
  * foes; on Normal no enemy source freezes, so the party's chill only comes with the higher difficulties (the region
  * riders and the 霜縛 affix). `curable` names what a cure takes off, and the cure itself takes off that list.
  */
-import { dealDamage, roll, SLEEP_TURNS, type Combatant } from './combatant';
+import { breakCharge, dealDamage, roll, SLEEP_TURNS, type Combatant } from './combatant';
 import { credit, lossOf } from './ledger';
 import type { EffectContext } from './skills';
 import type { SecondaryKey, SkillDef } from './types';
@@ -78,7 +78,7 @@ export function inflictAilment(actor: Combatant, t: Combatant, status: AilmentId
         t.poison = true;
       } else {
         t.sleep = turns ?? SLEEP_TURNS;
-        delete t.winding;   // sleep breaks a foe's charge (roster plan B2, M1)
+        breakCharge(t);   // sleep breaks a foe's charge (roster plan B2, M1)
       }
       ctx.log.push({ type: 'status', target: t.key, status });
     } else ctx.log.push({ type: 'resist', target: t.key });
@@ -98,11 +98,11 @@ export function inflictAilment(actor: Combatant, t: Combatant, status: AilmentId
     case 'bleed': addBleed(t, { tick: tickOf(hit, AILMENT.bleedPct), turns: AILMENT.bleedTurns, src: actor.key }); break;
     case 'shock': t.shock = Math.max(t.shock ?? 0, AILMENT.shockTurns); break;
     // Roster plan B9 (M9): until its next turn; it also breaks a foe's charge, as sleep does.
-    case 'forget': t.forget = true; delete t.winding; break;
+    case 'forget': t.forget = true; breakCharge(t); break;
     case 'freeze':
       if (t.boss || t.side === 'party') { t.chill = Math.max(t.chill ?? 0, AILMENT.chillTurns); shown = 'chill'; } else {
         t.frozen = true;
-        delete t.winding;   // so does a freeze (roster plan B2, M1)
+        breakCharge(t);   // so does a freeze (roster plan B2, M1)
       }
       break;
   }

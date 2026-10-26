@@ -9,10 +9,10 @@ import { ITEMS } from '../data/items';
 import { POWERS } from '../data/gear';
 import { WEAPON_KINDS, WEAPON_MASTERY_PCT, weaponKindOf } from '../data/equipment';
 import { SKILLS } from '../data/skills';
-import { addBuff, stat, dealDamage, gaugeGain, type BattleEvent, type Combatant } from './combatant';
+import { addBuff, breakCharge, stat, dealDamage, gaugeGain, type BattleEvent, type Combatant } from './combatant';
 import { activeIds, hasPassive, powersOf, sheetOf, statsOf } from './party';
 import { pick, type Rng } from './rng';
-import { abyssPct, bossPartyScale, deepPower, empower, enemyLevelAt, groupCap, growth, homeLevel, mul, partyScale, regionTint, scaleEnemy } from './scaling';
+import { abyssPct, bossPartyScale, deepPower, empower, enemyLevelAt, groupCap, growth, homeLevel, isRosterTable, mul, partyScale, regionTint, scaleEnemy } from './scaling';
 import { SECONDARY_KEYS } from './stats';
 import { applyEffect, patchSkill, pctOf, type EffectContext } from './skills';
 import { afterAction, afterFoe, castCost, castDef, extraAction, initMechs, mechBeforeTicks, mechRoundEnd, payMech, watchAction, type CastDef } from './mechanics/index';
@@ -119,10 +119,10 @@ export interface BattleScale {
  * `target` is the drawn one, which the engine plays (a taunt, a challenge, a hunt or a cover turns it when the blow falls).
  * `shownTarget`, for the screen only: where a challenge, a hunt or a cover will send it, as things stood when it was planned.
  * Roster plan B2 (M1): `windup`, the foe spends this turn winding up the skill (its `windup` name), which comes next round
- * as the `charged` one, drawn for its target only.
+ * as the `charged` one, drawn for its target only. Roster plan B11: `again`, a wind-up of more than one turn going on.
  */
 export type EnemyAction = { kind: 'attack'; target?: string; shownTarget?: string }
-  | { kind: 'enemy-skill'; index: number; target?: string; shownTarget?: string; windup?: true; charged?: true };
+  | { kind: 'enemy-skill'; index: number; target?: string; shownTarget?: string; windup?: true; charged?: true; again?: true };
 
 /** Rounds Scarlet's story fight lasts. */
 export const STORY_FIGHT_ROUNDS = 3;
@@ -304,7 +304,9 @@ export function meetEnemy(s: BattleState, id: string, m: Meeting, as: MeetAs = {
   const elite = !!as.elite;
   // The affixes go on the elite, or in a boss fight on each boss (ruling 5), only on a higher tier; none drawn here.
   const aff = t && sc?.affixes?.length && (elite || (m.boss && ENEMIES[id].boss)) ? sc.affixes : as.crowd ? [as.crowd] : undefined;
-  const met = !sc || !region ? ENEMIES[id] : t ? scaleEnemy(ENEMIES[id], sc.depth, region, elite, CONDITIONS[sc.condition ?? 'plain'], t, aff) : scaleEnemy(ENEMIES[id], sc.depth, region, elite, CONDITIONS[sc.condition ?? 'plain']);
+  // An old foe met where the table is a roster table brings its deep trait (roster plan B11, spec §5.8); never while nothing is live.
+  const deep = !!sc && isRosterTable(sc.region, sc.depth);
+  const met = !sc || !region ? ENEMIES[id] : t ? scaleEnemy(ENEMIES[id], sc.depth, region, elite, CONDITIONS[sc.condition ?? 'plain'], t, aff, deep) : scaleEnemy(ENEMIES[id], sc.depth, region, elite, CONDITIONS[sc.condition ?? 'plain'], null, undefined, deep);
   // An enemy is met at its level for the fight's depth (enemyLevelAt; the deep road's own extra power on top), or at
   // its own home level when the fight has no scale.
   const level = sc ? enemyLevelAt(sc.depth) : homeLevel(met);
@@ -499,16 +501,19 @@ function chooseEnemyActions(s: BattleState, rng: Rng, round: number): Map<string
     const skills = skillsOf(s, e);
     // A foe winding up draws no skill: the one it wound up comes now, drawn for its target only (roster plan B2, M1).
     // A skill that cannot be used now (M22: a revive with no one fallen) is passed over after its draw, as if it failed.
-    const charged = e.winding !== undefined && !!skills[e.winding];
-    const index = charged ? e.winding! : skills.findIndex((sk) => rng() < sk.chance && usableNow(s, e, sk));
-    const windup = !charged && index >= 0 && !!skills[index].windup;
+    // A wind-up of more turns goes on, drawn for its target only (roster plan B11, the music box's song).
+    const wound = e.winding !== undefined && !!skills[e.winding];
+    const again = wound && (e.windLeft ?? 0) > 0;
+    const charged = wound && !again;
+    const index = wound ? e.winding! : skills.findIndex((sk) => rng() < sk.chance && usableNow(s, e, sk, round));
+    const windup = again || (!charged && index >= 0 && !!skills[index].windup);
     const melee = index >= 0 ? skillIsMelee(skills[index].effects) : e.melee;
     // A stall passes over the member it delayed last, while there is another (roster plan B10, M27).
     const pool = foePool(s, e, melee);
     const fresh = index >= 0 && skills[index].effects.some((x) => x.kind === 'delay') ? pool.filter((c) => c.delayedBy !== e.key) : pool;
     const target = pickTarget(fresh.some((c) => c.alive) ? fresh : pool, undefined, rng)?.key;
     const act: EnemyAction = index >= 0
-      ? { kind: 'enemy-skill', index, target, ...(windup ? { windup: true as const } : {}), ...(charged ? { charged: true as const } : {}) }
+      ? { kind: 'enemy-skill', index, target, ...(windup ? { windup: true as const } : {}), ...(charged ? { charged: true as const } : {}), ...(again ? { again: true as const } : {}) }
       : { kind: 'attack', target };
     // Where a challenge or a cover (a taunt over them included) would send the blow, the screen shows it; the action keeps
     // its drawn target and the redirect is made when the blow falls (forcedTarget in perform). A lone taunt is drawn as
@@ -574,12 +579,13 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
   delete ctx.regained;
   delete ctx.coverBlow;
   let sentTo: Combatant | undefined;   // a challenger or a cover is reached wherever she stands
-  if (actor.side === 'enemy' && act.kind === 'enemy-skill' && act.charged) {
-    // The blow it wound up (roster plan B2, M1); a charge that sleep or a freeze broke is a plain attack.
-    if (actor.winding === undefined) act = { kind: 'attack', target: act.target };
-    else delete actor.winding;
+  if (actor.side === 'enemy' && act.kind === 'enemy-skill' && (act.charged || act.again) && actor.winding === undefined) {
+    // A charge (or a song going on) that sleep, a freeze, a forget or a hit broke is a plain attack (roster plan B2, B11).
+    act = { kind: 'attack', target: act.target };
   }
-  if (actor.side === 'enemy' && act.kind === 'enemy-skill' && !act.windup) {
+  if (actor.side === 'enemy' && act.kind === 'enemy-skill' && act.charged) breakCharge(actor);   // the blow it wound up (M1)
+  // A charged blow was judged usable as it was wound up: a beat every N rounds lands off its beat (roster plan B11).
+  if (actor.side === 'enemy' && act.kind === 'enemy-skill' && !act.windup && !act.charged) {
     // A skill that can no longer be used (a call with no room since it was planned; a once-a-fight one its kind just used)
     // is a plain attack; only a foe with no damaging skill at all (the nest) takes the first one of its list that can be
     // used instead, so it never attacks (roster plan B4; B1 review items 2, 3, 6; confirmation review item 2).
@@ -628,9 +634,15 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
     case 'enemy-skill': {
       const sk = skillsOf(s, actor)[act.index];
       if (act.windup) {
-        // It winds up (roster plan B2, M1): the skill comes next round.
+        // It winds up (roster plan B2, M1): the skill comes next round. A longer one (roster plan B11) counts its turns,
+        // and each of them gives its own side what the song gives.
+        const going = act.again && actor.winding === act.index;
         actor.winding = act.index;
+        const left = going ? (actor.windLeft ?? 1) - 1 : (sk.windupRounds ?? 1) - 1;
+        if (left > 0) actor.windLeft = left; else delete actor.windLeft;
+        if (sk.fragile) actor.windFragile = true;
         s.log.push({ type: 'act', actor: actor.key, label: sk.windup ?? sk.name });
+        for (const t of sk.windupAllies?.length ? living(s.enemies).filter((c) => !c.decoyOf) : []) for (const eff of sk.windupAllies!) applyEffect(actor, t, eff, ctx);
         return null;
       }
       s.log.push({ type: 'act', actor: actor.key, label: sk.name });
@@ -639,7 +651,7 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
       for (const t of targets) for (const eff of sk.effects) {
         if (eff.kind === 'summon') summon(s, actor, eff.id);
         else if (eff.kind === 'mirror') { const blow = borrowedBlow(s, eff.cap); if (blow) applyEffect(actor, t, blow, ctx); }
-        else applyEffect(actor, t, eff, ctx);
+        else applyEffect(actor, t, hoarded(actor, eff), ctx);
       }
       return null;
     }
@@ -891,8 +903,14 @@ function endOfRound(s: BattleState, ctx: EffectContext, rng: Rng): void {
  */
 function forgotten(actor: Combatant, act: Action | EnemyAction): Action | EnemyAction {
   if (act.kind === 'skill' || act.kind === 'echo') return { kind: 'attack', target: act.target ?? '' };
-  if (act.kind === 'enemy-skill') { delete actor.winding; return { kind: 'attack', target: act.target }; }
+  if (act.kind === 'enemy-skill') { breakCharge(actor); return { kind: 'attack', target: act.target }; }
   return act;
+}
+
+/** Roster plan B11: a hit that grows with what its foe holds stolen, +1% a gold up to `hoardPct`; any other effect as it is. */
+function hoarded(actor: Combatant, eff: Effect): Effect {
+  if (eff.kind !== 'damage' || !eff.hoardPct || !actor.stolen) return eff;
+  return { ...eff, power: Math.round((eff.power * (100 + Math.min(actor.stolen, eff.hoardPct))) / 100) };
 }
 
 /** Roster plan B8 (M6): the member who landed the party's last blow, while she stands. */
@@ -914,6 +932,8 @@ function summon(s: BattleState, actor: Combatant, id: string): void {
   const kin = s.enemies.filter((c) => c.defId === id && !c.decoyOf).length;
   const c = meetEnemy(s, id, s.meet, kin ? { letter: String.fromCharCode(65 + kin) } : {});
   c.summoned = true;
+  // A newcomer that steels itself at a fall did not see the falls before it came (roster plan B11).
+  if (enemyDef(s, c)?.onAllyFall) for (const f of s.enemies) if (!f.alive) f.mourned = true;
   actor.summons = (actor.summons ?? 0) + 1;
   s.log.push({ type: 'foe', actor: actor.key, cue: 'summon', target: c.key });
   linkShares(s, (x) => enemyDef(s, x));
@@ -950,6 +970,18 @@ function afterFalls(s: BattleState, ctx: EffectContext, rng: Rng): void {
       if (lastStanding) delete t.undying;
     }
     for (const c of s.enemies) if (!c.alive && !down.has(c.key)) c.fell = true;
+  }
+  // Roster plan B11 (M10): a foe that steels itself as an ally falls does so once for each fall (the fallen knight).
+  const mourners = s.enemies.filter((e) => e.alive && enemyDef(s, e)?.onAllyFall);
+  if (mourners.length) for (const f of s.enemies) {
+    if (f.alive || f.left || f.decoyOf || f.mourned) continue;
+    f.mourned = true;
+    for (const m of mourners) {
+      if (m === f || !m.alive) continue;
+      const w = enemyDef(s, m)!.onAllyFall!;
+      s.log.push({ type: 'act', actor: m.key, label: w.name });
+      for (const eff of w.effects) applyEffect(m, m, eff, ctx);
+    }
   }
   settleFalls(s);
 }
@@ -1028,8 +1060,8 @@ export function resolveRound(prev: BattleState, actions: Record<string, Action>,
     // A forget lasts its holder one turn, whatever that turn brings (roster plan B9, M9).
     const forgot = !!actor.forget;
     delete actor.forget;
-    if (actor.frozen) { delete actor.frozen; delete actor.winding; actor.freezeGuard = AILMENT.freezeGuard; s.log.push({ type: 'frozen', actor: actor.key }); continue; }
-    if (actor.sleep > 0) { actor.sleep -= 1; delete actor.winding; s.log.push({ type: 'asleep', actor: actor.key }); continue; }
+    if (actor.frozen) { delete actor.frozen; breakCharge(actor); actor.freezeGuard = AILMENT.freezeGuard; s.log.push({ type: 'frozen', actor: actor.key }); continue; }
+    if (actor.sleep > 0) { actor.sleep -= 1; breakCharge(actor); s.log.push({ type: 'asleep', actor: actor.key }); continue; }
     if (actor.dozing) wakeUp(s, actor);   // a foe that opened asleep wakes angry (roster plan B3, M14)
     const chosen = actor.side === 'party' ? actions[actor.key] : enemyActs.get(actor.key);
     const act = forgot && chosen ? forgotten(actor, chosen) : chosen;
