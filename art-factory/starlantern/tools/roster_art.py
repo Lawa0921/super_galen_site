@@ -764,8 +764,8 @@ def review_passes(text):
     for ln in text.splitlines():
         if not ln.startswith('- '): continue
         m = REVIEW_LINE.match(ln)
-        if m: passed[m.group(1)] = m.group(2)
-        else: bad.append(ln)
+        if m and m.group(1) not in passed: passed[m.group(1)] = m.group(2)
+        else: bad.append(ln)   # another form, or a second verdict for the same image (confirmation review nit)
     return passed, bad
 
 

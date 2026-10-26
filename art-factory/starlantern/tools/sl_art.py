@@ -1269,21 +1269,23 @@ ROSTER_ERASED_MAX = 8    # enclosed transparent pixels whose raw was not the key
 KEY_BLEND_G_MAX = 64     # erased check: a raw pixel with green at most this ...
 KEY_BLEND_STEP = 80      # ... and red and blue this far above it is the key blended into an outline
 KEY_NEAR = 30            # erased check: a sampled raw pixel this close to the key is the key (the alpha QA hint uses 30 too)
+KEY_BLEND_REACH = 2      # ... and a dark key blend is background only this many 4-connected sampled px from pure key
 CUTOUT_MARGIN, CUTOUT_FRINGE = 70, 90   # cutout()'s reach, mirrored so the roster stamps move with it (a test holds them equal)
 ICON_HEIGHT = 32         # roster ruling 23: the material icons follow 5d's actual output (icon-blaze-core 33 x 35) ...
 ICON_BOX = 36            # ... so the final canvas fits a 36 x 36 box
 ROSTER_SPRITE_RULES = ('block downscale to the class height; alpha QA (residue, semi alpha, raw-canvas cut, spill, key tint); '
                        'speckless subject height inside the class band, swarm width cap; opaque colours over PALETTE_MAX recorded, never failed; '
                        'luminance p5-p95 spread >= LUM_RANGE_MIN, main-road mean >= LUM_MEAN_MIN; enclosed pockets of any size '
-                       'whose sampled raw is not the key count as erased, a dark key blend exempt only in a pocket that holds pure key')
+                       'whose sampled raw is not the key count as erased, a dark key blend exempt only within KEY_BLEND_REACH 4-connected '
+                       'sampled px of pure key in the same pocket')
 ROSTER_ICON_RULES = ('block downscale to ICON_HEIGHT, or to fit a wide subject inside ICON_BOX with its pad; alpha QA with spill '
                      'and key tint; final canvas inside ICON_BOX; erased interior as the roster sprites')
 SPEC_INPUTS['roster-sprite'] = ('ROSTER_HEIGHT', 'ROSTER_HEIGHT_BAND', 'ROSTER_SWARM_MAX_W', 'PALETTE_MAX', 'LUM_RANGE_MIN',
-                                'LUM_MEAN_MIN', 'LUM_PCT', 'ROSTER_ERASED_MAX', 'KEY_BLEND_G_MAX', 'KEY_BLEND_STEP', 'KEY_NEAR',
+                                'LUM_MEAN_MIN', 'LUM_PCT', 'ROSTER_ERASED_MAX', 'KEY_BLEND_G_MAX', 'KEY_BLEND_STEP', 'KEY_NEAR', 'KEY_BLEND_REACH',
                                 'CUTOUT_MARGIN', 'CUTOUT_FRINGE', 'SPECK_MAX', 'MAGENTA', 'MAGENTA_SPILL_MAX',
                                 'KEY_TINT_INSIDE_MAX', 'SPILL_HUE', 'SPILL_STEP', 'SPILL_BAND', 'STRONG_DEFRINGE', '_SHIFTS',
                                 'ROSTER_SPRITE_RULES')
-SPEC_INPUTS['roster-icon'] = ('ICON_HEIGHT', 'ICON_BOX', 'ROSTER_ERASED_MAX', 'KEY_BLEND_G_MAX', 'KEY_BLEND_STEP', 'KEY_NEAR',
+SPEC_INPUTS['roster-icon'] = ('ICON_HEIGHT', 'ICON_BOX', 'ROSTER_ERASED_MAX', 'KEY_BLEND_G_MAX', 'KEY_BLEND_STEP', 'KEY_NEAR', 'KEY_BLEND_REACH',
                               'CUTOUT_MARGIN', 'CUTOUT_FRINGE', 'SPECK_MAX', 'MAGENTA', 'MAGENTA_SPILL_MAX', 'KEY_TINT_INSIDE_MAX', 'SPILL_HUE',
                               'SPILL_STEP', 'SPILL_BAND', 'STRONG_DEFRINGE', '_SHIFTS', 'ROSTER_ICON_RULES')
 
@@ -1336,31 +1338,25 @@ def lum_range(final, mainline):
     return out
 
 
-def _pocket_labels(mask):
-    """4-connected components of a boolean mask: an int array, 0 outside, 1..n inside."""
-    lab = np.zeros(mask.shape, np.int32); n = 0; h, w = mask.shape
-    for y, x in zip(*np.nonzero(mask)):
-        if lab[y, x]: continue
-        n += 1; lab[y, x] = n; stack = [(y, x)]
-        while stack:
-            cy, cx = stack.pop()
-            for ny, nx in ((cy + 1, cx), (cy - 1, cx), (cy, cx + 1), (cy, cx - 1)):
-                if 0 <= ny < h and 0 <= nx < w and mask[ny, nx] and not lab[ny, nx]: lab[ny, nx] = n; stack.append((ny, nx))
-    return lab
+def _grow4(mask, within):
+    """mask grown by one 4-connected step, kept inside `within`."""
+    g = mask.copy(); g[1:] |= mask[:-1]; g[:-1] |= mask[1:]; g[:, 1:] |= mask[:, :-1]; g[:, :-1] |= mask[:, 1:]
+    return g & within
 
 
 def erased_count(alpha, raw_rgb):
     """Enclosed transparent pixels (pockets of any size) that were art in the raw, sampled the way the final was. A pixel
     within KEY_NEAR of the key is background. The key blended dark into an outline (green <= KEY_BLEND_G_MAX, red and blue
-    KEY_BLEND_STEP above it) is background only in a pocket that also holds pure key (a real seam: key in the middle, blend
-    along its rim); in a pocket with no key at all every pixel is art the cutout took for magenta, whatever its colour
-    (PR D review, High 1: a solid violet patch is never a seam)."""
+    KEY_BLEND_STEP above it) is background only within KEY_BLEND_REACH 4-connected steps, through its pocket, of pure key:
+    the rim of a real seam. Anything else in a pocket is art the cutout took for magenta, whatever its colour: a violet
+    region is not excused by a key speck inside it or a key gap beside it (PR D review High 1 and its confirmation)."""
     pockets = _enclosed_transparent(alpha, small=alpha.size)
     if raw_rgb.shape[:2] != alpha.shape or not pockets.any(): return 0
     c = raw_rgb.astype(np.int16); r, g, b = c[..., 0], c[..., 1], c[..., 2]
     key = _near_magenta(raw_rgb, KEY_NEAR); blend = (g <= KEY_BLEND_G_MAX) & (r - g >= KEY_BLEND_STEP) & (b - g >= KEY_BLEND_STEP)
-    lab = _pocket_labels(pockets); seamed = np.isin(lab, np.unique(lab[pockets & key])) & pockets
-    return int((pockets & ~key & ~(blend & seamed)).sum())
+    rim = key & pockets
+    for _ in range(KEY_BLEND_REACH): rim = _grow4(rim, pockets)
+    return int((pockets & ~key & ~(blend & rim)).sum())
 
 
 def _erased_pixels(img, final, block):
@@ -1422,7 +1418,7 @@ def process_roster_icon(reg, aid, cell, workdir, raw):
 
 
 ROSTER_GEAR_RULES = 'gear-cell (5d sizes, mass and spill) plus the erased interior of the roster sprites, on each final'
-SPEC_INPUTS['roster-gear'] = SPEC_INPUTS['gear-cell'] + ('ROSTER_ERASED_MAX', 'KEY_BLEND_G_MAX', 'KEY_BLEND_STEP', 'KEY_NEAR',
+SPEC_INPUTS['roster-gear'] = SPEC_INPUTS['gear-cell'] + ('ROSTER_ERASED_MAX', 'KEY_BLEND_G_MAX', 'KEY_BLEND_STEP', 'KEY_NEAR', 'KEY_BLEND_REACH',
                                                        'CUTOUT_MARGIN', 'CUTOUT_FRINGE', 'ROSTER_GEAR_RULES')
 
 

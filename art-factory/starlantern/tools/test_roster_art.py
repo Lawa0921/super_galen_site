@@ -499,3 +499,11 @@ def test_publish_is_all_or_nothing_and_a_retry_is_a_no_op(factory, review, roote
     assert set(done) == set(R.batch_assets('r0'))
     assert R.do_publish(A.Registry(R.REG_PATH), 'r0', public) == []                                # a retry changes nothing
     assert (R.REG_PATH.read_bytes(), R.MONSTERS_TS.read_bytes(), R.ARTPATHS_TEST.read_bytes(), R.E2E_SPEC.read_bytes()) == after
+
+
+def test_an_id_on_two_pass_lines_refuses_the_round(factory, review):
+    """Confirmation review nit: one image, one verdict; a second pass line for the same id refuses the whole round."""
+    lines = _r1_record(factory, review); rec = factory / 'rec.md'
+    rec.write_text('\n'.join(lines + [lines[0]]) + '\n', encoding='utf-8')
+    _refused(factory, 'r1', review=str(rec))
+    assert not R.review_copy('r1').exists()

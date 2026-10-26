@@ -1644,7 +1644,7 @@ def _sprite_raw(path, h=320, w=200, fill=None, cut=False, pink=False, gap=False,
         d.rectangle((x0 + 6, y0 + 6 + k * (h - 12) // 8, x0 + w - 7, y0 + 6 + (k + 1) * (h - 12) // 8 - 1), fill=fill or (v, v, v - 10))
     if pink: d.rectangle((x0 + 60, y0 + 100, x0 + 100, y0 + 140), fill=(255, 120, 255))   # art keyed out as magenta
     if gap:   # a real seam: pure key down the middle, the key blended dark only along its rim
-        d.rectangle((x0 + 60, y0 + 100, x0 + 100, y0 + 140), fill=(190, 20, 190)); d.rectangle((x0 + 70, y0 + 110, x0 + 90, y0 + 130), fill=(255, 0, 255))
+        d.rectangle((x0 + 60, y0 + 100, x0 + 100, y0 + 140), fill=(190, 20, 190)); d.rectangle((x0 + 65, y0 + 105, x0 + 95, y0 + 135), fill=(255, 0, 255))
     if patch: d.rectangle((x0 + 60, y0 + 100, x0 + 100, y0 + 140), fill=patch)            # a solid 41 x 41 patch of art
     path.parent.mkdir(parents=True, exist_ok=True); img.save(path); return path
 
@@ -1718,14 +1718,20 @@ def test_a_solid_violet_patch_the_cutout_erased_fails(tmp_path, colour):
     assert 'interior erased' in q['reasons'] and q['erased'] > A.ROSTER_ERASED_MAX, q
 
 
-def test_erased_count_exempts_blend_only_in_a_pocket_with_pure_key():
+def test_erased_count_exempts_blend_only_within_two_pixels_of_pure_key():
+    """Confirmation review ruling: a blend pixel is background only when 4-connected, within KEY_BLEND_REACH (2) sampled
+    pixels through its pocket, to pure key: a seam's rim, never a whole region that happens to hold a key speck."""
+    assert A.KEY_BLEND_REACH == 2
     a = np.full((9, 9), 255, np.uint8); a[2:7, 2:7] = 0                    # one 5 x 5 pocket
     raw = np.zeros((9, 9, 3), np.uint8); raw[2:7, 2:7] = (190, 20, 190)    # blend all over it
     assert A.erased_count(a, raw) == 25                                     # no key: every pixel is erased art
     raw[4, 4] = (255, 0, 255)
-    assert A.erased_count(a, raw) == 0                                      # a key core: the blend round it is a seam
-    raw[2, 2] = (120, 200, 90)
-    assert A.erased_count(a, raw) == 1                                      # art in a seam still counts
+    assert A.erased_count(a, raw) == 25 - 13                                # a key core: only the 12 blend pixels beyond 2 steps count
+    raw[3, 4] = (120, 200, 90)
+    assert A.erased_count(a, raw) == 25 - 12                                # art beside the key still counts
+    a2 = np.full((7, 12), 255, np.uint8); a2[2:5, 1:11] = 0                 # a long pocket: key at one end, blend along it
+    raw2 = np.zeros((7, 12, 3), np.uint8); raw2[2:5, 1:11] = (190, 20, 190); raw2[2:5, 1] = (255, 0, 255)
+    assert A.erased_count(a2, raw2) == 3 * 7                                # columns 2-3 are the rim; 4-10 are art
 
 
 def test_roster_icons_and_gear_have_the_erasure_gate(tmp_path):
@@ -1747,4 +1753,35 @@ def test_the_cutout_reach_and_the_key_hint_are_stamped():
     assert A.KEY_NEAR == 30 and A.CUTOUT_MARGIN == inspect.signature(A.cutout).parameters['margin'].default == 70
     assert A.CUTOUT_FRINGE == 90 and '_near_magenta(rgb, 90)' in inspect.getsource(A.cutout)       # cutout's fringe reach
     for kind in ('roster-sprite', 'roster-icon', 'roster-gear'):
-        assert {'KEY_NEAR', 'CUTOUT_MARGIN', 'CUTOUT_FRINGE', 'ROSTER_ERASED_MAX', 'KEY_BLEND_G_MAX', 'KEY_BLEND_STEP'} <= set(A.SPEC_INPUTS[kind]), kind
+        assert {'KEY_NEAR', 'CUTOUT_MARGIN', 'CUTOUT_FRINGE', 'ROSTER_ERASED_MAX', 'KEY_BLEND_G_MAX', 'KEY_BLEND_STEP', 'KEY_BLEND_REACH'} <= set(A.SPEC_INPUTS[kind]), kind
+
+
+# --- confirmation review (2026-10-26): a key speck or a neighbouring gap is no excuse for a violet region ---------------------
+def _violet_raw(path, colour, extra):
+    from PIL import ImageDraw
+    img = canvas(400, 400); d = ImageDraw.Draw(img); h, w = 320, 200; x0, y0 = (400 - w) // 2, (400 - h) // 2
+    d.rectangle((x0, y0, x0 + w - 1, y0 + h - 1), fill=(30, 28, 40))
+    for k in range(8):
+        v = 70 + 22 * k
+        d.rectangle((x0 + 6, y0 + 6 + k * (h - 12) // 8, x0 + w - 7, y0 + 6 + (k + 1) * (h - 12) // 8 - 1), fill=(v, v, v - 10))
+    d.rectangle((x0 + 30, y0 + 80, x0 + 150, y0 + 200), fill=colour)        # a 121 x 121 violet region (a robe, a gem)
+    extra(d, x0, y0)
+    path.parent.mkdir(parents=True, exist_ok=True); img.save(path); return path
+
+
+def _speck(n):
+    def f(d, x0, y0):
+        cx, cy = x0 + 90, y0 + 140; d.rectangle((cx - n // 2, cy - n // 2, cx - n // 2 + n - 1, cy - n // 2 + n - 1), fill=(255, 0, 255))
+    return f
+
+
+def _gap_beside(d, x0, y0):
+    d.rectangle((x0 + 150, y0 + 120, x0 + 170, y0 + 160), fill=(255, 0, 255))   # a real key gap touching its edge (arm and body)
+
+
+@pytest.mark.parametrize('colour', [(190, 20, 190), (150, 60, 200)])
+@pytest.mark.parametrize('case, extra', [('5x5 key speck', _speck(5)), ('10x10 key speck', _speck(10)), ('a gap beside it', _gap_beside)])
+def test_a_violet_region_with_a_key_speck_or_beside_a_gap_is_still_erased(tmp_path, colour, case, extra):
+    raw = _violet_raw(tmp_path / 'v.png', colour, extra)
+    q = A.process_roster_sprite(A.Registry(tmp_path / 'r.json'), 'enemy-v', Image.open(raw), tmp_path / 'w', raw, 'normal', mainline=True)
+    assert 'interior erased' in q['reasons'] and q['erased'] > A.ROSTER_ERASED_MAX, (case, q)
