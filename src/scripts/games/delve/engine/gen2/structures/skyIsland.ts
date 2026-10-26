@@ -31,12 +31,14 @@ const NOISE_SPAN = 0x7fffffff;
 
 // 錨點（家鄉）：一律放、一定有繩梯（Task 21）：4 個候選繩梯欄在可用範圍內任何位置都接不到地面時，改在島下任一接得到地面的欄（ropeFallback）掛繩梯；
 // 整個可用範圍都沒有這種欄 → RangeError（anchors.homeAnchors 只挑可用範圍裡有這種欄的天空槽——它的 ropeable 與這裡同一個判定，所以不會發生）
-export function buildSkyIslandBp(c: BpCtx): Blueprint {
-  return skyIsland(c, true)!;
+// ground：測試接縫（繩梯欄接得到的地面；預設 = 不是海欄、不是地表入口欄時的 c.groundAt，否則 −1）——正式碼不傳
+export interface SkyOptions { ground?: (x: number) => number }
+export function buildSkyIslandBp(c: BpCtx, o: SkyOptions = {}): Blueprint {
+  return skyIsland(c, true, o)!;
 }
 // 機率表（非家鄉大陸 0.06）：外框 3 個候選位置都沒有接得到地面的繩梯欄 → 不放（回 null）
 export function rollSkyIslandBp(c: BpCtx): Blueprint | null {
-  return skyIsland(c, false);
+  return skyIsland(c, false, {});
 }
 
 // 繩梯的 4 個候選欄（drawSkyIsland 的順序）
@@ -51,19 +53,18 @@ export function ropeFallback(lo: number, hi: number, iw: number, mid: number, ok
   return null;
 }
 
-function skyIsland(c: BpCtx, force: boolean): Blueprint | null {
+function skyIsland(c: BpCtx, force: boolean, o: SkyOptions): Blueprint | null {
   // ctx.ver 0 的規則
   const p = c.profile, rng = new HRng(c.s, c.id);
   const iw = rng.int(30, 49), thick = rng.int(9, 15), lift = rng.int(10, 50), noiseSeed = Math.floor(rng.next() * NOISE_SPAN);
   // 繩梯可以接的地面：不是海欄、不是地表入口欄（入口噪聲同 fill.ts）；否則 −1（drawSkyIsland 換下一欄）
   const sEnt = seedInt(c.seed, 'g2-entrance');
-  const ground = (x: number): number => { const k = p.info(x).kind; return k === COL_SEA || (k === COL_LAND && entranceHit(x, sEnt)) ? -1 : c.groundAt(x); };
+  const ground = o.ground ?? ((x: number): number => { const k = p.info(x).kind; return k === COL_SEA || (k === COL_LAND && entranceHit(x, sEnt)) ? -1 : c.groundAt(x); });
   // 外框 x：placeX 的候選裡第一個有接得到地面的繩梯欄的
   const ropeOk = (x: number): boolean => ropeCols(x, iw).some((rx) => ground(rx) >= 0);
   let x0 = placeX(c, iw, force, ropeOk);
   if (x0 === null) return null;
   // 錨點（force）：placeX 的 3 個候選都接不到地面（Task 14：家鄉 anc-10 出現過沒有繩梯的空島）→ 可用範圍內離中央近的放得下的 x 依序找第一個接得到的；
-  // 都沒有才照舊（沒有繩梯）
   // 都沒有（Task 21）：ropeFallback 在島下任一欄掛繩梯；整個可用範圍都沒有接得到地面的欄 → RangeError（錨點一定有繩梯）
   let extra: number | null = null;
   if (force && !ropeOk(x0)) {
@@ -82,14 +83,17 @@ function skyIsland(c: BpCtx, force: boolean): Blueprint | null {
   const top = Math.max(TOP_MIN, minTop - AIR_GAP - thick - lift);
   // 外框下緣：島身、與 4 個候選繩梯欄（與後備繩梯欄）的地面那一列
   let low = top + BODY_MAX;
-  for (const rx of extra === null ? ropeCols(x0, iw) : [...ropeCols(x0, iw), extra]) low = Math.max(low, c.groundAt(rx));
+  for (const rx of ropeCols(x0, iw)) low = Math.max(low, c.groundAt(rx));
+  if (extra !== null) low = Math.max(low, ground(extra));
   const y = top - CROWN, cv = new BpCanvas({ x: x0, y, w: iw, h: low + 1 - y }, p);
   const drawn = drawSkyIsland(cv, { x0, iw, top, thick, noiseSeed }, rng, ground);
   // 錨點的繩梯沒畫成（後備欄、或 4 欄都離地 < 8 格）：在第一個接得到地面的欄（後備欄優先、再照 4 欄的順序）從島底垂到地面上 3 格（至少 1 格）
   if (force && !drawn.rope) {
     const rx = [...(extra === null ? [] : [extra]), ...ropeCols(x0, iw)].find((x) => ground(x) >= 0);
     if (rx === undefined) throw new RangeError(`gen2: sky_island ${c.id} has no rope column`);
-    let by = top;
+    // 島底（修正回合 1）：先跳過島面以上的空氣（那一欄的島身可能從 top 以下才開始），再走過島身；繩梯從島底下一格起，不會蓋到島身
+    let by = top - 1;
+    while (by + 1 < top + BODY_MAX && cv.inBounds(rx, by + 1) && !cv.isSolid(rx, by + 1)) by++;
     while (cv.inBounds(rx, by + 1) && cv.isSolid(rx, by + 1)) by++;
     const end = Math.max(by + 1, ground(rx) - 3);
     for (let yy = by + 1; yy <= end; yy++) cv.setFg(rx, yy, T.ROPE);

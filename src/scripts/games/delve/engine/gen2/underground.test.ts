@@ -176,6 +176,28 @@ describe('gen2 礦坑、密室、空島', () => {
     expect(n).toBe(80);
   }, 120_000);
 
+  // 修正回合 1：後備繩梯那一支要真的走到——只有一個「不是 4 個候選欄」的欄接得到地面（ground 測試接縫），可用範圍窄到只放得下一個外框 x
+  it('空島錨點的後備繩梯：4 個候選欄都接不到地面時掛在島下唯一接得到的欄，從島底連續垂到離地 3 格、不蓋到島身', () => {
+    const seed = SEEDS5[0], src = srcOf(seed), m = homeOf(src), a = src.blueprints.anchorsOf(m).find((q) => q.kind === 'sky_island')!;
+    const base = anchorCtx(seed, a), iw = new HRng(base.s, base.id).int(30, 49);
+    const lo = base.slotX0, span = { x0: lo, x1: lo + iw + 16 }, x0 = lo + 8, cand = [x0 + iw - 5, x0 + 4, x0 + iw - 8, x0 + 7], rx = x0 + 20;
+    expect(cand).not.toContain(rx);
+    const ground = (x: number): number => (x === rx ? src.surfaceAt(x) : -1);
+    const b = buildSkyIslandBp(anchorCtx(seed, a, span), { ground });
+    expect(b.x).toBe(x0);
+    const col = new Map<number, number>();
+    for (let k = 0; k < b.cells.length; k += 5) if (b.cells[k] === rx && b.cells[k + 2] !== KEEP) col.set(b.cells[k + 1], b.cells[k + 2]);
+    const ropes = [...col].filter(([, t]) => t === T.ROPE).map(([y]) => y).sort((p, q) => p - q);
+    expect(ropes.length).toBeGreaterThan(8);
+    // 連續、底端離地面 3 格
+    expect(ropes.at(-1)! - ropes[0] + 1).toBe(ropes.length);
+    expect(ground(rx) - ropes.at(-1)!).toBe(3);
+    // 繩梯頂上一格是島身（實心），繩梯以上沒有繩梯（沒有蓋到島身）
+    expect(isSolidTile(col.get(ropes[0] - 1)!)).toBe(true);
+    // 4 個候選欄都沒有繩梯
+    for (const x of cand) for (let k = 0; k < b.cells.length; k += 5) if (b.cells[k] === x) expect(b.cells[k + 2], `cand ${x}`).not.toBe(T.ROPE);
+  }, 60_000);
+
   it('分段填 = 整欄填（礦坑、空島各一份跨欄的）', () => { for (const k of ['mineshaft', 'sky_island']) { const { src, b } = firstCrossing(k), cx = b.x >> 5;
     const parts = new Column(cx, 1200); src.fill(parts, cx * 32, b.x + 1); src.fill(parts, b.x + 1, cx * 32 + 32); expect(bytes(parts)).toEqual(bytes(fillCol(src, cx))); } }, 60_000);
 

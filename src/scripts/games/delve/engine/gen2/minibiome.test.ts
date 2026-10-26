@@ -11,7 +11,7 @@ import { seedInt } from '../noise';
 import { BP_UNDER, BP_DEEP, KEEP, structureId, slotOf, type Blueprint, type BpCtx } from './blueprint';
 import { ANCHOR_MAX_W, anchorSpan, type Anchor } from './anchors';
 import { SPAWN_X, VARIANT, type Landmass } from './layout';
-import { buildMushroomBp, buildCrystalBp, naturalOpen, MUSHROOM_MAX_W, CRYSTAL_MAX_W } from './structures/miniBiome';
+import { buildMushroomBp, buildCrystalBp, naturalOpen, linksToCave, MUSHROOM_MAX_W, CRYSTAL_MAX_W } from './structures/miniBiome';
 import { buildHiveBp, HIVE_MAX_W } from './structures/hive';
 import { Gen2Source } from './index';
 import { SEEDS5, SEEDS50, bytes, countIn, fillCol, firstOf, homeBlueprints, liquidIn, liquidInvariant, loadBox, loadColumns, overlapPairs, snapshotLiquid, srcOf, walkOut, worldOf } from './testUtil';
@@ -204,6 +204,15 @@ describe('gen2 小生態與蜂巢', () => {
     expect(hive / jg).toBeGreaterThan(0.03); expect(hive / jg).toBeLessThan(0.14);
     expect(crys / deep).toBeGreaterThan(0.03); expect(crys / deep).toBeLessThan(0.1);
   }, 180_000);
+
+  // Task 21 修正回合 1：linksToCave 用模組層共用的走過表（epoch），回呼重入會蓋掉外層的表 → 偵測到就丟錯；丟錯後下一次照常可用
+  it('linksToCave：inside / open 回呼重入 → 丟錯；之後照常走（共用走過表）', () => {
+    const box = { x: 0, y: 100, w: 10, h: 10 }, span = { x0: -100, x1: 100 }, all = (): boolean => true;
+    const reenter = (): boolean => linksToCave(box, span, [[5, 105]], all, all);
+    expect(() => linksToCave(box, span, [[5, 105]], all, reenter)).toThrow(/re-entered/);
+    expect(linksToCave(box, span, [[5, 105]], all, all)).toBe(true);
+    expect(linksToCave(box, span, [[5, 105]], all, () => false)).toBe(false);
+  });
 
   it('ANCHOR_MAX_W = 建構器的寬度上限；錨點建構器在最窄的可用範圍（ANCHOR_MAX_W + 2 × SLOT_PAD）內也放得進去，同一個 ctx 算出相同藍圖', () => {
     expect(ANCHOR_MAX_W.mushroom_biome).toBe(MUSHROOM_MAX_W); expect(ANCHOR_MAX_W.crystal_cave).toBe(CRYSTAL_MAX_W); expect(ANCHOR_MAX_W.hive).toBe(HIVE_MAX_W);

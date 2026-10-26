@@ -31,9 +31,9 @@
 // 小點位（MINOR）層（Task 14 接上出生點石碑錨點；Task 19 的小點位 structures/minor.ts）：對表層 / 液體 / SKY 照 SKY 的規則一律讓位，所以 MINOR 錨點的建構器收到
 // surfaceBan = 同地區表層與天空與它的槽相交的原始藍圖、地下層 / 深層的錨點的部件，外框避開它們（錨點讓位 = RangeError）；
 // 地下層 / 深層機率擲出的藍圖碰到 MINOR 錨點就讓位（等級低）。
-// 小點位（Task 19）：有槽的陸地地區（沙灘、地城區除外）每個沒有錨點的 MINOR 槽，排除含出生點 ± 80 的槽（同其他層），
-// 槽的偏好區（中段；Task 21 起：Task 19 是整槽、而且含主坑道的槽整槽不放）有主坑道入口或（讓位後的）表層 / 天空藍圖的外框 → 不放
-// （那裡已經有值得停下的東西；湖也是表層藍圖）；否則 buildMinorBp（外框避開坑道帶），surfaceBan = 同地區其他各層
+// 小點位（Task 19）：有槽的陸地地區（沙灘、地城區除外）每個沒有錨點的 MINOR 槽，排除含出生點 ± 80 的槽與含主坑道的槽（同其他層），
+// 槽的偏好區（中段；Task 21 起，Task 19 是整槽）有（讓位後的）表層 / 天空藍圖的外框 → 不放（那裡已經有值得停下的東西；湖也是表層藍圖）；
+// 否則 buildMinorBp，surfaceBan = 同地區其他各層
 // 與這一槽相交的原始藍圖部件（含 UNDER / DEEP 機率擲出的：小點位是機率擲出、同級時 MINOR 讓位），所以小點位不會被讓掉、也不讓別人讓位
 // （UNDER / DEEP 的 crossYields 碰到等級 0 的 MINOR 不讓位），加入小點位不改變其他藍圖。
 // 家鄉藍圖開局一次建完（homePlans，Q9）：全部原始藍圖 → lore.homeDecor（石碑 / 遺物）→ 最終藍圖寫回釘選表；公開查詢（overlapping /
@@ -559,14 +559,13 @@ export class BlueprintIndex {
     return out;
   }
 
-  // 第 q 個 MINOR 槽的小點位（Task 19；出生點 ± 80 的槽已由 build 擋掉）：槽的偏好區（minor.minorZone：中段 [x0 + 寬 / 4, x1 − 寬 / 4)，
-  // 家鄉緊鄰出生點清空區的槽 = 靠出生點的那一半）已經有值得停下的東西——主坑道入口 [shaftX − 1, shaftX + 3)、或（讓位後的）表層 / 天空藍圖的外框——
-  // → null；否則 buildMinorBp（surfaceBan = minorBan 全部層）。只看偏好區（Task 21；Task 19 是整槽）：藍圖 / 坑道口在槽的邊上時，
-  // 槽的另一半到下一槽之間會有 > 340 的空隙（驚喜密度，density.test）。表層 / 天空的最終藍圖不讀 MINOR（CROSS），所以這裡查它們沒有循環
+  // 第 q 個 MINOR 槽的小點位（Task 19；出生點 ± 80 的槽與含主坑道的槽已由 build 擋掉）：槽的偏好區（minor.minorZone：中段 [x0 + 寬 / 4, x1 − 寬 / 4)，
+  // 家鄉緊鄰出生點清空區的槽 = 靠出生點的那一半）有（讓位後的）表層 / 天空藍圖的外框 → null；否則 buildMinorBp（surfaceBan = minorBan 全部層）。
+  // 只看偏好區（Task 21；Task 19 是整槽）：藍圖在槽的邊上時，槽的另一半到下一槽之間會有 > 340 的空隙（驚喜密度，density.test）。
+  // 表層 / 天空的最終藍圖不讀 MINOR（CROSS），所以這裡查它們沒有循環
   private minorPoint(m: Landmass, r: RegionInfo, q: number): Blueprint | null {
-    const sl = landSlot(r, q, BP_MINOR), sx = shaftX(this.sShaft, r);
+    const sl = landSlot(r, q, BP_MINOR);
     const { z0: c0, z1: c1 } = minorZone(sl.x0, sl.x1, m.kind === 'home' && this.spawnX !== null ? this.spawnX : undefined);
-    if (Number.isFinite(sx) && sx - 1 < c1 && c0 < sx + 3) return null;
     for (const layer of [BP_SURFACE, BP_SKY] as const) for (const k of this.slotList(m, r, layer, sl.x0, sl.x1)) {
       const b = this.get(m, r, k, layer);
       if (b && b.x < c1 && c0 < b.x + b.w) return null;
@@ -611,10 +610,10 @@ export class BlueprintIndex {
     if (m.kind === 'home' && this.spawnX !== null && touchesSpawnClear(sl.x0, sl.x1, this.spawnX)) return null;
     // 含主坑道的槽不放非 DEEP 的機率 / 保證藍圖；例外（控制者裁決，Task 10）：家鄉地下層擲出的礦坑可以用含坑道的槽——家鄉的地下層槽大多是錨點，
     // 不用含坑道的槽平均湊不到 4 條礦坑。外框只在避開坑道帶（bpcore.shaftBand）較大的那一側，放不下就縮短、縮完太短就不放（structures/mineshaft.ts）
-    // 小點位例外（Task 21）：含坑道的槽也放（主坑道入口不在槽的中段時；minorPoint），外框避開坑道帶（structures/minor.ts）
-    if (layer === BP_MINOR) return this.minorPoint(m, r, q);
     const shafted = layer !== BP_DEEP && this.shaftIn(r, q, layer), homeUnder = m.kind === 'home' && layer === BP_UNDER;
     if (shafted && !homeUnder) return null;
+    // 小點位（Task 19）：出生點 ± 80 的槽與含主坑道的槽已在上面擋掉
+    if (layer === BP_MINOR) return this.minorPoint(m, r, q);
     if (m.kind === 'continent') {
       const g = this.guard(m);
       if (layer === BP_UNDER && g.cabin.r === r && g.cabin.q === q) return g.cabin.bp;

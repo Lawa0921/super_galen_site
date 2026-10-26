@@ -20,6 +20,7 @@ import { LIQ, LIQ_MAX } from '../liquidKind';
 import { LiquidSim } from '../liquid';
 import { seedInt } from '../noise';
 import { fnv1a, fnv1aStr } from '../../net/codec';
+import { BIOME } from '../world';
 import { chestLoot, type ChestKind } from '../loot';
 import { ROLES } from '../folkDefs';
 import { NAMES, GEN2_NAMES_EXTRA, GEN2_ROOM_NAMES, gen2RegionById, gen2Regions, gen2RegionId, type Region } from '../discovery';
@@ -278,16 +279,28 @@ describe('gen2 島的種類、珊瑚礁、海底遺跡（Task 20）', () => {
     expect(h).toBe(SHIPWRECK_HASH);
   }, 60_000);
 
-  it('荒野大陸的隱士小屋與隱士島共用畫法後不變（Task 18 的 hermit_hut 逐格相同，雜湊在改動前錄；Task 21 依生態鋪地表後重錄）', () => {
+  // 隱士小屋逐格雜湊（SEEDS5 × 東西第 2 / 4 片大陸 = 20 座）。Task 21 拆解（0da73087c 對 Task 21）：1 座換了槽（s-b 西 4：大陸錨點的退讓 / 欠債規則）、
+  // 12 座槽沒變但在叢林 / 沙漠 / 雪原（整平改依生態鋪地表）、7 座槽沒變的森林小屋逐格相同（下面那條用 0da73087c 錄的子集雜湊釘住）
+  const hutHash = (keep: (seed: string, side: number, i: number, biome: number) => boolean): { h: number; n: number } => {
     let h = 0x811c9dc5, n = 0;
     for (const seed of SEEDS5) { const src = srcOf(seed);
       for (const side of [1, -1] as const) for (const i of [2, 4]) { const m = src.layout.landmass(side, i);
-        for (const a of src.blueprints.anchorsOf(m)) { if (a.kind !== 'hermit_hut') continue;
+        for (const a of src.blueprints.anchorsOf(m)) { if (a.kind !== 'hermit_hut' || !keep(seed, side, i, a.region.biome)) continue;
           const b = src.blueprints.anchorBlueprint(m, a)!; n++;
           h = fnv1a(new Uint8Array(b.cells.buffer), h); h = fnv1aStr(JSON.stringify([b.kind, b.x, b.y, b.w, b.h, b.site, b.solid, b.floors, [...(b.ground?.tops ?? [])]]), h);
         } } }
+    return { h, n };
+  };
+  it('荒野大陸的隱士小屋逐格雜湊（Task 21 重錄：整平依生態鋪地表、一座換了槽；與隱士島共用畫法）', () => {
+    const { h, n } = hutHash(() => true);
     expect(n).toBe(20);
     expect(h).toBe(HUT_HASH);
+  }, 60_000);
+
+  it('槽沒變的森林小屋（7 座）與 Task 21 之前逐格相同：共用畫法與森林的草 / 泥土沒有改', () => {
+    const { h, n } = hutHash((seed, side, i, biome) => biome === BIOME.FOREST && !(seed === 's-b' && side === -1 && i === 4));
+    expect(n).toBe(7);
+    expect(h).toBe(FOREST_HUT_HASH);
   }, 60_000);
 
   it('修正回合 1（第 4 條）：珊瑚礁的礦一定 6–12 格、海底遺跡一定恰 1 尊守望石像（50 個種子的每個非島海槽直接呼叫建構器）', () => {
@@ -474,6 +487,7 @@ const SHIPWRECK_HASH = 2625913742;
 // 修正回合 1 抽出 hullPlan 前（253a71ee3）錄下的沉船島雜湊
 const WRECK_ISLE_HASH = 2107307070;
 const CHEST_HASH = 2991537935;
-// Task 21 重錄（原 951269948，Task 20 前錄）：隱士小屋的整平依生態鋪地表（雪原鋪雪、沙漠鋪沙、叢林鋪叢林草；原本一律鋪草），
-// 大陸大東西的退讓 / 欠債規則也讓部分小屋換了槽；共用畫法（drawHermitHut / levelSite）沒有改——島上的小屋（森林）照舊草 / 泥土
+// Task 21 重錄（原 951269948，Task 20 前錄）：兩個原因——隱士小屋的整平依生態鋪地表（12 座非森林）、大陸錨點的退讓 / 欠債規則讓 1 座換了槽；
+// 共用畫法（drawHermitHut / levelSite）沒有改——FOREST_HUT_HASH（0da73087c 錄，7 座槽沒變的森林小屋）照舊相同
 const HUT_HASH = 2908162404;
+const FOREST_HUT_HASH = 1677739045;

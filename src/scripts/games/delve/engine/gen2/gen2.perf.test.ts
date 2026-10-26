@@ -33,14 +33,19 @@ const ROLLED: Readonly<Record<string, (c: BpCtx) => Blueprint | null>> = {
   hive: rollHiveBp, mineshaft: rollMineshaftBp, sky_island: rollSkyIslandBp, minor: buildMinorBp, shipwreck: buildShipwreck, crate: buildCrate, reef: buildReefBp, sea_ruin: buildSeaRuinBp,
 };
 const ms = (f: () => unknown): number => { const t0 = performance.now(); f(); return performance.now() - t0; };
-// 建構器的單次建構時間：同一份 ctx 建 3 次取最快的（建構器是純函式、每次從頭算；取最快的是濾掉排程 / GC 的負載抖動，同 legacy worldgen 效能測試「取較快者」）
-const best3 = (f: () => unknown): number => Math.min(ms(f), ms(f), ms(f));
+// 建構器的單次建構時間：同一份 ctx 建 3 次取最快的（建構器是純函式、每次從頭算；取最快的是濾掉排程 / GC 的負載抖動，同 legacy worldgen 效能測試「取較快者」）。
+// 注意這是兩層濾波：每份藍圖 best3、整條 it 再 retry 2（三次嘗試都超才紅）。門檻只看 best3；第一次的單次時間另外記在 single 裡、一起印出當參考
+const best3 = (f: () => number): { best: number; first: number } => { const a = f(), b = f(), c = f(); return { best: Math.min(a, b, c), first: a }; };
 
 // 每個種子：家鄉的全部藍圖、東西兩側第一片大陸與第一道海的全部藍圖，各自直接呼叫建構器（best3；ctx 由藍圖 id 反查槽 = 機率藍圖 / 海點的 slotX0 / slotX1；
 // 錨點用錨點的可用範圍與 surfaceBan）
-interface BuildTimes { dungeon: number; keep: number; other: number; otherKind: string; homePlans: number; firstTouchHomeColumn: number; firstTouchKeepColumn: number }
+interface BuildTimes {
+  dungeon: number; keep: number; other: number; otherKind: string; homePlans: number; firstTouchHomeColumn: number; firstTouchKeepColumn: number;
+  // 參考：每種藍圖第一次（單次、不濾波）建構的最大值
+  single: Record<string, number>;
+}
 function buildTimes(seeds: readonly string[]): BuildTimes {
-  const t: BuildTimes = { dungeon: 0, keep: 0, other: 0, otherKind: '', homePlans: 0, firstTouchHomeColumn: 0, firstTouchKeepColumn: 0 };
+  const t: BuildTimes = { dungeon: 0, keep: 0, other: 0, otherKind: '', homePlans: 0, firstTouchHomeColumn: 0, firstTouchKeepColumn: 0, single: {} };
   for (const seed of seeds) {
     // 開局：全新的 source 上 homePlans()（含裝飾）
     const src = new Gen2Source(seed), home = src.layout.landmassAt(SPAWN_X)!;
@@ -48,10 +53,13 @@ function buildTimes(seeds: readonly string[]): BuildTimes {
     // 家鄉地城所在的每一欄第一次 fill（homePlans 已建好，不含建家鄉藍圖）
     const dungeon = src.blueprints.homePlans().find((b) => b.kind === 'dungeon')!;
     for (let cx = dungeon.x >> 5; cx <= (dungeon.x + dungeon.w - 1) >> 5; cx++) t.firstTouchHomeColumn = Math.max(t.firstTouchHomeColumn, ms(() => fillCol(src, cx)));
-    // 外圍：東側第一片大陸的小地城所在欄，在全新的 source 上第一次 fill（含第一次建藍圖）
-    const fresh = new Gen2Source(seed), east = fresh.layout.landmass(1, 2);
-    const keepA = fresh.blueprints.anchorsOf(east).find((a) => a.kind === 'keep');
-    if (keepA) { const sp = anchorSpan(seed, keepA); t.firstTouchKeepColumn = Math.max(t.firstTouchKeepColumn, ms(() => fillCol(fresh, ((sp.x0 + sp.x1) >> 1) >> 5))); }
+    // 外圍：東側第一片大陸的小地城所在欄，在全新的 source 上第一次 fill（含第一次建錨點表與藍圖）。量哪一欄由另一個 source（src）算，
+    // 全新的 fresh 在計時前什麼都沒建；每個種子都要真的有小地城（不靠兩個種子取最大值混過去）
+    const keepA = src.blueprints.anchorsOf(src.layout.landmass(1, 2)).find((a) => a.kind === 'keep');
+    expect(keepA, `${seed}: no keep on the first east continent`).toBeDefined();
+    const ksp = anchorSpan(seed, keepA!), kcx = ((ksp.x0 + ksp.x1) >> 1) >> 5, fresh = new Gen2Source(seed);
+    t.firstTouchKeepColumn = Math.max(t.firstTouchKeepColumn, ms(() => fillCol(fresh, kcx)));
+    expect(fresh.blueprints.overlapping(kcx * 32, kcx * 32 + 32).some((b) => b.kind === 'keep'), `${seed}: column ${kcx} has no keep`).toBe(true);
     // 每份藍圖的建構器
     const s = seedInt(seed, 'g2-bp'), lands: Landmass[] = [home, src.layout.landmass(1, 1), src.layout.landmass(1, 2), src.layout.landmass(-1, 1), src.layout.landmass(-1, 2)];
     for (const m of lands) {
@@ -60,20 +68,21 @@ function buildTimes(seeds: readonly string[]): BuildTimes {
         const sl = slotOf(b.id, src.layout), a = anchors.get(b.id);
         const base: BpCtx = { seed, s, id: b.id, slotX0: sl.x0, slotX1: sl.x1, region: sl.region, profile: src.profile, ver: m.ver, groundAt: (x) => src.surfaceAt(x),
           spawnX: m.kind === 'home' ? SPAWN_X : undefined };
-        let run: () => unknown;
+        let run: () => number;
         if (a) {
           const f = anchorBuild(a.kind)!, sp = anchorSpan(seed, a);
           const ban = m.kind === 'home' && (a.layer === BP_UNDER || a.layer === BP_DEEP) ? src.blueprints.surfaceBan(m, a) : undefined;
-          run = () => f({ ...base, slotX0: sp.x0, slotX1: sp.x1, rank: 0, surfaceBan: ban });
+          run = () => ms(() => f({ ...base, slotX0: sp.x0, slotX1: sp.x1, rank: 0, surfaceBan: ban }));
         } else if (b.kind === 'island') {
           const k = decodeStructureId(b.id).slot, d = m.islands.find((q) => q.slot === k)!, r = m.regions[m.islands.indexOf(d) + 1];
-          run = () => buildIslandBp({ ...base, region: r }, d.type);
+          run = () => ms(() => buildIslandBp({ ...base, region: r }, d.type));
         } else {
           const f = ROLLED[b.kind];
           if (!f) throw new Error(`no builder for ${b.kind}`);
-          run = () => f(base);
+          run = () => ms(() => f(base));
         }
-        const dt = best3(run);
+        const { best: dt, first } = best3(run);
+        t.single[b.kind] = Math.round(Math.max(t.single[b.kind] ?? 0, first) * 10) / 10;
         if (b.kind === 'dungeon') t.dungeon = Math.max(t.dungeon, dt);
         else if (b.kind === 'keep') t.keep = Math.max(t.keep, dt);
         else if (dt > t.other) { t.other = dt; t.otherKind = `${b.kind}@${b.x}`; }
@@ -99,7 +108,7 @@ describe('gen2 效能', () => {
     expect(p95).toBeLessThanOrEqual(40);
   });
 
-  // retry 2（同上：負載抖動；門檻不放寬，每次嘗試都印數字）
+  // retry 2（同上：負載抖動；門檻不放寬，每次嘗試都印數字）。建構器時間另外每份 best3（見 best3）——兩層濾波，所以 [gen2 budget] 也印 single（第一次的單次時間）當參考
   it('大藍圖建構與開局預算', { retry: 2, timeout: 120_000 }, () => {
     const t = buildTimes(['perf-a', 'perf-b']);
     console.info('[gen2 budget]', JSON.stringify(t));

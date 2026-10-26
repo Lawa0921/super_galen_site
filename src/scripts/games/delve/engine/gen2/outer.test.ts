@@ -119,7 +119,7 @@ describe('gen2 荒野大陸的大東西與隱士小屋（Task 18）', () => {
   // 改成退讓依序取第一個 ≤ KIND_NEAR 的種類、小地城的退讓先村莊，並「欠債」：放不下的種類記下來，之後的目標放得下就先還（anchors.continentAnchors）。
   // 40 個種子 × 每側 i = 2..12 的大陸：改前 tier 1 村 35.9 / 城 31.1 / 廳 32.9、tier ≥ 2 27.0 / 42.5 / 30.5；改後 41.9 / 36.2 / 21.9、30.5 / 47.0 / 22.6。
   // tier 1 的村莊仍少約 8 個百分點：HIGH 地區不放村莊（Task 18：太陡），tier 1 的大陸只有 3–6 個目標，欠下的村莊還不完
-  it('大東西的種類比例接近雜湊設定（Task 21）：tier ≥ 2 各在設定 ± 6 個百分點內；tier 1 地廳 ≤ 25%、村莊 ≥ 38%', () => {
+  it('大東西的種類比例接近雜湊設定（Task 21）：tier ≥ 2 各在設定 ± 6 個百分點內；tier 1 地廳 ≤ 25%、村莊 ≥ 38%、小地城 ≤ 40%', () => {
     const n: Record<string, Record<string, number>> = { t1: {}, t2: {} };
     for (let s = 0; s < 40; s++) {
       const g = new Gen2Source(`ratio-${s}`);
@@ -133,6 +133,8 @@ describe('gen2 荒野大陸的大東西與隱士小屋（Task 18）', () => {
     expect(Math.abs(pct('t2', 'village') - 35), tag).toBeLessThanOrEqual(6); expect(Math.abs(pct('t2', 'keep') - 45), tag).toBeLessThanOrEqual(6);
     expect(Math.abs(pct('t2', 'hall') - 20), tag).toBeLessThanOrEqual(6);
     expect(pct('t1', 'hall'), tag).toBeLessThanOrEqual(25); expect(pct('t1', 'village'), tag).toBeGreaterThanOrEqual(38);
+    // 修正回合 1：tier 1 的小地城（設定 30%，村莊放不下時的退讓先落到它）也設上界，防止回歸
+    expect(pct('t1', 'keep'), tag).toBeLessThanOrEqual(40);
   }, 120_000);
 
   it('小地城：≥ 8 房、房間圖可解、有上鎖寶箱；外圍村莊有居民（欄載入後 elder 存在）', () => { const { keep, village } = firstOuter('outer-k');

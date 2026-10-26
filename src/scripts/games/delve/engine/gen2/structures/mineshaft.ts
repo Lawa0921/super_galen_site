@@ -42,6 +42,9 @@ const CAVE_BIG = 300, REACH_X = 80, REACH_UP = 80, REACH_DOWN = 40;
 // 接不到洞穴時另外試的深度數與步長（dy 在 [28, 129] 裡繞）
 const DEPTH_TRIES = 4, DEPTH_STEP = 37;
 
+// big() 走過的格（模組層共用；見 mineshaft() 裡的 big）
+let bigSeen = new Uint32Array(0), bigEpoch = 0;
+
 // caveOpen：天然洞穴的判定（預設 CaveProbe；測試注入「全部不通」來走後備豎井）
 export interface MineshaftOptions { caveOpen?: (x: number, y: number) => boolean }
 
@@ -93,14 +96,18 @@ function mineshaft(c: BpCtx, anchor: boolean, force: boolean, o: MineshaftOption
     };
     // (x, y) 起的天然洞穴（4 鄰、不進外框 [bx0, bx1) × [by0, by1)、只在外框附近：左右 REACH_X 欄且不出自己的槽（鄰槽藍圖的 solid 會切斷洞穴）、
     // 上 REACH_UP 列、下 REACH_DOWN 列）至少 CAVE_BIG 格才算接到洞穴（小氣泡不算；只讀噪聲，與 fill 的挖洞同一份判定）
-    // 走過的格用 Uint8Array 記（Task 21 效能：原本是 Set<number>；走法、順序與結果相同。起點不在範圍內時 Set 版仍把它算 1 格，這裡照算）
+    // 走過的格（Task 21 效能：原本是 Set<number>；走法、順序與結果相同。起點不在範圍內時 Set 版仍把它算 1 格，這裡照算）：
+    // 模組層共用的 Uint32Array 記「第幾次呼叫走過」（epoch，同 miniBiome.linksToCave）；open 是純噪聲探針，不會重入 big
     const big = (x: number, y: number, bx0: number, bx1: number, by0: number, by1: number): boolean => {
       if (!open(x, y)) return false;
       const xl = Math.max(c.slotX0, bx0 - REACH_X), xr = Math.min(c.slotX1, bx1 + REACH_X), ry0 = by0 - REACH_UP, ry1 = by1 + REACH_DOWN;
-      const W = Math.max(0, xr - xl), seen = new Uint8Array(W * Math.max(0, ry1 - ry0)), st = [x, y];
+      const W = Math.max(0, xr - xl), size = W * Math.max(0, ry1 - ry0), st = [x, y];
+      if (bigSeen.length < size) { bigSeen = new Uint32Array(size); bigEpoch = 0; }
+      if (++bigEpoch === 0x100000000) { bigSeen.fill(0); bigEpoch = 1; }
+      const seen = bigSeen, e = bigEpoch;
       const inR = (px: number, py: number): boolean => px >= xl && px < xr && py >= ry0 && py < ry1;
       // 起點在範圍內 → 記；不在 → 範圍內的鄰格不會再推它（Set 版的 seen 只擋重複，範圍外的格本來就不會被推）
-      if (inR(x, y)) seen[(y - ry0) * W + x - xl] = 1;
+      if (inR(x, y)) seen[(y - ry0) * W + x - xl] = e;
       let n = 1;
       while (st.length) {
         const cy = st.pop()!, cx = st.pop()!;
@@ -108,8 +115,8 @@ function mineshaft(c: BpCtx, anchor: boolean, force: boolean, o: MineshaftOption
           const nx = d === 0 ? cx - 1 : d === 1 ? cx + 1 : cx, ny = d === 2 ? cy - 1 : d === 3 ? cy + 1 : cy;
           if (!inR(nx, ny)) continue;
           const i = (ny - ry0) * W + nx - xl;
-          if (seen[i] || (nx >= bx0 && nx < bx1 && ny >= by0 && ny < by1) || !open(nx, ny)) continue;
-          seen[i] = 1;
+          if (seen[i] === e || (nx >= bx0 && nx < bx1 && ny >= by0 && ny < by1) || !open(nx, ny)) continue;
+          seen[i] = e;
           if (++n >= CAVE_BIG) return true;
           st.push(nx, ny);
         }

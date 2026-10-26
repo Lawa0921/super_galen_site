@@ -18,6 +18,16 @@ describe('gen2 驚喜密度（Task 21）', () => {
     }
   }, 300_000);
 
+  // 修正回合 1：家鄉補空隙地廳的規則（anchors.homeAnchors）用的是保守估計（homeBigCover）；這裡用真實的藍圖外框驗 150 個家鄉
+  it('家鄉（150 個種子，真實藍圖外框）：大東西之間沒有 ≥ 1,800 的空隙', () => {
+    const bad: string[] = [];
+    for (let k = 0; k < 150; k++) {
+      const seed = `dens-home-${k}`, g = new Gen2Source(seed), h = g.layout.origin.home!, { big } = pois(g, h.x0, h.x1), w = maxGap(big);
+      if (w >= 1800) bad.push(`${seed} ${worst(gapsOf(big))}`);
+    }
+    expect(bad).toEqual([]);
+  }, 300_000);
+
   it('海上單獨也符合（只看海地塊的範圍）', () => {
     const g = new Gen2Source('dens-sea');
     for (const side of [1, -1] as const) for (const i of [1, 3, 5, 7, 9]) {
