@@ -36222,7 +36222,7 @@
         ],
         "erased": 0,
         "palette_over": true,
-        "spec": "roster-sprite:4015756b3b93"
+        "spec": "roster-sprite:d1b044ae07d7"
       },
       "status": "published",
       "kind": "roster-sprite",
@@ -36270,7 +36270,7 @@
         ],
         "erased": 0,
         "palette_over": true,
-        "spec": "roster-sprite:4015756b3b93"
+        "spec": "roster-sprite:d1b044ae07d7"
       },
       "status": "published",
       "kind": "roster-sprite",
@@ -36316,7 +36316,7 @@
         ],
         "erased": 0,
         "palette_over": true,
-        "spec": "roster-sprite:4015756b3b93"
+        "spec": "roster-sprite:d1b044ae07d7"
       },
       "status": "published",
       "kind": "roster-sprite",
@@ -36362,9 +36362,9 @@
           0.893,
           0.471
         ],
-        "erased": 0,
+        "erased": 8,
         "palette_over": true,
-        "spec": "roster-sprite:4015756b3b93"
+        "spec": "roster-sprite:d1b044ae07d7"
       },
       "status": "published",
       "kind": "roster-sprite",
@@ -36400,7 +36400,8 @@
           34,
           33
         ],
-        "spec": "roster-icon:a233355facd3"
+        "erased": 0,
+        "spec": "roster-icon:09613bd0d9ec"
       },
       "status": "published",
       "kind": "roster-icon",
@@ -36430,7 +36431,8 @@
           29,
           33
         ],
-        "spec": "roster-icon:a233355facd3"
+        "erased": 1,
+        "spec": "roster-icon:09613bd0d9ec"
       },
       "status": "published",
       "kind": "roster-icon",
@@ -36458,7 +36460,8 @@
           31,
           32
         ],
-        "spec": "roster-icon:a233355facd3"
+        "erased": 0,
+        "spec": "roster-icon:09613bd0d9ec"
       },
       "status": "published",
       "kind": "roster-icon",
@@ -36486,7 +36489,8 @@
           33,
           36
         ],
-        "spec": "roster-icon:a233355facd3"
+        "erased": 0,
+        "spec": "roster-icon:09613bd0d9ec"
       },
       "status": "published",
       "kind": "roster-icon",
@@ -36516,7 +36520,8 @@
           33,
           36
         ],
-        "spec": "roster-icon:a233355facd3"
+        "erased": 3,
+        "spec": "roster-icon:09613bd0d9ec"
       },
       "status": "published",
       "kind": "roster-icon",
@@ -36544,7 +36549,8 @@
           24,
           34
         ],
-        "spec": "roster-icon:a233355facd3"
+        "erased": 0,
+        "spec": "roster-icon:09613bd0d9ec"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -36572,7 +36578,8 @@
           33,
           31
         ],
-        "spec": "roster-icon:a233355facd3"
+        "erased": 0,
+        "spec": "roster-icon:09613bd0d9ec"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -36598,7 +36605,8 @@
           30,
           36
         ],
-        "spec": "roster-icon:a233355facd3"
+        "erased": 0,
+        "spec": "roster-icon:09613bd0d9ec"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -36626,7 +36634,8 @@
           32,
           33
         ],
-        "spec": "roster-icon:a233355facd3"
+        "erased": 0,
+        "spec": "roster-icon:09613bd0d9ec"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -36652,7 +36661,8 @@
           30,
           33
         ],
-        "spec": "roster-icon:a233355facd3"
+        "erased": 0,
+        "spec": "roster-icon:09613bd0d9ec"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -36678,7 +36688,8 @@
           33,
           27
         ],
-        "spec": "roster-icon:a233355facd3"
+        "erased": 0,
+        "spec": "roster-icon:09613bd0d9ec"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -36704,7 +36715,8 @@
           35,
           32
         ],
-        "spec": "roster-icon:a233355facd3"
+        "erased": 0,
+        "spec": "roster-icon:09613bd0d9ec"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -36730,7 +36742,8 @@
           32,
           36
         ],
-        "spec": "roster-icon:a233355facd3"
+        "erased": 0,
+        "spec": "roster-icon:09613bd0d9ec"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -36758,7 +36771,8 @@
           34,
           28
         ],
-        "spec": "roster-icon:a233355facd3"
+        "erased": 4,
+        "spec": "roster-icon:09613bd0d9ec"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -36784,7 +36798,8 @@
           33,
           29
         ],
-        "spec": "roster-icon:a233355facd3"
+        "erased": 0,
+        "spec": "roster-icon:09613bd0d9ec"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -36796,8 +36811,10 @@
       "final": "art-factory/starlantern/work/sheet-icons-roster-1/icon-silent-bronze.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-1\\sheet-icons-roster-1-a1.png",
       "qa": {
-        "pass": true,
-        "reasons": [],
+        "pass": false,
+        "reasons": [
+          "interior erased"
+        ],
         "warnings": [
           "enclosed holes"
         ],
@@ -36812,9 +36829,10 @@
           28,
           32
         ],
-        "spec": "roster-icon:a233355facd3"
+        "erased": 38,
+        "spec": "roster-icon:09613bd0d9ec"
       },
-      "status": "qa_passed",
+      "status": "qa_failed",
       "kind": "roster-icon",
       "chosen_attempt": "a1",
       "source_id": "sheet-icons-roster-1",
@@ -36838,7 +36856,8 @@
           30,
           34
         ],
-        "spec": "roster-icon:a233355facd3"
+        "erased": 0,
+        "spec": "roster-icon:09613bd0d9ec"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -36864,7 +36883,8 @@
           21,
           33
         ],
-        "spec": "roster-icon:a233355facd3"
+        "erased": 0,
+        "spec": "roster-icon:09613bd0d9ec"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -36947,10 +36967,11 @@
           64,
           64
         ],
-        "spec": "gear-cell:03c3f55cc7d1"
+        "spec": "roster-gear:56f656f14a90",
+        "erased": 0
       },
       "status": "published",
-      "kind": "gear-cell",
+      "kind": "roster-gear",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-1\\sheet-gear-roster-1-a2.png",
         "cell": "moonless-mirror"
@@ -36993,10 +37014,11 @@
           26,
           26
         ],
-        "spec": "gear-cell:03c3f55cc7d1"
+        "spec": "roster-gear:56f656f14a90",
+        "erased": 0
       },
       "status": "published",
-      "kind": "gear-cell",
+      "kind": "roster-gear",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-1\\sheet-gear-roster-1-a2.png",
         "cell": "moonless-mirror"
@@ -37041,10 +37063,11 @@
           64,
           64
         ],
-        "spec": "gear-cell:03c3f55cc7d1"
+        "spec": "roster-gear:56f656f14a90",
+        "erased": 2
       },
       "status": "published",
-      "kind": "gear-cell",
+      "kind": "roster-gear",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-1\\sheet-gear-roster-1-a3.png",
         "cell": "fog-halberd"
@@ -37090,10 +37113,11 @@
           26,
           26
         ],
-        "spec": "gear-cell:03c3f55cc7d1"
+        "spec": "roster-gear:56f656f14a90",
+        "erased": 0
       },
       "status": "published",
-      "kind": "gear-cell",
+      "kind": "roster-gear",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-1\\sheet-gear-roster-1-a3.png",
         "cell": "fog-halberd"
@@ -37139,10 +37163,11 @@
           64,
           64
         ],
-        "spec": "gear-cell:03c3f55cc7d1"
+        "spec": "roster-gear:56f656f14a90",
+        "erased": 1
       },
       "status": "qa_passed",
-      "kind": "gear-cell",
+      "kind": "roster-gear",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-1\\sheet-gear-roster-1-a3.png",
         "cell": "silent-chime"
@@ -37183,10 +37208,11 @@
           26,
           26
         ],
-        "spec": "gear-cell:03c3f55cc7d1"
+        "spec": "roster-gear:56f656f14a90",
+        "erased": 0
       },
       "status": "qa_passed",
-      "kind": "gear-cell",
+      "kind": "roster-gear",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-1\\sheet-gear-roster-1-a3.png",
         "cell": "silent-chime"
@@ -37227,10 +37253,11 @@
           64,
           64
         ],
-        "spec": "gear-cell:03c3f55cc7d1"
+        "spec": "roster-gear:56f656f14a90",
+        "erased": 0
       },
       "status": "qa_passed",
-      "kind": "gear-cell",
+      "kind": "roster-gear",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-1\\sheet-gear-roster-1-a3.png",
         "cell": "borrowed-blade"
@@ -37272,10 +37299,11 @@
           26,
           26
         ],
-        "spec": "gear-cell:03c3f55cc7d1"
+        "spec": "roster-gear:56f656f14a90",
+        "erased": 0
       },
       "status": "qa_passed",
-      "kind": "gear-cell",
+      "kind": "roster-gear",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-1\\sheet-gear-roster-1-a3.png",
         "cell": "borrowed-blade"
@@ -37317,10 +37345,11 @@
           64,
           64
         ],
-        "spec": "gear-cell:03c3f55cc7d1"
+        "spec": "roster-gear:56f656f14a90",
+        "erased": 0
       },
       "status": "qa_passed",
-      "kind": "gear-cell",
+      "kind": "roster-gear",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-1\\sheet-gear-roster-1-a3.png",
         "cell": "unrung-clapper"
@@ -37361,10 +37390,11 @@
           26,
           26
         ],
-        "spec": "gear-cell:03c3f55cc7d1"
+        "spec": "roster-gear:56f656f14a90",
+        "erased": 0
       },
       "status": "qa_passed",
-      "kind": "gear-cell",
+      "kind": "roster-gear",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-1\\sheet-gear-roster-1-a3.png",
         "cell": "unrung-clapper"
@@ -37402,7 +37432,7 @@
         ],
         "erased": 0,
         "palette_over": true,
-        "spec": "roster-sprite:4015756b3b93"
+        "spec": "roster-sprite:d1b044ae07d7"
       },
       "status": "published",
       "kind": "roster-sprite",
@@ -38775,6 +38805,28 @@
           "new": "7a1e2843c209e4f6c5ced65d8310ac03003e28380b35a1c9e6041e53b277d592"
         }
       }
+    },
+    {
+      "on": "2026-10-26",
+      "batch": "roster-r0",
+      "requa": [
+        "enemy-paper-moth",
+        "enemy-root-hound",
+        "enemy-bell-watcher",
+        "enemy-false-moon",
+        "enemy-fog-warden",
+        "icon-faded-letter",
+        "icon-mist-root",
+        "icon-grey-cord",
+        "icon-moon-silver",
+        "icon-fog-gate-plate",
+        "gear-moonless-mirror-large",
+        "gear-moonless-mirror",
+        "gear-fog-halberd-large",
+        "gear-fog-halberd"
+      ],
+      "changed": {},
+      "why": "PR D review: erasure gate narrowed, icon and gear erasure gates, stamped cutout reach; published bytes unchanged"
     }
   ],
   "approved_batches": {
@@ -39218,7 +39270,7 @@
     },
     "roster-r0": {
       "date": "2026-10-26",
-      "record": "C:\\Users\\bag57\\.codex\\worktrees\\faces\\super_galen_site\\art-factory\\starlantern\\work\\review\\roster-r0-shown.json",
+      "record": "art-factory/starlantern/work/review/roster-r0-shown.json",
       "shown": {
         "enemy-paper-moth": "dd237b664b4d4ecd66eb640324c0115d0eb4027089b298a211ec9336d836c9ce",
         "enemy-root-hound": "9f7a57b258db173b7747d81adc14bbb9a63e44ea35b073e654e458cc9ac295bc",
