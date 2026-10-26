@@ -36222,7 +36222,7 @@
         ],
         "erased": 0,
         "palette_over": true,
-        "spec": "roster-sprite:d1b044ae07d7"
+        "spec": "roster-sprite:eb659ec2b82c"
       },
       "status": "published",
       "kind": "roster-sprite",
@@ -36270,7 +36270,7 @@
         ],
         "erased": 0,
         "palette_over": true,
-        "spec": "roster-sprite:d1b044ae07d7"
+        "spec": "roster-sprite:eb659ec2b82c"
       },
       "status": "published",
       "kind": "roster-sprite",
@@ -36316,7 +36316,7 @@
         ],
         "erased": 0,
         "palette_over": true,
-        "spec": "roster-sprite:d1b044ae07d7"
+        "spec": "roster-sprite:eb659ec2b82c"
       },
       "status": "published",
       "kind": "roster-sprite",
@@ -36364,7 +36364,7 @@
         ],
         "erased": 8,
         "palette_over": true,
-        "spec": "roster-sprite:d1b044ae07d7"
+        "spec": "roster-sprite:eb659ec2b82c"
       },
       "status": "published",
       "kind": "roster-sprite",
@@ -36401,7 +36401,7 @@
           33
         ],
         "erased": 0,
-        "spec": "roster-icon:09613bd0d9ec"
+        "spec": "roster-icon:bbdd3c548030"
       },
       "status": "published",
       "kind": "roster-icon",
@@ -36432,7 +36432,7 @@
           33
         ],
         "erased": 1,
-        "spec": "roster-icon:09613bd0d9ec"
+        "spec": "roster-icon:bbdd3c548030"
       },
       "status": "published",
       "kind": "roster-icon",
@@ -36461,7 +36461,7 @@
           32
         ],
         "erased": 0,
-        "spec": "roster-icon:09613bd0d9ec"
+        "spec": "roster-icon:bbdd3c548030"
       },
       "status": "published",
       "kind": "roster-icon",
@@ -36490,7 +36490,7 @@
           36
         ],
         "erased": 0,
-        "spec": "roster-icon:09613bd0d9ec"
+        "spec": "roster-icon:bbdd3c548030"
       },
       "status": "published",
       "kind": "roster-icon",
@@ -36521,7 +36521,7 @@
           36
         ],
         "erased": 3,
-        "spec": "roster-icon:09613bd0d9ec"
+        "spec": "roster-icon:bbdd3c548030"
       },
       "status": "published",
       "kind": "roster-icon",
@@ -36550,7 +36550,7 @@
           34
         ],
         "erased": 0,
-        "spec": "roster-icon:09613bd0d9ec"
+        "spec": "roster-icon:bbdd3c548030"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -36579,7 +36579,7 @@
           31
         ],
         "erased": 0,
-        "spec": "roster-icon:09613bd0d9ec"
+        "spec": "roster-icon:bbdd3c548030"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -36606,7 +36606,7 @@
           36
         ],
         "erased": 0,
-        "spec": "roster-icon:09613bd0d9ec"
+        "spec": "roster-icon:bbdd3c548030"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -36635,7 +36635,7 @@
           33
         ],
         "erased": 0,
-        "spec": "roster-icon:09613bd0d9ec"
+        "spec": "roster-icon:bbdd3c548030"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -36662,7 +36662,7 @@
           33
         ],
         "erased": 0,
-        "spec": "roster-icon:09613bd0d9ec"
+        "spec": "roster-icon:bbdd3c548030"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -36689,7 +36689,7 @@
           27
         ],
         "erased": 0,
-        "spec": "roster-icon:09613bd0d9ec"
+        "spec": "roster-icon:bbdd3c548030"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -36716,7 +36716,7 @@
           32
         ],
         "erased": 0,
-        "spec": "roster-icon:09613bd0d9ec"
+        "spec": "roster-icon:bbdd3c548030"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -36743,7 +36743,7 @@
           36
         ],
         "erased": 0,
-        "spec": "roster-icon:09613bd0d9ec"
+        "spec": "roster-icon:bbdd3c548030"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -36772,7 +36772,7 @@
           28
         ],
         "erased": 4,
-        "spec": "roster-icon:09613bd0d9ec"
+        "spec": "roster-icon:bbdd3c548030"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -36799,7 +36799,7 @@
           29
         ],
         "erased": 0,
-        "spec": "roster-icon:09613bd0d9ec"
+        "spec": "roster-icon:bbdd3c548030"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -36830,7 +36830,7 @@
           32
         ],
         "erased": 38,
-        "spec": "roster-icon:09613bd0d9ec"
+        "spec": "roster-icon:bbdd3c548030"
       },
       "status": "qa_failed",
       "kind": "roster-icon",
@@ -36857,7 +36857,7 @@
           34
         ],
         "erased": 0,
-        "spec": "roster-icon:09613bd0d9ec"
+        "spec": "roster-icon:bbdd3c548030"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -36884,7 +36884,7 @@
           33
         ],
         "erased": 0,
-        "spec": "roster-icon:09613bd0d9ec"
+        "spec": "roster-icon:bbdd3c548030"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -36967,7 +36967,7 @@
           64,
           64
         ],
-        "spec": "roster-gear:56f656f14a90",
+        "spec": "roster-gear:33a782e4994e",
         "erased": 0
       },
       "status": "published",
@@ -37014,7 +37014,7 @@
           26,
           26
         ],
-        "spec": "roster-gear:56f656f14a90",
+        "spec": "roster-gear:33a782e4994e",
         "erased": 0
       },
       "status": "published",
@@ -37063,7 +37063,7 @@
           64,
           64
         ],
-        "spec": "roster-gear:56f656f14a90",
+        "spec": "roster-gear:33a782e4994e",
         "erased": 2
       },
       "status": "published",
@@ -37113,7 +37113,7 @@
           26,
           26
         ],
-        "spec": "roster-gear:56f656f14a90",
+        "spec": "roster-gear:33a782e4994e",
         "erased": 0
       },
       "status": "published",
@@ -37163,7 +37163,7 @@
           64,
           64
         ],
-        "spec": "roster-gear:56f656f14a90",
+        "spec": "roster-gear:33a782e4994e",
         "erased": 1
       },
       "status": "qa_passed",
@@ -37208,7 +37208,7 @@
           26,
           26
         ],
-        "spec": "roster-gear:56f656f14a90",
+        "spec": "roster-gear:33a782e4994e",
         "erased": 0
       },
       "status": "qa_passed",
@@ -37253,7 +37253,7 @@
           64,
           64
         ],
-        "spec": "roster-gear:56f656f14a90",
+        "spec": "roster-gear:33a782e4994e",
         "erased": 0
       },
       "status": "qa_passed",
@@ -37299,7 +37299,7 @@
           26,
           26
         ],
-        "spec": "roster-gear:56f656f14a90",
+        "spec": "roster-gear:33a782e4994e",
         "erased": 0
       },
       "status": "qa_passed",
@@ -37345,7 +37345,7 @@
           64,
           64
         ],
-        "spec": "roster-gear:56f656f14a90",
+        "spec": "roster-gear:33a782e4994e",
         "erased": 0
       },
       "status": "qa_passed",
@@ -37390,7 +37390,7 @@
           26,
           26
         ],
-        "spec": "roster-gear:56f656f14a90",
+        "spec": "roster-gear:33a782e4994e",
         "erased": 0
       },
       "status": "qa_passed",
@@ -37432,7 +37432,7 @@
         ],
         "erased": 0,
         "palette_over": true,
-        "spec": "roster-sprite:d1b044ae07d7"
+        "spec": "roster-sprite:eb659ec2b82c"
       },
       "status": "published",
       "kind": "roster-sprite",
@@ -38827,6 +38827,28 @@
       ],
       "changed": {},
       "why": "PR D review: erasure gate narrowed, icon and gear erasure gates, stamped cutout reach; published bytes unchanged"
+    },
+    {
+      "on": "2026-10-26",
+      "batch": "roster-r0",
+      "requa": [
+        "enemy-paper-moth",
+        "enemy-root-hound",
+        "enemy-bell-watcher",
+        "enemy-false-moon",
+        "enemy-fog-warden",
+        "icon-faded-letter",
+        "icon-mist-root",
+        "icon-grey-cord",
+        "icon-moon-silver",
+        "icon-fog-gate-plate",
+        "gear-moonless-mirror-large",
+        "gear-moonless-mirror",
+        "gear-fog-halberd-large",
+        "gear-fog-halberd"
+      ],
+      "changed": {},
+      "why": "PR D confirmation review: a key blend is background only within 2 px of pure key; published bytes unchanged"
     }
   ],
   "approved_batches": {
