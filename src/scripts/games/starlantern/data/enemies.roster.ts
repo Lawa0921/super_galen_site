@@ -47,6 +47,12 @@ const hit = (power: number, element: Element = 'phys', o: { scale?: 'atk' | 'mag
 const buff = (stat: 'atk' | 'def' | 'mag' | 'res' | 'spd', pct: number, turns: number): Effect => ({ kind: 'buff', stat, pct, turns });
 const heal = (power: number): Effect => ({ kind: 'heal', power });
 const sleep = (chance: number): Effect => ({ kind: 'inflict', status: 'sleep', chance });
+/** Plan B2 (M1): the skill, wound up for a turn named `name` first. */
+const windup = (s: EnemySkill, name: string): EnemySkill => ({ ...s, windup: name });
+/** Plan B2 (M2): the foe guards the ally most hurt but itself for `turns` rounds (the enemy side's `cover`). */
+const guard = (turns: number): Effect => ({ kind: 'cover', turns });
+/** Plan B2 (M24): the foe calls its target out; next round every foe's single blow goes to her. */
+const hunt: Effect = { kind: 'hunt' };
 const poison = (chance: number): Effect => ({ kind: 'inflict', status: 'poison', chance });
 
 /** The elements of a region, for its own foes (data/regions.ts REGIONS: `scaleEnemy` gives these in the region anyway). */
@@ -118,9 +124,9 @@ const MAINLINE: [string, Spec][] = [
   ['lamp-wight', { name: '提燈幽影', arch: 'support', weak: ['ice'], resist: ['fire'], band: 'B', inscribe: 'heal',
     skills: [sk('借光', 0.4, 'ally', heal(50))] }],
   ['root-hound', { name: '霧根獵犬', arch: 'std', mul: { atk: UP }, weak: ['fire'], band: 'B', inscribe: 'atk',
-    skills: [sk('撲咬', 0.2, 'enemy', hit(230))] }],
+    skills: [windup(sk('撲咬', 0.2, 'enemy', hit(230)), '伏低')] }],
   ['tin-soldier', { name: '錫兵殘影', arch: 'heavy', mul: { def: UP }, weak: ['thunder'], resist: ['ice'], band: 'B', inscribe: 'armor',
-    skills: [sk('列隊', 0.25, 'self', buff('def', 30, 2))] }],
+    skills: [sk('列隊', 0.25, 'ally', guard(2))] }],
   ['dust-mimic', { name: '塵封木箱', arch: 'std', weak: ['fire'], band: 'B', inscribe: 'goldFind',
     skills: [sk('咬合', 0.3, 'enemy', hit(140))] }],
   ['market-ghost', { name: '市集的吆喝聲', arch: 'support', mul: { spd: UP }, weak: ['thunder'], band: 'B', inscribe: 'matFind',
@@ -135,12 +141,12 @@ const MAINLINE: [string, Spec][] = [
   ['moon-crow', { name: '映月鴉', arch: 'std', mul: { spd: UP }, band: 'C', inscribe: 'crit',
     skills: [sk('鏡羽', 0.3, 'enemy', hit(120))] }],
   ['bell-watcher', { name: '鐘樓巡守', arch: 'std', weak: ['ice'], band: 'C', inscribe: 'evasion', lore: 'rin', remnant: true,
-    skills: [sk('警鐘', 0.25, 'self', buff('atk', 20, 2)), sk('巡守之杖', 0.3, 'enemy', hit(130))] }],
+    skills: [sk('宣告', 0.25, 'enemy', hunt), sk('巡守之杖', 0.3, 'enemy', hit(130))] }],
   ['sleepwalker', { name: '夢遊者', arch: 'heavy', mul: { atk: UP }, weak: ['fire'], resist: ['thunder'], band: 'C', inscribe: 'hp',
     skills: [sk('夢中揮拳', 0.3, 'enemy', hit(160))] }],
   // D 16–24: the old city's statues, its requiem, the lantern-eater's young, the ancestors' machines
   ['old-city-sentinel', { name: '古城衛像', arch: 'heavy', weak: ['thunder'], resist: ['phys'], band: 'D', inscribe: 'def',
-    skills: [sk('審判之光', 0.25, 'column', hit(120, 'fire'))] }],
+    skills: [sk('守護', 0.2, 'ally', guard(2)), windup(sk('審判之光', 0.25, 'column', hit(120, 'fire')), '舉起天秤')] }],
   ['requiem-choir', { name: '鎮魂歌隊', arch: 'support', weak: ['phys'], resist: ['ice'], band: 'D', inscribe: 'tpRegen',
     skills: [sk('鎮魂合唱', 0.35, 'allies', heal(40))] }],
   ['lantern-larva', { name: '燈喰幼體', arch: 'std', weak: ['ice'], resist: ['fire'], band: 'D', inscribe: 'vuln',
@@ -155,7 +161,7 @@ const MAINLINE: [string, Spec][] = [
   ['wick-shade', { name: '燭芯之影', arch: 'swarm', weak: ['ice'], resist: ['fire'], band: 'E', inscribe: 'fireRes',
     skills: [sk('燭火', 0.3, 'enemy', hit(90, 'fire'))] }],
   ['keeper-echo', { name: '無名的提燈人', arch: 'caster', weak: ['phys'], band: 'E', inscribe: 'gauge', lore: 'hero', remnant: true,
-    skills: [sk('燈火之誓', 0.2, 'enemies', hit(120, 'fire'))] }],
+    skills: [windup(sk('燈火之誓', 0.2, 'enemies', hit(120, 'fire')), '舉燈')] }],
   ['ember-maw', { name: '餘燼之口', arch: 'heavy', weak: ['thunder'], resist: ['ice'], band: 'E', inscribe: 'fireDmg',
     skills: [sk('吞吐', 0.3, 'row', hit(90, 'fire'))] }],
   ['sorrow-crystal', { name: '悲傷結晶', arch: 'std', weak: ['phys'], band: 'E', inscribe: 'iceRes',
@@ -179,7 +185,7 @@ const MAINLINE: [string, Spec][] = [
 const NATIVE: [string, Spec][] = [
   // 熾焰之地
   ['cinder-imp', { name: '灰燼小鬼', arch: 'swarm', home: 'blaze', inscribe: 'fireDmg', skills: [sk('火花', 0.3, 'enemy', hit(80, 'fire'))] }],
-  ['forge-hound', { name: '熔爐犬', arch: 'std', home: 'blaze', inscribe: 'atk', skills: [sk('熔吼', 0.2, 'row', hit(150, 'fire', { scale: 'atk' }))] }],
+  ['forge-hound', { name: '熔爐犬', arch: 'std', home: 'blaze', inscribe: 'atk', skills: [windup(sk('熔吼', 0.2, 'row', hit(150, 'fire', { scale: 'atk' })), '吸氣')] }],
   ['ash-mourner', { name: '灰衣弔者', arch: 'support', home: 'blaze', inscribe: 'heal',
     skills: [sk('弔歌', 0.3, 'allies', buff('mag', 30, 3)), sk('安息', 0.3, 'ally', heal(50))] }],
   ['mirage-dancer', { name: '蜃樓舞者', arch: 'std', home: 'blaze', inscribe: 'evasion', lore: 'safira', remnant: true,
@@ -187,9 +193,9 @@ const NATIVE: [string, Spec][] = [
   ['sand-scorpion', { name: '沙海蠍', arch: 'std', home: 'blaze', inscribe: 'poisonRes', lore: 'safira',
     skills: [sk('毒針', 0.35, 'enemy', hit(100), poison(0.5))] }],
   // 霜凍之地
-  ['frost-doll', { name: '霜人偶', arch: 'heavy', home: 'frost', inscribe: 'iceRes', skills: [sk('冰之守', 0.25, 'self', buff('def', 30, 2))] }],
+  ['frost-doll', { name: '霜人偶', arch: 'heavy', home: 'frost', inscribe: 'iceRes', skills: [sk('冰之守', 0.25, 'ally', guard(2))] }],
   ['glacier-tortoise', { name: '冰河龜', arch: 'heavy', home: 'frost', inscribe: 'def',
-    skills: [sk('縮殼', 0.25, 'self', buff('def', 50, 3)), sk('冰河崩落', 0.15, 'row', hit(140, 'ice', { scale: 'atk', melee: true }))] }],
+    skills: [sk('縮殼', 0.25, 'self', buff('def', 50, 3)), windup(sk('冰河崩落', 0.15, 'row', hit(140, 'ice', { scale: 'atk', melee: true })), '抬起前腳')] }],
   ['snow-caller', { name: '雪中呼喚', arch: 'caster', home: 'frost', inscribe: 'sleepRes',
     skills: [sk('雪眠', 0.25, 'cross', sleep(0.35)), sk('雪崩', 0.35, 'column', hit(100, 'ice'))] }],
   ['ice-komainu', { name: '冰狛犬', arch: 'heavy', home: 'frost', inscribe: 'block', lore: 'chizuru', skills: [sk('狛犬之牙', 0.3, 'enemy', hit(140))] }],
@@ -200,7 +206,7 @@ const NATIVE: [string, Spec][] = [
     skills: [sk('迅雷爪', 0.35, 'enemy', hit(40, 'thunder', { scale: 'atk', melee: true, hits: 3 }))] }],
   ['storm-totem', { name: '避雷石柱', arch: 'support', home: 'storm', inscribe: 'thunderRes',
     skills: [sk('引雷', 0.4, 'allies', buff('spd', 30, 3)), sk('雷鳴鼓舞', 0.3, 'allies', buff('atk', 20, 3))] }],
-  ['charge-jelly', { name: '蓄電水母', arch: 'caster', home: 'storm', inscribe: 'thunderDmg', skills: [sk('放電', 0.25, 'enemies', hit(90, 'thunder'))] }],
+  ['charge-jelly', { name: '蓄電水母', arch: 'caster', home: 'storm', inscribe: 'thunderDmg', skills: [windup(sk('放電', 0.25, 'enemies', hit(90, 'thunder')), '蓄電')] }],
   ['star-ember', { name: '星屑火', arch: 'caster', home: 'storm', inscribe: 'tpRegen', lore: 'noel', skills: [sk('星火', 0.4, 'enemy', hit(120, 'fire'))] }],
   ['stolen-tome', { name: '飛舞的魔法書', arch: 'caster', home: 'storm', inscribe: 'mag', lore: 'noel',
     skills: [sk('火之頁', 0.25, 'enemy', hit(120, 'fire')), sk('冰之頁', 0.25, 'enemy', hit(120, 'ice')), sk('雷之頁', 0.25, 'enemy', hit(120, 'thunder'))] }],
@@ -218,14 +224,14 @@ const NATIVE: [string, Spec][] = [
     skills: [sk('靜默', 0.3, 'cross', hit(80, 'ice'))] }],
   ['vault-mimic', { name: '餓肚子的寶庫', arch: 'heavy', home: 'shade', inscribe: 'goldFind', lore: 'liz', skills: [sk('吞金', 0.3, 'enemy', hit(150))] }],
   ['debt-collector', { name: '敲門的影子', arch: 'std', home: 'shade', inscribe: 'vuln', lore: 'liz', remnant: true,
-    skills: [sk('敲門', 0.3, 'enemy', hit(120))] }],
+    skills: [sk('記下名字', 0.25, 'enemy', hunt), sk('敲門', 0.3, 'enemy', hit(120))] }],
   // 鋼鐵要塞
-  ['rivet-golem', { name: '鉚釘機兵', arch: 'heavy', home: 'iron', inscribe: 'armor', skills: [sk('鉚接', 0.25, 'self', buff('def', 30, 2))] }],
-  ['siege-crab', { name: '攻城蟹', arch: 'heavy', home: 'iron', inscribe: 'meleeDR', skills: [sk('破城鉗', 0.2, 'row', hit(170))] }],
+  ['rivet-golem', { name: '鉚釘機兵', arch: 'heavy', home: 'iron', inscribe: 'armor', skills: [sk('鉚接', 0.25, 'ally', guard(2))] }],
+  ['siege-crab', { name: '攻城蟹', arch: 'heavy', home: 'iron', inscribe: 'meleeDR', skills: [windup(sk('破城鉗', 0.2, 'row', hit(170)), '舉鉗')] }],
   ['herald-engine', { name: '號令機', arch: 'support', home: 'iron', inscribe: 'gauge',
     skills: [sk('號令', 0.4, 'allies', buff('atk', 25, 3)), sk('整隊', 0.3, 'allies', buff('def', 20, 3))] }],
   ['fallen-knight', { name: '要塞的騎士殘影', arch: 'heavy', home: 'iron', inscribe: 'block', lore: 'scarlet', remnant: true,
-    skills: [sk('騎士之盾', 0.25, 'self', buff('def', 30, 2)), sk('斬擊', 0.3, 'enemy', hit(140))] }],
+    skills: [sk('騎士之盾', 0.25, 'ally', guard(2)), sk('斬擊', 0.3, 'enemy', hit(140))] }],
   ['banner-bearer', { name: '紅旗旗手', arch: 'support', home: 'iron', inscribe: 'str', lore: 'scarlet', remnant: true,
     skills: [sk('揮旗', 0.4, 'allies', buff('atk', 20, 3))] }],
 ];
@@ -234,7 +240,7 @@ const WARDENS: [string, Spec][] = [
   ['false-moon', { name: '不存在的月亮', arch: 'std', rank: 'warden', weak: ['fire'], resist: ['ice'], lore: 'selene',
     skills: [sk('月明', 0.3, 'allies', heal(40)), sk('月蝕', 0.3, 'enemies', hit(90, 'ice'))] }],
   ['bell-warden', { name: '鐘樓的守門人', arch: 'std', rank: 'warden', weak: ['ice'], lore: 'rin', remnant: true,
-    skills: [sk('鐘聲', 0.3, 'row', hit(90, 'thunder')), sk('守門', 0.25, 'self', buff('def', 30, 2))] }],
+    skills: [sk('鐘聲', 0.3, 'row', hit(90, 'thunder')), sk('點名', 0.25, 'enemy', hunt)] }],
   ['toppled-automaton', { name: '倒下的機兵', arch: 'heavy', rank: 'warden', weak: ['thunder'], resist: ['ice'], lore: 'bobby',
     skills: [sk('重拳', 0.3, 'enemy', hit(160))] }],
   ['requiem-conductor', { name: '鎮魂指揮者', arch: 'std', rank: 'warden', weak: ['phys'], resist: ['ice'],
@@ -252,7 +258,7 @@ const WARDENS: [string, Spec][] = [
   ['locked-vault', { name: '鎖著的金庫', arch: 'heavy', rank: 'warden', mul: { def: UPUP }, home: 'shade', lore: 'liz',
     skills: [sk('金庫門', 0.3, 'enemy', hit(150))] }],
   ['gate-breaker', { name: '撞門的巨影', arch: 'heavy', rank: 'warden', home: 'iron', lore: 'scarlet',
-    skills: [sk('撞門', 0.2, 'enemies', hit(120))] }],
+    skills: [windup(sk('撞門', 0.2, 'enemies', hit(120)), '後退助跑')] }],
 ];
 
 /** Two plain boss skills: an area spell and a heavy single blow (the lantern-eater's pattern), named per boss. */
@@ -263,7 +269,7 @@ const pair = (area: string, el: Element, blow: string): EnemySkill[] => [
 const BOSSES: [string, Spec][] = [
   // the main road, every fifth depth (spec §5.6)
   ['fog-warden', { name: '霧門守衛', arch: 'boss', mul: { hp: 0.95 }, weak: ['fire'], resist: ['ice'],
-    skills: [sk('霧門落下', 0.25, 'enemies', hit(130)), sk('霧壓', 0.3, 'row', buff('def', -25, 2))] }],
+    skills: [windup(sk('霧門落下', 0.25, 'enemies', hit(130)), '霧門升起'), sk('霧壓', 0.3, 'row', buff('def', -25, 2))] }],
   ['silent-bell', { name: '啞鐘', arch: 'boss', mul: { hp: 1.05, spd: DOWN }, weak: ['ice'], resist: ['thunder'],
     skills: [sk('無聲的轟鳴', 0.35, 'row', hit(110, 'thunder')), sk('鐘擊', 0.3, 'enemy', hit(160))] }],
   ['hollow-champion', { name: '空殼勇者', arch: 'boss', mul: { atk: UPUP }, weak: ['thunder'], remnant: true,
@@ -287,9 +293,9 @@ const BOSSES: [string, Spec][] = [
   ['rift-maw', { name: '迷宮的裂口', arch: 'boss', home: 'frost', lore: 'chizuru', skills: pair('裂口之息', 'ice', '撕裂') }],
   // 雷鳴之地
   ['thunder-roc', { name: '雷鳴巨鵬', arch: 'boss', mul: { spd: UPUP }, home: 'storm',
-    skills: [sk('天雷俯衝', 0.2, 'enemies', hit(130, 'thunder', { scale: 'atk', melee: true })), sk('雙爪', 0.3, 'enemy', hit(80, 'phys', { hits: 2 }))] }],
+    skills: [windup(sk('天雷俯衝', 0.2, 'enemies', hit(130, 'thunder', { scale: 'atk', melee: true })), '盤旋'), sk('雙爪', 0.3, 'enemy', hit(80, 'phys', { hits: 2 }))] }],
   ['storm-conductor', { name: '雷霆指揮者', arch: 'boss', home: 'storm',
-    skills: [sk('連鎖雷', 0.35, 'cross', hit(120, 'thunder')), sk('雷杖', 0.3, 'enemy', hit(160))] }],
+    skills: [sk('指名', 0.25, 'enemy', hunt), sk('連鎖雷', 0.35, 'cross', hit(120, 'thunder')), sk('雷杖', 0.3, 'enemy', hit(160))] }],
   ['starfire-colossus', { name: '星火巨像', arch: 'boss', home: 'storm', lore: 'noel', skills: pair('星火', 'fire', '巨拳') }],
   // 腐毒沼澤
   ['mire-hydra', { name: '腐沼多頭蛇', arch: 'boss', mul: { hp: UP }, home: 'mire',
@@ -304,11 +310,11 @@ const BOSSES: [string, Spec][] = [
   ['shadow-parade', { name: '影之行列', arch: 'boss', home: 'shade', skills: pair('夜行', 'ice', '影之鞭') }],
   // 鋼鐵要塞
   ['fortress-colossus', { name: '要塞巨像', arch: 'boss', home: 'iron',
-    skills: [sk('攻城砲', 0.25, 'enemies', hit(130, 'phys', { melee: false })), sk('鐵拳', 0.3, 'enemy', hit(160))] }],
+    skills: [windup(sk('攻城砲', 0.25, 'enemies', hit(130, 'phys', { melee: false })), '裝填'), sk('鐵拳', 0.3, 'enemy', hit(160))] }],
   ['siege-titan', { name: '攻城巨獸', arch: 'boss', mul: { atk: UP }, home: 'iron', lore: 'scarlet',
-    skills: [sk('破甲', 0.3, 'row', buff('def', -30, 2)), sk('重擊', 0.3, 'enemy', hit(180))] }],
+    skills: [sk('破甲', 0.3, 'row', buff('def', -30, 2)), windup(sk('重擊', 0.3, 'enemy', hit(180)), '蓄勢')] }],
   ['last-commander', { name: '最後的指揮官', arch: 'boss', home: 'iron', lore: 'scarlet', remnant: true,
-    skills: [sk('號角', 0.35, 'allies', buff('def', 30, 3)), sk('指揮刀', 0.3, 'enemy', hit(160))] }],
+    skills: [sk('守護', 0.25, 'ally', guard(2)), sk('號角', 0.35, 'allies', buff('def', 30, 3)), sk('指揮刀', 0.3, 'enemy', hit(160))] }],
 ];
 
 const PARTS: [string, Spec][] = [

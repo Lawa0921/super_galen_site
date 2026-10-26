@@ -99,7 +99,9 @@ export type Effect =
   /** The target's single attacks next round go to the caster (Scarlet's 盾擊). */
   | { kind: 'challenge' }
   /** The target's ultimate gauge grows by `amount` (Safira's 拍手). */
-  | { kind: 'gauge'; amount: number };
+  | { kind: 'gauge'; amount: number }
+  /** A foe calls the target out: next round every foe's single blow goes to her; a taunt comes first, defending lifts it (roster plan B2, M24). */
+  | { kind: 'hunt' };
 /**
  * A skill's part in its owner's mechanic: `release` spends Chizuru's barrier for power; `coin-power` and `coin-hits` spend
  * Liz's coins for power or for hits; `consume-aim` spends Sylvie's aim for power; `ember-power` spends Scarlet's embers
@@ -193,7 +195,11 @@ export interface CharacterDef {
   /** Growth rules this character changes from DEFAULT_RULES (data/characters.ts). */
   rules?: Partial<GrowthRules>;
 }
-export interface EnemySkill { name: string; chance: number; target: Target; effects: Effect[] }
+/**
+ * Roster plan B2 (M1): `windup`, the name of the turn the foe spends winding this skill up; the skill itself lands the
+ * round after (battle.ts chooseEnemyActions). Sleep or a freeze breaks the charge.
+ */
+export interface EnemySkill { name: string; chance: number; target: Target; effects: Effect[]; windup?: string }
 export interface EnemyDef {
   id: string; name: string; floor: 1 | 2 | 3; boss?: boolean; stats: Stats; weak: Element[]; resist: Element[];
   exp: number; gold: number; drops: { mat: string; chance: number }[]; skills: EnemySkill[];

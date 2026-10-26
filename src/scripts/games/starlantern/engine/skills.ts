@@ -542,6 +542,12 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
       if (gauge && target !== actor && target.limit > before) gauge[actor.key] = (gauge[actor.key] ?? 0) + target.limit - before;
       return;
     }
+    case 'hunt': {
+      // A foe calls a member out for next round (roster plan B2, M24); draws nothing.
+      if (!target.alive || target.side === actor.side) return;
+      target.hunted = (ctx.battle?.round ?? 0) + 1;
+      return;
+    }
     case 'moon': {
       const m = ctx.battle?.moon;
       if (target !== actor || !m) return;

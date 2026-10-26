@@ -460,6 +460,8 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 - Create：`engine/foes.ts`（敵方機制的純函式）、`engine/foes.test.ts`。
 - Modify：`engine/types.ts`（`EnemySkill.windup?: string`；`Effect { kind: 'hunt' }`）、`engine/combatant.ts`（`winding?`、`hunted?`）、`engine/battle.ts`（`chooseEnemyActions`：蓄力中的敵人不抽、強制下一招；`intentLabel` 顯示「蓄力：〇〇」；敵方 `cover` 的鏡像版 `foeCover`：我方單體行動打向被守護的敵人時改打守護者；`hunt`：下一回合所有敵人的單體目標改成被宣告者，我方嘲諷優先、防禦會解除宣告）、`engine/skills.ts`（`cover` 的處理允許敵人施放在同伴身上）、`data/enemies.roster.ts`（用到這些機制的物種補上欄位）。
 - Test：`engine/foes.test.ts`、`engine/battle.test.ts`。
+- 已知會紅與改法（**B2 實作修正**，原計畫漏列）：`data/monsters.test.ts` 的 `only plain effects so far`（A2 的「機制在 B 系列才加」）→ 改名 `only plain effects and the mechanics built so far`，允許清單只加本任務的三樣：技能的 `windup`、只用在 `ally` 目標且單獨一個效果的 `cover`、只用在 `enemy` 目標的 `hunt`；其餘斷言不變。
+- 實作裁定（B2）：守護技（`ally` 目標＋`cover`）守的是「自己以外 HP 比例最低的同伴」（同比例取隊列裡的第一隻），不抽亂數；睡著或凍結的守護者不守（同絲嘉蕾）。蓄力被睡眠或凍結打斷後，若被打醒而輪到它，那一回合改普攻。宣告的順序：嘲諷 → 盾擊 → 宣告 → 代受（被宣告的人有人代受時仍由代受者承受）；被宣告的人那一回合防禦就解除；宣告不管站位（同盾擊）。
 
 - [ ] **Step 1：寫失敗的測試**（spec §6.2 的測試義務，名字照抄）：M1 `lands the round after its wind-up`、`sleep breaks a charge`、`freeze breaks a charge`、`shows in intentLabel`、`draws nothing while winding`（蓄力回合的 rng 抽取次數比不蓄力少的那一次正好是 `findIndex` 的那幾次）；M2 `takes single-target hits`、`area ignores a guard`、`ends after its turns`；M24 `focuses the hunted member`、`taunt overrides`、`defending lifts the hunt`。另：`old foes act as before`（舊 10 個定義的 `chooseEnemyActions` 在 200 個種子下逐一相同）。
 - [ ] **Step 2–4**：紅、實作、測試＋全套＋tsc＋閘門 identical。

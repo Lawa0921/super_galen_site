@@ -181,6 +181,11 @@ export const T = {
     /** Words that pop over a struck enemy or member. */
     pop: { miss: 'MISS', crit: '暴擊！', weak: '弱點！', resist: '抗性', tp: (n: number) => `+${n} TP` },
     gearLeft: (name: string) => `背包已滿，留下了 ${name}`,
+    /** The roster's foe mechanics on the battle screen (roster plan B2–B6): intents, name tags and log lines. */
+    foe: {
+      /** M1: the intent of a foe winding a skill up. */
+      windup: (skill: string) => `蓄力：${skill}`,
+    },
   },
   element: { phys: '物理', fire: '火', ice: '冰', thunder: '雷' },
   /** Ailment names on the battle screen (the region trait `burn` reads 酷熱, so the two never share a word). */

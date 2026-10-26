@@ -177,14 +177,20 @@ describe('one hundred roster foes (roster plan Task A2, spec §5)', () => {
     for (const k of ['stats', 'skills', 'weak', 'resist', 'exp', 'gold', 'boss', 'floor'] as const) expect(m[k], k).toEqual(l[k]);
   });
 
-  it('only plain effects so far', () => {
-    // Spec §1.4's kinds: the mechanics (B1, B2) add their own fields later.
+  it('only plain effects and the mechanics built so far', () => {
+    // Spec §1.4's kinds, and the mechanics plan B has built: M1's wind-up (B2), M2's guard (a foe's `cover` on an ally,
+    // B2), M24's hunt (B2). The later mechanics (B2 PR) add their own fields.
     const DAMAGE_KEYS = new Set(['kind', 'power', 'element', 'scale', 'melee', 'hits', 'crit', 'execute', 'wounded']);
+    const SKILL_KEYS = new Set(['name', 'chance', 'target', 'effects', 'windup']);
     for (const id of rosterIds()) for (const s of ENEMIES[id].skills) {
       expect(['enemy', 'enemies', 'row', 'column', 'cross', 'self', 'ally', 'allies'], `${id} ${s.name}`).toContain(s.target);
       expect(s.chance > 0 && s.chance <= 1, `${id} ${s.name}`).toBe(true);
+      for (const k of Object.keys(s)) expect(SKILL_KEYS.has(k), `${id} ${s.name} ${k}`).toBe(true);
+      if (s.windup !== undefined) expect(s.windup.length > 0 && s.windup !== s.name, `${id} ${s.name}`).toBe(true);
       for (const e of s.effects) {
-        expect(['damage', 'inflict', 'buff', 'heal'], `${id} ${s.name}`).toContain(e.kind);
+        expect(['damage', 'inflict', 'buff', 'heal', 'cover', 'hunt'], `${id} ${s.name}`).toContain(e.kind);
+        if (e.kind === 'cover') expect([s.target, s.effects.length], `${id} ${s.name}`).toEqual(['ally', 1]);
+        if (e.kind === 'hunt') expect(s.target, `${id} ${s.name}`).toBe('enemy');
         if (e.kind === 'inflict') expect(['poison', 'sleep'], `${id} ${s.name}`).toContain(e.status);
         if (e.kind === 'damage') for (const k of Object.keys(e)) expect(DAMAGE_KEYS.has(k), `${id} ${s.name} ${k}`).toBe(true);
       }

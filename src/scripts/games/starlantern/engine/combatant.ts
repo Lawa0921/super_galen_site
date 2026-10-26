@@ -112,6 +112,10 @@ export interface Combatant {
   left?: true;
   /** Roster plan B1: a foe that joined mid-fight (a summon, spec M4): it pays nothing and takes no loot or rune draw. */
   summoned?: true;
+  /** Roster plan B2 (M1): the index of the skill this foe is winding up; it lands next round. Sleep or a freeze breaks it. */
+  winding?: number;
+  /** Roster plan B2 (M24): the round a foe's hunt sends every single blow to this member. */
+  hunted?: number;
 }
 
 /** The aim stacks `a` holds on `t` (Sylvie; 0 for anyone else or any other foe). */
@@ -341,6 +345,8 @@ export function dealDamage(t: Combatant, amount: number, opts: { dot?: true; led
     delete t.coverAlso;
     delete t.riposte;
     delete t.challenged;
+    delete t.winding;
+    delete t.hunted;
     // Her marks and her aim end with her (their words go from the foes too).
     if (t.mech?.kind === 'mark') t.mech.marks = [];
     if (t.mech?.kind === 'aim') { t.mech.target = null; t.mech.stacks = 0; delete t.mech.lock; }

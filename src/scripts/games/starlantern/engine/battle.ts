@@ -17,6 +17,7 @@ import { SECONDARY_KEYS } from './stats';
 import { applyEffect, patchSkill, pctOf, type EffectContext } from './skills';
 import { afterAction, afterFoe, castCost, castDef, extraAction, initMechs, mechBeforeTicks, mechRoundEnd, payMech, watchAction, type CastDef } from './mechanics/index';
 import { AILMENT, ageAilments, shockTick, tickAilments } from './ailments';
+import { foeGuard, foesRoundEnd, foesRoundStart, guardTargets, huntedIn } from './foes';
 import { countCast, credit, lossOf, type Ledger } from './ledger';
 import { AIM, barrierPower, type Barrier } from './mech';
 import type { MoonPhase } from './mechanics/moon';
@@ -98,10 +99,13 @@ export interface BattleScale {
 }
 
 /**
- * `target` is the drawn one, which the engine plays (a taunt, a challenge or a cover turns it when the blow falls).
- * `shownTarget`, for the screen only: where a challenge or a cover will send it, as things stood when it was planned.
+ * `target` is the drawn one, which the engine plays (a taunt, a challenge, a hunt or a cover turns it when the blow falls).
+ * `shownTarget`, for the screen only: where a challenge, a hunt or a cover will send it, as things stood when it was planned.
+ * Roster plan B2 (M1): `windup`, the foe spends this turn winding up the skill (its `windup` name), which comes next round
+ * as the `charged` one, drawn for its target only.
  */
-export type EnemyAction = { kind: 'attack'; target?: string; shownTarget?: string } | { kind: 'enemy-skill'; index: number; target?: string; shownTarget?: string };
+export type EnemyAction = { kind: 'attack'; target?: string; shownTarget?: string }
+  | { kind: 'enemy-skill'; index: number; target?: string; shownTarget?: string; windup?: true; charged?: true };
 
 /** Rounds Scarlet's story fight lasts. */
 export const STORY_FIGHT_ROUNDS = 3;
@@ -310,7 +314,11 @@ function resolveTargets(s: BattleState, actor: Combatant, target: Target | null,
   const allies = actor.side === 'party' ? s.party : s.enemies;
   const foes = actor.side === 'party' ? s.enemies : s.party;
   switch (target) {
-    case 'enemy': { const t = pickTarget(foePool(s, actor, melee, forced), chosen, rng); return t ? [t] : []; }
+    case 'enemy': {
+      // A foe that another foe guards sends the party's single blow to its guard (roster plan B2, M2); draws nothing.
+      const t = pickTarget(foePool(s, actor, melee, forced), chosen, rng);
+      return t ? [actor.side === 'party' ? foeGuard(s, t) : t] : [];
+    }
     case 'row': case 'column': case 'cross': {
       if (actor.side === 'party') return living(foes);   // enemies stand in one line: a shape covers them all
       const t = pickTarget(foePool(s, actor, melee), chosen, rng);
@@ -420,17 +428,23 @@ function chooseEnemyActions(s: BattleState, rng: Rng, round: number): Map<string
   const out = new Map<string, EnemyAction>();
   for (const e of living(s.enemies)) {
     const skills = enemyDef(s, e)?.skills ?? [];
-    const index = skills.findIndex((sk) => rng() < sk.chance);
+    // A foe winding up draws no skill: the one it wound up comes now, drawn for its target only (roster plan B2, M1).
+    const charged = e.winding !== undefined && !!skills[e.winding];
+    const index = charged ? e.winding! : skills.findIndex((sk) => rng() < sk.chance);
+    const windup = !charged && index >= 0 && !!skills[index].windup;
     const melee = index >= 0 ? skillIsMelee(skills[index].effects) : e.melee;
     const target = pickTarget(foePool(s, e, melee), undefined, rng)?.key;
-    const act: EnemyAction = index >= 0 ? { kind: 'enemy-skill', index, target } : { kind: 'attack', target };
+    const act: EnemyAction = index >= 0
+      ? { kind: 'enemy-skill', index, target, ...(windup ? { windup: true as const } : {}), ...(charged ? { charged: true as const } : {}) }
+      : { kind: 'attack', target };
     // Where a challenge or a cover (a taunt over them included) would send the blow, the screen shows it; the action keeps
     // its drawn target and the redirect is made when the blow falls (forcedTarget in perform). A lone taunt is drawn as
     // the target already, so a plain intent gains no field.
     const ch = e.challenged;
     const challenged = !!ch && ch.round === round && s.party.some((c) => c.key === ch.by && c.alive);
     const covered = living(s.party).some((c) => c.key !== target && covers(c, target));
-    const forced = challenged || covered ? forcedTarget(s, e, act, round) : null;
+    const hunted = !!huntedIn(s, round);
+    const forced = challenged || covered || hunted ? forcedTarget(s, e, act, round) : null;
     out.set(e.key, forced && forced.to.key !== target ? { ...act, shownTarget: forced.to.key } : act);
   }
   return out;
@@ -444,6 +458,7 @@ function chooseEnemyActions(s: BattleState, rng: Rng, round: number): Map<string
  * for an intent planned ahead). Draws nothing.
  */
 export function forcedTarget(s: BattleState, enemy: Combatant, act: EnemyAction, round = s.round): { to: Combatant; pool: Combatant[]; cover?: true } | null {
+  if (act.kind === 'enemy-skill' && act.windup) return null;   // winding up is no blow (roster plan B2, M1)
   const sk = act.kind === 'enemy-skill' ? enemyDef(s, enemy)?.skills[act.index] : undefined;
   if (!(act.kind === 'attack' || sk?.target === 'enemy')) return null;
   const melee = act.kind === 'attack' ? enemy.melee : skillIsMelee(sk?.effects ?? []);
@@ -454,10 +469,14 @@ export function forcedTarget(s: BattleState, enemy: Combatant, act: EnemyAction,
   const ch = enemy.challenged;
   const by = ch && ch.round === round ? s.party.find((c) => c.key === ch.by && c.alive) : undefined;
   if (by) return { to: by, pool: others(by) };
-  const meant = s.party.find((c) => c.key === act.target && c.alive);
+  // A hunt (roster plan B2, M24): the member a foe called out for this round takes the single blows, wherever she stands;
+  // a cover over her still stands in for her.
+  const hunted = huntedIn(s, round);
+  const meant = hunted ?? s.party.find((c) => c.key === act.target && c.alive);
   // A frozen or sleeping Scarlet stands in for no one (designer ruling, plan 8c final).
   const cover = meant ? living(s.party).find((c) => c !== meant && covers(c, meant.key) && !c.frozen && c.sleep === 0) : undefined;
   if (meant && cover) return { to: cover, pool: [meant], cover: true };
+  if (hunted && hunted.key !== act.target) return { to: hunted, pool: others(hunted) };
   return null;
 }
 
@@ -481,6 +500,11 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
   delete ctx.regained;
   delete ctx.coverBlow;
   let sentTo: Combatant | undefined;   // a challenger or a cover is reached wherever she stands
+  if (actor.side === 'enemy' && act.kind === 'enemy-skill' && act.charged) {
+    // The blow it wound up (roster plan B2, M1); a charge that sleep or a freeze broke is a plain attack.
+    if (actor.winding === undefined) act = { kind: 'attack', target: act.target };
+    else delete actor.winding;
+  }
   if (actor.side === 'enemy') {
     // A single blow goes where a taunt, a challenge or a cover sends it (forcedTarget); the ledger credits the one it
     // went to with what the others in `pool` would have lost (plan 8c rulings 8, 19). An area attack follows a taunt only,
@@ -498,7 +522,8 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
     applyEffect(actor, t, { kind: 'damage', power: 100, element: 'phys', scale: actor.attackScale ?? 'atk', melee: actor.melee }, ctx);
   switch (act.kind) {
     case 'attack': {
-      const t = pickTarget(foePool(s, actor, actor.melee, sentTo), act.target, rng);
+      const drawn = pickTarget(foePool(s, actor, actor.melee, sentTo), act.target, rng);
+      const t = drawn && actor.side === 'party' ? foeGuard(s, drawn) : drawn;
       if (!t) return null;
       s.log.push({ type: 'act', actor: actor.key, label: '攻擊' });
       physical(t);
@@ -506,8 +531,16 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
     }
     case 'enemy-skill': {
       const sk = enemyDef(s, actor)!.skills[act.index];
+      if (act.windup) {
+        // It winds up (roster plan B2, M1): the skill comes next round.
+        actor.winding = act.index;
+        s.log.push({ type: 'act', actor: actor.key, label: sk.windup ?? sk.name });
+        return null;
+      }
       s.log.push({ type: 'act', actor: actor.key, label: sk.name });
-      for (const t of resolveTargets(s, actor, sk.target, act.target, rng, skillIsMelee(sk.effects), sentTo)) for (const eff of sk.effects) applyEffect(actor, t, eff, ctx);
+      // A guard (M2) covers the ally most hurt but itself; any other skill finds its targets as it always has.
+      const targets = guardTargets(s, actor, sk) ?? resolveTargets(s, actor, sk.target, act.target, rng, skillIsMelee(sk.effects), sentTo);
+      for (const t of targets) for (const eff of sk.effects) applyEffect(actor, t, eff, ctx);
       return null;
     }
     case 'skill': {
@@ -743,6 +776,8 @@ function endOfRound(s: BattleState, ctx: EffectContext, rng: Rng): void {
   }
   // The mechanics close the round last, after every tick (a foe a tick felled has already lost its mark).
   mechRoundEnd(s, ctx, rng);
+  // Then the foes' own countdowns (roster plan B2): a guard's rounds, a hunt's round.
+  foesRoundEnd(s);
 }
 
 /**
@@ -788,6 +823,7 @@ export function resolveRound(prev: BattleState, actions: Record<string, Action>,
   syncWards(s);   // a state built or loaded with barriers meets its first hit with the wards on
   const ctx: EffectContext = { rng, itemBoost: s.itemBoost, revealed: s.revealed, log: s.log, battle: s, ...(ledger ? { ledger } : {}) };
   for (const c of s.party) c.defending = c.alive && actions[c.key]?.kind === 'defend';
+  foesRoundStart(s);   // a member who defends lifts a hunt on her (roster plan B2, M24)
   if (s.party.some((c) => c.alive && actions[c.key]?.kind === 'escape')) {
     const success = !s.boss && rng() < escapeChance(s);
     s.log.push({ type: 'escape', success });
@@ -800,8 +836,9 @@ export function resolveRound(prev: BattleState, actions: Record<string, Action>,
   for (const actor of turnOrder([...living(s.party), ...living(s.enemies)], rng, s.round)) {
     if (!actor.alive) continue;
     // A frozen turn is lost before sleep is looked at (sleep keeps its rounds); it thaws and is guarded for a while.
-    if (actor.frozen) { delete actor.frozen; actor.freezeGuard = AILMENT.freezeGuard; s.log.push({ type: 'frozen', actor: actor.key }); continue; }
-    if (actor.sleep > 0) { actor.sleep -= 1; s.log.push({ type: 'asleep', actor: actor.key }); continue; }
+    // A lost turn breaks a foe's charge (roster plan B2, M1).
+    if (actor.frozen) { delete actor.frozen; delete actor.winding; actor.freezeGuard = AILMENT.freezeGuard; s.log.push({ type: 'frozen', actor: actor.key }); continue; }
+    if (actor.sleep > 0) { actor.sleep -= 1; delete actor.winding; s.log.push({ type: 'asleep', actor: actor.key }); continue; }
     const act = actor.side === 'party' ? actions[actor.key] : enemyActs.get(actor.key);
     const heroUp = s.party.some((c) => c.key === 'hero' && c.alive);
     if (act) {
@@ -866,6 +903,7 @@ export function intentLabel(s: BattleState, key: string): string {
   if (e?.frozen) return '凍結中';   // it will lose this turn (its plan is still drawn, so the sequence holds)
   const def = e ? enemyDef(s, e) : undefined;
   const name = a.kind === 'attack' ? '攻擊' : (def?.skills[a.index]?.name ?? '');
+  if (a.kind === 'enemy-skill' && a.windup) return T.battle.foe.windup(name);   // roster plan B2, M1
   const sk = a.kind === 'enemy-skill' ? def?.skills[a.index] : null;
   const single = a.kind === 'attack' || sk?.target === 'enemy' || sk?.target === 'row' || sk?.target === 'column' || sk?.target === 'cross';
   const shown = a.shownTarget ?? a.target;
