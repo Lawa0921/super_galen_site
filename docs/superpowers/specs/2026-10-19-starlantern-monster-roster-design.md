@@ -35,7 +35,7 @@
 7. **專屬獨特**帶 `owner`、`region: null`，不進任何掉落池、沒有剪影；替換後重跑 `applyStarlit`；製作的「先擊倒過」讀圖鑑的 `felled`（`bossKills` 以深度為鍵，不能用）。
 8. **鹽**：八個 SHA-256 初始字都已用掉；`WARDEN_SALT = 0x428a2f98`、`TROPHY_SALT = 0x71374491`。
 9. **位元保證**：parity 固定量舊表（量的是角色之間的平衡）；舊戰鬥的 fixture 就是 sim gate 的動作雜湊；上線任務刻意重錄普通帶的報告，有固定的重錄與審查規則；`contribution.json` 永遠等於 `contribution.8d-final.160.json`。
-10. **美術**：`allArtUrls` 的基準是 722（不是 246），全部發布後 999；每件專屬獨特 2 張圖；圖鑑沒見過的物種不顯示剪影（5d 禁止 CSS 剪影）；**每一批都要使用者在審核頁核准**（`contract.md:145`、5d 補遺 S4），R0 寫新的 `roster_style_approved`。
+10. **美術**：`allArtUrls` 的基準是 722（不是 246），全部發布後 999；每件專屬獨特 2 張圖；圖鑑沒見過的物種不顯示剪影（5d 禁止 CSS 剪影）；R0 寫新的 `roster_style_approved`。**使用者 2026-10-26 裁定**：只有 R0 風格樣本要他核准，R1–R4 通過機械 QA 與全新脈絡的獨立代理審核後就發布，他之後可以要求換任何一張（`contract.md:145`、5d 補遺 S4 在 PR D 照此改寫）；四批全做（含地區），codex Plus 額度用完改用 codex credits，兩者都用完才暫停，絕不用佔位美術。
 11. **故事**：`false-moon` 的兩個狀態叫「月明／月蝕」（避開瑟蕾的月相與第 5 片之前的「新月」），閘門 `mem:selene:2`（滿月的明亮結局）→ `:3`（結局不只一種）；「迷宮吞過追進來的巡守」登記 I-222（不是 I-17）；凜的師父就是鐘守（I-10 翻案、I-167），照樣不出現；`vault-mimic` 閘門改 `mem:liz:4`；`debt-collector` 改名「敲門的影子」、`iou-slip` 改名「泛黃的紙條」（「債」到第 2 片才揭露）；提燈人第三句改寫並用 `seen: ['mem:hero:9']`；燈喰的子嗣登記 I-223；新名詞登記 I-224；名字掃描補「要殺的人」；文字一律「菁英」；圖鑑一個「……」都不用。§16 的問題由 controller 定案：故人以沒有臉的霧中殘影出現，維持本文的寫法。
 12. **燈喰之母只在終幕出現**：`FINALE_BOSS.base` 換成 `lantern-mother`（同數值、同技能），但終幕之後本道第 30 層照舊是長大的燈喰之獸（既有的劇情裁定「the grown beast, not her」，`engine/game.test.ts:3545-3551`）；§5.6「本道 30」那一格改成 `lanterneater`。她的戰利品與專屬獨特在終幕掉。
 13. **檔名與代號**：`data/roster.test.ts` 已存在，新資料模組叫 `data/monsters.ts`；7a／7b／7c 和難度計畫撞名，改用計畫的 PR 代號 A、B1、B2、C、D、E1–E4、L1–L4。

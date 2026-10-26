@@ -156,15 +156,15 @@ spec 已核准（2026-10-26，控制者依使用者授權）。下面是 spec �
     - 絲嘉蕾：公主的下落照 I-211，圖鑑不寫；「撤退」「號角是撤退的」在 `mem:scarlet:5` 之前任何地方都不寫。
     - 新名詞「霧生迴響」「守關者」「銘文」「遺物」登記 **I-224**。
     - 圖鑑文字是手冊類文字：**一個「……」都不用**（聖經 §2.3）；沒有英文字母與阿拉伯數字；全形標點；每句 ≤ 60 字；語氣是日系 RPG 的圖鑑：輕快、具體、帶一點梗；沉重留給夥伴那一句，而且只寫「她記得的那個人不在這裡」這種程度。
-21. **美術核准**：照 `contract.md:145` 與 5d 補遺 S4，**每一批都要使用者在審核頁核准**（`approve --by "<使用者原話> <YYYY-MM-DD>"`）；獨立代理的視覺檢查是送審前的前置步驟。R0 是新的風格樣本（敵人圖在 5d 之外，`style_approved` 只蓋裝備）：registry 根部新增 `roster_style_approved`、`roster_style_anchor`，只有 R0 的 `approve` 成功時寫入；`gen --batch r1..r4` 沒有它就拒絕。圖示與專屬獨特沿用 5d 的風格錨點（`sheet-gear-1`）與 5d 已核准的素材圖示當參考。
+21. **美術核准**（使用者 2026-10-26 裁定，取代原本「每一批都要使用者核准」）：**使用者只核准 R0 風格樣本**（`approve --batch r0 --by "<使用者原話> <YYYY-MM-DD>"`）。R1–R4 每一批在機械 QA 全過、而且一位全新脈絡的獨立代理（Opus）審核通過後就發布，不再等使用者核准；使用者之後可以要求換掉任何一張。`contract.md:145` 的逐批核准條款與 5d 補遺 S4 的引用在 PR D（D1）照此改寫，現在不動。R0 是新的風格樣本（敵人圖在 5d 之外，`style_approved` 只蓋裝備）：registry 根部新增 `roster_style_approved`、`roster_style_anchor`，只有 R0 的 `approve` 成功時寫入；`gen --batch r1..r4` 沒有它就拒絕。圖示與專屬獨特沿用 5d 的風格錨點（`sheet-gear-1`）與 5d 已核准的素材圖示當參考。
 22. **遺忘的圖示**：`forget` 的 14px 異常小圖示跟 E1 一起生成、審核、發布（G4 的小圖示工具）。B9 實作遺忘時，`AILMENT_ICON_IDS`（`render/artPaths.ts:27`）**不加** `forget`；異常列沒有圖示時照既有的文字顯示（B9 先確認退回文字的路徑存在，沒有就在 B9 補上文字退回，不畫任何圖）。E1 發布時才把 `forget` 加進 `AILMENT_ICON_IDS`。
 23. **圖示尺寸**：照 5d 的實際產出（`icon-blaze-core` 33×35），QA 用 `--height 32`、方框 ≤ 36×36；`contract.md` 的「24×24 方框」在 D1 改成和 5d 實際一致的寫法（只改文字，附 5d 的量測）。
-24. **生成**：一律 `codex_still.py generate`（`contract.md:6`）。codex 不能生圖時照使用者既有規則暫停回報，由控制者決定是否臨時改用 `--backend gemini`；工具不自動切換。
+24. **生成**：一律 `codex_still.py generate`（`contract.md:6`）。四批全做（含地區）。codex Plus 額度用完時改用 codex credits（使用者 2026-10-26 裁定）；**兩者都用完**才暫停回報。工具不自動切換到其他後端，也**絕不用佔位美術**。
 
-## 待使用者決定（只有美術與大取捨）
+## 使用者已決定（2026-10-26）
 
-1. **美術要你核准五次**：契約規定每一批都要你在審核頁核准（R0 風格樣本 5 隻＋1 張圖示表＋1 張裝備表；R1 13 隻；R2 27 隻；R3 28 隻；R4 27 隻）。如果你願意只看 R0 的風格、之後交給機械 QA＋獨立代理審核就發布，要改 `contract.md:145`；不改的話計畫照現狀走。
-2. **生成量**：至少 120 張 codex 圖（R0 每隻至少 2 版；每個 id 最多 3 次），Plus 有額度上限。照計畫分四批、每批之間有你的核准，額度用完就暫停等待，不換工具。若你想縮小規模（例如先只做本道 47 隻、地區 53 隻延後），告訴控制者，L3、L4 與 E3、E4 可以整段延後，前面不受影響。
+1. **美術核准**：使用者只核准 R0 風格樣本；R1–R4 每一批通過機械 QA 與全新脈絡的獨立代理審核後就發布，使用者之後可以要求換掉任何一張（裁定 21）。`contract.md` 的逐批核准條款與 5d 補遺 S4 的引用在 PR D 改寫。
+2. **規模**：四批全做，地區也做。codex Plus 額度用完就用 codex credits；兩者都用完才暫停回報。絕不用佔位美術（裁定 24）。
 
 ## 分期與 PR
 
@@ -202,7 +202,7 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 
 **使用者的方向（最高依據）**
 - 「怪物的種類目前也太少」「頭目肯定也是要夠多的，每種怪物要有不同的掉落物和特性，某些怪物最好還可以跟故事本身結合」。
-- 只有畫風與重大取捨找使用者；技術規格、數值、劇情由控制者決定。美術每一批照契約給使用者核准（裁定 21）。
+- 只有畫風與重大取捨找使用者；技術規格、數值、劇情由控制者決定。美術只有 R0 風格樣本給使用者核准，R1–R4 由機械 QA 與獨立代理審核後發布（裁定 21）。
 - 日系 RPG 的輕快、有梗；沉重留給回憶；「……」少用（圖鑑一個都不用）。
 
 **分支與基準**
@@ -642,10 +642,10 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 
 **Files:**
 - Create：`art-factory/starlantern/tools/roster_art.py`、`test_roster_art.py`。
-- Modify：`art-factory/starlantern/contract.md`（敵人的五種高度、圖示方框改成 5d 實際的寫法、名冊的批次與核准）、`tools/conftest.py`（把 `roster_art` 的 `PROMPTS` 也指到暫存資料夾）。
+- Modify：`art-factory/starlantern/contract.md`（敵人的五種高度、圖示方框改成 5d 實際的寫法、名冊的批次與核准；`:145` 的逐批核准條款改成裁定 21：使用者只核准名冊的 R0 風格樣本，R1–R4 由機械 QA 與全新脈絡的獨立代理審核後發布；同一個 commit 在 `docs/superpowers/plans/2026-10-19-starlantern-plan5d-addendum.md` S4 加一句指向新條款）、`tools/conftest.py`（把 `roster_art` 的 `PROMPTS` 也指到暫存資料夾）。
 - Read：`tools/batch.py:192-197`（敵人工作）、`tools/gear_art.py`（批次、`pick`、`approve`、`publish`、`--reopen`、hash 綁定）、`tools/codex_still.py`。
 
-- [ ] **Step 1：寫失敗的測試**（pytest）：`plan_json lists five rounds whose union is the hundred ids, no repeats`；`heights by class`（群 52、一般 64、重 76、守關者與部件 96、頭目 150；prompt 的高度句照 spec §13.1）；`prompts follow batch.py's sentence, with the anchors`（一般附 `enemy-slime`、守關者與頭目再附 `enemy-lanterneater`、R1 起再附一張 R0 同類；故事物種不附立繪）；`icon sheets are 5 by 4 with their parts`；`gear sheets reuse gear_art's layout and the 5d anchor`；`gen refuses r1 to r4 without roster_style_approved`；`approve refuses without the shown hashes, a date, or with any part not qa_passed`；`publish refuses an unapproved batch`；`no text in icons`（`iou-slip`、`hymn-sheet`、`torn-page`、`ash-page`、`epitaph-stone` 的描述含「blank」「unreadable marks, no letters」）。
+- [ ] **Step 1：寫失敗的測試**（pytest）：`plan_json lists five rounds whose union is the hundred ids, no repeats`；`heights by class`（群 52、一般 64、重 76、守關者與部件 96、頭目 150；prompt 的高度句照 spec §13.1）；`prompts follow batch.py's sentence, with the anchors`（一般附 `enemy-slime`、守關者與頭目再附 `enemy-lanterneater`、R1 起再附一張 R0 同類；故事物種不附立繪）；`icon sheets are 5 by 4 with their parts`；`gear sheets reuse gear_art's layout and the 5d anchor`；`gen refuses r1 to r4 without roster_style_approved`；`approve refuses without the shown hashes, a date, or with any part not qa_passed`；`r0 needs the user's words in --by`；`r1 to r4 need an independent review record instead`（`approve --batch rN --review <SDD 審核紀錄>`：紀錄必須列出該批每一張的 sha256 與「通過」；不需要也不接受使用者原話）；`publish refuses an unapproved batch`；`no text in icons`（`iou-slip`、`hymn-sheet`、`torn-page`、`ash-page`、`epitaph-stone` 的描述含「blank」「unreadable marks, no letters」）。
 - [ ] **Step 2**：`rtk proxy python -m pytest art-factory/starlantern/tools -q` 紅。**Step 3**：實作（結構照 `gear_art.py`；`DESC` 先放 spec §13.3 的表，其餘一般物種照 spec §5 的名稱與特性寫，審核頁顯示）。**Step 4**：pytest 綠。
 - [ ] **Step 5**：commit：`feat(art): roster_art, the monster roster's batches, prompts and gates`。
 
@@ -679,19 +679,20 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 
 # PR E1：美術第一批（R0＋R1）
 
-**開工條件**：PR D 已合併（生成與審核）；E1c 發布前 A、B2 也已合併（裁定 1）。生成一次只跑一張（`codex_still` 不能並行）。
+**開工條件**：PR D 已合併（生成與審核）；E1c 發布前 A、B2 也已合併（裁定 1）。生成一次只跑一張（`codex_still` 不能並行）。Plus 額度用完改用 codex credits，兩者都用完才暫停回報；絕不用佔位美術（裁定 24）。
 
 ### Task E1a：R0 風格樣本
 
 - [ ] **Step 1**：`roster_art.py gen --batch r0`：5 隻敵人（每隻至少 2 版）、`sheet-icons-roster-1`（R0＋R1 的 18 個圖示＋2 格空石板）、`sheet-gear-roster-1`（R0＋R1 的 5 件專屬獨特）、`forget` 的異常小圖示（G4 小圖示工具，照 `ailment` 圖示的規格）。
 - [ ] **Step 2**：`sl_art.py process` 與 QA；不過的重生（每個 id 最多 3 次），淘汰的記進 `rejected_attempts`、不留在 runtime 路徑。
-- [ ] **Step 3**：`review_roster.py r0`；控制者派全新脈絡的代理做視覺檢查（不參與生成）；控制者用 Artifact 工具發布審核頁，網址交給使用者。
+- [ ] **Step 3**：`review_roster.py r0`；控制者派全新脈絡的代理做視覺檢查（不參與生成）；控制者用 Artifact 工具發布審核頁，網址交給使用者。R0 是**唯一**等使用者核准的一批（裁定 21）。
 - [ ] **Step 4**：使用者核准後 `approve --batch r0 --by "<使用者原話> <YYYY-MM-DD>"`（寫 `roster_style_approved`、`roster_style_anchor`）。有異議的件記淘汰、重做、回到 Step 2。**不在這一步發布。**
 - [ ] **Step 5**：commit registry 與原始紀錄（不含 runtime 檔）：`chore(art): roster R0 style samples approved`。
 
 ### Task E1b：R1
 
-- [ ] **Step 1–4**：同 E1a，13 隻敵人（圖示與裝備已在 R0 的表裡）；附 R0 同類的一張當第二錨點；使用者核准 `approve --batch r1`。
+- [ ] **Step 1–3**：同 E1a 的 Step 1–3，13 隻敵人（圖示與裝備已在 R0 的表裡）；附 R0 同類的一張當第二錨點。
+- [ ] **Step 4**：**不等使用者核准**（裁定 21）：機械 QA 全過、全新脈絡的獨立代理（Opus，不參與生成）審核通過後 `approve --batch r1 --review <SDD 審核紀錄>`；審核頁網址照樣交給使用者，他之後要求換的圖照「重做→QA→審核→重新發布」處理。
 
 ### Task E1c：發布
 
@@ -740,7 +741,7 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 # PR E2：美術第二批（R2）
 
 ### Task E2a：R2 生成與審核
-- [ ] 照 E1b：27 隻（`roster_art.py plan-json` 的 r2 清單）、`sheet-icons-roster-2`、`-3`（26 個圖示）、`sheet-gear-roster-2`、`-3`（10 件）；使用者核准 `approve --batch r2`。
+- [ ] 照 E1b：27 隻（`roster_art.py plan-json` 的 r2 清單）、`sheet-icons-roster-2`、`-3`（26 個圖示）、`sheet-gear-roster-2`、`-3`（10 件）；照 E1b 的 Step 4 由獨立代理審核後 `approve --batch r2 --review <SDD 審核紀錄>`，不等使用者核准（裁定 21）。
 
 ### Task E2b：發布
 - [ ] 照 E1c：總數 ＋73（27＋26＋10×2），以發布前實際值重算；commit：`feat(art): roster R2, the deep road`。
@@ -772,7 +773,7 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 # PR E3：美術第三批（R3）
 
 ### Task E3a、E3b
-- [ ] 照 E2：28 隻、`sheet-icons-roster-4`、`-5`（27）、`sheet-gear-roster-4`、`-5`（12）；故事物種的閘門清單另請使用者只看一次語氣（spec §13.5）；發布 ＋79。commit：`feat(art): roster R3, the fire, frost and storm lands`。
+- [ ] 照 E2：28 隻、`sheet-icons-roster-4`、`-5`（27）、`sheet-gear-roster-4`、`-5`（12）；故事物種的閘門清單隨審核頁一起給使用者參考，不等他回覆（裁定 21）；發布 ＋79。commit：`feat(art): roster R3, the fire, frost and storm lands`。
 
 # PR L3：上線三（熾焰、霜凍、雷鳴）
 
