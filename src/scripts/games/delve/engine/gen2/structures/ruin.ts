@@ -1,10 +1,12 @@
 // ruin.ts — gen2 地表遺跡（照舊生成器的形狀）：寬 12–18、高 7–9 的石磚殘屋，一側坍塌，底 = 寬度內地表平均；
 // 起伏 > 5 或雪原就不放（回 null）。外框 = 屋子左右各多 1 欄：底以上清空、底以下到地表補該生態的土，箱子（'ruin'）、陶罐。
+// 地面覆寫（ground）：外框每欄的地面 = 底（屋子的石磚牆 / 屋頂是建物、不是地面）。
 // 本資料夾的非測試檔不得出現連續兩個星號、亂數與超越函數（測試會 grep），註解一律用 //。
 import { T, W } from '../../tiles';
 import { BIOME } from '../../world';
 import { HRng } from '../hrng';
-import { BpGrid, placeX, BP_SURFACE, type Blueprint, type BpCtx } from '../bpcore';
+import { BpGrid, placeX, emptyObjects, BP_SURFACE, type Blueprint, type BpCtx, type BpLandmark } from '../bpcore';
+import { gridFloors } from './shrine';
 
 const MAX_ROUGH = 5;
 
@@ -57,5 +59,13 @@ export function buildRuin(c: BpCtx, o: { force?: boolean } = {}): Blueprint | nu
     const px = rng.int(x + 1, x + w - 1);
     if (g.getFg(px, base - 1) === T.AIR) g.fg(px, base - 1, T.POT);
   }
-  return { id: c.id, kind: 'ruin', layer: BP_SURFACE, x: bx, y: top, w: bw, h: bottom - top, cells: g.cells(), chests: [{ x: cx, y: base - 1, kind: 'ruin' }] };
+  // 地標（M2a Task 14，舊生成器 landmarks.ts）：守望石像（T.GUARDIAN_STATUE、site 'ruin'），屋內地板（底上一列）離屋子中央最近、
+  // 頭頂空氣、左右不是箱子的空氣格（平手取左邊的；不吃亂數）；floors = 其餘站得住的地板格
+  const mid = x + (w >> 1), fy = base - 1, landmarks: BpLandmark[] = [];
+  for (let d = 0; d <= w >> 1 && !landmarks.length; d++) for (const xx of [mid - d, mid + d]) {
+    if (xx < x || xx >= x + w || g.getFg(xx, fy) !== T.AIR || g.getFg(xx, fy - 1) !== T.AIR || xx - 1 === cx || xx + 1 === cx) continue;
+    g.fg(xx, fy, T.GUARDIAN_STATUE); landmarks.push({ x: xx, y: fy, tile: T.GUARDIAN_STATUE, site: 'ruin' }); break;
+  }
+  return { id: c.id, kind: 'ruin', layer: BP_SURFACE, x: bx, y: top, w: bw, h: bottom - top, cells: g.cells(), chests: [{ x: cx, y: base - 1, kind: 'ruin' }],
+    ...emptyObjects(), landmarks, floors: gridFloors(g, x, x + w, fy), ground: { x0: bx, tops: new Int16Array(bw).fill(base) } };
 }

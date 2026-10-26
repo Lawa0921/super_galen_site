@@ -151,6 +151,11 @@ export const WARDEN_GROUPS: Record<string, string[]> = {
   'gate-breaker': ['gate-breaker', 'fallen-knight'],
 };
 
+/** A warden's fight (ruling 10, plan B5): the warden, and its escort only once that escort is live. */
+export function wardenGroup(id: string): string[] {
+  return (WARDEN_GROUPS[id] ?? [id]).filter((x, i) => i === 0 || listedEnemy(x));
+}
+
 /**
  * The boss group at a depth that is a multiple of 5 (ruling 11). The main road's depth 3 and the finale are decided before
  * this (engine/game.ts, plan B5). A boss not yet live, or one whose parts are not, is the lantern-eater, as before.

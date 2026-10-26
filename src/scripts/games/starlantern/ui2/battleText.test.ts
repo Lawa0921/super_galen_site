@@ -88,3 +88,31 @@ describe('level-up lines for a follower (plan 8h final review I2)', () => {
     expect(T.battle.followed('諾艾兒', '暴走流星')).toContain('已照〈暴走流星〉配好');
   });
 });
+
+describe('battleLines for the roster foes (roster plan B6)', () => {
+  const names: Record<string, string> = { e0: '市集的吆喝聲', e1: '錫兵殘影', hero: '洛恩' };
+  const nameOf = (k: string) => names[k] ?? k;
+
+  it('each foe mechanic has its line', () => {
+    const log: BattleEvent[] = [
+      { type: 'foe', actor: 'e0', cue: 'steal', target: 'hero', amount: 12 },
+      { type: 'foe', actor: 'e0', cue: 'flee' },
+      { type: 'foe', actor: 'e1', cue: 'wake' },
+      { type: 'foe', actor: 'e1', cue: 'reveal' },
+      { type: 'foe', actor: 'e0', cue: 'summon', target: 'e1' },
+      { type: 'foe', actor: 'e1', cue: 'rise' },
+    ];
+    expect(battleLines(log, nameOf)).toEqual([
+      '市集的吆喝聲從洛恩身上摸走了 12 金！', '市集的吆喝聲溜走了！', '錫兵殘影醒了，氣呼呼的！', '寶箱現出原形：是錫兵殘影！',
+      '市集的吆喝聲叫來了錫兵殘影！', '錫兵殘影又站了起來！',
+    ]);
+  });
+
+  it('a remnant fades into mist in the log', () => {
+    const log: BattleEvent[] = [{ type: 'ko', target: 'e1' }, { type: 'ko', target: 'e0' }];
+    expect(battleLines(log, nameOf, (k) => k === 'e1')).toEqual([T.log.mist('錫兵殘影'), T.log.ko('市集的吆喝聲')]);
+    expect(T.log.mist('錫兵殘影')).toBe('錫兵殘影散成了霧。');
+    // Without the check every fall reads as before.
+    expect(battleLines(log, nameOf)).toEqual([T.log.ko('錫兵殘影'), T.log.ko('市集的吆喝聲')]);
+  });
+});

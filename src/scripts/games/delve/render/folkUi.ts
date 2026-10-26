@@ -123,7 +123,7 @@ export class FolkUi {
     this.sig = sig;
     body.replaceChildren();
     const title = this.q('#delve-folk-title');
-    const where = n.site >= 0 ? g.siteName(n.origin === 'hall' ? 'hall' : 'village', n.site) : '';
+    const where = n.site !== null ? g.siteName(n.site) : '';
     if (title) title.textContent = `${n.name}・${def.title}${where ? `（${where}）` : ''}`;
     // 頭像 + 台詞 + 介紹
     const head = el('div', 'delve-npc-head');

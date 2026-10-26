@@ -8,10 +8,8 @@ import { regionFromJSON, toRegionJSON, type RegionJSON } from '../engine/discove
 import { BakedSource } from '../engine/bakedSource';
 import { isItemId } from '../engine/items';
 import type { DelveGame } from '../engine/game';
-import type { GenResult, BiomeSegment, Structure, Landform, ReservedZone, GenLayers } from '../engine/legacy/worldgen';
-import type { DungeonInfo } from '../engine/legacy/gen/dungeon';
-import type { VillageInfo, HallInfo } from '../engine/legacy/gen/settlements';
-import type { LandmarkInfo } from '../engine/legacy/gen/landmarks';
+import type { GenResult } from '../engine/legacy/worldgen';
+import type { BiomeSegment, Structure, Landform, ReservedZone, GenLayers, GenRelic, DungeonInfo, VillageInfo, HallInfo, LandmarkInfo } from '../engine/genTypes';
 import type { SpringSpec } from '../engine/liquid';
 import type { Drop } from '../engine/loot';
 import { SaveFormatError, MAX_WORLD_H, MAX_WORLD_W } from './serialize';
@@ -20,7 +18,7 @@ export interface LegacyMeta {
   frame: CentralFrame; surfaceY: number; rockY: number; cavernY: number; moltenY: number;
   surface: Int16Array; biome: Uint8Array; layers: GenLayers; spawn: { x: number; y: number };
   biomes: BiomeSegment[]; structures: Structure[]; landforms: Landform[]; dungeonZone: ReservedZone; dungeon: DungeonInfo | null;
-  tablets: GenResult['tablets']; relics: GenResult['relics']; springs: SpringSpec[]; villages: VillageInfo[]; halls: HallInfo[];
+  tablets: GenResult['tablets']; relics: GenRelic[]; springs: SpringSpec[]; villages: VillageInfo[]; halls: HallInfo[];
   landmarks: LandmarkInfo[]; potDrops: [number, Drop[]][]; regions: RegionJSON[];
 }
 export type LegacyMetaJSON = Omit<LegacyMeta, 'surface' | 'biome' | 'layers'> & {

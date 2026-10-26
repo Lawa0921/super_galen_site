@@ -15,7 +15,7 @@ export const BLEND_W = 40, SHORE_RAMP = 100, BEACH_W = 40, SEA_DEPTH = 46, ISLAN
 // 各 variant 的起伏倍率（裁決 P3：Layout 會產生的每個 variant 都有值；島與海走專用規則，0 只是讓查表不會 undefined）
 export const AMP: Readonly<Record<number, number>> = {
   [VARIANT.PLAIN]: 0.5, [VARIANT.HILLS]: 1, [VARIANT.HIGH]: 1.8,
-  [VARIANT.SPAWN]: 0.5, [VARIANT.BEACH]: 0.3, [VARIANT.ISLAND]: 0, [VARIANT.SEA]: 0,
+  [VARIANT.SPAWN]: 0.5, [VARIANT.BEACH]: 0.3, [VARIANT.ISLAND]: 0, [VARIANT.SEA]: 0, [VARIANT.DUNGEON]: 0.3,
 };
 
 export const COL_SEA = 0, COL_BEACH = 1, COL_LAND = 2, COL_ISLAND = 3;

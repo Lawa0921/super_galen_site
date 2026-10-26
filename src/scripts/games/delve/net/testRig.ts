@@ -15,6 +15,7 @@ import { normalizeAppearance } from '../engine/appearance';
 import type { ItemId } from '../engine/items';
 import type { Stack } from '../engine/inventory';
 import { FixedStepper } from '../render/model';
+import { SITE_NPC_BASE } from '../engine/siteRegistry';
 import { createCharacter, type DelveCharacter } from '../save/character';
 import { decodeWorld, encodeWorld, restoreSplit, type HeldChar, type VisitSave } from '../save/worldSave';
 import { bakeWorld } from '../save/bake';
@@ -85,6 +86,10 @@ export interface Rig {
   reconnect(i: number): void;
   /** 客人 i 同步集合內、已 live 的欄（升冪） */
   synced(i: number): number[];
+  /** 房主自己的玩家傳送到 p（Task 18） */
+  hostTeleport(p: { x: number; y: number }): void;
+  /** 客人 i（預設 0）在房主那裡的分身傳送到 p（客人的副本跟著房主的位置載入欄，Task 18） */
+  guestTeleport(p: { x: number; y: number }, i?: number): void;
 }
 
 /** 抄 engine/world.stream.test.ts 的 TestSource：依座標雜湊寫 STONE / DIRT / AIR 與牆 */
@@ -294,6 +299,8 @@ export function coopRig(o: RigOptions = {}): Rig {
       return g;
     },
     rehost() { host = newHost(); return host; },
+    hostTeleport(p) { hostGame.teleport(p.x, p.y); },
+    guestTeleport(p, i = 0) { const a = hostGame.actors.get(guests[i].pid!)!; hostGame.withActor(a, () => hostGame.teleport(p.x, p.y)); },
     reconnect(i) { guests[i].reconnect(pair(i)); },
     synced(i) {
       const g = guests[i], rep = g.game, sync = g.sync;
@@ -348,6 +355,31 @@ export function coopRig(o: RigOptions = {}): Rig {
     rig.run(1000);
   }
   return rig;
+}
+
+/** gen2 世界：東側由近到遠第一座外圍村莊（家鄉以外）的委託板（Task 18） */
+export function outerVillageBoard(rig: Rig): { x: number; y: number } {
+  const src = rig.hostGame.gen2();
+  if (!src) throw new Error('outerVillageBoard: not a gen2 world');
+  for (let i = 2; i < 40; i += 2) {
+    const m = src.layout.landmass(1, i);
+    for (const b of src.blueprints.overlapping(m.x0, m.x1)) if (b.site?.kind === 'village' && b.x >= m.x0 && b.x < m.x1) return { ...b.site.info.board };
+  }
+  throw new Error('outerVillageBoard: no outer village');
+}
+/** gen2 世界：東側由近到遠第一座隱士島（海上、kind 'island' 的藍圖）的 hermit site（M2a Task 20） */
+export function seaHermit(rig: Rig): { key: string; at: { x: number; y: number } } {
+  const src = rig.hostGame.gen2();
+  if (!src) throw new Error('seaHermit: not a gen2 world');
+  for (let i = 1; i < 40; i += 2) {
+    const m = src.layout.landmass(1, i);
+    for (const b of src.blueprints.overlapping(m.x0, m.x1)) if (b.kind === 'island' && b.site?.kind === 'hermit' && b.x >= m.x0 && b.x < m.x1) return { key: b.site.key, at: { ...b.site.at } };
+  }
+  throw new Error('seaHermit: no hermit island');
+}
+/** 聚落 NPC（id ≥ SITE_NPC_BASE）的 [key, id]，依 key 排序（房主與客人比對用，Task 18） */
+export function siteNpcIds(game: DelveGame): [string, number][] {
+  return game.folk.npcs.filter((n) => n.id >= SITE_NPC_BASE).map((n): [string, number] => [n.key, n.id]).sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
 }
 
 /** 一個 chunk 內的箱子與解鎖（tile 鍵升冪）的簽名 */

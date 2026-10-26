@@ -2564,25 +2564,18 @@ test.describe('starlantern', () => {
   });
 
   test('the title still comes when the pixel font is slow (legibility Task 4)', { annotation: { type: 'font-blocked' } }, async ({ page }) => {
-    // Timed from the document (the font's preload holds the load event itself back), against the same page with the font
-    // on time: the game waits 3s for it, so the slow font adds about 3s, and well under the 5s the font is held back
-    // (4.5s: a busy machine's second boot alone has measured 3.5-3.7s). The page's own boot is not the font's doing.
+    // The font is held back 8s. The game waits 3s for it, timed from the page's own clock, so the title can't come sooner;
+    // and it gave up rather than waiting it out, so when the title shows the font still hasn't come. Nothing here is
+    // compared with a second boot, which a busy machine slows by itself.
     const title = page.locator('.slx-title [role=option]').first();
-    const timeToTitle = async () => {
-      await page.goto('/games/starlantern', { waitUntil: 'domcontentloaded' });
-      const t = Date.now();
-      await expect(title).toBeVisible({ timeout: 10_000 });
-      return Date.now() - t;
-    };
-    const onTime = await timeToTitle();
     let asked = 0;
-    await page.route('**/Cubic_11.woff2', async (r) => { asked++; await new Promise((ok) => setTimeout(ok, 5000)); await r.continue().catch(() => undefined); });
-    const slow = await timeToTitle();
+    await page.route('**/Cubic_11.woff2', async (r) => { asked++; await new Promise((ok) => setTimeout(ok, 8000)); await r.continue().catch(() => undefined); });
+    await page.goto('/games/starlantern', { waitUntil: 'domcontentloaded' });
+    await expect(title).toBeVisible({ timeout: 7_000 });
+    const at = await page.evaluate(() => ({ ms: performance.now(), font: document.fonts.check('12px "Cubic 11"') }));
     expect(asked, 'the font was asked for (and held back)').toBeGreaterThanOrEqual(1);
-    // The game did wait for it (about 3s; without loadPixelFont the title would not wait at all), and gave up before the
-    // font came (waiting it out would take 5s or more).
-    expect(slow - onTime, `the title took ${slow}ms with the font 5s late, ${onTime}ms with it on time`).toBeGreaterThan(2000);
-    expect(slow - onTime, `the title took ${slow}ms with the font 5s late, ${onTime}ms with it on time`).toBeLessThan(4500);
+    expect(at.ms, `the title came ${Math.round(at.ms)}ms into the page, before the game's 3s wait for the font`).toBeGreaterThan(2950);
+    expect(at.font, `the title came ${Math.round(at.ms)}ms into the page with the font already there: the game waited it out`).toBe(false);
   });
 
   test('five members with five ailments each never cover an enemy HP bar, at 1280x720 or 844x390 (one line each)', async ({ page }) => {

@@ -5,11 +5,13 @@ import { Rng } from './rng';
 import { OUTFITS, OUTFIT_PLAIN } from './appearance';
 
 const ROLE_IDS = Object.keys(ROLES) as FolkRole[];
+// 釘住的雜湊只涵蓋加布衣時就有的職能（隱士是 M2a Task 18 才加的，外觀另外驗：同種子同樣子、不穿布衣——下面的測試涵蓋所有職能）
+const PINNED_ROLES = ROLE_IDS.filter((r) => r !== 'hermit');
 
 describe('folkLook 與基本布衣', () => {
   it('釘住：每種職能 × 3 個種子的外觀和加布衣之前（5dc476ff 算出來的雜湊）一樣', () => {
     const out: string[] = [];
-    for (const role of ROLE_IDS) for (let s = 0; s < 3; s++) out.push(`${role}:${s}=${JSON.stringify(folkLook(role, new Rng(`pin:${role}:${s}`)))}`);
+    for (const role of PINNED_ROLES) for (let s = 0; s < 3; s++) out.push(`${role}:${s}=${JSON.stringify(folkLook(role, new Rng(`pin:${role}:${s}`)))}`);
     let x = 0x811c9dc5;
     for (const ch of out.join('\n')) { x ^= ch.charCodeAt(0); x = Math.imul(x, 0x01000193) >>> 0; }
     expect(x.toString(16)).toBe('84509816');

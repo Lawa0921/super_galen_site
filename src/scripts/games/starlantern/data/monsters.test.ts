@@ -192,14 +192,25 @@ describe('one hundred roster foes (roster plan Task A2, spec §5)', () => {
     for (const k of ['stats', 'skills', 'weak', 'resist', 'exp', 'gold', 'boss', 'floor'] as const) expect(m[k], k).toEqual(l[k]);
   });
 
-  it('only plain effects so far', () => {
-    // Spec §1.4's kinds: the mechanics (B1, B2) add their own fields later.
+  it('only plain effects and the mechanics built so far', () => {
+    // Spec §1.4's kinds, and the mechanics plan B has built: M1's wind-up (B2), M2's guard (a foe's `cover` on an ally,
+    // B2), M24's hunt (B2), M13's steal after a hit on one member (B3), M4's call of a foe that exists (B4) and M22's
+    // fold-back of a fallen ally (B4). The later mechanics (B2 PR) add their own fields.
     const DAMAGE_KEYS = new Set(['kind', 'power', 'element', 'scale', 'melee', 'hits', 'crit', 'execute', 'wounded']);
+    const SKILL_KEYS = new Set(['name', 'chance', 'target', 'effects', 'windup', 'when', 'oncePerFight']);
     for (const id of rosterIds()) for (const s of ENEMIES[id].skills) {
-      expect(['enemy', 'enemies', 'row', 'column', 'cross', 'self', 'ally', 'allies'], `${id} ${s.name}`).toContain(s.target);
+      expect(['enemy', 'enemies', 'row', 'column', 'cross', 'self', 'ally', 'allies', 'deadAlly'], `${id} ${s.name}`).toContain(s.target);
+      expect(s.target === 'deadAlly', `${id} ${s.name}`).toBe(s.when === 'deadAlly');
       expect(s.chance > 0 && s.chance <= 1, `${id} ${s.name}`).toBe(true);
+      for (const k of Object.keys(s)) expect(SKILL_KEYS.has(k), `${id} ${s.name} ${k}`).toBe(true);
+      if (s.windup !== undefined) expect(s.windup.length > 0 && s.windup !== s.name, `${id} ${s.name}`).toBe(true);
       for (const e of s.effects) {
-        expect(['damage', 'inflict', 'buff', 'heal'], `${id} ${s.name}`).toContain(e.kind);
+        expect(['damage', 'inflict', 'buff', 'heal', 'cover', 'hunt', 'steal', 'summon', 'revive'], `${id} ${s.name}`).toContain(e.kind);
+        if (e.kind === 'summon') expect([s.target, s.effects.length, !!ENEMIES[e.id], e.max === undefined || e.max > 0], `${id} ${s.name}`).toEqual(['self', 1, true, true]);
+        if (e.kind === 'revive') expect(s.when, `${id} ${s.name}`).toBe('deadAlly');
+        if (e.kind === 'steal') expect([s.target, s.effects[0].kind, e.perDepth], `${id} ${s.name}`).toEqual(['enemy', 'damage', 5]);
+        if (e.kind === 'cover') expect([s.target, s.effects.length], `${id} ${s.name}`).toEqual(['ally', 1]);
+        if (e.kind === 'hunt') expect(s.target, `${id} ${s.name}`).toBe('enemy');
         if (e.kind === 'inflict') expect(['poison', 'sleep'], `${id} ${s.name}`).toContain(e.status);
         if (e.kind === 'damage') for (const k of Object.keys(e)) expect(DAMAGE_KEYS.has(k), `${id} ${s.name} ${k}`).toBe(true);
       }
@@ -706,10 +717,9 @@ describe('every live wave keeps the tables whole (PR A review, item 1; spec §3.
 
 describe('a warden waits for its room (PR A review, item 3)', () => {
   it('no warden goes live before the map can mark and enter a warden room', () => {
-    // floorOf places a live warden's room, but nothing marks or enters one until plan B5 (the elite's event tile, `move`).
-    // B5 adds the 'warden' marker and its handling, then flips the first expectation and removes this note.
+    // floorOf places a live warden's room; plan B5 marks it on the map (the elite's event tile) and `move` enters it.
     const ready = Object.hasOwn(MARKER_GLYPH, 'warden');
-    expect(ready).toBe(false);
+    expect(ready).toBe(true);
     for (const id of [...MAINLINE_WARDENS, ...Object.values(REGION_WARDENS)]) expect(ROSTER_LIVE.has(id) && !ready, `${id} is live with no warden room`).toBe(false);
   });
 });

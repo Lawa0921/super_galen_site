@@ -447,9 +447,9 @@ $slx-upright: '(orientation: portrait) and (max-width: #{$slx-w - 1px})';
 .slx-target { position: absolute; top: 118px; width: 12px; margin-left: -6px; text-align: center; color: $slx-gold; animation: slx-bob 0.6s steps(2) infinite alternate; }   // two whole-pixel stops (ruling 8)
 @keyframes slx-bob { to { transform: translateY(4px); } }
 // One class per (enemy count, index): enemies stand at width * (i + 1) / (n + 1), as BattleView lays them out.
-// Must match BATTLE_LEFT in ui2/scenes/battle.ts.
+// Must match BATTLE_LEFT in ui2/scenes/battle.ts. Up to ROW_MAX foes (engine/battle.ts): summons join the row (roster plan B6).
 $slx-battle-left: 150px;
-@for $n from 1 through 4 {
+@for $n from 1 through 8 {
   @for $i from 0 through $n - 1 {
     .slx-target-#{$n}-#{$i} { left: $slx-battle-left + (640px - $slx-battle-left) * ($i + 1) / ($n + 1); }
   }

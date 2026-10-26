@@ -168,7 +168,8 @@ export class ExploreUi {
       count.dataset.count = String(c.found);
       head.append(el('span', 'delve-j-cat-name', c.label), count, segBar(c.total ? c.found / c.total : 0, 10));
       li.appendChild(head);
-      const names = g.regions.filter((r) => r.cat === c.cat && d.isFound(r.id)).map((r) => r.name);
+      // 已知地區表（gen2：家鄉 + 走過的外圍；舊世界 = 中央 regions），每個地區一筆（同名不合併）
+      const names = d.listKnown().filter((r) => r.cat === c.cat && d.isFound(r.id)).map((r) => r.name);
       const left = c.total - c.found;
       li.appendChild(el('p', 'delve-j-names', names.length ? names.join('、') + (left ? ` …還有 ${left} 處` : '') : `尚未發現（${c.total} 處）`));
       cats.appendChild(li);

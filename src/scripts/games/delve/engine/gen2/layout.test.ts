@@ -1,13 +1,13 @@
-// layout.test.ts — gen2 版面：海 / 大陸交替、寬度範圍、地區鋪滿、島與槽位、文化指派、tier、家鄉、鎖、查詢一致性、禁用 API。
+// layout.test.ts — gen2 版面：海 / 大陸交替、寬度範圍、地區鋪滿、島與槽位、文化指派、tier、家鄉、鎖、查詢一致性（禁用 API 的掃描在 determinism.test.ts）。
 import { describe, it, expect } from 'vitest';
-import { readFileSync, readdirSync } from 'node:fs';
-import { join } from 'node:path';
-import { Layout, newWorldOrigin, SPAWN_X, VARIANT, HOME_X0, HOME_X1, SEA_SLOT_W } from './layout';
+import { Layout, newWorldOrigin, homeDungeonRegion, SPAWN_X, VARIANT, HOME_X0, HOME_X1, SEA_SLOT_W } from './layout';
 import { LockTable } from './locks';
 import { poolFor, CULTURE_POOL, CULTURES } from './cultures';
 import { BIOME } from '../world';
+import { hash2, seedInt } from '../noise';
 
 const SEEDS20 = Array.from({ length: 20 }, (_, k) => `seed-${k}`);
+const SEEDS50 = Array.from({ length: 50 }, (_, k) => `home-${k}`);
 const L = (seed: string, locks = new LockTable()) => new Layout(seed, newWorldOrigin(341, 334), locks, 0);
 
 describe('gen2 Layout', () => {
@@ -64,8 +64,8 @@ describe('gen2 Layout', () => {
       expect(L(seed).regionAt((d.x0 + d.x1) >> 1)!.kind).toBe('island'); });
     const free = m.slots.find((s) => s.poi !== 'island'); if (free) expect(L(seed).regionAt(free.x0 + 1)!.kind).toBe('sea'); } });
 
-  it('槽位均分（最後一槽吃餘數）、島寬 ≤ 槽寬 − 80 且置中 ± floor(槽寬 / 10)、島依 x 排序、其他槽是沉船或木箱', () => {
-    const pois = new Set<string>();
+  it('槽位均分（最後一槽吃餘數）、島寬 ≤ 槽寬 − 80 且置中 ± floor(槽寬 / 10)、島依 x 排序、其他槽是沉船 / 木箱 / 珊瑚礁 / 海底遺跡（Task 20）', () => {
+    const pois = new Set<string>(), types = new Set<string>();
     for (const seed of SEEDS20) for (const side of [1, -1] as const) for (let i = 1; i <= 30; i += 2) {
       const m = L(seed).landmass(side, i), w = m.x1 - m.x0, n = m.slots.length, base = Math.ceil(w / n);
       m.slots.forEach((s, k) => expect(s.x1 - s.x0).toBe(k < n - 1 ? base : w - base * (n - 1)));
@@ -75,22 +75,38 @@ describe('gen2 Layout', () => {
         expect(Math.abs(d.x0 + ((d.x1 - d.x0) >> 1) - c)).toBeLessThanOrEqual(Math.floor(sw / 10));
       }
       for (let j = 1; j < m.islands.length; j++) expect(m.islands[j].slot).toBeGreaterThan(m.islands[j - 1].slot);
-      for (const s of m.slots) { pois.add(s.poi); expect(['island', 'shipwreck', 'crate']).toContain(s.poi); }
+      // Task 20：島的種類；依槽序的第一座島一定有建物（spec §8）
+      for (const d of m.islands) { types.add(d.type); expect(['plain', 'lighthouse', 'hermit', 'wreck']).toContain(d.type); }
+      expect(m.islands[0].type).not.toBe('plain');
+      for (const s of m.slots) { pois.add(s.poi); expect(['island', 'shipwreck', 'crate', 'reef', 'sea_ruin']).toContain(s.poi); }
       for (const r of m.regions) expect(r).toMatchObject({ side, landmass: i, culture: null, tier: m.tier });
       m.regions.slice(1).forEach((r) => expect(r.biome).toBe(BIOME.FOREST));
     }
-    expect(pois).toEqual(new Set(['island', 'shipwreck', 'crate']));
+    expect(pois).toEqual(new Set(['island', 'shipwreck', 'crate', 'reef', 'sea_ruin']));
+    expect(types).toEqual(new Set(['plain', 'lighthouse', 'hermit', 'wreck']));
   });
 
-  it('文化：第一片東西大陸恰一片霧竹、20 個種子兩側都出現過；之後相鄰大陸文化不同；tier', () => {
-    const sides = new Set<number>();
-    for (const seed of SEEDS20) { const lay = L(seed), e = lay.landmass(1, 2), w = lay.landmass(-1, 2);
-      expect([e.culture, w.culture].filter((c) => c === 'mistbamboo')).toHaveLength(1);
-      sides.add(e.culture === 'mistbamboo' ? 1 : -1);
-      for (let i = 4; i <= 12; i += 2) expect(lay.landmass(1, i).culture).not.toBe(lay.landmass(1, i - 2).culture);
-      expect(lay.landmass(1, 1).tier).toBe(1); expect(lay.landmass(1, 2).tier).toBe(1); expect(lay.landmass(1, 3).tier).toBe(2);
-      expect(e.kind === 'continent' && e.regions.every((r) => r.kind === (e.culture ? 'culture' : 'wild'))).toBe(true); }
-    expect(sides.size).toBe(2);
+  // M2a Task 19：海點偏移收到 ± min(20, floor(槽寬 / 10))（340 規則在海上嚴格成立，Task 21）
+  it('海槽偏移 ≤ 20：島與沉船的中心離槽中心 ≤ 20', () => {
+    for (const seed of SEEDS20) for (const side of [1, -1] as const) for (const i of [1, 3, 5]) {
+      const m = L(seed).landmass(side, i);
+      for (const d of m.islands) { const s = m.slots[d.slot]; expect(Math.abs(((d.x0 + d.x1) >> 1) - ((s.x0 + s.x1) >> 1)), `${seed} ${side}:${i}`).toBeLessThanOrEqual(20 + 1); }
+    }
+  }, 30_000);
+
+  // M2a Task 18（Q14）：v0 / v1 只有荒野大陸（spec §4.1 2026-10-24 修訂），霧竹之國的指派（離家最近、尚未進入過的那片、ver ≥ 2）是 M4 的工作
+  it('v0：所有大陸都是荒野（culture null、kind wild），含第一片東 / 西大陸；tier', () => {
+    for (const seed of SEEDS20) for (const side of [1, -1] as const) for (let i = 2; i <= 12; i += 2) {
+      const m = L(seed).landmass(side, i);
+      expect(m.culture, `${seed} ${side}:${i}`).toBeNull(); expect(m.regions.every((r) => r.kind === 'wild')).toBe(true);
+    }
+    const lay = L('tier');
+    expect(lay.landmass(1, 1).tier).toBe(1); expect(lay.landmass(1, 2).tier).toBe(1); expect(lay.landmass(1, 3).tier).toBe(2);
+  }, 30_000);
+  it('鎖表裡已存的 culture 照舊尊重（下面「鎖覆寫文化並往後推」的鎖表測試照留）', () => {
+    const locks = new LockTable(); locks.lock(1, 2, { ver: 0, culture: 'mistbamboo' });
+    expect(L('s', locks).landmass(1, 2).culture).toBe('mistbamboo'); expect(L('s', locks).landmass(-1, 2).culture).toBeNull();
+    expect(L('s', locks).landmass(1, 2).regions.every((r) => r.kind === 'culture' && r.culture === 'mistbamboo')).toBe(true);
   });
 
   it('tier：大陸 = 第幾片、海 = 往外下一片大陸；ver 沒鎖用 latestVer', () => {
@@ -109,16 +125,18 @@ describe('gen2 Layout', () => {
     expect(lay.regionAt(0)).toMatchObject({ variant: VARIANT.BEACH, x1: 70 }); expect(lay.regionAt(4199)).toMatchObject({ variant: VARIANT.BEACH, x0: 4130 });
     expect(new Set(h.regions.map((r) => r.biome))).toEqual(new Set([0, 1, 2, 3])); expect(h.regions.every((r) => r.kind === 'home')).toBe(true); } });
 
-  it('家鄉版面：鋪滿、雪原 / 叢林各在一側外圍、沙漠寬度與離外圍 ≥ 84 格森林、兩側都出現過', () => {
+  // M2a Task 7：一端海灘內側是 420 寬的地城區（VARIANT.DUNGEON），那一側的外圍生態往內移
+  it('家鄉版面：鋪滿、雪原 / 叢林各在一側外圍（地城區內側）、沙漠寬度與離外圍 ≥ 84 格森林、兩側都出現過', () => {
     const snowSides = new Set<string>(), desertSides = new Set<string>();
     for (const seed of SEEDS20) {
-      const h = L(seed).landmassAt(SPAWN_X)!, R = h.regions;
+      const h = L(seed).landmassAt(SPAWN_X)!, R = h.regions, dWest = homeDungeonRegion(h).x0 === 70;
       R.forEach((r, k) => { expect(r.x0).toBe(k ? R[k - 1].x1 : 0); expect(r.x1).toBeGreaterThan(r.x0); expect(r.index).toBe(k);
         expect(r).toMatchObject({ side: 0, landmass: 0, tier: 0, culture: null }); });
       expect(R.at(-1)!.x1).toBe(4200);
       expect(R[0]).toMatchObject({ x0: 0, x1: 70, variant: VARIANT.BEACH, biome: BIOME.FOREST });
       expect(R.at(-1)).toMatchObject({ x0: 4130, x1: 4200, variant: VARIANT.BEACH, biome: BIOME.FOREST });
-      const outerW = R[1], outerE = R.at(-2)!;
+      expect(dWest ? R[1] : R.at(-2)).toMatchObject({ variant: VARIANT.DUNGEON, biome: BIOME.FOREST });
+      const outerW = dWest ? R[2] : R[1], outerE = dWest ? R.at(-2)! : R.at(-3)!;
       expect(new Set([outerW.biome, outerE.biome])).toEqual(new Set([BIOME.SNOW, BIOME.JUNGLE]));
       for (const o of [outerW, outerE]) {
         const w = o.x1 - o.x0;
@@ -130,11 +148,35 @@ describe('gen2 Layout', () => {
       const d = deserts[0], dw = d.x1 - d.x0; expect(dw).toBeGreaterThanOrEqual(315); expect(dw).toBeLessThanOrEqual(420);
       if (d.x1 <= 1680) { expect(d.x0 - outerW.x1).toBeGreaterThanOrEqual(84); expect(1680 - d.x1).toBeGreaterThanOrEqual(84); desertSides.add('w'); }
       else { expect(d.x0 - 2520).toBeGreaterThanOrEqual(84); expect(outerE.x0 - d.x1).toBeGreaterThanOrEqual(84); desertSides.add('e'); }
-      for (const r of R) if (r.biome === BIOME.FOREST && r.variant !== VARIANT.BEACH && r.variant !== VARIANT.SPAWN)
+      for (const r of R) if (r.biome === BIOME.FOREST && r.variant !== VARIANT.BEACH && r.variant !== VARIANT.SPAWN && r.variant !== VARIANT.DUNGEON)
         expect([VARIANT.PLAIN, VARIANT.HILLS]).toContain(r.variant);
       expect(R.filter((r) => r.variant === VARIANT.SPAWN)).toHaveLength(1);
+      expect(R.filter((r) => r.variant === VARIANT.DUNGEON)).toHaveLength(1);
     }
     expect(snowSides.size).toBe(2); expect(desertSides.size).toBe(2);
+  });
+
+  it('家鄉地城區：420 寬、緊貼一端沙灘、FOREST、50 個種子兩側都出現；四生態都在、沙漠放得下', () => { const sides = new Set<number>();
+    for (const seed of SEEDS50) { const h = L(seed).landmassAt(SPAWN_X)!, d = homeDungeonRegion(h);
+      expect(d.x1 - d.x0).toBe(420); expect([70, 3710]).toContain(d.x0); expect(d.biome).toBe(BIOME.FOREST); sides.add(d.x0);
+      expect(d).toMatchObject({ kind: 'home', variant: VARIANT.DUNGEON });
+      expect(new Set(h.regions.map((r) => r.biome))).toEqual(new Set([0, 1, 2, 3]));
+      h.regions.forEach((r, k) => { if (k) expect(r.x0).toBe(h.regions[k - 1].x1); if (r.variant !== VARIANT.BEACH) expect(r.x1 - r.x0).toBeGreaterThanOrEqual(84); }); }
+    expect(sides.size).toBe(2); }, 60_000);
+
+  it('沙漠擲到地城側但放不下（外圍寬 + 84 + 沙漠寬 + 84 > 1680 − 70 − 420）時改放另一側；放得下就留在擲到的那側', () => {
+    let moved = 0, kept = 0;
+    for (let k = 0; k < 400; k++) {
+      const seed = `dz${k}`, h = L(seed).landmassAt(SPAWN_X)!, R = h.regions, dWest = homeDungeonRegion(h).x0 === 70;
+      const outer = dWest ? R[2] : R.at(-3)!, desert = R.find((r) => r.biome === BIOME.DESERT)!;
+      const rolledOnDz = (hash2(0, 3, seedInt(seed, 'g2-home')) < 0.5) === dWest;
+      const fits = (outer.x1 - outer.x0) + 84 + (desert.x1 - desert.x0) + 84 <= 1680 - 70 - 420;
+      const onDz = dWest ? desert.x1 <= 1680 : desert.x0 >= 2520;
+      expect(onDz, seed).toBe(rolledOnDz && fits);
+      if (rolledOnDz) { if (fits) kept++; else moved++; }
+    }
+    // 兩種情況都真的發生（不是空測）
+    expect(kept).toBeGreaterThan(20); expect(moved).toBeGreaterThan(0);
   });
 
   it('家鄉除兩端海灘外每個地區都 ≥ 84 寬（SEEDS20 + 300 個雜湊種子）', () => {
@@ -176,7 +218,8 @@ describe('gen2 Layout', () => {
     expect(lay.landmass(1, 1)).toMatchObject({ kind: 'continent', x0: 10_000, tier: 1 }); expect(lay.landmassAt(5_000)).toBeNull();
     expect(lay.landmass(1, 2)).toMatchObject({ kind: 'sea', x0: lay.landmass(1, 1).x1, tier: 2 });
     expect(lay.landmass(-1, 1)).toMatchObject({ kind: 'sea', x1: -1_000, tier: 1 });
-    expect([lay.landmass(1, 1).culture, lay.landmass(-1, 2).culture].filter((c) => c === 'mistbamboo')).toHaveLength(1);
+    // v0 只有荒野（Q14）
+    expect([lay.landmass(1, 1).culture, lay.landmass(-1, 2).culture]).toEqual([null, null]);
     expect(lay.landmassAt(9_999)).toBeNull(); expect(lay.landmassAt(-1_000)).toBeNull();
     expect(lay.landmassAt(10_000)!.i).toBe(1); expect(lay.landmassAt(-1_001)!.i).toBe(1);
   });
@@ -189,21 +232,12 @@ describe('gen2 Layout', () => {
 
 describe('gen2 cultures', () => {
   it('文化池與 poolFor', () => {
-    expect(CULTURE_POOL).toEqual({ 0: ['mistbamboo', null] });
-    expect(poolFor(0)).toEqual(['mistbamboo', null]); expect(poolFor(5)).toBe(CULTURE_POOL[0]);
+    // v0 的池只有荒野（Q14）；霧竹之國的命名池留著（鎖表裡已存的霧竹大陸、M4 用）
+    expect(CULTURE_POOL).toEqual({ 0: [null] });
+    expect(poolFor(0)).toEqual([null]); expect(poolFor(5)).toBe(CULTURE_POOL[0]);
     expect(() => poolFor(-1)).toThrow(RangeError);
     expect(CULTURES.mistbamboo.name).toBe('霧竹之國'); expect(CULTURES.mistbamboo.prefixes).toHaveLength(8);
     expect(new Set(CULTURES.mistbamboo.prefixes).size).toBe(8);
     expect(CULTURES.mistbamboo.suffixes).toEqual(['山', '谷', '之里']);
-  });
-});
-
-describe('gen2 禁用 API', () => {
-  it('engine/gen2 非測試檔不得用 Math.random / 浮點超越函數 / **', () => {
-    const dir = __dirname;
-    const files = readdirSync(dir).filter((f) => f.endsWith('.ts') && !f.endsWith('.test.ts'));
-    expect(files).toEqual(expect.arrayContaining(['layout.ts', 'locks.ts', 'cultures.ts']));
-    const banned = /Math\.random|Math\.sin|Math\.cos|Math\.pow|Math\.exp|Math\.log|Math\.sqrt|Math\.hypot|\*\*/;
-    for (const f of files) expect(banned.exec(readFileSync(join(dir, f), 'utf8'))?.[0] ?? null, f).toBeNull();
   });
 });

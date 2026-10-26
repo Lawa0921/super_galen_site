@@ -99,7 +99,19 @@ export type Effect =
   /** The target's single attacks next round go to the caster (Scarlet's 盾擊). */
   | { kind: 'challenge' }
   /** The target's ultimate gauge grows by `amount` (Safira's 拍手). */
-  | { kind: 'gauge'; amount: number };
+  | { kind: 'gauge'; amount: number }
+  /** A foe calls the target out: next round every foe's single blow goes to her; a taunt comes first, defending lifts it (roster plan B2, M24). */
+  | { kind: 'hunt' }
+  /**
+   * After a landed hit on the target, the foe takes gold from the run pack: up to depth × `perDepth` a time, never below
+   * zero; a kill gives it back (a warden twice over), a flee loses it (roster plan B3, M13). A fight with no pack takes none.
+   */
+  | { kind: 'steal'; perDepth: number }
+  /**
+   * The foe calls a foe `id` into the fight (roster plan B4, M4): no more than `max` a fight, only while the fight has room
+   * (its group cap; 4 in a boss fight) and only one already live; otherwise it attacks instead. The newcomer pays nothing.
+   */
+  | { kind: 'summon'; id: string; max?: number };
 /**
  * A skill's part in its owner's mechanic: `release` spends Chizuru's barrier for power; `coin-power` and `coin-hits` spend
  * Liz's coins for power or for hits; `consume-aim` spends Sylvie's aim for power; `ember-power` spends Scarlet's embers
@@ -193,7 +205,15 @@ export interface CharacterDef {
   /** Growth rules this character changes from DEFAULT_RULES (data/characters.ts). */
   rules?: Partial<GrowthRules>;
 }
-export interface EnemySkill { name: string; chance: number; target: Target; effects: Effect[] }
+/**
+ * Roster plan B2 (M1): `windup`, the name of the turn the foe spends winding this skill up; the skill itself lands the
+ * round after (battle.ts chooseEnemyActions). Sleep or a freeze breaks the charge.
+ */
+/**
+ * Roster plan B4 (M22): `when: 'deadAlly'`, usable only while an ally lies fallen (and was never raised); its draw holds.
+ * B1 review item 6: `oncePerFight`, used once a fight by all the foes of its kind together.
+ */
+export interface EnemySkill { name: string; chance: number; target: Target; effects: Effect[]; windup?: string; when?: 'deadAlly'; oncePerFight?: true }
 export interface EnemyDef {
   id: string; name: string; floor: 1 | 2 | 3; boss?: boolean; stats: Stats; weak: Element[]; resist: Element[];
   exp: number; gold: number; drops: { mat: string; chance: number }[]; skills: EnemySkill[];
@@ -219,6 +239,22 @@ export interface EnemyDef {
   home?: RegionId;
   /** The affix key an ordinary species' gear can carry as its inscription (spec §7.2, ruling 16). */
   inscribe?: AnyStat;
+  /** Roster plan B3 (M3): it leaves the fight at the end of this round, still standing; it pays nothing then. */
+  fleeAfter?: number;
+  /**
+   * Roster plan B3–B4 (M14, M19, M23): how it opens a fight. `asleep`, two rounds asleep and angry when it wakes; `ambush`,
+   * first to act in round one; `disguise`, a 「寶箱？」 that springs first with +50% atk in round one until a hit unmasks it;
+   * `decoy`, a 1 HP phantom of itself beside it (`decoys` of them) while it is harder to hit; `encased` (plan B2 PR).
+   */
+  opener?: 'disguise' | 'asleep' | 'ambush' | 'decoy' | 'encased';
+  /** Roster plan B4 (M19): how many decoys a `decoy` opener brings; absent, one. */
+  decoys?: number;
+  /** Roster plan B4 (M10): what it does once as it falls, seen from its side (`enemies` is the party); never set off by another's. */
+  onFall?: { name: string; target: Target; effects: Effect[] };
+  /** Roster plan B4 (M22): the first time it falls it stands again at `pct`% of its HP. */
+  rise?: { pct: number };
+  /** Roster plan B4 (M20): while it and a foe of this id both stand, each blow on either is split between them. */
+  shareWith?: string;
 }
 export interface ItemDef {
   id: string; name: string; price: number; target: Target | null; effects: Effect[]; battle: boolean; returnToTown?: boolean; desc: string;

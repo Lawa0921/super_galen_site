@@ -10,12 +10,18 @@ import type { LockTable } from './locks';
 import { poolFor } from './cultures';
 
 export const HOME_X0 = 0, HOME_X1 = 4200, SPAWN_X = 2100, SEA_SLOT_W = 300;
-export const VARIANT = { PLAIN: 0, HILLS: 1, HIGH: 2, BEACH: 3, SPAWN: 4, ISLAND: 5, SEA: 6 } as const;
+// 海點（島 / 沉船 / 漂流箱）離槽中央的偏移上限：± min(SEA_JITTER, floor(槽寬 / 10))（M2a Task 19：M1 的 ± 槽寬 / 10 可達 30，
+// 相鄰兩槽的點最大空隙 357 > 340；收到 20 後海上「任意連續 340 格內至少一個值得停下的東西」嚴格成立，Task 21）
+export const SEA_JITTER = 20;
+export const seaJitter = (slotW: number): number => Math.min(SEA_JITTER, Math.floor(slotW / 10));
+export const VARIANT = { PLAIN: 0, HILLS: 1, HIGH: 2, BEACH: 3, SPAWN: 4, ISLAND: 5, SEA: 6, DUNGEON: 7 } as const;
 
 export interface SideOrigin { x: number; start: 'sea' | 'continent'; seaY: number; shore: number }
 export interface LayoutOrigin { home: { x0: number; x1: number } | null; east: SideOrigin; west: SideOrigin }
-export interface IslandInfo { x0: number; x1: number; slot: number }
-export interface SeaSlot { k: number; x0: number; x1: number; poi: 'island' | 'shipwreck' | 'crate' }
+// 島的種類（M2a Task 20，spec §8）：plain = 只有地形與樹；其他三種有一份表層藍圖（structures/island.ts）
+export type IslandType = 'plain' | 'lighthouse' | 'hermit' | 'wreck';
+export interface IslandInfo { x0: number; x1: number; slot: number; type: IslandType }
+export interface SeaSlot { k: number; x0: number; x1: number; poi: 'island' | 'shipwreck' | 'crate' | 'reef' | 'sea_ruin' }
 export interface Landmass {
   side: Side; i: number; kind: 'home' | 'continent' | 'sea';
   x0: number; x1: number; tier: number; culture: CultureId | null; ver: number;
@@ -28,12 +34,17 @@ export function newWorldOrigin(seaY: number, shore: number): LayoutOrigin {
 }
 
 // 家鄉版面（相對 home.x0）
-const BEACH_W = 70, SPAWN_X0 = 1680, SPAWN_X1 = 2520, DESERT_GAP = 84;
+const BEACH_W = 70, SPAWN_X0 = 1680, SPAWN_X1 = 2520, DESERT_GAP = 84, DUNGEON_W = 420;
 // 大陸
 const REGION_MIN = 700, REGION_MAX = 1500, CONT_MIN = 2400, CONT_MAX = 5200;
 // 海
 const SEA_MIN = 480, SEA_FIRST_MAX = 700, SEA_MAX = 1200;
 const ISLAND_MIN = 40, ISLAND_MAX = 160;
+// 有建物的島的三種（依雜湊均分）；第一座以外的島有建物的機率
+const BUILT_ISLANDS = ['lighthouse', 'hermit', 'wreck'] as const, ISLAND_BUILT_P = 0.4;
+// 非島槽的點：依序累加（沉船 30% / 漂流箱 30% / 珊瑚礁 20% / 海底遺跡 20%，Task 20）
+const SEA_POI: readonly (readonly [number, Exclude<SeaSlot['poi'], 'island'>])[] = [[0.3, 'shipwreck'], [0.6, 'crate'], [0.8, 'reef'], [1, 'sea_ruin']];
+const seaPoi = (h: number): Exclude<SeaSlot['poi'], 'island'> => { for (const [p, t] of SEA_POI) if (h < p) return t; return 'sea_ruin'; };
 const BASIC_BIOMES = [BIOME.FOREST, BIOME.DESERT, BIOME.SNOW, BIOME.JUNGLE] as const;
 const LAND_VARIANTS = [VARIANT.PLAIN, VARIANT.HILLS, VARIANT.HIGH] as const;
 const HOME_VARIANTS = [VARIANT.PLAIN, VARIANT.HILLS] as const;
@@ -41,7 +52,7 @@ const HOME_VARIANTS = [VARIANT.PLAIN, VARIANT.HILLS] as const;
 // h ∈ [0,1) → [lo, hi] 的整數（含兩端）
 const pick = (h: number, lo: number, hi: number): number => lo + Math.floor(h * (hi - lo + 1));
 
-interface SideSeeds { sea: number; isle: number; isw: number; iso: number; poi: number; cont: number; cut: number; biome: number; variant: number; culture: number }
+interface SideSeeds { sea: number; isle: number; isw: number; iso: number; ity: number; poi: number; cont: number; cut: number; biome: number; variant: number; culture: number }
 
 interface SideState {
   dir: 1 | -1;
@@ -60,18 +71,16 @@ export class Layout {
   private readonly east: SideState;
   private readonly west: SideState;
   private readonly home: Landmass | null;
-  private readonly culture1: number;
 
   constructor(seed: string, readonly origin: LayoutOrigin, private readonly locks: LockTable, private readonly latestVer: number) {
     const seeds = (t: string): SideSeeds => {
       const n = (name: string): number => seedInt(seed, `g2-${t}-${name}`);
-      return { sea: n('sea'), isle: n('isle'), isw: n('isw'), iso: n('iso'), poi: n('poi'), cont: n('cont'), cut: n('cut'), biome: n('biome'), variant: n('variant'), culture: n('culture') };
+      return { sea: n('sea'), isle: n('isle'), isw: n('isw'), iso: n('iso'), ity: n('ity'), poi: n('poi'), cont: n('cont'), cut: n('cut'), biome: n('biome'), variant: n('variant'), culture: n('culture') };
     };
     const side = (dir: 1 | -1, o: SideOrigin, t: string): SideState =>
       ({ dir, o, s: seeds(t), edges: [o.x], lands: [], seas: 0, continents: 0, prevCulture: undefined });
     this.east = side(1, origin.east, 'e');
     this.west = side(-1, origin.west, 'w');
-    this.culture1 = seedInt(seed, 'g2-culture1');
     this.home = origin.home ? this.buildHome(seedInt(seed, 'g2-home'), origin.home.x0, origin.home.x1) : null;
   }
 
@@ -141,12 +150,12 @@ export class Layout {
     const { x0, x1 } = this.span(st, w);
     const tier = st.continents + 1;
 
-    // 槽位：ceil(w / 300) 個，均分（每槽 ceil(w / n)，最後一槽吃餘數）
+    // 槽位：ceil(w / 300) 個，均分（每槽 ceil(w / n)，最後一槽吃餘數）；非島槽的點依 hash2(i, q, poi) 擲 SEA_POI（Task 20）
     const n = Math.floor((w + SEA_SLOT_W - 1) / SEA_SLOT_W), base = Math.floor((w + n - 1) / n);
     const slots: SeaSlot[] = [];
     for (let q = 0; q < n; q++) {
       const a = x0 + q * base;
-      slots.push({ k: q, x0: a, x1: q < n - 1 ? a + base : x1, poi: hash2(i, q, s.poi) < 0.5 ? 'shipwreck' : 'crate' });
+      slots.push({ k: q, x0: a, x1: q < n - 1 ? a + base : x1, poi: seaPoi(hash2(i, q, s.poi)) });
     }
 
     // 島：1–min(3, n) 座，各佔不同槽（部分 Fisher–Yates），依槽序排
@@ -156,14 +165,16 @@ export class Layout {
       const r = j + Math.floor(hash2(i, j, s.isle) * (n - j));
       const t = order[j]; order[j] = order[r]; order[r] = t;
     }
+    // 種類（Task 20，spec §8）：依槽序的第一座島一定有建物（三種依 hash2(i, q, ity) 均分），其餘 ISLAND_BUILT_P 有建物（同一個雜湊值）、其他 plain
     const chosen = order.slice(0, count).sort((a, b) => a - b);
-    const islands: IslandInfo[] = chosen.map((q) => {
-      const sl = slots[q], sw = sl.x1 - sl.x0, d = Math.floor(sw / 10);
+    const islands: IslandInfo[] = chosen.map((q, j) => {
+      const sl = slots[q], sw = sl.x1 - sl.x0, d = seaJitter(sw);
       const iw = pick(hash2(i, q, s.isw), ISLAND_MIN, Math.min(ISLAND_MAX, sw - 80));
       const c = sl.x0 + (sw >> 1) + pick(hash2(i, q, s.iso), -d, d);
       sl.poi = 'island';
-      const a = c - (iw >> 1);
-      return { x0: a, x1: a + iw, slot: q };
+      const a = c - (iw >> 1), h = hash2(i, q, s.ity);
+      const type: IslandType = j === 0 ? BUILT_ISLANDS[Math.floor(h * 3)] : h < ISLAND_BUILT_P ? BUILT_ISLANDS[Math.min(2, Math.floor((h * 3) / ISLAND_BUILT_P))] : 'plain';
+      return { x0: a, x1: a + iw, slot: q, type };
     });
 
     const reg = (kind: RegionKind, variant: number, biome: number, index: number, a: number, b: number): RegionInfo =>
@@ -179,9 +190,9 @@ export class Layout {
     const total = pick(hash2(i, 1, s.cont), Math.max(CONT_MIN, REGION_MIN * n), Math.min(CONT_MAX, REGION_MAX * n));
     const { x0, x1 } = this.span(st, total);
 
+    // 文化：鎖表存的照舊；其餘從文化池挑（M2a Task 18 刪掉「第一片東 / 西大陸恰一片霧竹」的規則，Q14：v0 的池只有荒野）
     let culture: CultureId | null;
     if (locked !== undefined) culture = locked;
-    else if (c === 1) culture = (hash2(0, 0, this.culture1) < 0.5) === (st.dir === 1) ? 'mistbamboo' : null;
     else {
       const pool = poolFor(ver), cand = pool.filter((p) => p !== st.prevCulture);
       culture = cand.length ? cand[Math.floor(hash2(i, 0, s.culture) * cand.length)] : pool[0];
@@ -206,30 +217,37 @@ export class Layout {
 
   // ── 家鄉 ──
 
-  // 兩端各 70 格海灘；出生森林 [1680, 2520)；一側外圍雪原（420–546）、另一側叢林（504–630）；
-  // 沙漠（315–420）隨機在一側，與該側外圍、與出生森林之間都至少 84 格森林（家鄉除海灘外每個地區 ≥ 84 寬）；其餘補森林（PLAIN / HILLS）。
+  // 兩端各 70 格海灘；出生森林 [1680, 2520)；h(9) < 0.5 的那一側（西 / 東）海灘內側是 420 寬的地城區（FOREST、VARIANT.DUNGEON，[70, 490) 或 [3710, 4130)）；
+  // 一側外圍雪原（420–546）、另一側叢林（504–630），緊貼海灘（地城側緊貼地城區）往內排；
+  // 沙漠（315–420）隨機在一側，與該側外圍、與出生森林之間都至少 84 格森林（家鄉除海灘外每個地區 ≥ 84 寬）；
+  // 擲到地城側但放不下（外圍寬 + 84 + 沙漠寬 + 84 > 1680 − 70 − 420）就改放另一側；其餘補森林（PLAIN / HILLS）。
   private buildHome(hs: number, hx0: number, hx1: number): Landmass {
     const h = (k: number): number => hash2(0, k, hs);
     const hv = (k: number): number => HOME_VARIANTS[Math.floor(h(k) * 2)];
     const snowWest = h(0) < 0.5;
     const snowW = pick(h(1), 420, 546), jungleW = pick(h(2), 504, 630);
     const wo = snowWest ? snowW : jungleW, eo = snowWest ? jungleW : snowW;
-    const desertWest = h(3) < 0.5, dw = pick(h(4), 315, 420);
-    const bE = hx1 - BEACH_W;
+    const dungeonWest = h(9) < 0.5, dw = pick(h(4), 315, 420);
+    const bW = hx0 + BEACH_W, bE = hx1 - BEACH_W;
+    // 外圍生態的內側起點（地城側再往內 420）
+    const wIn = bW + (dungeonWest ? DUNGEON_W : 0), eIn = bE - (dungeonWest ? 0 : DUNGEON_W);
+    let desertWest = h(3) < 0.5;
+    if (desertWest === dungeonWest && (desertWest ? wo : eo) + DESERT_GAP + dw + DESERT_GAP > SPAWN_X0 - BEACH_W - DUNGEON_W) desertWest = !desertWest;
 
     type Seg = [x0: number, x1: number, biome: number, variant: number];
     const fixed: Seg[] = [
-      [hx0, hx0 + BEACH_W, BIOME.FOREST, VARIANT.BEACH],
-      [hx0 + BEACH_W, hx0 + BEACH_W + wo, snowWest ? BIOME.SNOW : BIOME.JUNGLE, hv(6)],
+      [hx0, bW, BIOME.FOREST, VARIANT.BEACH],
+      dungeonWest ? [bW, wIn, BIOME.FOREST, VARIANT.DUNGEON] : [eIn, bE, BIOME.FOREST, VARIANT.DUNGEON],
+      [wIn, wIn + wo, snowWest ? BIOME.SNOW : BIOME.JUNGLE, hv(6)],
       [hx0 + SPAWN_X0, hx0 + SPAWN_X1, BIOME.FOREST, VARIANT.SPAWN],
-      [bE - eo, bE, snowWest ? BIOME.JUNGLE : BIOME.SNOW, hv(7)],
+      [eIn - eo, eIn, snowWest ? BIOME.JUNGLE : BIOME.SNOW, hv(7)],
       [bE, hx1, BIOME.FOREST, VARIANT.BEACH],
     ];
     if (desertWest) {
-      const d0 = pick(h(5), hx0 + BEACH_W + wo + DESERT_GAP, hx0 + SPAWN_X0 - dw - DESERT_GAP);
+      const d0 = pick(h(5), wIn + wo + DESERT_GAP, hx0 + SPAWN_X0 - dw - DESERT_GAP);
       fixed.push([d0, d0 + dw, BIOME.DESERT, hv(8)]);
     } else {
-      const d1 = pick(h(5), hx0 + SPAWN_X1 + dw + DESERT_GAP, bE - eo - DESERT_GAP);
+      const d1 = pick(h(5), hx0 + SPAWN_X1 + dw + DESERT_GAP, eIn - eo - DESERT_GAP);
       fixed.push([d1 - dw, d1, BIOME.DESERT, hv(8)]);
     }
     fixed.sort((p, q) => p[0] - q[0]);
@@ -245,4 +263,11 @@ export class Layout {
     const lock = this.locks.get(0, 0);
     return { side: 0, i: 0, kind: 'home', x0: hx0, x1: hx1, tier: 0, culture: null, ver: lock ? lock.ver : this.latestVer, regions, islands: [], slots: [] };
   }
+}
+
+// 家鄉的地城區（VARIANT.DUNGEON；每個家鄉恰一個）
+export function homeDungeonRegion(m: Landmass): RegionInfo {
+  const r = m.kind === 'home' ? m.regions.find((q) => q.variant === VARIANT.DUNGEON) : undefined;
+  if (!r) throw new RangeError(`gen2: landmass ${m.side}:${m.i} has no home dungeon zone`);
+  return r;
 }

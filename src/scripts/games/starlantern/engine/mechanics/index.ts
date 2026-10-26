@@ -22,6 +22,7 @@ import { beat } from './beat';
 import { devices } from './devices';
 import { echo } from './echo';
 import { runes } from './runes';
+import { foeMarks } from './foeWords';
 
 /** A mechanic's colour on the battle screen (`$slx-mech` in the stylesheet, MECH_FILL for the Pixi picture). */
 /** `plain`: a moment no mechanic claims, in the ink colour. */
@@ -73,7 +74,8 @@ export interface MechModule {
 
 /** In hook order. Read lazily: the modules and the engine import each other, so the list is built on first use. */
 let MODULES_CACHE: MechModule[] | null = null;
-const modules = (): MechModule[] => (MODULES_CACHE ??= [heat, mark, barrier, moon, coins, aim, beat, embers, devices, echo, runes]);
+// The roster's foe words (plan B6) come last: they only add words, after every character's.
+const modules = (): MechModule[] => (MODULES_CACHE ??= [heat, mark, barrier, moon, coins, aim, beat, embers, devices, echo, runes, foeMarks]);
 
 /** Each character's mechanic as a fight opens it; a member without an entry has none. */
 export const MECH_OF: Partial<Record<CharacterId, () => MechState>> = {

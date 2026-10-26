@@ -2,37 +2,10 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { generateWorld, type GenResult } from '../worldgen';
 import { T, SOLID_LUT, tileDef, isDungeonBrick, TIER_GOLD, ceilOk, floorOk } from '../../tiles';
-import type { DungeonInfo } from './dungeon';
+import type { DungeonInfo } from '../../genTypes';
+import { solvable, floodSolvable } from '../../gen2/testUtil';
 
 const SEEDS = ['alpha', 'dungeon-b', 'dungeon-c'];
-
-/** 從入口洪水填充（4 連通）：非實心可走；關著的木門可以打開 → 可走；上鎖的門依 openLocked 決定 */
-function flood(r: GenResult, openLocked: boolean): Uint8Array {
-  const w = r.world, d = r.dungeon!, W = w.width;
-  const b = d.bbox;
-  const x0 = b.x - 2, x1 = b.x + b.w + 2, y0 = b.y - 6, y1 = b.y + b.h + 2;
-  const seen = new Uint8Array(w.fg.length);
-  const pass = (i: number): boolean => {
-    const t = w.fg[i];
-    if (t === T.DOOR_CLOSED) return true;
-    if (t === T.DOOR_LOCKED) return openLocked;
-    return SOLID_LUT[t] !== 1;
-  };
-  const start = d.entrance.y * W + d.entrance.x;
-  const st = [start];
-  seen[start] = 1;
-  while (st.length) {
-    const k = st.pop()!;
-    const x = k % W, y = (k - x) / W;
-    for (const [nx, ny] of [[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]]) {
-      if (nx < x0 || nx >= x1 || ny < y0 || ny >= y1) continue;
-      const q = ny * W + nx;
-      if (seen[q] || !pass(q)) continue;
-      seen[q] = 1; st.push(q);
-    }
-  }
-  return seen;
-}
 
 // 全尺寸世界生成在整套測試平行跑時可能要好幾秒：放寬逾時
 describe('地城', { timeout: 180_000 }, () => {
@@ -103,68 +76,12 @@ describe('地城', { timeout: 180_000 }, () => {
     expect(tileDef(T.DOOR_LOCKED).minTier).toBeGreaterThan(10);
     expect(tileDef(T.LOCKED_CHEST).minTier).toBeGreaterThan(10);
   });
+  // 兩個解謎檢查共用 gen2/testUtil.ts 的 solvable / floodSolvable（M2b 刪 legacy 後 gen2 仍在用）
   it('可解性（房間圖）：鑰匙數 = 上鎖的門數，全都在不經過任何鎖就到得了的房間；之後任意順序都打得開', () => {
-    for (const r of results) {
-      const d = D(r);
-      const lockedEdges = d.edges.filter((e) => e.locked);
-      const regular = d.keys.filter((k) => !k.golden);
-      expect(regular.length).toBe(lockedEdges.length);
-      expect(d.doors.filter((x) => x.locked).length).toBe(lockedEdges.length);
-      // 不開任何鎖可達的房間
-      const adj = (open: (e: typeof d.edges[number]) => boolean): Set<number> => {
-        const seen = new Set([d.entryRoom]);
-        const q = [d.entryRoom];
-        while (q.length) {
-          const a = q.pop()!;
-          for (const e of d.edges) {
-            if (!open(e)) continue;
-            const o = e.a === a ? e.b : e.b === a ? e.a : -1;
-            if (o >= 0 && !seen.has(o)) { seen.add(o); q.push(o); }
-          }
-        }
-        return seen;
-      };
-      const free = adj((e) => !e.locked);
-      for (const k of regular) expect(free.has(k.room), `key in room ${k.room}`).toBe(true);
-      expect(free.has(d.treasureRoom)).toBe(false);
-      expect(free.has(d.keyRoom)).toBe(false);
-      // 模擬：拿齊鑰匙後逐一開門 → 所有房間都到得了；金鑰匙在打開某扇門之後到得了；寶藏室也是
-      let keys = regular.length;
-      const opened = new Set<number>();
-      let reach = free;
-      for (let guard = 0; guard < 10; guard++) {
-        const e = lockedEdges.find((x, i) => !opened.has(i) && (reach.has(x.a) || reach.has(x.b)));
-        if (!e || keys === 0) break;
-        opened.add(lockedEdges.indexOf(e)); keys--;
-        reach = adj((x) => !x.locked || opened.has(lockedEdges.indexOf(x)));
-      }
-      expect(reach.size).toBe(d.rooms.length);
-      const golden = d.keys.find((k) => k.golden)!;
-      expect(reach.has(golden.room)).toBe(true);
-      expect(golden.room).not.toBe(d.treasureRoom);
-    }
+    for (const r of results) expect(solvable(D(r))).toEqual({ ok: true });
   });
   it('可解性（tile 洪水填充）：不開鎖時拿得到所有地城鑰匙但進不了上鎖房間；開鎖後金鑰匙與金寶箱都到得了', () => {
-    for (const r of results) {
-      const d = D(r), W = r.world.width;
-      const closed = flood(r, false), open = flood(r, true);
-      for (const k of d.keys.filter((x) => !x.golden)) expect(closed[k.y * W + k.x], `key @${k.x},${k.y}`).toBe(1);
-      const golden = d.keys.find((k) => k.golden)!;
-      expect(closed[golden.y * W + golden.x]).toBe(0);
-      expect(closed[d.treasureChest.y * W + d.treasureChest.x]).toBe(0);
-      expect(open[golden.y * W + golden.x]).toBe(1);
-      expect(open[d.treasureChest.y * W + d.treasureChest.x]).toBe(1);
-      // 每個房間的地板都到得了
-      for (const q of d.rooms) {
-        let any = false;
-        for (let x = q.x; x < q.x + q.w && !any; x++) if (open[(q.y + q.h - 1) * W + x]) any = true;
-        expect(any, `room ${q.id} ${q.kind}`).toBe(true);
-      }
-      // 上鎖房間：不開鎖時內部完全碰不到（磚殼沒破洞）
-      for (const q of d.rooms.filter((x) => x.locked)) {
-        for (let y = q.y; y < q.y + q.h; y++) for (let x = q.x; x < q.x + q.w; x++) expect(closed[y * W + x]).toBe(0);
-      }
-    }
+    for (const r of results) expect(floodSolvable(r.world, D(r))).toEqual({ ok: true });
   });
   it('豎井可以爬：每個平台往上 5 格內（左右 ±5 欄）都有下一個平台，或已經到頂', () => {
     for (const r of results) {

@@ -12,7 +12,8 @@ import { LoopbackNet } from './loopback';
 import { SaveFormatError } from '../save/serialize';
 import type { Welcome } from './protocol';
 import type { BakeInfo } from '../save/bake';
-import { coopRig, FRAME } from './testRig';
+import { coopRig, FRAME, outerVillageBoard, seaHermit, siteNpcIds } from './testRig';
+import { walletOf } from '../engine/npcs';
 
 const utf8 = (s: string): Uint8Array => new TextEncoder().encode(s);
 /** 改 host.ts 之前（Task 18 之前的程式）用 coopRig({ world: 'real' }) 錄下的 Welcome 的 FNV-1a */
@@ -128,6 +129,37 @@ describe('Task 18 連線：版本描述、gen2 客人不生成家鄉、烘焙世
     const host = rig.hostGame.actors.get(g.pid!)!.inventory.count('copper_coin');
     expect(host).toBe(c.inventory.slots.reduce((n, s) => n + (s?.item === 'copper_coin' ? s.count : 0), 0) + 37);
     expect(g.game!.local.inventory.count('copper_coin')).toBe(host);
+  }, 120_000);
+
+  // Task 18：外圍聚落的 NPC 在欄載入時登錄（world.onGenSites → SiteRegistry → FolkWorld.addSite），id = npcIdFor(key)、不依登錄順序
+  it('外圍村莊：客人在房主之後才載入那段 → NPC key / id 與房主相同；之前收到的位置被略過、不丟錯', () => {
+    const rig = coopRig({ world: 'gen2' }); rig.run(2000); const board = outerVillageBoard(rig);
+    rig.hostTeleport(board); rig.run(30 * FRAME);
+    const gg = rig.guests[0].game!, before = siteNpcIds(gg).length;
+    // 房主那邊已經有外圍村民、客人還沒載入那段（還沒登錄）
+    expect(siteNpcIds(rig.hostGame).length).toBeGreaterThan(before);
+    expect(() => rig.run(30 * FRAME)).not.toThrow();
+    rig.guestTeleport(board); rig.run(120 * FRAME);
+    expect(siteNpcIds(gg).length).toBeGreaterThan(before);
+    expect(siteNpcIds(gg)).toEqual(siteNpcIds(rig.hostGame));
+  }, 120_000);
+
+  // M2a Task 20（指揮官裁決 3，照 Task 18 裁決 6）：島上的隱士在欄載入時登錄；客人遇到未登錄的 NPC 位置略過、不丟錯；chart 服務由房主結算
+  it('島上的隱士：客人在房主之後才載入那段 → 隱士 key / id 與房主相同、之前收到的位置被略過不丟錯；客人送 chart 指令由房主用客人的錢結算', () => {
+    const rig = coopRig({ world: 'gen2' }); rig.run(2000); const h = seaHermit(rig), key = `${h.key}:hermit`;
+    rig.hostTeleport(h.at); rig.run(30 * FRAME);
+    const gg = rig.guests[0].game!;
+    expect(rig.hostGame.folk.byKey(key)).not.toBeNull(); expect(gg.folk.byKey(key)).toBeNull();
+    expect(() => rig.run(30 * FRAME)).not.toThrow();
+    rig.guestTeleport(h.at); rig.run(120 * FRAME);
+    expect(gg.folk.byKey(key)?.id).toBe(rig.hostGame.folk.byKey(key)!.id);
+    expect(siteNpcIds(gg)).toEqual(siteNpcIds(rig.hostGame));
+    const a = rig.hostGame.actors.get(rig.guests[0].pid!)!;
+    a.inventory.add('copper_coin', 500);
+    const marks = rig.hostGame.scoutMarks.length, coins = walletOf(a.inventory), mine = walletOf(rig.hostGame.local.inventory);
+    gg.exec(gg.localPid, { op: 'folkService', key, svc: 'chart' }); rig.run(30 * FRAME);
+    expect(rig.hostGame.scoutMarks.length).toBe(marks + 1);
+    expect(walletOf(a.inventory)).toBe(coins - 120); expect(walletOf(rig.hostGame.local.inventory)).toBe(mine);
   }, 120_000);
 
   it('舊世界連線不變：Welcome 位元組與改動前相同（P9）', () => {

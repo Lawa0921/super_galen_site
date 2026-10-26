@@ -41,7 +41,8 @@ const partyStat = (k: StatKey, level: number): number => AVG.base[k] + AVG.growt
 const BOSS_HOME = 12;
 /** Softens the hp/atk/mag growth a little: the party also gains skills and gauge with levels, which the stat ratio misses. */
 const DAMPING = 0.9;
-export const homeLevel = (def: EnemyDef): number => (def.boss ? BOSS_HOME : depthLevel(def.floor));
+/** A boss, and a part of a many-part boss (roster plan B5), grow from the boss home; every other foe from its floor's. */
+export const homeLevel = (def: EnemyDef): number => (def.boss || def.rank === 'part' ? BOSS_HOME : depthLevel(def.floor));
 
 /**
  * Plan 6b Task 20c's knob for the deep road: past `fromDepth` an enemy's level (its growth and ENEMY_POWER) climbs
@@ -204,7 +205,8 @@ export function scaleEnemy(def: EnemyDef, depth: number, region: RegionDef, elit
   const lead = affixes?.length ? affixes.flatMap((a) => { const k = AFFIXES[a].skill; return k ? [{ ...k, effects: k.effects.map((e) => ({ ...e })) }] : []; }) : null;
   return {
     ...def,
-    name: `${elite ? '★' : ''}${name}`,
+    // A warden is a named foe (B1 review item 12): on the elite path, but no ★ before its name.
+    name: `${elite && def.rank !== 'warden' ? '★' : ''}${name}`,
     stats,
     sec,
     // A named story foe keeps its own elements: the region's belong to its monsters.

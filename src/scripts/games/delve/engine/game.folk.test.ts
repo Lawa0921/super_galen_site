@@ -1,12 +1,18 @@
 // game.folk.test.ts — 世界 NPC 接上遊戲：村民 / 矮人的職能、好感度定價、服務（治療 / buff / 深岩升階）、
 // 遇見（行商 / 受困探險者：條件、冷卻、上限、護送）、委託（接 / 進度 / 交付不能重刷）、地標（只能領一次）、存檔來回。
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { DelveGame } from './game';
 import { FIXED_DT, TILE_SIZE as S, DAY_LENGTH } from './constants';
 import { T } from './tiles';
 import { ROLES, AFF_TRADE_DAILY, BUFFS, affTier } from './folkDefs';
 import { STRANDED_MAX } from './folk';
 import { restoreGame, serializeGame } from '../save/serialize';
+import type { DungeonInfo } from './genTypes';
+import { SITE_NPC_BASE, npcIdFor } from './siteRegistry';
+import { gen2SiteRegionId } from './gen2/structId';
+import { chartPick } from './chart';
+import { X_LIMIT } from './coords';
+import type { Region } from './discovery';
 
 
 
@@ -18,6 +24,84 @@ function goTo(g: DelveGame, key: string): void {
   const n = g.folk.byKey(key)!;
   g.teleport(Math.floor((n.body.x + n.body.w / 2) / S) + 1, Math.floor((n.body.y + n.body.h - 1) / S));
 }
+
+/** FNV-1a（外觀指紋用） */
+const fnv = (s: string): number => { let h = 0x811c9dc5; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193); } return h >>> 0; };
+// 改 folk.ts / SiteRegistry 之前，在舊世界 'alpha' 錄下的村民 / 矮人：[key, 角色, 名字, 外觀指紋, 白天範圍, 晚上的位置, 初始身體 px]
+const FOLK_BEFORE = [
+  ['h0:dwarf_elder', 'dwarf_elder', '晶耳・岡妲', 932598616, '2426..2438', '-', '38910,11005'],
+  ['h0:ore_trader', 'ore_trader', '深脈・杜瓦', 1654945588, '2447..2453', '-', '39198,11005'],
+  ['h0:runesmith', 'runesmith', '深脈・魯克', 3038395399, '2406..2413', '-', '38542,11005'],
+  ['h1:dwarf_elder', 'dwarf_elder', '灰岩・伯恩', 2881899463, '918..930', '-', '14782,13565'],
+  ['h1:ore_trader', 'ore_trader', '灰岩・朵菈', 423104471, '946..952', '-', '15182,13565'],
+  ['h1:runesmith', 'runesmith', '晶耳・朵菈', 2268316833, '891..898', '-', '14302,13565'],
+  ['v0:elder', 'elder', '漢克', 1400021624, '270..273', '259,280', '4334,4461'],
+  ['v0:guide', 'guide', '雪菈', 248887729, '239..242', '286,280', '3838,4461'],
+  ['v0:smith', 'smith', '莫莉', 2578590433, '296..300', '289,280', '4766,4461'],
+  ['v0:trader', 'trader', '葛雷', 445350778, '277..281', '246,280', '4462,4461'],
+  ['v1:elder', 'elder', '提歐', 3022895399, '2981..2984', '2997,282', '47710,4493'],
+  ['v1:guide', 'guide', '葛雷', 197652797, '3009..3014', '3000,282', '48174,4493'],
+  ['v1:healer', 'healer', '諾拉', 2851642318, '2959..2964', '2971,282', '47374,4493'],
+  ['v1:trader', 'trader', '琪雅', 3154175815, '2988..2992', '2968,282', '47838,4493'],
+  ['v2:elder', 'elder', '露露', 2219663239, '1589..1592', '1605,271', '25438,4317'],
+  ['v2:healer', 'healer', '艾琳', 2376874338, '1617..1622', '1608,271', '25902,4317'],
+  ['v2:smith', 'smith', '提歐', 3498937182, '1568..1572', '1579,271', '25118,4317'],
+  ['v2:trader', 'trader', '蜜拉', 3950961827, '1596..1600', '1576,271', '25566,4317'],
+];
+/** 改動前的 siteName（村落依序、地廳依序） */
+const NAMES_BEFORE = ['麥浪村', '暮光村', '白石村', '深爐大廳', '灰鬚石廳'];
+
+describe('聚落登錄（舊世界 alpha）', { timeout: 120_000 }, () => {
+  let g: DelveGame;
+  beforeAll(() => { g = fresh(); }, 120_000);
+
+  it('舊世界的 NPC key / 角色 / 名字 / 外觀與改動前相同', () => {
+    const rows = g.folk.npcs.filter((n) => n.origin !== 'road' && n.origin !== 'cave')
+      .map((n) => [n.key, n.role, n.name, fnv(JSON.stringify(n.look)), `${n.zone.x0}..${n.zone.x1}`, n.night ? `${n.night.x},${n.night.y}` : '-', `${n.body.x},${n.body.y}`]).sort();
+    expect(rows).toEqual(FOLK_BEFORE);
+  });
+  it('聚落 NPC 的 id = npcIdFor(key)、彼此不撞', () => {
+    const settled = g.folk.npcs.filter((q) => q.id >= SITE_NPC_BASE), ids = settled.map((n) => n.id);
+    expect(settled.length).toBe(FOLK_BEFORE.length);
+    for (const n of settled) expect(n.id).toBe(npcIdFor(n.key));
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+  it('登錄 = v{i} / h{i} / d0（依序）；siteName(key) 與改動前相同；委託板找得到自己的村子', () => {
+    expect(g.sites.list('village').map((s) => s.key)).toEqual(g.villages.map((_, i) => `v${i}`));
+    expect(g.sites.list('hall').map((s) => s.key)).toEqual(g.halls.map((_, i) => `h${i}`));
+    expect(g.sites.list('dungeon').map((s) => s.key)).toEqual(g.dungeon ? ['d0'] : []);
+    expect([...g.villages.map((_, i) => g.siteName(`v${i}`)), ...g.halls.map((_, i) => g.siteName(`h${i}`))]).toEqual(NAMES_BEFORE);
+    for (let i = 0; i < g.villages.length; i++) {
+      const b = g.villages[i].board;
+      expect(g.siteAt(b.x, b.y)?.key).toBe(`v${i}`);
+      expect(g.folk.byKey(`v${i}:elder`)!.site).toBe(`v${i}`);
+    }
+    for (const n of g.folk.npcs) if (n.origin === 'hall') expect(n.site).toMatch(/^h\d+$/);
+  });
+});
+
+describe('安全的地方（folkSafeAt：旅人不出現、護送完成）', { timeout: 120_000 }, () => {
+  it('gen2：隱士小屋算安全；地城不算（siteAt 仍認得它）；範圍外不算', () => {
+    const g = new DelveGame({ seed: 'safe', worldGen: { kind: 'gen2' } });
+    // 家鄉的聚落開局就登錄（M2a Task 9）：注入的地城 / 隱士放在家鄉外，不和真的村莊重疊
+    const dx = g.spawn.x + 20_000, hx = g.spawn.x - 20_000;
+    expect(g.siteAt(dx + 20, 315)).toBeNull(); expect(g.siteAt(hx + 8, 192)).toBeNull();
+    g.sites.add({ kind: 'dungeon', key: 'sd', rot: 0, info: { bbox: { x: dx, y: 300, w: 40, h: 30 } } as DungeonInfo });
+    g.sites.add({ kind: 'hermit', key: 'sh', rot: 0, at: { x: hx, y: 200 } });
+    expect(g.siteAt(dx + 20, 315)?.kind).toBe('dungeon');
+    expect(g.folkSafeAt(dx + 20, 315)).toBe(false);
+    expect(g.folkSafeAt(dx, 300)).toBe(false);
+    expect(g.siteAt(hx + 8, 192)?.key).toBe('sh');
+    expect(g.folkSafeAt(hx + 8, 192)).toBe(true);
+    expect(g.folkSafeAt(hx + 9, 200)).toBe(false);
+  });
+  it('舊世界：村落 / 地廳安全、地城不安全（同改動前）', () => {
+    const g = fresh(), d = g.dungeon!, v = g.villages[0], h = g.halls[0];
+    expect(g.folkSafeAt(d.bbox.x + (d.bbox.w >> 1), d.bbox.y + (d.bbox.h >> 1))).toBe(false);
+    expect(g.folkSafeAt(v.board.x, v.board.y)).toBe(true);
+    expect(g.folkSafeAt(h.forge.x, h.forge.y)).toBe(true);
+  });
+});
 
 describe('村民與矮人', { timeout: 120_000 }, () => {
   it('每座村落有村長 + 雜貨商 + 兩位職能 NPC；每座地廳有三位矮人；職能都派得上用場', () => {
@@ -275,6 +359,66 @@ describe('存檔', { timeout: 120_000 }, () => {
     expect(h.folk.shop(t2)).toEqual(g.folk.shop(t));
     expect(h.buffOn('ward')).toBe(true);
     expect(h.discovery.landmarks.has(h.world.idx(l.x, l.y))).toBe(true);
-    expect(h.folk.npcs.filter((n) => n.site >= 0).length).toBe(g.folk.npcs.filter((n) => n.site >= 0).length);
+    expect(h.folk.npcs.filter((n) => n.site !== null).length).toBe(g.folk.npcs.filter((n) => n.site !== null).length);
+  });
+});
+
+// M2a Task 20：隱士的 chart 服務（荒野大陸的隱士小屋 = 該大陸朝外的下一片大陸；島上的隱士在 gen2/islands.test.ts）
+describe('隱士的 chart（荒野大陸的隱士小屋）', { timeout: 120_000 }, () => {
+  it('標出朝外下一片大陸的一處未找到的大東西（村莊 / 小地城 / 地廳）；都找到了就退回一般的 scout', () => {
+    const g = new DelveGame({ seed: 'chart-c', worldGen: { kind: 'gen2' } }), src = g.gen2()!, lay = src.layout, cont = lay.landmass(1, 2);
+    const hut = src.blueprints.overlapping(cont.x0, cont.x1).find((b) => b.kind === 'hermit_hut' && b.x >= cont.x0 && b.x < cont.x1)!;
+    const site = hut.site!;
+    if (site.kind !== 'hermit') throw new Error('no hermit site');
+    g.teleport(site.at.x, site.at.y); steps(g, 30);
+    const key = `${site.key}:hermit`, next = lay.landmass(1, 4);
+    expect(g.folk.byKey(key)?.role).toBe('hermit');
+    g.give('copper_coin', 2000);
+    // 下一片大陸的大東西的地區
+    const big = src.blueprints.anchorsOf(next).filter((a) => a.kind === 'village' || a.kind === 'keep' || a.kind === 'hall')
+      .map((a) => g.discovery.region(gen2SiteRegionId(src.blueprints.anchorBlueprint(next, a)!.id, 0))!);
+    expect(big.length).toBeGreaterThanOrEqual(2);
+    const before = g.scoutMarks.length, coins = g.coins(), r = g.folkService(key, 'chart');
+    expect(r.ok).toBe(true); expect(g.coins()).toBe(coins - 120);
+    const m = g.scoutMarks.at(-1)!;
+    expect(g.scoutMarks.length).toBe(before + 1);
+    expect(big.some((q) => q.ax === m.x && q.ay === m.y)).toBe(true);
+    expect(r.msg).toContain(`「${big.find((q) => q.ax === m.x && q.ay === m.y)!.name}」`);
+    // 全部走過（找到）→ 退回一般的 scout（標附近已知、沒去過的地點）
+    for (const q of big) g.discovery.visit(q.ax, q.ay);
+    expect(big.every((q) => g.discovery.isFound(q.id))).toBe(true);
+    const r2 = g.folkService(key, 'chart'), m2 = g.scoutMarks.at(-1)!;
+    expect(r2.ok).toBe(true); expect(r2.msg).not.toContain('「」');
+    expect(big.some((q) => q.ax === m2.x && q.ay === m2.y)).toBe(false);
+    expect(g.lastScout).toMatchObject({ x: m2.x, y: m2.y });
+  });
+});
+
+// Task 20 修正回合 1（第 2、6 條）
+describe('隱士的 chart：沒有候選、世界邊界', { timeout: 120_000 }, () => {
+  it('chart 與退路的 scout 都沒有地點可標 → ok:false、錢不變、標記不變', () => {
+    const g = new DelveGame({ seed: 'chart-c', worldGen: { kind: 'gen2' } }), src = g.gen2()!, cont = src.layout.landmass(1, 2);
+    const hut = src.blueprints.overlapping(cont.x0, cont.x1).find((b) => b.kind === 'hermit_hut' && b.x >= cont.x0 && b.x < cont.x1)!;
+    const site = hut.site!;
+    if (site.kind !== 'hermit') throw new Error('no hermit site');
+    g.teleport(site.at.x, site.at.y); steps(g, 30);
+    const key = `${site.key}:hermit`, d = g.discovery, next = src.layout.landmass(1, 4);
+    // 下一片大陸的大東西、已知表的每個地區、每件地標都算找到了
+    for (const a of src.blueprints.anchorsOf(next)) { const b = src.blueprints.anchorBlueprint(next, a); const r = b ? d.region(gen2SiteRegionId(b.id, 0)) : null; if (r) d.found.add(r.id); }
+    for (const r of d.listKnown()) d.found.add(r.id);
+    for (const l of g.landmarks) d.landmarks.add(g.world.idx(l.x, l.y));
+    g.give('copper_coin', 500);
+    const coins = g.coins(), marks = g.scoutMarks.length, r = g.folkService(key, 'chart');
+    expect(r.ok).toBe(false); expect(r.msg).not.toBe('');
+    expect(g.coins()).toBe(coins); expect(g.scoutMarks.length).toBe(marks);
+  });
+  it('chartPick：只挑地圖錨點在世界內（x ∈ [−X_LIMIT, X_LIMIT)）、有名字、沒被排除的，離隱士最近的（平手取 x 小的）', () => {
+    const R = (id: number, ax: number, name = `r${id}`): Region => ({ id, cat: 'site', kind: 'village', name, x: ax, y: 0, w: 1, h: 1, ax, ay: 300, contains: () => false });
+    expect(chartPick([R(1, X_LIMIT), R(2, X_LIMIT + 50)], X_LIMIT - 10, () => false)).toBeNull();
+    expect(chartPick([R(1, X_LIMIT), R(2, X_LIMIT - 1)], X_LIMIT - 10, () => false)?.id).toBe(2);
+    expect(chartPick([R(1, -X_LIMIT - 1), R(2, -X_LIMIT)], -X_LIMIT + 5, () => false)?.id).toBe(2);
+    expect(chartPick([R(1, 100, ''), R(2, 300)], 90, () => false)?.id).toBe(2);
+    expect(chartPick([R(1, 100), R(2, 300)], 90, (r) => r.id === 1)?.id).toBe(2);
+    expect(chartPick([R(1, 120), R(2, 80)], 100, () => false)?.id).toBe(2);
   });
 });
