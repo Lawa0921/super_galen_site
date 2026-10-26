@@ -1,6 +1,6 @@
 import { CHARACTER_IDS } from '../data/characters';
 import { ENEMIES } from '../data/enemies';
-import { artEnemy } from '../data/monsters';
+import { artEnemy, artMaterial, artSpecial } from '../data/monsters';
 import { EQUIPMENT, WEAPON_KINDS } from '../data/equipment';
 import { RARITIES, SETS, SPECIALS, regionSpecials } from '../data/gear';
 import { ITEMS } from '../data/items';
@@ -238,7 +238,7 @@ export function allArtUrls(): string[] {
   for (const k of PORTAL_CARD_KEYS) urls.push(art.portalCard(k));
   for (const k of TRAIT_ICON_KEYS) urls.push(art.traitIcon(k));
   for (const k of EVENT_TILE_KEYS) urls.push(art.eventTile(k));
-  for (const id of [...Object.keys(ITEMS), ...Object.keys(MATERIALS)]) urls.push(art.icon(id));
+  for (const id of [...Object.keys(ITEMS), ...Object.keys(MATERIALS).filter(artMaterial)]) urls.push(art.icon(id));
   // Art step 9 (G3 and G4): every skill at its two native sizes (the plan 4 icon/<skill>.png they re-derive are retired),
   // and the 14px chip icons of every ailment and mechanic.
   for (const id of Object.keys(SKILLS)) for (const size of SKILL_ICON_SIZES) urls.push(art.skillIcon(id, size));
@@ -247,7 +247,7 @@ export function allArtUrls(): string[] {
   // Plan 5d: the gear art of every base and special (small and large; a base no longer lists an icon/ path), the codex
   // silhouettes, the rarity layers, the forge and Doran. A piece merged into SPECIALS later (a roster unique) comes with
   // its own art batch, which must list it here.
-  for (const id of [...Object.keys(EQUIPMENT), ...Object.keys(SPECIALS)]) urls.push(art.gear(id), art.gearLarge(id));
+  for (const id of [...Object.keys(EQUIPMENT), ...Object.keys(SPECIALS).filter(artSpecial)]) urls.push(art.gear(id), art.gearLarge(id));
   for (const id of SILHOUETTE_IDS()) urls.push(art.gearSilhouette(id));
   for (const r of FRAMED_RARITIES) urls.push(art.rarityFrame(r));
   urls.push(art.rarityGlow, art.starlitOverlay, art.scene('forge'), art.npc('forge', 'normal'), art.npc('forge', 'happy'));

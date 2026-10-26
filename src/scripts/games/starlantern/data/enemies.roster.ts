@@ -1,5 +1,6 @@
 import type { CharacterId, Effect, Element, EnemyDef, EnemySkill, StatKey, Stats, Target } from '../engine/types';
 import type { RegionId } from './regions';
+import { ROSTER_MATERIALS } from './materials.roster';
 
 /**
  * The monster roster's hundred new foes (roster plan Task A2, spec §5.3–§5.6): 59 ordinary species (29 on the main road,
@@ -9,7 +10,10 @@ import type { RegionId } from './regions';
  * Every ordinary species and warden is `floor: 3` (home Lv10) on one of spec §5.1's archetypes, shaped within ±15%; a
  * boss is shaped on the lantern-eater. A warden is a plain standard or heavy shape: the elite path makes it an elite in a
  * fight (ELITE, ELITE_REWARD). The traits (spec §6) come with plan B: until then a foe has the nearest plain skill.
- * Drops come with Task A3. A regional foe carries its region's elements, as `scaleEnemy` gives them anyway.
+ * A regional foe carries its region's elements, as `scaleEnemy` gives them anyway.
+ *
+ * Drops (Task A3, spec §7.1): an ordinary species its signature (swarm 0.35, treasure and heavy 0.5, the rest 0.4) and spec
+ * §5.3–§5.4's rare; a boss or warden its trophy or keepsake, always; a part nothing.
  */
 
 type Arch = 'swarm' | 'std' | 'heavy' | 'caster' | 'support' | 'treasure' | 'boss';
@@ -51,6 +55,25 @@ const REGION_ELEMENTS: Record<Exclude<RegionId, 'mainline'>, [Element[], Element
   mire: [['fire'], ['phys']], shade: [['thunder'], []], iron: [['thunder'], ['phys']],
 };
 
+/** Spec §5.3 and §5.4's 稀有 column. */
+const RARE: Record<string, [string, number]> = {
+  'paper-moth': ['star-tear', 0.005], 'tin-soldier': ['ancient-gear', 0.01], 'dust-mimic': ['old-coin', 0.1], 'market-ghost': ['old-coin', 0.15],
+  'hollow-hunter': ['king-scale', 0.005], 'moon-crow': ['star-tear', 0.01], 'old-city-sentinel': ['ancient-gear', 0.02],
+  'ancestor-automaton': ['ancient-gear', 0.04], 'keeper-echo': ['star-tear', 0.03], 'sorrow-crystal': ['star-tear', 0.02],
+  'returning-light': ['star-tear', 0.03], 'hoarder': ['star-tear', 0.25], 'gilded-hoarder': ['king-scale', 0.2],
+  'mirage-dancer': ['king-scale', 0.01], 'frozen-pilgrim': ['old-coin', 0.1], 'star-ember': ['star-tear', 0.01], 'vault-mimic': ['old-coin', 0.2],
+  'rivet-golem': ['ancient-gear', 0.02], 'fallen-knight': ['king-scale', 0.01],
+};
+const SIGNATURE_CHANCE: Partial<Record<Arch, number>> = { swarm: 0.35, heavy: 0.5, treasure: 0.5 };
+
+/** What a foe drops: its own material (a signature at its chance, a trophy or keepsake always), then its rare. */
+function dropsOf(id: string, arch: Arch): EnemyDef['drops'] {
+  const own = ROSTER_MATERIALS.find((m) => m.owner === id);
+  if (!own) return [];
+  const chance = own.kind === 'monster' ? SIGNATURE_CHANCE[arch] ?? 0.4 : 1;
+  return [{ mat: own.id, chance }, ...(RARE[id] ? [{ mat: RARE[id][0], chance: RARE[id][1] }] : [])];
+}
+
 interface Spec {
   name: string; arch: Arch; mul?: Shape; hp?: number; weak?: Element[]; resist?: Element[]; skills?: EnemySkill[];
   band?: EnemyDef['band']; home?: Exclude<RegionId, 'mainline'>; lore?: CharacterId; remnant?: true; inscribe?: EnemyDef['inscribe'];
@@ -63,7 +86,7 @@ function foe(id: string, s: Spec): EnemyDef {
   return {
     id, name: s.name, floor: 3, ...(s.arch === 'boss' ? { boss: true } : {}),
     stats: shape(s.arch, s.mul, s.hp), weak: [...weak], resist: [...resist],
-    exp: part ? 30 : ARCH[s.arch][6], gold: part ? 0 : ARCH[s.arch][7], drops: [], skills: s.skills ?? [],
+    exp: part ? 30 : ARCH[s.arch][6], gold: part ? 0 : ARCH[s.arch][7], drops: dropsOf(id, s.arch), skills: s.skills ?? [],
     ...(s.rank ? { rank: s.rank } : {}), ...(s.lore ? { lore: s.lore } : {}), ...(s.remnant ? { remnant: true } : {}),
     ...(s.band ? { band: s.band } : {}), ...(s.home ? { home: s.home } : {}), ...(s.inscribe ? { inscribe: s.inscribe } : {}),
   };
@@ -281,7 +304,7 @@ const PARTS: [string, Spec][] = [
 /** The lantern-mother: the lantern-eater's numbers and skills in her own shape (controller ruling; she is the finale's foe). */
 function lanternMother(eater: EnemyDef): EnemyDef {
   return { ...eater, id: 'lantern-mother', name: '燈喰之母', stats: { ...eater.stats }, weak: [...eater.weak], resist: [...eater.resist],
-    drops: [], skills: eater.skills.map((k) => ({ ...k, effects: k.effects.map((e) => ({ ...e })) })) };
+    drops: dropsOf('lantern-mother', 'boss'), skills: eater.skills.map((k) => ({ ...k, effects: k.effects.map((e) => ({ ...e })) })) };
 }
 
 /** The roster's definitions, in spec order; `eater` is ENEMIES.lanterneater (the mother copies it). */

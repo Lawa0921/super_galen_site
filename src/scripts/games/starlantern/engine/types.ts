@@ -239,8 +239,10 @@ export interface ItemInstance {
   /** Plan 5g: a legendary-tier drop with every affix at its maximum and one more (engine/loot/drops.ts applyStarlit). */
   starlit?: true;
 }
-export type MaterialKind = 'essence' | 'monster' | 'region' | 'rare' | 'junk';
-export interface MaterialDef { id: string; name: string; price: number; kind: MaterialKind }
+/** Roster plan ruling 12: `trophy`, a boss's or warden's spoil; `keepsake`, the warden of a companion's story drops it. */
+export type MaterialKind = 'essence' | 'monster' | 'region' | 'rare' | 'junk' | 'trophy' | 'keepsake';
+/** `owner`: the roster foe that drops it (data/materials.roster.ts); its icon waits on that foe's art (ROSTER_ART). */
+export interface MaterialDef { id: string; name: string; price: number; kind: MaterialKind; owner?: string }
 export interface FloorDef {
   id: 1 | 2 | 3; name: string; rows: string[]; encounters: string[][]; rate: [number, number]; chestLoot: { item: string; qty: number }[];
 }

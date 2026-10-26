@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { ENEMIES } from '../data/enemies';
-import { artEnemy } from '../data/monsters';
+import { artEnemy, artMaterial, artSpecial } from '../data/monsters';
 import type { BattleEvent } from '../engine/combatant';
 import { ART_BASE, ART_CHARACTER_IDS, ART_VARIANT_IDS, CORE_MOODS, FRAMED_RARITIES, MOODS, MOODS_OF, PUBLISHED_FACES, SKILL_ICON_SIZES, SPECIAL_MOODS_OF, allArtUrls, art, codexArtId, effectFor, enemyArt, gearArtId, moodFor, parseManifest, tileKey } from './artPaths';
 import { RARITIES, SETS, SPECIALS, regionSpecials } from '../data/gear';
@@ -65,7 +65,9 @@ describe('artPaths', () => {
     for (const id of Object.keys(ENEMIES).filter((e) => !artEnemy(e))) expect(urls).not.toContain(art.enemy(id));
     // Plan 5d (Tasks 8 and 10): every base and special has its gear art, small and large, and every region piece and set
     // its silhouette; specials never had an icon/ path.
-    for (const id of [...Object.keys(EQUIPMENT), ...Object.keys(SPECIALS)]) {
+    // A roster unique joins with its owner's art batch (roster plan ruling 3); none has art before then.
+    for (const id of Object.keys(SPECIALS).filter((s) => !artSpecial(s))) expect(urls, id).not.toContain(art.gear(id));
+    for (const id of [...Object.keys(EQUIPMENT), ...Object.keys(SPECIALS).filter(artSpecial)]) {
       expect(urls, id).toContain(art.gear(id));
       expect(urls, id).toContain(art.gearLarge(id));
       if (id in SPECIALS) expect(urls).not.toContain(art.icon(id));
@@ -84,7 +86,7 @@ describe('artPaths', () => {
 
   it('every gear, material and skill id has art (art step 9: nothing waits any more)', () => {
     const urls = new Set(allArtUrls());
-    for (const id of Object.keys(MATERIALS)) expect(urls.has(art.icon(id)), id).toBe(true);
+    for (const id of Object.keys(MATERIALS)) expect(urls.has(art.icon(id)), id).toBe(artMaterial(id));
     for (const id of Object.keys(SKILLS)) expect(urls.has(art.skillIcon(id, 16)) && urls.has(art.skillIcon(id, 14)), id).toBe(true);
   });
 

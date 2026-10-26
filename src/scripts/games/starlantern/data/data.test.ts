@@ -35,7 +35,9 @@ describe('data integrity', () => {
     expect(enemies.filter((e) => !e.boss && !e.story)).toHaveLength(8);
     expect(enemies.filter((e) => e.boss).map((e) => e.id)).toEqual(['lanterneater']);
     expect(Object.keys(EQUIPMENT)).toHaveLength(25);
-    expect(Object.keys(MATERIALS)).toHaveLength(22);
+    // The game's own 22, then the roster's 98 (each with its `owner`; data/monsters.test.ts ninety-eight new materials).
+    expect(Object.values(MATERIALS).filter((m) => !m.owner)).toHaveLength(22);
+    expect(Object.keys(MATERIALS)).toHaveLength(22 + 98);
     expect(FLOORS.map((f) => f.id)).toEqual([1, 2, 3]);
   });
 
@@ -144,7 +146,8 @@ describe('every weapon-slot def has a kind', () => {
     expect(weapons.length).toBeGreaterThanOrEqual(10);
     for (const s of weapons) expect(WEAPON_KINDS[s.weaponKind!], s.id).toBeDefined();
     for (const s of Object.values(SPECIALS)) if (s.slot !== 'weapon') expect(s.weaponKind, s.id).toBeUndefined();
-    expect(Object.fromEntries(weapons.filter((s) => !s.set).map((s) => [s.id, s.weaponKind]))).toEqual({
+    // The roster's own uniques name their kinds themselves (data/monsters.test.ts thirty-nine own uniques).
+    expect(Object.fromEntries(weapons.filter((s) => !s.set && !s.owner).map((s) => [s.id, s.weaponKind]))).toEqual({
       'lg-chizuru': 'spear', 'lg-liz': 'spear', 'blaze-heart-sword': 'sword', 'frost-winter-staff': 'staff',
       'storm-thunder-bow': 'bow', 'shade-silent-blade': 'dagger',
     });

@@ -9,7 +9,8 @@ import { CONDITIONS } from '../../data/conditions';
 import { MAX_ILVL, MAX_REACHED, depthLevel } from '../levels';
 import type { ItemInstance, Rarity } from '../types';
 import { itemLevel, rollItem, tierItemLevel, type DropSource } from './item';
-import { BOSS_LEGENDARY, EPIC_SHARE, GEAR_CHANCE, RARE_MATERIALS, STARLIT_CHANCE, STARLIT_SALT, applyStarlit, rarityWeights, rollBossGear, rollGear, rollRareMaterial, rollTier, starlitChance, type DropCtx, type Tier } from './drops';
+import { BOSS_LEGENDARY, EPIC_SHARE, GEAR_CHANCE, RARE_MATERIALS, STARLIT_CHANCE, STARLIT_SALT, applyStarlit, rarityWeights, rollBossGear, rollGear, rollRareMaterial, rollTier, starlitChance, pickSpecial, type DropCtx, type Tier } from './drops';
+import type { RegionId } from '../../data/regions';
 
 const N = 20000;
 const tierOf = (r: Rarity): Tier => (r === 'common' || r === 'magic' || r === 'rare' || r === 'epic' ? r : 'legendaryTier');
@@ -533,3 +534,18 @@ describe("a tier's drops (difficulty plan Task 4)", () => {
 
 /** The pre-tier rolls (recorded on the code before Task 4). */
 const PINNED = { weights: '8d7faf51a6b4b0e1431f4068c704918687702fb4a20ce127ff7c63cb4f5127b5', rolls: '94b99933704b65898fd937d33639ff8c376c7551e4f123264beba2f3a70f0534' };
+
+describe('the roster leaves the special pools alone (roster plan Task A3)', () => {
+  it('pickSpecial draws as before', () => {
+    // Seeds 1-200 x the seven regions x the three sources, recorded before the roster's uniques were merged into SPECIALS.
+    const regions: RegionId[] = ['mainline', 'blaze', 'frost', 'storm', 'mire', 'shade', 'iron'];
+    const got: string[] = [];
+    for (let seed = 1; seed <= 200; seed++) for (const r of regions) for (const src of ['monster', 'elite', 'boss'] as DropSource[]) {
+      got.push(pickSpecial(mulberry32(seed), r, src).id);
+    }
+    expect(got.slice(0, 6)).toEqual(PICKS_HEAD);
+    expect(createHash('sha256').update(got.join(',')).digest('hex')).toBe(PICKS_SHA);
+  });
+});
+const PICKS_HEAD = ['lg-selene', 'lg-selene', 'lg-selene', 'blaze-ember-ring', 'blaze-ember-ring', 'blaze-ember-ring'];
+const PICKS_SHA = '2ce8998abb5648d99ac7ee99f4c0b8fce2fdfd7b356cfb6120960d9ff5078751';
