@@ -106,7 +106,12 @@ export type Effect =
    * After a landed hit on the target, the foe takes gold from the run pack: up to depth × `perDepth` a time, never below
    * zero; a kill gives it back (a warden twice over), a flee loses it (roster plan B3, M13). A fight with no pack takes none.
    */
-  | { kind: 'steal'; perDepth: number };
+  | { kind: 'steal'; perDepth: number }
+  /**
+   * The foe calls a foe `id` into the fight (roster plan B4, M4): no more than `max` a fight, only while the fight has room
+   * (its group cap; 4 in a boss fight) and only one already live; otherwise it attacks instead. The newcomer pays nothing.
+   */
+  | { kind: 'summon'; id: string; max: number };
 /**
  * A skill's part in its owner's mechanic: `release` spends Chizuru's barrier for power; `coin-power` and `coin-hits` spend
  * Liz's coins for power or for hits; `consume-aim` spends Sylvie's aim for power; `ember-power` spends Scarlet's embers
@@ -204,7 +209,8 @@ export interface CharacterDef {
  * Roster plan B2 (M1): `windup`, the name of the turn the foe spends winding this skill up; the skill itself lands the
  * round after (battle.ts chooseEnemyActions). Sleep or a freeze breaks the charge.
  */
-export interface EnemySkill { name: string; chance: number; target: Target; effects: Effect[]; windup?: string }
+/** Roster plan B4 (M22): `when: 'deadAlly'`, usable only while an ally lies fallen (and was never raised); its draw holds. */
+export interface EnemySkill { name: string; chance: number; target: Target; effects: Effect[]; windup?: string; when?: 'deadAlly' }
 export interface EnemyDef {
   id: string; name: string; floor: 1 | 2 | 3; boss?: boolean; stats: Stats; weak: Element[]; resist: Element[];
   exp: number; gold: number; drops: { mat: string; chance: number }[]; skills: EnemySkill[];
@@ -238,6 +244,14 @@ export interface EnemyDef {
    * `decoy`, a 1 HP phantom of itself beside it (`decoys` of them) while it is harder to hit; `encased` (plan B2 PR).
    */
   opener?: 'disguise' | 'asleep' | 'ambush' | 'decoy' | 'encased';
+  /** Roster plan B4 (M19): how many decoys a `decoy` opener brings; absent, one. */
+  decoys?: number;
+  /** Roster plan B4 (M10): what it does once as it falls, seen from its side (`enemies` is the party); never set off by another's. */
+  onFall?: { name: string; target: Target; effects: Effect[] };
+  /** Roster plan B4 (M22): the first time it falls it stands again at `pct`% of its HP. */
+  rise?: { pct: number };
+  /** Roster plan B4 (M20): while it and a foe of this id both stand, each blow on either is split between them. */
+  shareWith?: string;
 }
 export interface ItemDef {
   id: string; name: string; price: number; target: Target | null; effects: Effect[]; battle: boolean; returnToTown?: boolean; desc: string;

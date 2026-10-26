@@ -108,6 +108,32 @@ describe('BattleView late foes (roster plan B1)', () => {
     const slotW = (640 - 160) / 4;
     for (const k of ['e0', 'e1', 'e2']) expect(view.intentRect(k)!.width, k).toBeLessThanOrEqual(slotW);
   });
+
+  it('a summon joins the row as the log calls it, before anything it does plays', async () => {
+    const view = new BattleView(true, bank);
+    const s = battle([]);
+    view.setup(s, { width: 640, height: 360 }, 1);
+    const late = makeCombatant({ key: 'e1', side: 'enemy', name: '幼體' });
+    const onParty = vi.fn();
+    await view.play({ ...s, enemies: [...s.enemies, late], log: [{ type: 'foe', actor: 'e0', cue: 'summon', target: 'e1' }, { type: 'damage', target: 'e1', amount: 3, element: 'phys', mult: 1 }] }, sfx, onParty);
+    expect(view.anchor('e1')).not.toBeNull();
+    expect(view.enemyHp('e1')!.hp).toBe(97);
+    expect(onParty).not.toHaveBeenCalled();   // a hit on the summon is the summon's, not a member's
+  });
+
+  it('a foe that rises stands in the picture again', async () => {
+    const view = new BattleView(false, bank);
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => setTimeout(() => cb(performance.now()), 1));
+    const s = battle([]);
+    view.setup(s, { width: 640, height: 360 }, 1);
+    const up: BattleState = { ...s, log: [{ type: 'ko', target: 'e0' }, { type: 'foe', actor: 'e0', cue: 'rise' }] };
+    await view.play(up, sfx);
+    const box = view.enemyBoxOf('e0')!;
+    expect(box.alpha).toBe(1);
+    const body = box.children[0] as Container;
+    expect(body.children.filter((c) => c.visible)).toHaveLength(1);   // its picture, whole; no shards left
+    vi.unstubAllGlobals();
+  });
 });
 
 describe('BattleView bottom inset', () => {

@@ -47,6 +47,36 @@ export function returnedGold(s: BattleState, defOf: (c: Combatant) => EnemyDef |
   return s.enemies.reduce((n, c) => n + (!c.alive && !c.left && c.stolen ? c.stolen * (defOf(c)?.rank === 'warden' ? 2 : 1) : 0), 0);
 }
 
+/** M19: the evasion a foe has while any of its decoys stands. */
+export const DECOY = { evasion: 20 } as const;
+
+/** M19: each foe's evasion with its decoys: DECOY.evasion more while one of them stands, none once they are all gone. */
+export function syncDecoys(s: BattleState): void {
+  for (const c of s.enemies) {
+    const want = s.enemies.some((d) => d.decoyOf === c.key && d.alive) ? DECOY.evasion : 0;
+    const had = c.blur ?? 0;
+    if (want === had) continue;
+    const ev = (c.x.evasion ?? 0) - had + want;
+    if (ev) c.x.evasion = ev; else delete c.x.evasion;
+    if (want) c.blur = want; else delete c.blur;
+  }
+}
+
+/** M20: links each foe whose definition shares its wounds with the first unlinked foe of that id (summons too). */
+export function linkShares(s: BattleState, defOf: (c: Combatant) => EnemyDef | undefined): void {
+  for (const c of s.enemies) {
+    const id = defOf(c)?.shareWith;
+    if (!id || c.share || c.decoyOf) continue;
+    const mate = s.enemies.find((o) => o !== c && !o.share && !o.decoyOf && o.defId === id);
+    if (mate) { c.share = mate.key; mate.share = c.key; }
+  }
+}
+
+/** M22: whether a skill can be used now: a `when: 'deadAlly'` one only while an ally lies fallen, never raised, not gone. */
+export function usableNow(s: BattleState, e: Combatant, sk: EnemySkill): boolean {
+  return sk.when !== 'deadAlly' || s.enemies.some((c) => c !== e && !c.alive && !c.left && !c.rose && !c.decoyOf);
+}
+
 const living = (cs: Combatant[]) => cs.filter((c) => c.alive);
 /** A foe that can stir: awake and not frozen (a sleeping or frozen guard guards no one, as Scarlet covers no one then). */
 const stirs = (c: Combatant) => c.alive && c.sleep === 0 && !c.frozen;

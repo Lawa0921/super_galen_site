@@ -18,6 +18,9 @@ export type Cue =
   | { kind: 'mech'; key: string; cue: MechCue }
   | { kind: 'fx'; key: string; fx: FxKey; amount?: number }
   | { kind: 'ko'; key: string }
+  /** Roster plan B4: a foe joins the fight (a summon) and the picture takes it into the row; a fallen foe stands again. */
+  | { kind: 'join'; key: string }
+  | { kind: 'rise'; key: string }
   /** `keep`: held even in fast mode (a mechanic's moment must be readable). */
   | { kind: 'wait'; ms: number; keep?: true };
 
@@ -48,7 +51,11 @@ export function battleCues(log: BattleEvent[], defIdOf: (key: string) => string 
     } else if (ev.type === 'miss') out.push({ kind: 'miss', key: ev.target });
     else if (ev.type === 'ko') out.push({ kind: 'ko', key: ev.target });
     else if (ev.type === 'mech') { out.push({ kind: 'mech', key: ev.actor, cue: ev.cue }, { kind: 'wait', ms: EVENT_MS, keep: true }); return; }
-    else if (ev.type === 'foe') { /* a foe mechanic's moment (roster plan B3): its line is its picture */ }
+    // A foe mechanic's moment (roster plan B3–B4): a summon joins the row and a risen foe stands again; the rest are lines.
+    else if (ev.type === 'foe') {
+      if (ev.cue === 'summon' && ev.target) out.push({ kind: 'join', key: ev.target });
+      else if (ev.cue === 'rise') out.push({ kind: 'rise', key: ev.actor });
+    }
     else if ('target' in ev) {
       const fx = effectFor(ev, actor, weaponOf(actorKey));
       if (fx) out.push(ev.type === 'heal' ? { kind: 'fx', key: ev.target, fx, amount: ev.amount } : { kind: 'fx', key: ev.target, fx });

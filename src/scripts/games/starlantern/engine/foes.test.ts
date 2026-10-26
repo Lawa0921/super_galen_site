@@ -358,3 +358,181 @@ describe('M14 openers (roster plan B3)', () => {
     expect(s.log).toContainEqual({ type: 'foe', actor: 'e0', cue: 'reveal' });
   });
 });
+
+describe('M4 summon (roster plan B4)', () => {
+  const caller = (max = 9, id = 'slime'): EnemySkill => ({ name: '呼喚', chance: 1, target: 'self', effects: [{ kind: 'summon', id, max }] });
+  /** A summoner (and `others` more slimes) with room for `cap` foes, the party defending. */
+  const field = (cap: number, others = 0, skill = caller()) => {
+    const foes = [E('e0', { name: '母體' }), ...Array.from({ length: others }, (_, i) => E(`e${i + 1}`))];
+    return makeBattle([P('scarlet', { max: { hp: 999 } as never })], foes, { enemyDefs: { e0: def([skill]) }, meet: { k: 1, cap } });
+  };
+
+  it('a summon joins at the end of the line, pays nothing, and acts from the next round', () => {
+    const r1 = resolveRound(field(4), defend(field(4)), constRng(0.5));
+    expect(r1.enemies.map((e) => e.key)).toEqual(['e0', 'e1']);
+    expect(r1.enemies[1]).toMatchObject({ defId: 'slime', summoned: true, alive: true });
+    expect(r1.log).toContainEqual({ type: 'foe', actor: 'e0', cue: 'summon', target: 'e1' });
+    expect(acted(r1, 'e1')).toEqual([]);
+    expect(r1.intents!.e1).toBeDefined();
+    const r2 = resolveRound(r1, defend(r1), constRng(0.5));
+    expect(acted(r2, 'e1').length).toBe(1);
+  });
+
+  it('respects the cap', () => {
+    // Two standing and a cap of two: no room, so it attacks instead.
+    const r = resolveRound(field(2, 1), defend(field(2, 1)), constRng(0.5));
+    expect(r.enemies).toHaveLength(2);
+    expect(acted(r, 'e0')).toEqual(['攻擊']);
+    // A fallen foe makes room again.
+    const s = field(2, 1);
+    s.enemies[1].alive = false;
+    s.enemies[1].hp = 0;
+    expect(resolveRound(s, defend(s), constRng(0.5)).enemies).toHaveLength(3);
+  });
+
+  it('calls no more than its max a fight', () => {
+    let s = field(9, 0, caller(2));
+    for (let i = 0; i < 4; i++) s = resolveRound(s, defend(s), constRng(0.5));
+    expect(s.enemies.filter((e) => e.summoned)).toHaveLength(2);
+  });
+
+  it('calls no one not yet live', () => {
+    const r = resolveRound(field(4, 0, caller(9, 'lamp-wight')), defend(field(4)), constRng(0.5));
+    expect(r.enemies).toHaveLength(1);
+    expect(acted(r, 'e0')).toEqual(['攻擊']);
+  });
+
+  it('the target id must exist', () => {
+    for (const d of Object.values(ENEMIES)) for (const k of d.skills) for (const e of k.effects) {
+      if (e.kind === 'summon') expect(ENEMIES[e.id], `${d.id} ${k.name} ${e.id}`).toBeDefined();
+    }
+  });
+});
+
+describe('M19 decoy (roster plan B4)', () => {
+  const dancer = () => {
+    const was = ENEMIES.slime;
+    try {
+      (ENEMIES as Record<string, EnemyDef>).slime = { ...was, opener: 'decoy', skills: [] };
+      return createBattle({ party: fullParty(LEGACY_LINEUP), enemyIds: ['slime'], inventory: {}, revealed: {} });
+    } finally {
+      (ENEMIES as Record<string, EnemyDef>).slime = was;
+    }
+  };
+
+  it('decoy pays nothing', () => {
+    const s = dancer();
+    expect(s.enemies).toHaveLength(2);
+    expect(s.enemies[1]).toMatchObject({ summoned: true, decoyOf: 'e0', hp: 1 });
+    expect(s.enemies[1].max.hp).toBe(1);
+    for (const e of s.enemies) { e.hp = 0; e.alive = false; }
+    s.outcome = 'win';
+    const solo = { ...s, enemies: [s.enemies[0]] };
+    expect(rewards(s, constRng(0), false)).toEqual(rewards(solo, constRng(0), false));
+  });
+
+  it('a decoy never acts', () => {
+    let s = dancer();
+    s = resolveRound(s, defend(s), constRng(0.5));
+    expect(acted(s, 'e1')).toEqual([]);
+    expect(s.intents!.e1).toBeUndefined();
+  });
+
+  it('evasion drops with the decoy', () => {
+    const s = dancer();
+    expect(s.enemies[0].x.evasion).toBe(20);
+    const r = resolveRound(s, { ...defend(s), scarlet: { kind: 'attack', target: 'e1' } }, constRng(0.9));
+    expect(r.enemies[1].alive).toBe(false);
+    expect(r.enemies[0].x.evasion ?? 0).toBe(0);
+  });
+});
+
+describe('M10 last words (roster plan B4)', () => {
+  const burst = (target: 'enemies' | 'allies' = 'enemies', power = 40): NonNullable<EnemyDef['onFall']> => ({ name: '燭爆', target, effects: [hit(power)] });
+  const field = (onFall: EnemyDef['onFall'], n = 1) =>
+    makeBattle([P('scarlet', { max: { hp: 999, atk: 999 } as never })], Array.from({ length: n }, (_, i) => E(`e${i}`, { hp: 1 })),
+      { enemyDefs: Object.fromEntries(Array.from({ length: n }, (_, i) => [`e${i}`, def([], { onFall })])) });
+
+  it('fires once', () => {
+    let s = field(burst());
+    s.enemies.push(E('e1', { max: { hp: 9999 } as never }));
+    s = resolveRound(s, { scarlet: { kind: 'attack', target: 'e0' } }, constRng(0.5));
+    expect(s.enemies[0].alive).toBe(false);
+    expect(acted(s, 'e0')).toEqual(['燭爆']);
+    expect(hitsOn(s, 'scarlet')).toBeGreaterThanOrEqual(1);
+    const r2 = resolveRound(s, defend(s), constRng(0.5));
+    expect(acted(r2, 'e0')).toEqual([]);
+  });
+
+  it('does not chain forever', () => {
+    // Each one's burst hits its own side: the first fells the second, whose burst does not go off in turn.
+    let s = field(burst('allies', 9999), 3);
+    s.enemies[2].max = { ...s.enemies[2].max, hp: 99999 };
+    s.enemies[2].hp = 99999;
+    s = resolveRound(s, { scarlet: { kind: 'attack', target: 'e0' } }, constRng(0.5));
+    expect(s.enemies[1].alive).toBe(false);
+    expect(s.log.filter((e) => e.type === 'act' && e.label === '燭爆')).toHaveLength(1);
+  });
+});
+
+describe('M22 second winds (roster plan B4)', () => {
+  it('rises only once', () => {
+    let s = makeBattle([P('scarlet', { max: { atk: 999 } as never })], [E('e0', { hp: 1 }), E('e1', { max: { hp: 9999 } as never })], { enemyDefs: { e0: def([], { rise: { pct: 30 } }) } });
+    s = resolveRound(s, { scarlet: { kind: 'attack', target: 'e0' } }, constRng(0.5));
+    expect(s.enemies[0]).toMatchObject({ alive: true, hp: 30, rose: true });
+    expect(s.log).toContainEqual({ type: 'foe', actor: 'e0', cue: 'rise' });
+    s = resolveRound(s, { scarlet: { kind: 'attack', target: 'e0' } }, constRng(0.5));
+    expect(s.enemies[0].alive).toBe(false);
+    expect(s.log.some((e) => e.type === 'foe' && e.cue === 'rise')).toBe(false);
+  });
+
+  it('a last foe that rises keeps the fight going', () => {
+    let s = makeBattle([P('scarlet', { max: { atk: 999 } as never })], [E('e0', { hp: 1 })], { enemyDefs: { e0: def([], { rise: { pct: 30 } }) } });
+    s = resolveRound(s, { scarlet: { kind: 'attack', target: 'e0' } }, constRng(0.5));
+    expect(s.outcome).toBe('ongoing');
+  });
+
+  it('a revive with no fallen ally is passed over, and the draw count holds', () => {
+    const fold: EnemySkill = { name: '重摺', chance: 1, target: 'deadAlly', when: 'deadAlly', effects: [{ kind: 'revive', hpPct: 0.3 }] };
+    const blade: EnemySkill = { name: '紙刃', chance: 1, target: 'enemy', effects: [hit(90)] };
+    const crane = (first: EnemySkill, fallen: boolean) =>
+      makeBattle([P('scarlet')], [E('e0'), E('e1', fallen ? { alive: false, hp: 0 } : {})], { enemyDefs: { e0: def([first, blade]) } });
+    // No one fallen: 重摺 is passed over for 紙刃, drawing as a skill whose chance failed would.
+    const passed = counted(), failed = counted();
+    planEnemies(crane(fold, false), passed.rng);
+    planEnemies(crane({ ...fold, chance: 0 }, false), failed.rng);
+    expect(passed.n).toBe(failed.n);
+    const s = crane(fold, false);
+    planEnemies(s, constRng(0.5));
+    expect(s.intents!.e0).toMatchObject({ kind: 'enemy-skill', index: 1 });
+    // One fallen: it folds the fallen one back, once.
+    const f = crane(fold, true);
+    planEnemies(f, constRng(0.5));
+    expect(f.intents!.e0).toMatchObject({ kind: 'enemy-skill', index: 0 });
+    const r = resolveRound(f, defend(f), constRng(0.5));
+    expect(r.enemies[1]).toMatchObject({ alive: true, hp: 30, rose: true });
+    const again = crane(fold, true);
+    again.enemies[1].rose = true;
+    planEnemies(again, constRng(0.5));
+    expect(again.intents!.e0).toMatchObject({ kind: 'enemy-skill', index: 1 });
+  });
+});
+
+describe('M20 shared wounds (roster plan B4)', () => {
+  it('splits while both stand', () => {
+    const pair = () => createBattle({ party: fullParty(LEGACY_LINEUP), enemyIds: ['ice-komainu', 'ice-komainu'], inventory: {}, revealed: {} });
+    const s = pair();
+    expect(s.enemies[0].share).toBe('e1');
+    expect(s.enemies[1].share).toBe('e0');
+    const r = resolveRound(s, { ...defend(s), scarlet: { kind: 'attack', target: 'e0' } }, constRng(0.5));
+    const lost = (i: number) => s.enemies[i].hp - r.enemies[i].hp;
+    expect(lost(0)).toBeGreaterThan(0);
+    expect(Math.abs(lost(0) - lost(1))).toBeLessThanOrEqual(1);
+    // With its partner down, it takes the whole blow.
+    const t = pair();
+    t.enemies[1].alive = false;
+    t.enemies[1].hp = 0;
+    const whole = resolveRound(t, { ...defend(t), scarlet: { kind: 'attack', target: 'e0' } }, constRng(0.5));
+    expect(t.enemies[0].hp - whole.enemies[0].hp).toBeGreaterThanOrEqual(lost(0) + lost(1) - 1);
+  });
+});

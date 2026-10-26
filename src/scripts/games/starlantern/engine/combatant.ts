@@ -124,6 +124,18 @@ export interface Combatant {
   dozing?: true;
   /** Roster plan B3 (M14): it acts first in round one. */
   ambush?: true;
+  /** Roster plan B4 (M4): how many foes it has called this fight. */
+  summons?: number;
+  /** Roster plan B4 (M19): the foe this 1 HP phantom stands beside; a decoy never acts and pays nothing. */
+  decoyOf?: string;
+  /** Roster plan B4 (M19): the evasion its standing decoys add to it now. */
+  blur?: number;
+  /** Roster plan B4 (M22): it has stood up again once (by its own `rise` or an ally's revive); it never does again. */
+  rose?: true;
+  /** Roster plan B4 (M10): its fall has been answered (its `onFall` went off, or a fall another's set off took it). */
+  fell?: true;
+  /** Roster plan B4 (M20): the key of the foe it shares its wounds with. */
+  share?: string;
 }
 
 /** Roster plan B3–B4: a foe mechanic's moment in the log (battleLines words it). */

@@ -440,6 +440,15 @@ export class BattleView {
     for (const cue of battleCues(state.log, (k) => this.defIds.get(k) ?? null, (k) => this.weapons.get(k))) {
       if (cue.kind === 'wait') { await (cue.keep ? this.hold(cue.ms) : this.wait(cue.ms)); continue; }
       if (cue.kind === 'line') { onLine?.(cue.index); continue; }
+      // Roster plan B4: a summon joins the row as the log calls it; a fallen foe stands up whole once its shatter is done.
+      if (cue.kind === 'join') { const e = state.enemies.find((x) => x.key === cue.key); if (e) this.addFoe(e); continue; }
+      if (cue.kind === 'rise') {
+        await Promise.all(this.shattering);
+        this.shattering = [];
+        const up = this.slots.get(cue.key);
+        if (up) this.standUp(up);
+        continue;
+      }
       const slot = this.slots.get(cue.key);
       if (cue.kind === 'ultimate') { if (!slot) await onParty?.(cue.key, 'ultimate', cue.name); continue; }
       if (cue.kind === 'act') {
@@ -479,6 +488,15 @@ export class BattleView {
       const s = this.slots.get(e.key);
       if (s && !e.alive && !s.box.destroyed) s.box.alpha = 0;
     }
+  }
+
+  /** A foe that stood up again (roster plan B4): its shards go, its picture shows whole and the box is opaque. */
+  private standUp(slot: Slot): void {
+    if (slot.box.destroyed) return;
+    const [pic, ...shards] = slot.body.children;
+    for (const p of shards) { slot.body.removeChild(p); p.destroy(); }
+    if (pic) { pic.visible = true; pic.alpha = 1; }
+    slot.box.alpha = 1;
   }
 
   /** White flash and a knock back; harder on a weak point. */

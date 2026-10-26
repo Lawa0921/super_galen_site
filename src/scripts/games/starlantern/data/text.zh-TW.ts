@@ -187,6 +187,8 @@ export const T = {
       windup: (skill: string) => `蓄力：${skill}`,
       /** M14: the name a foe in disguise wears until a hit unmasks it. */
       disguise: '寶箱？',
+      /** M19: a decoy's name beside its foe's. */
+      decoy: (name: string) => `${name}的幻影`,
     },
   },
   element: { phys: '物理', fire: '火', ice: '冰', thunder: '雷' },

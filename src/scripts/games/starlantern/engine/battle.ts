@@ -17,7 +17,8 @@ import { SECONDARY_KEYS } from './stats';
 import { applyEffect, patchSkill, pctOf, type EffectContext } from './skills';
 import { afterAction, afterFoe, castCost, castDef, extraAction, initMechs, mechBeforeTicks, mechRoundEnd, payMech, watchAction, type CastDef } from './mechanics/index';
 import { AILMENT, ageAilments, shockTick, tickAilments } from './ailments';
-import { foeGuard, foesRoundEnd, foesRoundStart, guardTargets, huntedIn, openWith, returnedGold, wakeUp } from './foes';
+import { DECOY, foeGuard, foesRoundEnd, foesRoundStart, guardTargets, huntedIn, linkShares, openWith, returnedGold, syncDecoys, usableNow, wakeUp } from './foes';
+import { listedEnemy } from '../data/monsters';
 import { countCast, credit, lossOf, type Ledger } from './ledger';
 import { AIM, barrierPower, type Barrier } from './mech';
 import type { MoonPhase } from './mechanics/moon';
@@ -66,6 +67,11 @@ export interface BattleState {
    * a fight with a thief in it (game.ts writes `gold` back to the pack each round). The sim has none: nothing is taken.
    */
   purse?: { gold: number; depth: number };
+  /**
+   * Roster plan B4 (M4, M19): how this fight meets its foes, kept for one that joins later, and the room it has (its group
+   * cap; 4 in a boss fight). Set only on a fight with a foe that summons or brings decoys.
+   */
+  meet?: Meeting & { cap: number };
   /** The barriers over the party (engine/mech.ts); the old roster raises none. */
   barriers?: Barrier[];
   /** The last plain skill a companion cast, for the hero's echo (engine/mechanics/echo.ts): who, in which round, as cast, at what TP. */
@@ -114,6 +120,8 @@ export type EnemyAction = { kind: 'attack'; target?: string; shownTarget?: strin
 
 /** Rounds Scarlet's story fight lasts. */
 export const STORY_FIGHT_ROUNDS = 3;
+/** Roster plan B4 (M4): the most foes a boss fight holds, the boss and its parts and its calls together. */
+export const BOSS_GROUP_CAP = 4;
 export const LIMIT_MAX = 100;
 export const LIMIT_PER_ACTION = 12;
 /** Damage taken adds floor(damage / max HP * this), at least 1 (see dealDamage). */
@@ -224,6 +232,24 @@ export function createBattle(o: {
       ...(i === crowdAt ? { crowd: sc!.crowdAffix!.id } : {}),
     });
   });
+  // Roster plan B4: a fight with a summoner or a decoy keeps how it met its foes; decoys stand beside their foe; a pair
+  // that shares its wounds is linked. The old roster has none of these, and its fights carry no new field.
+  const joins = s.enemies.some((c) => { const d = enemyDef(s, c); return d?.opener === 'decoy' || !!d?.skills.some((k) => k.effects.some((e) => e.kind === 'summon')); });
+  if (joins) s.meet = { ...meeting, cap: o.boss ? BOSS_GROUP_CAP : groupCap(size, depth) + (o.extra ?? 0) };
+  for (const c of [...s.enemies]) {
+    const d = enemyDef(s, c);
+    if (d?.opener !== 'decoy') continue;
+    for (let n = 0; n < (d.decoys ?? 1); n++) {
+      const phantom = meetEnemy(s, c.defId, meeting);
+      phantom.name = T.battle.foe.decoy(c.name);
+      phantom.max = { ...phantom.max, hp: 1 };
+      phantom.hp = 1;
+      phantom.summoned = true;
+      phantom.decoyOf = c.key;
+    }
+  }
+  syncDecoys(s);
+  linkShares(s, (c) => enemyDef(s, c));
   const enemies = s.enemies;
   if (o.survive) {
     s.survive = o.survive;
@@ -342,8 +368,9 @@ function resolveTargets(s: BattleState, actor: Combatant, target: Target | null,
     case 'allies': return living(allies);
     case 'self': return [actor];
     case 'deadAlly': {
-      // A foe that left the fight is not a fallen ally (roster plan B1).
-      const t = allies.find((c) => c.key === chosen && !c.alive && !c.left) ?? allies.find((c) => !c.alive && !c.left);
+      // A foe that left the fight is not a fallen ally (roster plan B1); nor is a decoy, or a foe raised once (B4).
+      const fallen = (c: Combatant) => !c.alive && !c.left && !c.rose && !c.decoyOf;
+      const t = allies.find((c) => c.key === chosen && fallen(c)) ?? allies.find(fallen);
       return t ? [t] : [];
     }
     default: return [];
@@ -436,10 +463,12 @@ const skillIsMelee = (effects: Effect[]) => effects.some((e) => e.kind === 'dama
 function chooseEnemyActions(s: BattleState, rng: Rng, round: number): Map<string, EnemyAction> {
   const out = new Map<string, EnemyAction>();
   for (const e of living(s.enemies)) {
+    if (e.decoyOf) continue;   // a decoy never acts, and draws nothing (roster plan B4, M19)
     const skills = enemyDef(s, e)?.skills ?? [];
     // A foe winding up draws no skill: the one it wound up comes now, drawn for its target only (roster plan B2, M1).
+    // A skill that cannot be used now (M22: a revive with no one fallen) is passed over after its draw, as if it failed.
     const charged = e.winding !== undefined && !!skills[e.winding];
-    const index = charged ? e.winding! : skills.findIndex((sk) => rng() < sk.chance);
+    const index = charged ? e.winding! : skills.findIndex((sk) => rng() < sk.chance && usableNow(s, e, sk));
     const windup = !charged && index >= 0 && !!skills[index].windup;
     const melee = index >= 0 ? skillIsMelee(skills[index].effects) : e.melee;
     const target = pickTarget(foePool(s, e, melee), undefined, rng)?.key;
@@ -514,6 +543,11 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
     if (actor.winding === undefined) act = { kind: 'attack', target: act.target };
     else delete actor.winding;
   }
+  if (actor.side === 'enemy' && act.kind === 'enemy-skill' && !act.windup) {
+    // A call with no room, none left, or no one live to call is a plain attack instead (roster plan B4, M4).
+    const sk = enemyDef(s, actor)?.skills[act.index];
+    if (sk?.effects.some((e) => e.kind === 'summon' && !canSummon(s, actor, e.id, e.max))) act = { kind: 'attack', target: act.target };
+  }
   if (actor.side === 'enemy') {
     // A single blow goes where a taunt, a challenge or a cover sends it (forcedTarget); the ledger credits the one it
     // went to with what the others in `pool` would have lost (plan 8c rulings 8, 19). An area attack follows a taunt only,
@@ -549,7 +583,7 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
       s.log.push({ type: 'act', actor: actor.key, label: sk.name });
       // A guard (M2) covers the ally most hurt but itself; any other skill finds its targets as it always has.
       const targets = guardTargets(s, actor, sk) ?? resolveTargets(s, actor, sk.target, act.target, rng, skillIsMelee(sk.effects), sentTo);
-      for (const t of targets) for (const eff of sk.effects) applyEffect(actor, t, eff, ctx);
+      for (const t of targets) for (const eff of sk.effects) if (eff.kind === 'summon') summon(s, actor, eff.id); else applyEffect(actor, t, eff, ctx);
       return null;
     }
     case 'skill': {
@@ -785,8 +819,54 @@ function endOfRound(s: BattleState, ctx: EffectContext, rng: Rng): void {
   }
   // The mechanics close the round last, after every tick (a foe a tick felled has already lost its mark).
   mechRoundEnd(s, ctx, rng);
-  // Then the foes' own countdowns (roster plan B2–B3): a flight, a guard's rounds, a hunt's round.
+  // Then the foes' own countdowns (roster plan B2–B3): a flight, a guard's rounds, a hunt's round; then what the round's
+  // falls set off (B4).
   foesRoundEnd(s, (c) => enemyDef(s, c));
+  afterFalls(s, ctx, rng);
+}
+
+/** Roster plan B4 (M4): whether `actor` may call a `id` now: a fight that keeps its meeting, room under its cap, calls left, and `id` live. */
+function canSummon(s: BattleState, actor: Combatant, id: string, max: number): boolean {
+  const room = s.meet ? living(s.enemies).filter((c) => !c.decoyOf).length < s.meet.cap : false;
+  return room && (actor.summons ?? 0) < max && listedEnemy(id);
+}
+
+/** Roster plan B4 (M4): a foe joins at the end of the line, lettered after its kind; it acts from the next round and pays nothing. */
+function summon(s: BattleState, actor: Combatant, id: string): void {
+  if (!s.meet) return;
+  const kin = s.enemies.filter((c) => c.defId === id && !c.decoyOf).length;
+  const c = meetEnemy(s, id, s.meet, kin ? { letter: String.fromCharCode(65 + kin) } : {});
+  c.summoned = true;
+  actor.summons = (actor.summons ?? 0) + 1;
+  s.log.push({ type: 'foe', actor: actor.key, cue: 'summon', target: c.key });
+  linkShares(s, (x) => enemyDef(s, x));
+}
+
+/**
+ * Roster plan B4, after each action and at the round's end: a foe that fell for the first time with `rise` stands again
+ * (M22); then each foe still down with an `onFall` has its last word once (M10), seen from its side. A foe a last word
+ * fells has its own fall taken as answered, so last words never chain. Decoys follow their foe (M19). The rolls of a last
+ * word's hits are the fight's own; deciding draws nothing.
+ */
+function afterFalls(s: BattleState, ctx: EffectContext, rng: Rng): void {
+  for (const e of s.enemies) {
+    const rise = enemyDef(s, e)?.rise;
+    if (e.alive || e.left || e.rose || e.decoyOf || !rise) continue;
+    e.alive = true;
+    e.rose = true;
+    e.hp = Math.max(1, Math.floor((e.max.hp * rise.pct) / 100));
+    s.log.push({ type: 'foe', actor: e.key, cue: 'rise' });
+  }
+  for (const e of s.enemies) {
+    const last = enemyDef(s, e)?.onFall;
+    if (e.alive || e.left || e.fell || e.decoyOf || !last) continue;
+    e.fell = true;
+    const down = new Set(s.enemies.filter((c) => !c.alive).map((c) => c.key));
+    s.log.push({ type: 'act', actor: e.key, label: last.name });
+    for (const t of resolveTargets(s, e, last.target, undefined, rng)) for (const eff of last.effects) applyEffect(e, t, eff, ctx);
+    for (const c of s.enemies) if (!c.alive && !down.has(c.key)) c.fell = true;
+  }
+  syncDecoys(s);
 }
 
 /**
@@ -846,6 +926,7 @@ export function resolveRound(prev: BattleState, actions: Record<string, Action>,
     if (!actor.alive) continue;
     // A frozen turn is lost before sleep is looked at (sleep keeps its rounds); it thaws and is guarded for a while.
     // A lost turn breaks a foe's charge (roster plan B2, M1).
+    if (actor.decoyOf) continue;   // a decoy never acts (roster plan B4, M19)
     if (actor.frozen) { delete actor.frozen; delete actor.winding; actor.freezeGuard = AILMENT.freezeGuard; s.log.push({ type: 'frozen', actor: actor.key }); continue; }
     if (actor.sleep > 0) { actor.sleep -= 1; delete actor.winding; s.log.push({ type: 'asleep', actor: actor.key }); continue; }
     if (actor.dozing) wakeUp(s, actor);   // a foe that opened asleep wakes angry (roster plan B3, M14)
@@ -886,6 +967,7 @@ export function resolveRound(prev: BattleState, actions: Record<string, Action>,
     }
     ringBell(s, heroUp, ctx);
     syncWards(s);
+    afterFalls(s, ctx, rng);   // a foe that fell stands again or has its last word (roster plan B4)
     if (checkOutcome(s)) return s;
   }
   const heroUp = s.party.some((c) => c.key === 'hero' && c.alive);
@@ -914,6 +996,7 @@ export function intentLabel(s: BattleState, key: string): string {
   const def = e ? enemyDef(s, e) : undefined;
   const name = a.kind === 'attack' ? '攻擊' : (def?.skills[a.index]?.name ?? '');
   if (a.kind === 'enemy-skill' && a.windup) return T.battle.foe.windup(name);   // roster plan B2, M1
+  if (e?.decoyOf) return '';   // a decoy never acts (roster plan B4, M19)
   const sk = a.kind === 'enemy-skill' ? def?.skills[a.index] : null;
   const single = a.kind === 'attack' || sk?.target === 'enemy' || sk?.target === 'row' || sk?.target === 'column' || sk?.target === 'cross';
   const shown = a.shownTarget ?? a.target;

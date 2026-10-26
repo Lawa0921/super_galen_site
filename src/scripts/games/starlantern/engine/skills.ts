@@ -316,6 +316,15 @@ function gainHp(t: Combatant, amount: number): number {
   return t.hp - before;
 }
 
+/** The partner's half of a shared wound (roster plan B4, M20): it lands as it is, no roll, no on-hit effect. */
+function shareWound(actor: Combatant, twin: Combatant, n: number, element: Element, ctx: EffectContext): void {
+  if (n <= 0) return;
+  if (actor.side === 'party') credit(ctx.ledger, actor.key, 'damage', lossOf(twin, n), castOf(ctx, actor));
+  const lost = dealDamage(twin, n, { ledger: ctx.ledger, log: ctx.log });
+  ctx.log.push({ type: 'damage', target: twin.key, amount: lost, element, mult: 1 });
+  if (!twin.alive) ctx.log.push({ type: 'ko', target: twin.key });
+}
+
 /** A landed hit unmasks a foe in disguise (roster plan B3, M14): its own name comes back. */
 function unmask(t: Combatant, ctx: EffectContext): void {
   if (t.disguised === undefined) return;
@@ -332,7 +341,10 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
       for (let i = 0; i < (eff.hits ?? 1) + extra && target.alive; i++) {
         const rolls = rollHit(actor, target, eff, ctx.rng);
         if (!rolls) { ctx.log.push({ type: 'miss', target: target.key }); continue; }
-        const { amount, mult, crit } = hitAmount(actor, target, eff, rolls);
+        const { amount: full, mult, crit } = hitAmount(actor, target, eff, rolls);
+        // Shared wounds (roster plan B4, M20): while its partner stands, the target takes half (rounded up), the partner the rest.
+        const twin = target.share ? ctx.battle?.enemies.find((e) => e.key === target.share && e.alive) : undefined;
+        const amount = twin ? Math.ceil(full / 2) : full;
         if (ctx.ledger) {
           if (actor.side === 'party' && target.side === 'enemy') {
             // A 同步's lift goes to its giver: the loss less what the power before it would have taken, the same rolls.
@@ -349,6 +361,7 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
         if (target.side === 'enemy') reveal(ctx.revealed, target.defId, eff.element);
         ctx.log.push({ type: 'damage', target: target.key, amount: lost, element: eff.element, mult, ...(crit ? { crit } : {}) });
         if (!target.alive) ctx.log.push({ type: 'ko', target: target.key });
+        if (twin) shareWound(actor, twin, full - amount, eff.element, ctx);
         onLandedHit(actor, target, ctx);
         // Her runes on this hit (plan 8e): absent fields do nothing and draw nothing.
         runeHit(actor, target, eff, crit, hpBefore - target.hp, ctx);
@@ -403,6 +416,7 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
       if (target.alive) return;
       target.alive = true;
       target.hp = Math.max(1, Math.floor(target.max.hp * eff.hpPct));
+      if (target.side === 'enemy') target.rose = true;   // a foe stands again once only (roster plan B4, M22)
       ctx.log.push({ type: 'revive', target: target.key });
       return;
     }

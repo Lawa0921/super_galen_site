@@ -482,6 +482,8 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 **Files:**
 - Modify：`engine/types.ts`（`Effect { kind: 'summon'; id; max }`、`EnemyDef.onFall?`、`rise?`、`shareWith?`、`EnemySkill.when?: 'deadAlly'`）、`engine/battle.ts`（召喚呼叫 `meetEnemy`，`summoned: true`，本回合不行動，達 `groupCap`（頭目戰 4）就不召喚而改普攻；`onFall` 在 `ko` 之後結算一次、不連鎖；`rise` 第一次倒下時以 pct 站起；`when: 'deadAlly'` 沒有倒下的同伴時這招視為不可用（`findIndex` 跳過它但**照抽**，抽取次數不變）；幻影 1 HP、無報酬、在場時本體 `evasion` +20；`shareWith` 兩隻都活著時傷害各半）、`render/BattleView.ts`（站起的精靈重新顯示）。
 - Test：`engine/foes.test.ts`、`engine/battle.test.ts`、`render/BattleView.test.ts`。
+- 實作裁定（B4）：`BattleState.meet`（相遇方式＋場上上限：一般戰 `groupCap`＋`extra`，頭目戰 `BOSS_GROUP_CAP = 4`）只在有會召喚或帶幻影的敵人時才放上。召喚不成（滿了、次數用完、或目標還沒上線 `listedEnemy`）就改普攻；召喚來的排在最後、照同種的數量加字母。幻影只在開戰時出現（被召喚來的舞者不帶幻影），名字「〇〇的幻影」，1 HP、不行動也不抽亂數；本體在任一幻影站著時閃避 +20。倒下的處理在每個行動之後與回合結束時：先站起（`rise`，每隻一次；同伴替牠復活也算用掉），再結算 `onFall`（每隻一次，從牠那一邊看目標；被別隻的 `onFall` 打倒的不再引爆）。平分傷害：目標承受一半（進位），同伴承受其餘，同伴那一份不擲骰、不觸發命中效果。
+- 留給 B2 PR（B11 `every trait is implemented` 會擋）：歸途之光倒下時回 10% HP（沒有按比例回血的效果）、騎士殘影「同伴倒下時自己 def +30%」、祭典的燈籠、行列的影子、灰枯的孢子莢（這三樣沒有敵人 id）。
 
 - [ ] **Step 1：寫失敗的測試**：`respects the cap`、`a summon acts from the next round`、`the target id must exist`（資料測試）、`fires once`、`does not chain forever`、`rises only once`、`a revive with no fallen ally is passed over, and the draw count holds`、`decoy pays nothing`、`evasion drops with the decoy`、`splits while both stand`。
 - [ ] **Step 2–5**：同上；commit：`feat(starlantern): summons, decoys, last words, second winds and shared wounds`。
