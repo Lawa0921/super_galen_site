@@ -697,10 +697,9 @@ describe('every live wave keeps the tables whole (PR A review, item 1; spec §3.
 
 describe('a warden waits for its room (PR A review, item 3)', () => {
   it('no warden goes live before the map can mark and enter a warden room', () => {
-    // floorOf places a live warden's room, but nothing marks or enters one until plan B5 (the elite's event tile, `move`).
-    // B5 adds the 'warden' marker and its handling, then flips the first expectation and removes this note.
+    // floorOf places a live warden's room; plan B5 marks it on the map (the elite's event tile) and `move` enters it.
     const ready = Object.hasOwn(MARKER_GLYPH, 'warden');
-    expect(ready).toBe(false);
+    expect(ready).toBe(true);
     for (const id of [...MAINLINE_WARDENS, ...Object.values(REGION_WARDENS)]) expect(ROSTER_LIVE.has(id) && !ready, `${id} is live with no warden room`).toBe(false);
   });
 });

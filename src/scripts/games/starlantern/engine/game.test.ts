@@ -59,7 +59,7 @@ import { GIFT_LINES, RIN_OATH, type GiftPools } from '../data/bond.zh-TW';
 import { BOND_RUN_CAP, FIELD_POINTS } from '../data/story/bond';
 import { BONDS_WRITTEN, ROMANCES_WRITTEN, TOGETHER_WRITTEN, sceneTime } from '../data/story/scenes';
 import { today } from './story/bond';
-import { withBondEarn, withBondScale } from './testing';
+import { withBondEarn, withBondScale, withRosterLive } from './testing';
 /**
  * Bond plan Task 17: the registries hold what is written now, so a test that registers its own puts back what was there
  * (`bondsBack`), registers a companion only once (`bondsAdd`), and gives a written scene back instead of deleting it.
@@ -6406,5 +6406,144 @@ describe('a thief in a real fight (roster plan B3, M13)', () => {
     const g = inMap(1, mulberry32(7));
     stepOnto(g, plantAt(g, 'elite'));
     expect(g.battle!.purse).toBeUndefined();
+  });
+});
+describe('wardens on the map and bosses by depth (roster plan B5)', () => {
+  /** A game past the story with `region` reached to `depth`, on `tier`, departed at `depth`. */
+  const deep = (region: Portal['region'], depth: number, tier: Difficulty = 'normal', rng: Rng = calm()): Game => {
+    const g = tiered(tier, rng);
+    g.state.dungeon.reached[region] = Math.max(g.state.dungeon.reached[region] ?? 0, depth);
+    expect(g.depart({ region, condition: 'plain' }, depth)).toEqual({ ok: true });
+    return g;
+  };
+  const bossIds = (g: Game): string[] => {
+    expect(stepOnto(g, g.map().boss!)).toEqual({ kind: 'boss' });
+    return g.battle!.enemies.map((e) => e.defId);
+  };
+  const wardenAt = (g: Game) => floorOf(g.run!, g.floor).contents.find((c) => c.kind === 'warden');
+  const rareCount = (r: Record<string, number>) => RARE_MATERIALS.reduce((n, m) => n + (r[m] ?? 0), 0);
+
+  it('with nothing live every boss is the lantern-eater', () => {
+    for (const region of ['mainline', 'blaze', 'frost', 'storm', 'mire', 'shade', 'iron'] as const) {
+      for (const depth of [5, 10, 15]) expect(bossIds(deep(region, depth)), `${region} ${depth}`).toEqual(['lanterneater']);
+    }
+  });
+
+  it('a live boss is met where bossFor says', () => {
+    withRosterLive(['fog-warden', 'mire-hydra'], () => {
+      expect(bossIds(deep('mainline', 5))).toEqual(['fog-warden']);
+      expect(bossIds(deep('mainline', 10))).toEqual(['lanterneater']);
+      expect(bossIds(deep('mire', 5))).toEqual(['mire-hydra']);
+      expect(bossIds(deep('mire', 10))).toEqual(['lanterneater']);
+    });
+  });
+
+  it('the archon comes with two hands, and only the archon takes affixes', () => {
+    withRosterLive(['old-city-archon', 'archon-hand'], () => {
+      const g = deep('mainline', 20, 'nightmare');
+      expect(bossIds(g)).toEqual(['old-city-archon', 'archon-hand', 'archon-hand']);
+      const [archon, ...hands] = g.battle!.enemies;
+      expect(archon.affixes).toEqual(rollAffixes(g.run!.seed, 20, TIERS.nightmare.bossAffixes));
+      expect(hands.every((h) => h.affixes === undefined)).toBe(true);
+      expect(g.battle!.boss).toBe(true);
+      // The hands pay a part's exp and no gold; the fight pays as a boss fight does.
+      const end = killAll(g);
+      expect(end.outcome).toBe('win');
+      expect(end.gear).toHaveLength(2);
+    });
+    // Without its hands live, the archon is not met at all.
+    withRosterLive(['old-city-archon'], () => expect(bossIds(deep('mainline', 20))).toEqual(['lanterneater']));
+  });
+
+  it('a warden waits in its room on depth 8 and fights as an elite', () => {
+    withRosterLive(['false-moon'], () => {
+      const g = deep('mainline', 8);
+      const room = wardenAt(g)!;
+      expect(room).toMatchObject({ kind: 'warden', warden: 'false-moon' });
+      expect(g.map().tiles[room.at.y][room.at.x]).toBe('warden');
+      expect(stepOnto(g, room.at)).toEqual({ kind: 'battle' });
+      expect(g.battle!.enemies.map((e) => e.defId)).toEqual(['false-moon']);
+      expect(g.battle!.enemies[0].tint).toBe('elite');
+      expect(g.battle!.boss).toBe(false);
+    });
+  });
+
+  it('a warden brings its escort only once the escort is live', () => {
+    withRosterLive(['bell-warden'], () => {
+      const g = deep('mainline', 13);
+      stepOnto(g, wardenAt(g)!.at);
+      expect(g.battle!.enemies.map((e) => e.defId)).toEqual(['bell-warden']);
+    });
+    withRosterLive(['bell-warden', 'bell-watcher'], () => {
+      const g = deep('mainline', 13);
+      stepOnto(g, wardenAt(g)!.at);
+      expect(g.battle!.enemies.map((e) => e.defId)).toEqual(['bell-warden', 'bell-watcher']);
+    });
+  });
+
+  it('a warden pays no memory piece', () => {
+    withRosterLive(['false-moon'], () => {
+      for (let seed = 1; seed <= 6; seed++) {
+        const g = deep('mainline', 8, 'normal', mulberry32(seed));
+        stepOnto(g, wardenAt(g)!.at);
+        const draws = g.run!.memoryDraws;
+        const end = killAll(g);
+        expect(end.outcome).toBe('win');
+        expect(g.run!.memoryDraws, String(seed)).toBe(draws);
+        expect(end.fragments, String(seed)).toBeUndefined();
+      }
+    });
+  });
+
+  it('a warden pays like an elite', () => {
+    withRosterLive(['false-moon'], () => {
+      const g = deep('mainline', 8, 'normal', mulberry32(5));
+      g.state.runesOpen = true;
+      stepOnto(g, wardenAt(g)!.at);
+      const at = { loot: g.run!.lootDraws, rune: g.run!.runeDraws };
+      const end = killAll(g);
+      // One loot draw for the elite piece and its rare material (no escort), one rune stream; as an elite alone pays.
+      expect(g.run!.lootDraws - at.loot).toBe(1);
+      expect(g.run!.runeDraws - at.rune).toBe(1);
+      expect(end.gear[0].ilvl).toBe(itemLevel(8, 'elite'));
+      expect(rareCount(end.drops) + rareCount(end.left)).toBe(1);
+      // An elite alone on the same floor draws the same.
+      const e = deep('mainline', 8, 'normal', mulberry32(5));
+      e.state.runesOpen = true;
+      stepOnto(e, plantAt(e, 'elite'));
+      e.battle!.enemies.splice(1);
+      const at2 = { loot: e.run!.lootDraws, rune: e.run!.runeDraws };
+      killAll(e);
+      expect(e.run!.lootDraws - at2.loot).toBe(1);
+      expect(e.run!.runeDraws - at2.rune).toBe(1);
+    });
+  });
+
+  it('a warden takes elite affixes keyed by its tile', () => {
+    withRosterLive(['false-moon'], () => {
+      const g = deep('mainline', 8, 'nightmare');
+      const room = wardenAt(g)!;
+      stepOnto(g, room.at);
+      expect(g.battle!.enemies[0].affixes).toEqual(rollAffixes(g.run!.seed, 8, TIERS.nightmare.eliteAffixes, room.at));
+    });
+  });
+
+  it('a beaten warden leaves floor behind', () => {
+    withRosterLive(['false-moon'], () => {
+      const g = deep('mainline', 8, 'normal', mulberry32(11));
+      const room = wardenAt(g)!;
+      // Fled from (it dozes meanwhile), it waits where it was.
+      stepOnto(g, room.at);
+      for (let i = 0; i < 40 && g.phase === 'battle'; i++) {
+        for (const e of g.battle!.enemies) e.sleep = 9;
+        g.submitRound({ hero: { kind: 'escape' } });
+      }
+      expect(g.phase).toBe('map');
+      expect(g.map().tiles[room.at.y][room.at.x]).toBe('warden');
+      stepOnto(g, room.at);
+      killAll(g);
+      expect(g.map().tiles[room.at.y][room.at.x]).toBe('floor');
+      expect(wardenAt(g)).toBeUndefined();
+    });
   });
 });

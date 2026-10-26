@@ -18,9 +18,9 @@ export const MAP_CELL = 48;
 const FOG_PAD = 14;
 const HOP_FRAMES = 10;
 /** Tile kinds that stand on plain floor: the floor is drawn under them and a marker on top. */
-const ON_FLOOR = new Set<Tile>(['fountain', 'trap', 'merchant', 'altar', 'elite', 'vault', 'key', 'rescue', 'glimmer']);
+const ON_FLOOR = new Set<Tile>(['fountain', 'trap', 'merchant', 'altar', 'elite', 'vault', 'key', 'rescue', 'glimmer', 'warden']);
 /** Text marker colours: danger in red, everything else in the UI gold. */
-const GLYPH_FILL: Partial<Record<MarkerKind, number>> = { elite: 0xff8a6a, trap: 0xff7a6b };
+const GLYPH_FILL: Partial<Record<MarkerKind, number>> = { elite: 0xff8a6a, warden: 0xff8a6a, trap: 0xff7a6b };
 
 /**
  * The labyrinth from above: large cells, one seamless fog over everything unexplored, and a camera that keeps the party
@@ -167,7 +167,8 @@ export class MapView {
       if (m.kind === 'chest' && chestArt && !m.waiting) continue;
       const memory = fogState(seen, game.pos, m.x, m.y, sight) === 'memory';
       const cx = m.x * cell + cell / 2, cy = m.y * cell + cell / 2;
-      const tex = m.kind === 'chest' || m.kind === 'rescue' || m.kind === 'glimmer' ? null : this.bank?.get(art.eventTile(m.kind)) ?? null;   // no art for these: text marker
+      // No art for these: a text marker. A warden's room wears the elite's tile (roster plan B5: no art of its own).
+      const tex = m.kind === 'chest' || m.kind === 'rescue' || m.kind === 'glimmer' ? null : this.bank?.get(art.eventTile(m.kind === 'warden' ? 'elite' : m.kind)) ?? null;
       if (tex) {
         const s = new Sprite(tex);
         s.anchor.set(0.5);

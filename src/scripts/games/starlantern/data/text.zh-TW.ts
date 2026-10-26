@@ -932,6 +932,8 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
         opened: (list: string) => `打開寶庫：${list}`, failed: '寶庫打不開。需要這一層的鑰匙。',
       },
       elite: { title: '菁英怪', desc: '房間中央有一隻強大的敵人（★）。', ask: '要挑戰嗎？', fight: '挑戰' },
+      /** A warden's room (roster plan B5). */
+      warden: { title: '守關者', desc: '這一層的守關者守在房間正中央（★）。', ask: '要挑戰嗎？', fight: '挑戰' },
       trap: {
         hurt: (n: number) => `陷阱！全隊受到 ${n} 點傷害。`,
         poison: (n: number, tp: number) => `毒氣陷阱！全隊受到 ${n} 點傷害${tp > 0 ? `，TP 最多減少 ${tp}` : ''}。`,

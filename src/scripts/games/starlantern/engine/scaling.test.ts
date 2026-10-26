@@ -633,3 +633,14 @@ describe('the roster waits on its live set (roster plan Task A4)', () => {
     });
   });
 });
+
+describe('a boss part grows from the boss home (roster plan B5)', () => {
+  it('a part is met at the level its boss is', () => {
+    for (const id of ['archon-hand', 'rime-pillar']) {
+      expect(ENEMIES[id].rank, id).toBe('part');
+      expect(homeLevel(ENEMIES[id]), id).toBe(homeLevel(ENEMIES.lanterneater));
+    }
+    // An ordinary foe and a warden keep the third floor's home.
+    expect(homeLevel(ENEMIES['false-moon'])).toBe(homeLevel(ENEMIES.golem));
+  });
+});
