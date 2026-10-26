@@ -1,7 +1,8 @@
 {
   "pass": false,
   "reasons": [
-    "subject too light"
+    "subject too light",
+    "interior erased"
   ],
   "warnings": [
     "enclosed holes"
@@ -30,5 +31,6 @@
     64,
     64
   ],
-  "spec": "gear-cell:03c3f55cc7d1"
+  "spec": "roster-gear:fc11a58a21f2",
+  "erased": 41
 }

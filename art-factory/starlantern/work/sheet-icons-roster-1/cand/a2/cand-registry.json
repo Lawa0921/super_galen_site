@@ -19,7 +19,7 @@
           30
         ],
         "erased": 0,
-        "spec": "roster-icon:bbdd3c548030"
+        "spec": "roster-icon:cca9a3960b22"
       },
       "status": "qa_passed",
       "kind": "roster-icon"
@@ -45,7 +45,7 @@
           34
         ],
         "erased": 6,
-        "spec": "roster-icon:bbdd3c548030"
+        "spec": "roster-icon:cca9a3960b22"
       },
       "status": "qa_passed",
       "kind": "roster-icon"
@@ -69,7 +69,7 @@
           32
         ],
         "erased": 0,
-        "spec": "roster-icon:bbdd3c548030"
+        "spec": "roster-icon:cca9a3960b22"
       },
       "status": "qa_passed",
       "kind": "roster-icon"
@@ -93,7 +93,7 @@
           33
         ],
         "erased": 0,
-        "spec": "roster-icon:bbdd3c548030"
+        "spec": "roster-icon:cca9a3960b22"
       },
       "status": "qa_passed",
       "kind": "roster-icon"
@@ -119,7 +119,7 @@
           34
         ],
         "erased": 3,
-        "spec": "roster-icon:bbdd3c548030"
+        "spec": "roster-icon:cca9a3960b22"
       },
       "status": "qa_passed",
       "kind": "roster-icon"
@@ -143,7 +143,7 @@
           34
         ],
         "erased": 0,
-        "spec": "roster-icon:bbdd3c548030"
+        "spec": "roster-icon:cca9a3960b22"
       },
       "status": "qa_passed",
       "kind": "roster-icon"
@@ -169,7 +169,7 @@
           36
         ],
         "erased": 0,
-        "spec": "roster-icon:bbdd3c548030"
+        "spec": "roster-icon:cca9a3960b22"
       },
       "status": "qa_passed",
       "kind": "roster-icon"
@@ -193,7 +193,7 @@
           36
         ],
         "erased": 0,
-        "spec": "roster-icon:bbdd3c548030"
+        "spec": "roster-icon:cca9a3960b22"
       },
       "status": "qa_passed",
       "kind": "roster-icon"
@@ -217,7 +217,7 @@
           32
         ],
         "erased": 0,
-        "spec": "roster-icon:bbdd3c548030"
+        "spec": "roster-icon:cca9a3960b22"
       },
       "status": "qa_passed",
       "kind": "roster-icon"
@@ -241,7 +241,7 @@
           35
         ],
         "erased": 0,
-        "spec": "roster-icon:bbdd3c548030"
+        "spec": "roster-icon:cca9a3960b22"
       },
       "status": "qa_passed",
       "kind": "roster-icon"
@@ -267,7 +267,7 @@
           30
         ],
         "erased": 0,
-        "spec": "roster-icon:bbdd3c548030"
+        "spec": "roster-icon:cca9a3960b22"
       },
       "status": "qa_passed",
       "kind": "roster-icon"
@@ -286,14 +286,14 @@
         "edge": 0,
         "holes": 1,
         "magenta_spill": 0,
-        "key_tint_inside": 0,
+        "key_tint_inside": 1,
         "block": 7,
         "size": [
           30,
           32
         ],
         "erased": 1,
-        "spec": "roster-icon:bbdd3c548030"
+        "spec": "roster-icon:cca9a3960b22"
       },
       "status": "qa_passed",
       "kind": "roster-icon"
@@ -317,7 +317,7 @@
           33
         ],
         "erased": 0,
-        "spec": "roster-icon:bbdd3c548030"
+        "spec": "roster-icon:cca9a3960b22"
       },
       "status": "qa_passed",
       "kind": "roster-icon"
@@ -343,7 +343,7 @@
           29
         ],
         "erased": 1,
-        "spec": "roster-icon:bbdd3c548030"
+        "spec": "roster-icon:cca9a3960b22"
       },
       "status": "qa_passed",
       "kind": "roster-icon"
@@ -369,7 +369,7 @@
           30
         ],
         "erased": 1,
-        "spec": "roster-icon:bbdd3c548030"
+        "spec": "roster-icon:cca9a3960b22"
       },
       "status": "qa_passed",
       "kind": "roster-icon"
@@ -393,7 +393,7 @@
           36
         ],
         "erased": 0,
-        "spec": "roster-icon:bbdd3c548030"
+        "spec": "roster-icon:cca9a3960b22"
       },
       "status": "qa_passed",
       "kind": "roster-icon"
@@ -419,7 +419,7 @@
           34
         ],
         "erased": 1,
-        "spec": "roster-icon:bbdd3c548030"
+        "spec": "roster-icon:cca9a3960b22"
       },
       "status": "qa_passed",
       "kind": "roster-icon"
@@ -443,7 +443,7 @@
           35
         ],
         "erased": 0,
-        "spec": "roster-icon:bbdd3c548030"
+        "spec": "roster-icon:cca9a3960b22"
       },
       "status": "qa_passed",
       "kind": "roster-icon"

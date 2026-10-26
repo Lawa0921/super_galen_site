@@ -9,7 +9,7 @@
   "edge": 0,
   "holes": 1,
   "magenta_spill": 0,
-  "key_tint_inside": 0,
+  "key_tint_inside": 1,
   "subject": {
     "long": 22,
     "short": 18,
@@ -28,5 +28,6 @@
     26,
     26
   ],
-  "spec": "gear-cell:03c3f55cc7d1"
+  "spec": "roster-gear:fc11a58a21f2",
+  "erased": 1
 }

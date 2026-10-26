@@ -36206,7 +36206,7 @@
         "edge": 0,
         "holes": 4,
         "magenta_spill": 0,
-        "key_tint_inside": 0,
+        "key_tint_inside": 1,
         "block": 13,
         "size": [
           76,
@@ -36222,7 +36222,7 @@
         ],
         "erased": 0,
         "palette_over": true,
-        "spec": "roster-sprite:eb659ec2b82c"
+        "spec": "roster-sprite:439d4a4b14f9"
       },
       "status": "published",
       "kind": "roster-sprite",
@@ -36270,7 +36270,7 @@
         ],
         "erased": 0,
         "palette_over": true,
-        "spec": "roster-sprite:eb659ec2b82c"
+        "spec": "roster-sprite:439d4a4b14f9"
       },
       "status": "published",
       "kind": "roster-sprite",
@@ -36316,7 +36316,7 @@
         ],
         "erased": 0,
         "palette_over": true,
-        "spec": "roster-sprite:eb659ec2b82c"
+        "spec": "roster-sprite:439d4a4b14f9"
       },
       "status": "published",
       "kind": "roster-sprite",
@@ -36348,7 +36348,7 @@
         "edge": 0,
         "holes": 15,
         "magenta_spill": 0,
-        "key_tint_inside": 0,
+        "key_tint_inside": 1,
         "block": 8,
         "size": [
           152,
@@ -36364,7 +36364,7 @@
         ],
         "erased": 8,
         "palette_over": true,
-        "spec": "roster-sprite:eb659ec2b82c"
+        "spec": "roster-sprite:439d4a4b14f9"
       },
       "status": "published",
       "kind": "roster-sprite",
@@ -36401,7 +36401,7 @@
           33
         ],
         "erased": 0,
-        "spec": "roster-icon:bbdd3c548030"
+        "spec": "roster-icon:cca9a3960b22"
       },
       "status": "published",
       "kind": "roster-icon",
@@ -36432,7 +36432,7 @@
           33
         ],
         "erased": 1,
-        "spec": "roster-icon:bbdd3c548030"
+        "spec": "roster-icon:cca9a3960b22"
       },
       "status": "published",
       "kind": "roster-icon",
@@ -36461,7 +36461,7 @@
           32
         ],
         "erased": 0,
-        "spec": "roster-icon:bbdd3c548030"
+        "spec": "roster-icon:cca9a3960b22"
       },
       "status": "published",
       "kind": "roster-icon",
@@ -36490,7 +36490,7 @@
           36
         ],
         "erased": 0,
-        "spec": "roster-icon:bbdd3c548030"
+        "spec": "roster-icon:cca9a3960b22"
       },
       "status": "published",
       "kind": "roster-icon",
@@ -36521,7 +36521,7 @@
           36
         ],
         "erased": 3,
-        "spec": "roster-icon:bbdd3c548030"
+        "spec": "roster-icon:cca9a3960b22"
       },
       "status": "published",
       "kind": "roster-icon",
@@ -36550,7 +36550,7 @@
           34
         ],
         "erased": 0,
-        "spec": "roster-icon:bbdd3c548030"
+        "spec": "roster-icon:cca9a3960b22"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -36579,7 +36579,7 @@
           31
         ],
         "erased": 0,
-        "spec": "roster-icon:bbdd3c548030"
+        "spec": "roster-icon:cca9a3960b22"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -36606,7 +36606,7 @@
           36
         ],
         "erased": 0,
-        "spec": "roster-icon:bbdd3c548030"
+        "spec": "roster-icon:cca9a3960b22"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -36635,7 +36635,7 @@
           33
         ],
         "erased": 0,
-        "spec": "roster-icon:bbdd3c548030"
+        "spec": "roster-icon:cca9a3960b22"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -36662,7 +36662,7 @@
           33
         ],
         "erased": 0,
-        "spec": "roster-icon:bbdd3c548030"
+        "spec": "roster-icon:cca9a3960b22"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -36689,7 +36689,7 @@
           27
         ],
         "erased": 0,
-        "spec": "roster-icon:bbdd3c548030"
+        "spec": "roster-icon:cca9a3960b22"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -36716,7 +36716,7 @@
           32
         ],
         "erased": 0,
-        "spec": "roster-icon:bbdd3c548030"
+        "spec": "roster-icon:cca9a3960b22"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -36743,7 +36743,7 @@
           36
         ],
         "erased": 0,
-        "spec": "roster-icon:bbdd3c548030"
+        "spec": "roster-icon:cca9a3960b22"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -36772,7 +36772,7 @@
           28
         ],
         "erased": 4,
-        "spec": "roster-icon:bbdd3c548030"
+        "spec": "roster-icon:cca9a3960b22"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -36792,14 +36792,14 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
-        "key_tint_inside": 0,
+        "key_tint_inside": 1,
         "block": 7,
         "size": [
           33,
           29
         ],
         "erased": 0,
-        "spec": "roster-icon:bbdd3c548030"
+        "spec": "roster-icon:cca9a3960b22"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -36826,7 +36826,7 @@
           36
         ],
         "erased": 0,
-        "spec": "roster-icon:bbdd3c548030"
+        "spec": "roster-icon:cca9a3960b22"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -36853,7 +36853,7 @@
           34
         ],
         "erased": 0,
-        "spec": "roster-icon:bbdd3c548030"
+        "spec": "roster-icon:cca9a3960b22"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -36880,7 +36880,7 @@
           33
         ],
         "erased": 0,
-        "spec": "roster-icon:bbdd3c548030"
+        "spec": "roster-icon:cca9a3960b22"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -36963,7 +36963,7 @@
           64,
           64
         ],
-        "spec": "roster-gear:33a782e4994e",
+        "spec": "roster-gear:fc11a58a21f2",
         "erased": 0
       },
       "status": "published",
@@ -37010,7 +37010,7 @@
           26,
           26
         ],
-        "spec": "roster-gear:33a782e4994e",
+        "spec": "roster-gear:fc11a58a21f2",
         "erased": 0
       },
       "status": "published",
@@ -37059,7 +37059,7 @@
           64,
           64
         ],
-        "spec": "roster-gear:33a782e4994e",
+        "spec": "roster-gear:fc11a58a21f2",
         "erased": 2
       },
       "status": "published",
@@ -37109,7 +37109,7 @@
           26,
           26
         ],
-        "spec": "roster-gear:33a782e4994e",
+        "spec": "roster-gear:fc11a58a21f2",
         "erased": 0
       },
       "status": "published",
@@ -37159,7 +37159,7 @@
           64,
           64
         ],
-        "spec": "roster-gear:33a782e4994e",
+        "spec": "roster-gear:fc11a58a21f2",
         "erased": 1
       },
       "status": "qa_passed",
@@ -37204,7 +37204,7 @@
           26,
           26
         ],
-        "spec": "roster-gear:33a782e4994e",
+        "spec": "roster-gear:fc11a58a21f2",
         "erased": 0
       },
       "status": "qa_passed",
@@ -37249,7 +37249,7 @@
           64,
           64
         ],
-        "spec": "roster-gear:33a782e4994e",
+        "spec": "roster-gear:fc11a58a21f2",
         "erased": 0
       },
       "status": "qa_passed",
@@ -37295,7 +37295,7 @@
           26,
           26
         ],
-        "spec": "roster-gear:33a782e4994e",
+        "spec": "roster-gear:fc11a58a21f2",
         "erased": 0
       },
       "status": "qa_passed",
@@ -37341,7 +37341,7 @@
           64,
           64
         ],
-        "spec": "roster-gear:33a782e4994e",
+        "spec": "roster-gear:fc11a58a21f2",
         "erased": 0
       },
       "status": "qa_passed",
@@ -37386,7 +37386,7 @@
           26,
           26
         ],
-        "spec": "roster-gear:33a782e4994e",
+        "spec": "roster-gear:fc11a58a21f2",
         "erased": 0
       },
       "status": "qa_passed",
@@ -37428,7 +37428,7 @@
         ],
         "erased": 0,
         "palette_over": true,
-        "spec": "roster-sprite:eb659ec2b82c"
+        "spec": "roster-sprite:439d4a4b14f9"
       },
       "status": "published",
       "kind": "roster-sprite",
@@ -37488,7 +37488,7 @@
         ],
         "erased": 0,
         "palette_over": true,
-        "spec": "roster-sprite:eb659ec2b82c"
+        "spec": "roster-sprite:439d4a4b14f9"
       },
       "status": "qa_passed",
       "kind": "roster-sprite",
@@ -37526,7 +37526,7 @@
         ],
         "erased": 0,
         "palette_over": true,
-        "spec": "roster-sprite:eb659ec2b82c"
+        "spec": "roster-sprite:439d4a4b14f9"
       },
       "status": "qa_passed",
       "kind": "roster-sprite",
@@ -37564,7 +37564,7 @@
         ],
         "erased": 0,
         "palette_over": true,
-        "spec": "roster-sprite:eb659ec2b82c"
+        "spec": "roster-sprite:439d4a4b14f9"
       },
       "status": "qa_passed",
       "kind": "roster-sprite",
@@ -37602,7 +37602,7 @@
         ],
         "erased": 0,
         "palette_over": true,
-        "spec": "roster-sprite:eb659ec2b82c"
+        "spec": "roster-sprite:439d4a4b14f9"
       },
       "status": "qa_passed",
       "kind": "roster-sprite",
@@ -37640,7 +37640,7 @@
         ],
         "erased": 0,
         "palette_over": true,
-        "spec": "roster-sprite:eb659ec2b82c"
+        "spec": "roster-sprite:439d4a4b14f9"
       },
       "status": "qa_passed",
       "kind": "roster-sprite",
@@ -37680,7 +37680,7 @@
         ],
         "erased": 0,
         "palette_over": true,
-        "spec": "roster-sprite:eb659ec2b82c"
+        "spec": "roster-sprite:439d4a4b14f9"
       },
       "status": "qa_passed",
       "kind": "roster-sprite",
@@ -37720,7 +37720,7 @@
         ],
         "erased": 1,
         "palette_over": true,
-        "spec": "roster-sprite:eb659ec2b82c"
+        "spec": "roster-sprite:439d4a4b14f9"
       },
       "status": "qa_passed",
       "kind": "roster-sprite",
@@ -37758,7 +37758,7 @@
         ],
         "erased": 0,
         "palette_over": true,
-        "spec": "roster-sprite:eb659ec2b82c"
+        "spec": "roster-sprite:439d4a4b14f9"
       },
       "status": "qa_passed",
       "kind": "roster-sprite",
@@ -37796,7 +37796,7 @@
         ],
         "erased": 0,
         "palette_over": true,
-        "spec": "roster-sprite:eb659ec2b82c"
+        "spec": "roster-sprite:439d4a4b14f9"
       },
       "status": "qa_passed",
       "kind": "roster-sprite",
@@ -37836,7 +37836,7 @@
         ],
         "erased": 1,
         "palette_over": true,
-        "spec": "roster-sprite:eb659ec2b82c"
+        "spec": "roster-sprite:439d4a4b14f9"
       },
       "status": "qa_passed",
       "kind": "roster-sprite",
@@ -37860,7 +37860,7 @@
         "edge": 0,
         "holes": 5,
         "magenta_spill": 0,
-        "key_tint_inside": 0,
+        "key_tint_inside": 1,
         "block": 12,
         "size": [
           67,
@@ -37876,7 +37876,7 @@
         ],
         "erased": 3,
         "palette_over": true,
-        "spec": "roster-sprite:eb659ec2b82c"
+        "spec": "roster-sprite:439d4a4b14f9"
       },
       "status": "qa_passed",
       "kind": "roster-sprite",
@@ -37906,8 +37906,10 @@
       "final": "art-factory/starlantern/work/enemy-silent-bell/enemy-silent-bell.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-silent-bell\\enemy-silent-bell-a3.png",
       "qa": {
-        "pass": true,
-        "reasons": [],
+        "pass": false,
+        "reasons": [
+          "magenta residue"
+        ],
         "warnings": [
           "enclosed holes"
         ],
@@ -37916,7 +37918,7 @@
         "edge": 0,
         "holes": 4,
         "magenta_spill": 0,
-        "key_tint_inside": 1,
+        "key_tint_inside": 7,
         "block": 7,
         "size": [
           159,
@@ -37932,9 +37934,9 @@
         ],
         "erased": 4,
         "palette_over": true,
-        "spec": "roster-sprite:eb659ec2b82c"
+        "spec": "roster-sprite:439d4a4b14f9"
       },
-      "status": "qa_passed",
+      "status": "qa_failed",
       "kind": "roster-sprite",
       "roster_class": "boss",
       "mainline": true,
@@ -37980,7 +37982,7 @@
         ],
         "erased": 1,
         "palette_over": true,
-        "spec": "roster-sprite:eb659ec2b82c"
+        "spec": "roster-sprite:439d4a4b14f9"
       },
       "status": "qa_passed",
       "kind": "roster-sprite",

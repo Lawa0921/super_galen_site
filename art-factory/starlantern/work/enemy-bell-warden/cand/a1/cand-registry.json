@@ -14,7 +14,7 @@
         "edge": 0,
         "holes": 5,
         "magenta_spill": 0,
-        "key_tint_inside": 0,
+        "key_tint_inside": 1,
         "block": 12,
         "size": [
           67,
@@ -30,7 +30,7 @@
         ],
         "erased": 3,
         "palette_over": true,
-        "spec": "roster-sprite:eb659ec2b82c"
+        "spec": "roster-sprite:439d4a4b14f9"
       },
       "status": "qa_passed",
       "kind": "roster-sprite",

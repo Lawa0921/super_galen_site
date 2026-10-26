@@ -31,10 +31,11 @@
           64,
           64
         ],
-        "spec": "gear-cell:03c3f55cc7d1"
+        "spec": "roster-gear:fc11a58a21f2",
+        "erased": 0
       },
       "status": "qa_passed",
-      "kind": "gear-cell",
+      "kind": "roster-gear",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-1\\sheet-gear-roster-1-a2.png",
         "cell": "moonless-mirror"
@@ -72,10 +73,11 @@
           26,
           26
         ],
-        "spec": "gear-cell:03c3f55cc7d1"
+        "spec": "roster-gear:fc11a58a21f2",
+        "erased": 0
       },
       "status": "qa_passed",
-      "kind": "gear-cell",
+      "kind": "roster-gear",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-1\\sheet-gear-roster-1-a2.png",
         "cell": "moonless-mirror"
@@ -86,8 +88,10 @@
       "final": "art-factory/starlantern/work/sheet-gear-roster-1/cand/a2/gear-fog-halberd-large.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-1\\sheet-gear-roster-1-a2.png",
       "qa": {
-        "pass": true,
-        "reasons": [],
+        "pass": false,
+        "reasons": [
+          "interior erased"
+        ],
         "warnings": [
           "enclosed holes"
         ],
@@ -115,10 +119,11 @@
           64,
           64
         ],
-        "spec": "gear-cell:03c3f55cc7d1"
+        "spec": "roster-gear:fc11a58a21f2",
+        "erased": 17
       },
-      "status": "qa_passed",
-      "kind": "gear-cell",
+      "status": "qa_failed",
+      "kind": "roster-gear",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-1\\sheet-gear-roster-1-a2.png",
         "cell": "fog-halberd"
@@ -159,10 +164,11 @@
           26,
           26
         ],
-        "spec": "gear-cell:03c3f55cc7d1"
+        "spec": "roster-gear:fc11a58a21f2",
+        "erased": 1
       },
       "status": "qa_passed",
-      "kind": "gear-cell",
+      "kind": "roster-gear",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-1\\sheet-gear-roster-1-a2.png",
         "cell": "fog-halberd"
@@ -186,7 +192,7 @@
         "edge": 0,
         "holes": 5,
         "magenta_spill": 0,
-        "key_tint_inside": 10,
+        "key_tint_inside": 12,
         "subject": {
           "long": 56,
           "short": 46,
@@ -205,10 +211,11 @@
           64,
           64
         ],
-        "spec": "gear-cell:03c3f55cc7d1"
+        "spec": "roster-gear:fc11a58a21f2",
+        "erased": 5
       },
       "status": "qa_failed",
-      "kind": "gear-cell",
+      "kind": "roster-gear",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-1\\sheet-gear-roster-1-a2.png",
         "cell": "silent-chime"
@@ -229,7 +236,7 @@
         "edge": 0,
         "holes": 1,
         "magenta_spill": 0,
-        "key_tint_inside": 0,
+        "key_tint_inside": 1,
         "subject": {
           "long": 22,
           "short": 18,
@@ -248,10 +255,11 @@
           26,
           26
         ],
-        "spec": "gear-cell:03c3f55cc7d1"
+        "spec": "roster-gear:fc11a58a21f2",
+        "erased": 1
       },
       "status": "qa_passed",
-      "kind": "gear-cell",
+      "kind": "roster-gear",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-1\\sheet-gear-roster-1-a2.png",
         "cell": "silent-chime"
@@ -291,10 +299,11 @@
           64,
           64
         ],
-        "spec": "gear-cell:03c3f55cc7d1"
+        "spec": "roster-gear:fc11a58a21f2",
+        "erased": 1
       },
       "status": "qa_passed",
-      "kind": "gear-cell",
+      "kind": "roster-gear",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-1\\sheet-gear-roster-1-a2.png",
         "cell": "borrowed-blade"
@@ -333,10 +342,11 @@
           26,
           26
         ],
-        "spec": "gear-cell:03c3f55cc7d1"
+        "spec": "roster-gear:fc11a58a21f2",
+        "erased": 0
       },
       "status": "qa_passed",
-      "kind": "gear-cell",
+      "kind": "roster-gear",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-1\\sheet-gear-roster-1-a2.png",
         "cell": "borrowed-blade"
@@ -375,10 +385,11 @@
           64,
           64
         ],
-        "spec": "gear-cell:03c3f55cc7d1"
+        "spec": "roster-gear:fc11a58a21f2",
+        "erased": 0
       },
       "status": "qa_passed",
-      "kind": "gear-cell",
+      "kind": "roster-gear",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-1\\sheet-gear-roster-1-a2.png",
         "cell": "unrung-clapper"
@@ -416,10 +427,11 @@
           26,
           26
         ],
-        "spec": "gear-cell:03c3f55cc7d1"
+        "spec": "roster-gear:fc11a58a21f2",
+        "erased": 0
       },
       "status": "qa_passed",
-      "kind": "gear-cell",
+      "kind": "roster-gear",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-1\\sheet-gear-roster-1-a2.png",
         "cell": "unrung-clapper"

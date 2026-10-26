@@ -9,7 +9,7 @@
   "edge": 0,
   "holes": 15,
   "magenta_spill": 0,
-  "key_tint_inside": 0,
+  "key_tint_inside": 1,
   "block": 8,
   "size": [
     152,
@@ -25,5 +25,5 @@
   ],
   "erased": 8,
   "palette_over": true,
-  "spec": "roster-sprite:eb659ec2b82c"
+  "spec": "roster-sprite:439d4a4b14f9"
 }

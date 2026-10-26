@@ -1,8 +1,6 @@
 {
-  "pass": false,
-  "reasons": [
-    "too many colours"
-  ],
+  "pass": true,
+  "reasons": [],
   "warnings": [
     "enclosed holes"
   ],
@@ -11,7 +9,7 @@
   "edge": 0,
   "holes": 15,
   "magenta_spill": 0,
-  "key_tint_inside": 0,
+  "key_tint_inside": 1,
   "block": 8,
   "size": [
     152,
@@ -25,6 +23,7 @@
     0.893,
     0.471
   ],
-  "erased": 0,
-  "spec": "roster-sprite:d5d24a1a03ef"
+  "erased": 8,
+  "palette_over": true,
+  "spec": "roster-sprite:439d4a4b14f9"
 }

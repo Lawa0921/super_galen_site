@@ -386,6 +386,23 @@ def magenta_spill_count(img, band=SPILL_BAND):
     return int((magenta_spill(arr) & near_edge(arr[..., 3], band)).sum())
 
 
+DEEP_KEY_G_MAX = 20          # roster key tint (R1 review, 2026-10-26): the key darkened in a crack keeps almost no green ...
+DEEP_KEY_RB_MIN = 75         # ... the brighter of red and blue at least this (darker is outline black, not visible magenta) ...
+DEEP_KEY_SAT_MIN = 0.8       # ... HSV saturation at least this ...
+DEEP_KEY_HUE = (285, 330)    # ... and a hue this close to the key's 300 (silent-bell a3: 307-322; maroon 334+ and violet 270- are art)
+
+
+def _deep_key(rgb):
+    """The #FF00FF background seen through a crack and darkened (silent-bell a3: (115,1,102), (96,7,80), (119,18,85)):
+    green near zero, red and blue well above it, saturated, hue near the key's. _dark_magenta needs red >= 100 and
+    blue >= 90 and misses most of these."""
+    c = rgb.astype(np.float32); r, g, b = c[..., 0], c[..., 1], c[..., 2]
+    mx = np.maximum(np.maximum(r, b), g); mn = np.minimum(np.minimum(r, b), g); sat = (mx - mn) / np.maximum(mx, 1)
+    d = np.maximum(np.maximum(r, b) - g, 1e-6); hue = np.where(r >= b, (60 * (g - b) / d) % 360, 240 + 60 * (r - g) / d)
+    return ((g <= DEEP_KEY_G_MAX) & (np.maximum(r, b) >= DEEP_KEY_RB_MIN) & (sat >= DEEP_KEY_SAT_MIN)
+            & (hue >= DEEP_KEY_HUE[0]) & (hue <= DEEP_KEY_HUE[1]))
+
+
 def key_tint_inside_count(img, band=SPILL_BAND):
     """Opaque pixels deeper than the outline band that look like the key blended dark (_dark_magenta) or bright
     (_magenta_tint): key colour left inside the subject (controller ruling after the G2 review; the residue gate's
@@ -393,6 +410,22 @@ def key_tint_inside_count(img, band=SPILL_BAND):
     arr = np.asarray(img.convert('RGBA')); rgb = arr[..., :3]
     inside = (arr[..., 3] == 255) & ~near_edge(arr[..., 3], band)
     return int((inside & (_dark_magenta(rgb) | _magenta_tint(rgb))).sum())
+
+
+def roster_key_tint_count(img, band=SPILL_BAND):
+    """The roster's key tint: key_tint_inside_count's pixels and the key darkened in a crack (_deep_key), deeper than
+    the outline band (5d's gates keep key_tint_inside_count and their stamps)."""
+    arr = np.asarray(img.convert('RGBA')); rgb = arr[..., :3]
+    inside = (arr[..., 3] == 255) & ~near_edge(arr[..., 3], band)
+    return int((inside & (_dark_magenta(rgb) | _magenta_tint(rgb) | _deep_key(rgb))).sum())
+
+
+def roster_key_tint_gate(qa, final):
+    """The roster's key tint gate: key_tint_inside counted with _deep_key, over KEY_TINT_INSIDE_MAX is magenta residue."""
+    qa['key_tint_inside'] = roster_key_tint_count(final)
+    if qa['key_tint_inside'] > KEY_TINT_INSIDE_MAX:
+        if 'magenta residue' not in qa['reasons']: qa['reasons'].append('magenta residue')
+        qa['pass'] = False
 
 
 def despill(img, band=SPILL_BAND):
@@ -1273,21 +1306,23 @@ KEY_BLEND_REACH = 2      # ... and a dark key blend is background only this many
 CUTOUT_MARGIN, CUTOUT_FRINGE = 70, 90   # cutout()'s reach, mirrored so the roster stamps move with it (a test holds them equal)
 ICON_HEIGHT = 32         # roster ruling 23: the material icons follow 5d's actual output (icon-blaze-core 33 x 35) ...
 ICON_BOX = 36            # ... so the final canvas fits a 36 x 36 box
-ROSTER_SPRITE_RULES = ('block downscale to the class height; alpha QA (residue, semi alpha, raw-canvas cut, spill, key tint); '
+ROSTER_SPRITE_RULES = ('block downscale to the class height; alpha QA (residue, semi alpha, raw-canvas cut, spill, key tint '
+                       'with the key darkened in a crack, _deep_key); '
                        'speckless subject height inside the class band, swarm width cap; opaque colours over PALETTE_MAX recorded, never failed; '
                        'luminance p5-p95 spread >= LUM_RANGE_MIN, main-road mean >= LUM_MEAN_MIN; enclosed pockets of any size '
                        'whose sampled raw is not the key count as erased, a dark key blend exempt only within KEY_BLEND_REACH 4-connected '
                        'sampled px of pure key in the same pocket')
 ROSTER_ICON_RULES = ('block downscale to ICON_HEIGHT, or to fit a wide subject inside ICON_BOX with its pad; alpha QA with spill '
-                     'and key tint; final canvas inside ICON_BOX; erased interior as the roster sprites')
+                     'and key tint (with _deep_key); final canvas inside ICON_BOX; erased interior as the roster sprites')
 SPEC_INPUTS['roster-sprite'] = ('ROSTER_HEIGHT', 'ROSTER_HEIGHT_BAND', 'ROSTER_SWARM_MAX_W', 'PALETTE_MAX', 'LUM_RANGE_MIN',
                                 'LUM_MEAN_MIN', 'LUM_PCT', 'ROSTER_ERASED_MAX', 'KEY_BLEND_G_MAX', 'KEY_BLEND_STEP', 'KEY_NEAR', 'KEY_BLEND_REACH',
                                 'CUTOUT_MARGIN', 'CUTOUT_FRINGE', 'SPECK_MAX', 'MAGENTA', 'MAGENTA_SPILL_MAX',
                                 'KEY_TINT_INSIDE_MAX', 'SPILL_HUE', 'SPILL_STEP', 'SPILL_BAND', 'STRONG_DEFRINGE', '_SHIFTS',
+                                'DEEP_KEY_G_MAX', 'DEEP_KEY_RB_MIN', 'DEEP_KEY_SAT_MIN', 'DEEP_KEY_HUE',
                                 'ROSTER_SPRITE_RULES')
 SPEC_INPUTS['roster-icon'] = ('ICON_HEIGHT', 'ICON_BOX', 'ROSTER_ERASED_MAX', 'KEY_BLEND_G_MAX', 'KEY_BLEND_STEP', 'KEY_NEAR', 'KEY_BLEND_REACH',
                               'CUTOUT_MARGIN', 'CUTOUT_FRINGE', 'SPECK_MAX', 'MAGENTA', 'MAGENTA_SPILL_MAX', 'KEY_TINT_INSIDE_MAX', 'SPILL_HUE',
-                              'SPILL_STEP', 'SPILL_BAND', 'STRONG_DEFRINGE', '_SHIFTS', 'ROSTER_ICON_RULES')
+                              'SPILL_STEP', 'SPILL_BAND', 'STRONG_DEFRINGE', '_SHIFTS', 'DEEP_KEY_G_MAX', 'DEEP_KEY_RB_MIN', 'DEEP_KEY_SAT_MIN', 'DEEP_KEY_HUE', 'ROSTER_ICON_RULES')
 
 
 def _opaque(final):
@@ -1392,6 +1427,7 @@ def process_roster_sprite(reg, aid, img, workdir, raw, cls, mainline):
     w, h = subject_size(final); erased = _erased_pixels(img, final, qa.get('block'))
     gates = height_band(final, cls) + lum_range(final, mainline) + (['interior erased'] if erased > ROSTER_ERASED_MAX else [])
     qa['reasons'] += [r for r in gates if r not in qa['reasons']]
+    roster_key_tint_gate(qa, final)
     qa.update({'pass': not qa['reasons'], 'height': h, 'width': w, 'colours': palette_count(final), 'lum': list(lum_stats(final)),
                'erased': erased, 'palette_over': bool(palette_max(final)), 'spec': qa_spec('roster-sprite')})
     _save_final(reg, aid, final, qa, workdir, raw)
@@ -1411,15 +1447,17 @@ def process_roster_icon(reg, aid, cell, workdir, raw):
     if max(final.size) > ICON_BOX and 'larger than the icon box' not in qa['reasons']: qa['reasons'].append('larger than the icon box')
     erased = _erased_pixels(cell, final, qa.get('block'))
     if erased > ROSTER_ERASED_MAX and 'interior erased' not in qa['reasons']: qa['reasons'].append('interior erased')
+    roster_key_tint_gate(qa, final)
     qa.update({'pass': not qa['reasons'], 'erased': erased, 'spec': qa_spec('roster-icon')})
     _save_final(reg, aid, final, qa, workdir, raw)
     reg.set(aid, kind='roster-icon')
     return qa
 
 
-ROSTER_GEAR_RULES = 'gear-cell (5d sizes, mass and spill) plus the erased interior of the roster sprites, on each final'
+ROSTER_GEAR_RULES = ('gear-cell (5d sizes, mass and spill) plus the erased interior of the roster sprites and the key tint '
+                     'with _deep_key, on each final')
 SPEC_INPUTS['roster-gear'] = SPEC_INPUTS['gear-cell'] + ('ROSTER_ERASED_MAX', 'KEY_BLEND_G_MAX', 'KEY_BLEND_STEP', 'KEY_NEAR', 'KEY_BLEND_REACH',
-                                                       'CUTOUT_MARGIN', 'CUTOUT_FRINGE', 'ROSTER_GEAR_RULES')
+                                                       'CUTOUT_MARGIN', 'CUTOUT_FRINGE', 'DEEP_KEY_G_MAX', 'DEEP_KEY_RB_MIN', 'DEEP_KEY_SAT_MIN', 'DEEP_KEY_HUE', 'ROSTER_GEAR_RULES')
 
 
 def process_roster_gear_cell(reg, gid, cell, workdir, raw, slot=None, kind=None, large=GEAR_LARGE, icon=GEAR_ICON):
@@ -1430,6 +1468,7 @@ def process_roster_gear_cell(reg, gid, cell, workdir, raw, slot=None, kind=None,
         qa = out[aid]; final = Image.open(_final_path(reg.get(aid)['final'])).convert('RGBA')
         erased = _erased_normalized(cell, final, side, size)
         if erased > ROSTER_ERASED_MAX and 'interior erased' not in qa['reasons']: qa['reasons'].append('interior erased')
+        roster_key_tint_gate(qa, final)
         qa.update({'pass': not qa['reasons'], 'erased': erased, 'spec': qa_spec('roster-gear')})
         _save_final(reg, aid, final, qa, workdir, raw)
         reg.set(aid, kind='roster-gear')
