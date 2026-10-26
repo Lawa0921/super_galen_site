@@ -74,6 +74,8 @@ function firstMet(d: EnemyDef): { depth: number; region: RegionId } {
   return { depth, region: 'mainline' };
 }
 
+/** The boss of a boss group (its parts lead the line: data/monsters.ts bossFor). */
+const bossOf = (group: string[]): string => group.find((id) => ENEMIES[id].boss) ?? group[0];
 const ORDINARY = ROSTER.filter((id) => !ENEMIES[id].boss && !ENEMIES[id].rank && !TREASURE.has(id));
 
 describe.skipIf(!on)('band 22: the roster against the lantern-eater and its own kin (roster plan B12)', () => {
@@ -135,7 +137,7 @@ describe.skipIf(!on)('band 22: the roster against the lantern-eater and its own 
     for (const c of bossCells().filter((x) => regions.includes(x.region))) {
       const boss = allLive(() => bossRate(c.group, c.depth, c.region, 16));
       const eater = bossRate(['lanterneater'], c.depth, c.region, 16);
-      const label = `22b ${c.group[0]} ${c.region} d${c.depth}`;
+      const label = `22b ${bossOf(c.group)} ${c.region} d${c.depth}`;
       sayRun(label, boss);
       sayRun(`${label} lanterneater`, eater);
       ex(Math.abs(boss.rate - eater.rate), label).toBeLessThanOrEqual(0.1);
@@ -147,9 +149,9 @@ describe.skipIf(!on)('band 22: the roster against the lantern-eater and its own 
 
   it('22b bands 11, 14 and 16 at each new boss\'s first depth', () => {
     const first = new Map<string, { region: RegionId; depth: number; group: string[] }>();
-    for (const c of bossCells()) if (!first.has(c.group[0])) first.set(c.group[0], c);
+    for (const c of bossCells()) if (!first.has(bossOf(c.group))) first.set(bossOf(c.group), c);
     for (const c of first.values()) allLive(() => {
-      const label = `22b ${c.group[0]} ${c.region} d${c.depth}`;
+      const label = `22b ${bossOf(c.group)} ${c.region} d${c.depth}`;
       let rare = 0, maxed = 0;
       for (let seed = 1; seed <= 8; seed++) {
         const r = bossFight(kitParty(levelAt(c.depth), c.depth, seed, 'rare', expectedEnhance(c.depth)), c.group, seed, c.depth, c.region);
@@ -209,11 +211,11 @@ describe.skipIf(!on)('band 22: the roster against the lantern-eater and its own 
     const CODES = (d: EnemyDef) => [...d.skills, ...(d.stages ?? []).flatMap((s) => s.skills)].flatMap((k) => k.effects)
       .some((e) => e.kind === 'summon' || e.kind === 'delay' || e.kind === 'engulf' || (e.kind === 'inflict' && e.status === 'forget') || (e.kind === 'damage' && !!e.tpDrain)) || !!d.parts;
     const first = new Map<string, { region: RegionId; depth: number; group: string[] }>();
-    for (const c of bossCells()) if (!first.has(c.group[0]) && CODES(ENEMIES[c.group[0]])) first.set(c.group[0], c);
+    for (const c of bossCells()) if (!first.has(bossOf(c.group)) && CODES(ENEMIES[bossOf(c.group)])) first.set(bossOf(c.group), c);
     for (const c of first.values()) for (const name of Object.keys(ODD_LINEUPS) as (keyof typeof ODD_LINEUPS)[]) {
       const boss = allLive(() => bossRate(c.group, c.depth, c.region, 10, odd(name)));
       const eater = bossRate(['lanterneater'], c.depth, c.region, 10, odd(name));
-      const label = `22f ${c.group[0]} ${c.region} d${c.depth} ${name}`;
+      const label = `22f ${bossOf(c.group)} ${c.region} d${c.depth} ${name}`;
       sayRun(label, boss);
       sayRun(`${label} lanterneater`, eater);
       ex(boss.rate, label).toBeGreaterThanOrEqual(eater.rate - 0.1);
@@ -263,10 +265,10 @@ describe.skipIf(!on)('band 22: the roster against the lantern-eater and its own 
         let rounds = 0;
         for (let seed = 1; seed <= 10; seed++) {
           const r = bossFight(ceilingParty(d, seed), group, seed, d, 'mainline');
-          ex(r.rounds, `22h ${group[0]} d${d} seed ${seed}`).toBeGreaterThanOrEqual(2);
+          ex(r.rounds, `22h ${bossOf(group)} d${d} seed ${seed}`).toBeGreaterThanOrEqual(2);
           rounds += r.rounds;
         }
-        sayRun(`22h ${group[0]} d${d} ceiling`, { rounds: rounds / 10 });
+        sayRun(`22h ${bossOf(group)} d${d} ceiling`, { rounds: rounds / 10 });
       }
       let loss = 0, n = 0;
       for (const g of encounterTable('mainline', d)) for (let seed = 1; seed <= 4; seed++) {
@@ -274,6 +276,12 @@ describe.skipIf(!on)('band 22: the roster against the lantern-eater and its own 
         n++;
       }
       sayRun(`22h mainline table d${d} ceiling`, { hpLoss: loss / n });
+      // The same kit without the uniques (report): what the rare +ENHANCE_MAX kit alone leaves of the table.
+      let plain = 0;
+      for (const g of encounterTable('mainline', d)) for (let seed = 1; seed <= 4; seed++) {
+        plain += simBattle(kitParty(levelAt(d), d, seed, 'rare', ENHANCE_MAX), g, false, seed * 7919, { depth: d, region: 'mainline' }).hpLoss;
+      }
+      sayRun(`22h mainline table d${d} rare +${ENHANCE_MAX} without uniques (report)`, { hpLoss: plain / n });
       ex(loss / n, `22h table d${d}`).toBeGreaterThanOrEqual(0.1);
     });
   }, 600_000);

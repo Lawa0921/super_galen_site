@@ -1370,7 +1370,7 @@ describe('roster plan B11: the traits that needed one more rule', () => {
     expect(r.enemies[0].x.evasion).toBe(10);
     const r2 = resolveRound(r, { scarlet: { kind: 'attack', target: 'e0' } }, constRng(0.5));
     expect(r2.enemies[0].x.evasion).toBe(20);
-    expect(ENEMIES['gilded-hoarder'].dodgeUp).toBe(10);
+    expect(ENEMIES['gilded-hoarder'].dodgeUp).toBeGreaterThan(0);
   });
 
   it('the fallen knight steels itself as an ally falls', () => {

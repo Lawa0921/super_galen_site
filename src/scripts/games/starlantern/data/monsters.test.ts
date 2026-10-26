@@ -539,14 +539,14 @@ describe('roster tables, bosses and wardens (roster plan Task A4, spec §3.4, §
     // Everything live (a test's own switch): the lookups cell by cell, the cycles and the many-part groups.
     withRosterLive(rosterIds(), () => {
       expect(bossFor('mainline', 5)).toEqual(['fog-warden']);
-      expect(bossFor('mainline', 20)).toEqual(['old-city-archon', 'archon-hand', 'archon-hand']);
+      expect(bossFor('mainline', 20)).toEqual(['archon-hand', 'archon-hand', 'old-city-archon']);
       expect(bossFor('mainline', 30)).toEqual(['lanterneater']);
       expect(bossFor('mainline', 50)).toEqual(['first-lantern']);
       expect(bossFor('mainline', 55)).toEqual(['fog-warden']);
-      expect(bossFor('mainline', 70)).toEqual(['old-city-archon', 'archon-hand', 'archon-hand']);
-      expect(bossFor('frost', 5)).toEqual(['rime-sovereign', 'rime-pillar', 'rime-pillar']);
+      expect(bossFor('mainline', 70)).toEqual(['archon-hand', 'archon-hand', 'old-city-archon']);
+      expect(bossFor('frost', 5)).toEqual(['rime-pillar', 'rime-pillar', 'rime-sovereign']);
       expect(bossFor('frost', 15)).toEqual(['rift-maw']);
-      expect(bossFor('frost', 20)).toEqual(['rime-sovereign', 'rime-pillar', 'rime-pillar']);
+      expect(bossFor('frost', 20)).toEqual(['rime-pillar', 'rime-pillar', 'rime-sovereign']);
       expect(bossFor('blaze', 10)).toEqual(['sandstorm-maw']);
       expect(bossFor('iron', 45)).toEqual(['last-commander']);
       expect(wardenFor('mainline', 8)).toBe('false-moon');
@@ -558,7 +558,7 @@ describe('roster tables, bosses and wardens (roster plan Task A4, spec §3.4, §
     });
     // A boss not yet live is the lantern-eater, as today; so is a live boss whose part is not.
     withRosterLive(['old-city-archon'], () => expect(bossFor('mainline', 20)).toEqual(['lanterneater']));
-    withRosterLive(['old-city-archon', 'archon-hand'], () => expect(bossFor('mainline', 20)).toEqual(['old-city-archon', 'archon-hand', 'archon-hand']));
+    withRosterLive(['old-city-archon', 'archon-hand'], () => expect(bossFor('mainline', 20)).toEqual(['archon-hand', 'archon-hand', 'old-city-archon']));
     withRosterLive(['bell-warden'], () => {
       expect(wardenFor('mainline', 13)).toBe('bell-warden');
       expect(wardenFor('mainline', 8)).toBeNull();

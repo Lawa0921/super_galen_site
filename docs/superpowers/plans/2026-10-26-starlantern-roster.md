@@ -587,6 +587,7 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
   - 金幣與素材賣價沒有等價檢查（招牌素材依帶定價，深層錢包會變厚；`economy.test.ts` 在 L 任務重跑，門檻不放寬）。
 - [ ] **Step 2**：`ROSTER_BANDS=1` 跑一次（定義都查得到，不需要上線）。紅的格子：只調新物種自己的數字（四輪為限），每一輪的表存 SDD `bands-22.md`。22j 在 L 任務才是必過（這裡記錄即可）。
 - [ ] **Step 3**：全套（不含選擇性帶）、tsc、閘門 identical（只調名冊數字不會動到舊表）。
+- **B12 實作紀錄**：四輪之後 22a、22b（冰凍、暗影、鋼鐵三組）、22c、22d、22f、22h、22i 仍有紅格，22g 只報告（拾憶鼠 100%、金箔拾憶鼠 0%，都在提案的 50–70% 之外）；分類與數字見 spec §0 第 18 條與 SDD `bands-22.md`。另：多部位頭目的部件改排在前面（`bossFor`，spec §0 第 18 條），所以 `data/monsters.test.ts` 與 `engine/game.test.ts` 的 `bossFor` 期望值跟著改；22j 寫好了但本 PR 沒有跑（要整套噩夢與地獄的頭目格，留給 L1）。
 - [ ] **Step 4**：收尾 G，commit：`test(starlantern): band 22, the roster against the lantern-eater and its own kin`。
 
 **PR B2 收尾**：全新脈絡審查（重點：遺忘不影響既有異常順序；遲滯與吞入不失去回合；22 帶不 import 凍結檔）。

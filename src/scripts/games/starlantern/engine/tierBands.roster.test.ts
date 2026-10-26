@@ -28,6 +28,8 @@ const line = (label: string, r: TierRun) => `${label} rate=${r.rate.toFixed(3)} 
 
 const ROSTER = Object.keys(ENEMIES).filter((id) => !LEGACY_ENEMY_IDS.includes(id));
 const LANDS = Object.keys(REGION_BOSSES) as RegionId[];
+/** The boss of a boss group (its parts lead the line: data/monsters.ts bossFor). */
+const bossOf = (group: string[]): string => group.find((id) => ENEMIES[id].boss) ?? group[0];
 const levelAt = (d: number) => Math.min(MAX_LEVEL, depthLevel(d));
 
 /** A boss cell as N3 (Nightmare, magic, one affix) or H2 (Hell, rare with a trigger, a pair, ten fights) builds it. */
@@ -56,13 +58,13 @@ describe.skipIf(!on)('band 22j: the roster on Nightmare and Hell (roster plan B1
 
   it('22j every new boss holds the lantern-eater\'s odds, built and bare', () => {
     const cells = withRosterLive(ROSTER, () => (['mainline', ...LANDS] as RegionId[]).flatMap((region) => [10, 15, 20, 25]
-      .map((depth) => ({ region, depth, group: bossFor(region, depth) })).filter((c) => c.group[0] !== 'lanterneater')));
+      .map((depth) => ({ region, depth, group: bossFor(region, depth) })).filter((c) => c.group.at(-1) !== 'lanterneater')));
     expect(cells.length).toBeGreaterThan(0);
     for (const c of cells) for (const hell of [false, true]) {
       const runs = (bare: boolean) => withRosterLive(ROSTER, () =>
         pooled((hell ? AFFIX_PAIRS : AFFIX_IDS.map((a) => [a] as const)).map((a) => measureCell(cell(c.depth, c.region, c.group, hell, a, bare)))));
       const built = runs(false), bare = runs(true);
-      const label = `${c.group[0]} ${c.region} d${c.depth} ${hell ? 'hell rare' : 'nightmare magic'}`;
+      const label = `${bossOf(c.group)} ${c.region} d${c.depth} ${hell ? 'hell rare' : 'nightmare magic'}`;
       say(line(label, built));
       say(line(`${label} bare`, bare));
       ex(built.rate, label).toBeGreaterThanOrEqual(eater(c.depth, c.region, hell, false).rate - 0.1);

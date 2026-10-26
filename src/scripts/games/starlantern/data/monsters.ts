@@ -134,7 +134,8 @@ export const REGION_BOSSES: Record<Land, readonly string[]> = {
   storm: ['thunder-roc', 'storm-conductor', 'starfire-colossus'], mire: ['mire-hydra', 'grey-blight', 'bog-leviathan'],
   shade: ['faceless-host', 'vault-dragon', 'shadow-parade'], iron: ['fortress-colossus', 'siege-titan', 'last-commander'],
 };
-/** A many-part boss comes with its parts (spec §5.6). */
+/** A many-part boss comes with its parts (spec §5.6), the parts first in its line (roster plan B12: the first foe is the one a
+ * plain attack meets, and 「先拆部件」 is the fight's lesson). */
 const BOSS_PARTS: Record<string, string[]> = { 'old-city-archon': x2('archon-hand'), 'rime-sovereign': x2('rime-pillar') };
 
 /** Spec §5.5: the main road's wardens at depths 8, 13, 18, 23, 28, cycling after. */
@@ -163,7 +164,7 @@ export function wardenGroup(id: string): string[] {
 export function bossFor(region: RegionId, depth: number): string[] {
   const i = depth / 5 - 1;
   const id = region === 'mainline' ? MAINLINE_BOSSES[i % MAINLINE_BOSSES.length] : REGION_BOSSES[region][i % 3];
-  const group = [id, ...(BOSS_PARTS[id] ?? [])];
+  const group = [...(BOSS_PARTS[id] ?? []), id];
   return group.every(listedEnemy) ? group : ['lanterneater'];
 }
 
