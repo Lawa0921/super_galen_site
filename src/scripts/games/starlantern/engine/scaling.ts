@@ -269,9 +269,10 @@ export const groupCap = (n: number, depth: number): number => (depth === 1 ? FIR
 
 /**
  * The ordinary monsters: every listed one but a boss or a story foe (eight while no roster id is live; spec §3.7's "nine"
- * counts the boss). Roster plan ruling 3: only `listedEnemy` ids count, so an unlisted roster definition never shows.
+ * counts the boss). Roster plan ruling 3: only `listedEnemy` ids count, so an unlisted roster definition never shows, and
+ * a warden or a boss's part is never an ordinary foe.
  */
-export const NORMAL_ENEMIES: string[] = Object.values(ENEMIES).filter((e) => listedEnemy(e.id) && !e.boss && !e.story).map((e) => e.id);
+export const NORMAL_ENEMIES: string[] = Object.values(ENEMIES).filter((e) => listedEnemy(e.id) && !e.boss && !e.story && !e.rank).map((e) => e.id);
 
 /**
  * The groups a random encounter is drawn from (`encounterGroup` picks one). The mainline uses the encounter table of the depth's terrain. A random region

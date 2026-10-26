@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { ENEMIES } from '../data/enemies';
+import { artEnemy } from '../data/monsters';
 import type { BattleEvent } from '../engine/combatant';
 import { ART_BASE, ART_CHARACTER_IDS, ART_VARIANT_IDS, CORE_MOODS, FRAMED_RARITIES, MOODS, MOODS_OF, PUBLISHED_FACES, SKILL_ICON_SIZES, SPECIAL_MOODS_OF, allArtUrls, art, codexArtId, effectFor, enemyArt, gearArtId, moodFor, parseManifest, tileKey } from './artPaths';
 import { RARITIES, SETS, SPECIALS, regionSpecials } from '../data/gear';
@@ -59,7 +60,9 @@ describe('artPaths', () => {
     for (const id of ART_CHARACTER_IDS) expect(urls).toContain(art.standee(id));
     for (const id of ['hero', 'rin', 'rin-oath']) for (const m of ['normal', 'attack', 'hit', 'dying', 'down', 'ultimate', 'smile', 'sad'] as const) expect(urls).toContain(art.portrait(id, m));
     expect(urls).toContain(art.standee('rin-oath'));
-    for (const id of Object.keys(ENEMIES).filter((e) => !ENEMIES[e].look)) expect(urls).toContain(art.enemy(id));
+    // Every enemy with art published (roster plan ruling 3: a roster foe joins with its art batch).
+    for (const id of Object.keys(ENEMIES).filter((e) => artEnemy(e) && !ENEMIES[e].look)) expect(urls).toContain(art.enemy(id));
+    for (const id of Object.keys(ENEMIES).filter((e) => !artEnemy(e))) expect(urls).not.toContain(art.enemy(id));
     // Plan 5d (Tasks 8 and 10): every base and special has its gear art, small and large, and every region piece and set
     // its silhouette; specials never had an icon/ path.
     for (const id of [...Object.keys(EQUIPMENT), ...Object.keys(SPECIALS)]) {
@@ -232,6 +235,6 @@ describe('enemy art', () => {
     const urls = allArtUrls();
     expect(urls).not.toContain(art.enemy('scarlet-foe'));
     expect(urls).toContain(art.standee('scarlet'));
-    for (const id of Object.keys(ENEMIES)) expect(urls).toContain(enemyArt(id));
+    for (const id of Object.keys(ENEMIES).filter(artEnemy)) expect(urls).toContain(enemyArt(id));
   });
 });

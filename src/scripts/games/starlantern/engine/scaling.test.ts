@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import type { EnemyDef } from './types';
 import { CONDITIONS } from '../data/conditions';
 import { ENEMIES } from '../data/enemies';
+import { LEGACY_ENEMY_IDS } from '../data/monsters';
 import { FLOORS } from '../data/floors';
 import { REGIONS, REGION_RIDER, type RegionId } from '../data/regions';
 import { createBattle, intentLabel, planEnemies, rewards } from './battle';
@@ -458,14 +459,18 @@ describe("a fight's difficulty in scaleEnemy (difficulty plan Task 1)", () => {
     // Guard (green before the implementation): a null tier is the call without one, and both are the enemies as they
     // were before any tier code: a SHA-256 of every enemy x region x depth 1/5/10/25 x elite, recorded at 29fc255ca (the
     // difficulty plan's base; T0-T1 review, minor 1: equal to each other alone would pass a x1 path).
+    // The pin covers the game's own ten (roster plan Task A2); the roster's hundred take the same equality, unpinned, below.
     const all: EnemyDef[] = [];
-    for (const def of Object.values(ENEMIES)) for (const r of Object.values(REGIONS)) for (const d of [1, 5, 10, 25]) {
+    for (const def of LEGACY_ENEMY_IDS.map((id) => ENEMIES[id])) for (const r of Object.values(REGIONS)) for (const d of [1, 5, 10, 25]) {
       for (const elite of [false, true]) {
         expect(scaleEnemy(def, d, r, elite, plain, null), `${def.id} ${r.id} d${d}`).toEqual(scaleEnemy(def, d, r, elite, plain));
         all.push(scaleEnemy(def, d, r, elite));
       }
     }
     expect(createHash('sha256').update(JSON.stringify(all)).digest('hex')).toBe('8adea5577db5e02f5647cf2ccaea2f3f1ba25482c96dc2b8c441147b43d17b19');
+    for (const def of Object.values(ENEMIES).filter((e) => !LEGACY_ENEMY_IDS.includes(e.id))) for (const r of Object.values(REGIONS)) for (const d of [1, 5, 10, 25]) {
+      for (const elite of [false, true]) expect(scaleEnemy(def, d, r, elite, plain, null), `${def.id} ${r.id} d${d}`).toEqual(scaleEnemy(def, d, r, elite, plain));
+    }
   });
 
   it('a tier scales hp, atk and mag, not def, mdf or spd', () => {

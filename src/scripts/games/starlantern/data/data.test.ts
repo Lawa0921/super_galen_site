@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { CHARACTERS, CHARACTER_IDS } from './characters';
 import { SKILLS } from './skills';
 import { ENEMIES } from './enemies';
+import { LEGACY_ENEMY_IDS } from './monsters';
+import { NORMAL_ENEMIES } from '../engine/scaling';
 import { ITEMS } from './items';
 import { EQUIPMENT, WEAPON_KINDS, weaponKindOf } from './equipment';
 import { slotsFor } from '../engine/party';
@@ -28,7 +30,8 @@ describe('meeting copy', () => {
 describe('data integrity', () => {
   it('matches the spec content counts', () => {
     expect(CHARACTER_IDS).toHaveLength(10);
-    const enemies = Object.values(ENEMIES);
+    // The roster's hundred are counted by data/monsters.test.ts (one hundred new ids): these are the game's own ten.
+    const enemies = LEGACY_ENEMY_IDS.map((id) => ENEMIES[id]);
     expect(enemies.filter((e) => !e.boss && !e.story)).toHaveLength(8);
     expect(enemies.filter((e) => e.boss).map((e) => e.id)).toEqual(['lanterneater']);
     expect(Object.keys(EQUIPMENT)).toHaveLength(25);
@@ -94,7 +97,8 @@ describe('data integrity', () => {
 
   it('places every normal enemy in some encounter group', () => {
     const used = new Set(FLOORS.flatMap((f) => f.encounters.flat()));
-    for (const e of Object.values(ENEMIES)) if (!e.boss && !e.story) expect(used.has(e.id), e.id).toBe(true);
+    // Every listed ordinary foe (roster plan ruling 3); a roster species waits for its tables (Task A4).
+    for (const id of NORMAL_ENEMIES) expect(used.has(id), id).toBe(true);
   });
 });
 

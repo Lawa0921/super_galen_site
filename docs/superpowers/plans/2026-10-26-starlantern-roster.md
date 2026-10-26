@@ -363,11 +363,11 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 
 - [ ] **Step 1：寫失敗的測試**（`data/monsters.test.ts`）：
   - `one hundred new ids, none old`：59 一般（29 本道、30 地區）、11 守關者、28 頭目、2 部件；和舊 id 不重複。
-  - `archetypes hold their shape`：每一隻的 `stats` 在 spec §5.1 原型的 ±15% 內（表寫在測試裡，標出例外：`archon-hand` 260、`rime-pillar` 240、`lantern-mother` 等於 `lanterneater`）；頭目 `boss: true`、守關者 `rank: 'warden'`、部件 `rank: 'part'`；一般與守關者 `floor: 3`。
+  - `archetypes hold their shape`：每一隻的 `stats` 在 spec §5.1 原型的 ±15% 內（表寫在測試裡，標出例外：`archon-hand` 260、`rime-pillar` 240、`lantern-mother` 等於 `lanterneater`；另有 spec §5.6 形狀欄本身就超出 ±15% 的三隻頭目的 hp：`old-city-archon` 800、`rime-sovereign` 820、`mirage-city` 960（−20%）——A2 實作時補上，原計畫漏列）；頭目 `boss: true`、守關者 `rank: 'warden'`、部件 `rank: 'part'`；一般與守關者 `floor: 3`。
   - `lantern-mother is the lantern-eater in another shape`：`stats`、`skills`、`weak`、`resist`、`exp`、`gold` 逐欄相等。
   - `only plain effects so far`：每個技能只用 spec §1.4 的效果種類（`damage`、`inflict` 的 `poison`／`sleep`、`buff`、`heal`）；機制欄位在 B 系列才加。
   - `drops` 在本任務一律是空陣列：`data/data.test.ts:83` 要求每個掉落素材都存在，素材在 A3 才有；A3 補上掉落與它的測試。
-  - `remnants and lore are as ruled`：`remnant` 恰好是裁定 6 的 13 個；`lore` 是 spec §4.2 的故事物種，值是對的夥伴。
+  - `remnants and lore are as ruled`：`remnant` 恰好是裁定 6 的 13 個；`lore` 是 spec §4.2 的故事物種，值是對的夥伴（另加 spec §5.6 標「故事」的 `siege-titan`→絲嘉蕾；靜鐘會的三種→凜；空殼、古城、子嗣與燈喰之母沒有夥伴，不帶 `lore`）。
   - `every normal species carries its inscription key`：59 個一般物種的 `inscribe` 逐一等於 spec §5.3、§5.4 的「銘文」欄，而且是裝備 `AFFIXES`（`data/gear.ts:34`）的鍵；守關者、頭目、部件沒有。
   - `no element wall per band`：A4 量（要表）。
 - [ ] **Step 2**：執行，確認紅。
