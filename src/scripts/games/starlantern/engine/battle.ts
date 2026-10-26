@@ -237,7 +237,9 @@ export function createBattle(o: {
   // Roster plan B4: a fight with a summoner or a decoy keeps how it met its foes; decoys stand beside their foe; a pair
   // that shares its wounds is linked. The old roster has none of these, and its fights carry no new field.
   const joins = s.enemies.some((c) => { const d = enemyDef(s, c); return d?.opener === 'decoy' || !!d?.skills.some((k) => k.effects.some((e) => e.kind === 'summon')); });
-  if (joins) s.meet = { ...meeting, cap: o.boss ? BOSS_GROUP_CAP : groupCap(size, depth) + (o.extra ?? 0) };
+  // A boss fight, or a warden's (B1 confirmation review item 1: the elite path, not a boss fight), holds BOSS_GROUP_CAP.
+  const warden = s.enemies.some((c) => enemyDef(s, c)?.rank === 'warden');
+  if (joins) s.meet = { ...meeting, cap: o.boss || warden ? BOSS_GROUP_CAP : groupCap(size, depth) + (o.extra ?? 0) };
   for (const c of [...s.enemies]) {
     const d = enemyDef(s, c);
     if (d?.opener !== 'decoy') continue;
@@ -551,11 +553,13 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
   }
   if (actor.side === 'enemy' && act.kind === 'enemy-skill' && !act.windup) {
     // A skill that can no longer be used (a call with no room since it was planned; a once-a-fight one its kind just used)
-    // gives way to the first one of its list that can, else a plain attack (roster plan B4; B1 review items 2, 3, 6).
+    // is a plain attack; only a foe with no damaging skill at all (the nest) takes the first one of its list that can be
+    // used instead, so it never attacks (roster plan B4; B1 review items 2, 3, 6; confirmation review item 2).
     const skills = enemyDef(s, actor)?.skills ?? [];
     const sk = skills[act.index];
     if (sk && !usableNow(s, actor, sk)) {
-      const i = skills.findIndex((k) => !k.windup && k.when !== 'deadAlly' && usableNow(s, actor, k));
+      const harmless = !skills.some((k) => k.effects.some((e) => e.kind === 'damage'));
+      const i = harmless ? skills.findIndex((k) => !k.windup && k.when !== 'deadAlly' && usableNow(s, actor, k)) : -1;
       act = i >= 0 ? { kind: 'enemy-skill', index: i, target: act.target } : { kind: 'attack', target: act.target };
     }
     if (act.kind === 'enemy-skill') {

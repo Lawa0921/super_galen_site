@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { ROW_MAX, createBattle, intentLabel, planEnemies, resolveRound, rewards, turnOrder, type Action, type BattleState } from './battle';
+import { BOSS_GROUP_CAP, ROW_MAX, createBattle, intentLabel, planEnemies, resolveRound, rewards, turnOrder, type Action, type BattleState } from './battle';
 import { guardTargets } from './foes';
 import { constRng, fullParty, makeBattle, makeCombatant, withRosterLive } from './testing';
-import { LEGACY_LINEUP } from './party';
+import { LEGACY_LINEUP, activeIds } from './party';
+import { wardenGroup } from '../data/monsters';
 import { mulberry32, type Rng } from './rng';
 import { applyEffect } from './skills';
 import { T } from '../data/text.zh-TW';
@@ -608,19 +609,41 @@ describe('roster plan B1 review', () => {
     const nest = ENEMIES['lantern-brood'];
     expect(nest.skills[0].effects[0]).toMatchObject({ kind: 'summon', id: 'lantern-larva' });
     expect(nest.skills[0].effects[0]).not.toHaveProperty('max');
-    let s = withRosterLive(['lantern-brood', 'lantern-larva'], () => {
-      let b = makeBattle([P('scarlet', { max: { hp: 9999 } as never })], [E('e0', { defId: 'lantern-brood', max: { hp: 9999 } as never })], { meet: { k: 1, cap: 3 } });
+    // The real warden fight (its group, the elite path, a party of five): a warden's fight holds BOSS_GROUP_CAP at most
+    // (B1 confirmation review item 1).
+    withRosterLive(['lantern-brood', 'lantern-larva'], () => {
+      const group = wardenGroup('lantern-brood');
+      expect(group).toEqual(['lantern-brood', 'lantern-larva']);
+      const party = fullParty(LEGACY_LINEUP);
+      expect(activeIds(party)).toHaveLength(5);
+      let b = createBattle({ party, enemyIds: group, inventory: {}, revealed: {}, scale: { depth: 28, region: 'mainline', elite: group[0] } });
+      expect(b.meet!.cap).toBe(BOSS_GROUP_CAP);
+      for (const c of b.party) { c.max = { ...c.max, hp: 999999 }; c.hp = 999999; }
       const acts: string[][] = [];
-      for (let i = 0; i < 6; i++) {
-        b = resolveRound(b, defend(b), mulberry32(i + 1));
+      for (let i = 0; i < 8 && b.outcome === 'ongoing'; i++) {
+        b = resolveRound(b, defend(b), mulberry32(i + 7));
         acts.push(acted(b, 'e0'));
+        expect(b.enemies.filter((e) => e.alive).length).toBeLessThanOrEqual(BOSS_GROUP_CAP);
       }
       expect(acts.slice(0, 2)).toEqual([['孵化'], ['孵化']]);
       expect(acts.slice(2).every((a) => a.length === 1 && a[0] === '蜷縮')).toBe(true);
       expect(acts.flat()).not.toContain('攻擊');
-      return b;
+      expect(b.enemies.filter((e) => e.summoned)).toHaveLength(2);
     });
-    expect(s.enemies.filter((e) => e.summoned)).toHaveLength(2);
+  });
+
+  it('2b. a planned skill blocked by the time it acts is a plain attack, never another skill at full odds', () => {
+    // Two callers, room for one more: the second's call is blocked when its turn comes (B1 confirmation review item 2).
+    const big: EnemySkill = { name: '大招', chance: 0.05, target: 'enemies', effects: [hit(300)] };
+    const caller: EnemySkill = { name: '呼喚', chance: 1, target: 'self', effects: [{ kind: 'summon', id: 'slime', max: 2 }] };
+    const s = makeBattle([P('scarlet', { max: { hp: 9999 } as never })], [E('e0'), E('e1')], { enemyDefs: { e0: def([caller, big]), e1: def([caller, big]) }, meet: { k: 1, cap: 3 } });
+    const r = resolveRound(s, defend(s), constRng(0.5));
+    expect(acted(r, 'e0').concat(acted(r, 'e1')).sort()).toEqual(['呼喚', '攻擊']);
+    // A foe with no damaging skill at all (the nest) takes its first usable one instead.
+    const curl: EnemySkill = { name: '蜷縮', chance: 1, target: 'self', effects: [{ kind: 'buff', stat: 'def', pct: 20, turns: 2 }] };
+    const n = makeBattle([P('scarlet', { max: { hp: 9999 } as never })], [E('e0'), E('e1')], { enemyDefs: { e0: def([caller, curl]), e1: def([caller, curl]) }, meet: { k: 1, cap: 3 } });
+    const rn = resolveRound(n, defend(n), constRng(0.5));
+    expect(acted(rn, 'e0').concat(acted(rn, 'e1')).sort()).toEqual(['呼喚', '蜷縮']);
   });
 
   it('4. decoys leave with their body when it falls for good', () => {

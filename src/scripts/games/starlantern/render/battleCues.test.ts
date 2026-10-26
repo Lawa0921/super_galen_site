@@ -75,6 +75,19 @@ describe('battleCues', () => {
   });
 });
 
+describe('battleCues revive (roster plan B1 confirmation review)', () => {
+  it('a foe revived stands up as a rise; a member revived plays as she always has', () => {
+    const log: BattleEvent[] = [{ type: 'revive', target: 'e0' }, { type: 'revive', target: 'liz' }];
+    const foes = (k: string) => k === 'e0';
+    expect(battleCues(log, () => null, () => undefined, foes)).toEqual([
+      { kind: 'line', index: 0 }, { kind: 'fx', key: 'e0', fx: 'heal' }, { kind: 'rise', key: 'e0' }, { kind: 'wait', ms: 320 },
+      { kind: 'line', index: 1 }, { kind: 'fx', key: 'liz', fx: 'heal' }, { kind: 'wait', ms: 320 },
+    ]);
+    // Without the check, nothing is a foe: a revive is the member's cue it was on master.
+    expect(battleCues(log, () => null).some((c) => c.kind === 'rise')).toBe(false);
+  });
+});
+
 describe('ultimate cue', () => {
   it('announces an ultimate before its hits', () => {
     const log: BattleEvent[] = [

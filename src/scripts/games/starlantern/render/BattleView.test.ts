@@ -156,6 +156,19 @@ describe('BattleView late foes (roster plan B1)', () => {
     vi.unstubAllGlobals();
   });
 
+  it('a foe revived and struck in the same play is in the picture when the blow lands (confirmation review item 3)', async () => {
+    const view = new BattleView(false, bank, true);
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => setTimeout(() => cb(performance.now()), 1));
+    const s = battle([]);
+    view.setup(s, { width: 640, height: 360 }, 1);
+    const box = view.enemyBoxOf('e0')!;
+    const seen: number[] = [];
+    const watch = { ...sfx, hit: () => { seen.push(box.alpha); } } as unknown as SoundManager;
+    await view.play({ ...s, log: [{ type: 'ko', target: 'e0' }, { type: 'revive', target: 'e0' }, { type: 'damage', target: 'e0', amount: 3, element: 'phys', mult: 1 }] }, watch);
+    expect(seen).toEqual([1]);
+    vi.unstubAllGlobals();
+  });
+
   it('a foe that rises stands in the picture again', async () => {
     const view = new BattleView(false, bank, true);   // calm: no breathing loop left running after the test
     vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => setTimeout(() => cb(performance.now()), 1));

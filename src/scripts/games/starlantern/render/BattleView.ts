@@ -437,7 +437,7 @@ export class BattleView {
     onParty?: (key: string, cue: PartyCue, name?: string, amount?: number, extra?: HitExtra) => void | Promise<void>,
     onLine?: (index: number) => void,
   ): Promise<void> {
-    for (const cue of battleCues(state.log, (k) => this.defIds.get(k) ?? null, (k) => this.weapons.get(k))) {
+    for (const cue of battleCues(state.log, (k) => this.defIds.get(k) ?? null, (k) => this.weapons.get(k), (k) => this.slots.has(k))) {
       if (cue.kind === 'wait') { await (cue.keep ? this.hold(cue.ms) : this.wait(cue.ms)); continue; }
       if (cue.kind === 'line') { onLine?.(cue.index); continue; }
       // Roster plan B4: a summon joins the row as the log calls it; a fallen foe stands up whole once its shatter is done.

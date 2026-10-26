@@ -29,7 +29,9 @@ const ACT_MS = 420;
 const EVENT_MS = 320;
 
 /** `weaponOf` gives the weapon kind of a combatant key (the hero only); his physical hits show that weapon's effect. */
-export function battleCues(log: BattleEvent[], defIdOf: (key: string) => string | null, weaponOf: (key: string) => WeaponKind | undefined = () => undefined): Cue[] {
+/** `isFoe` says which keys are foes in the picture: a foe's revive stands it up (`rise`); a member's plays as it always has. */
+export function battleCues(log: BattleEvent[], defIdOf: (key: string) => string | null, weaponOf: (key: string) => WeaponKind | undefined = () => undefined,
+  isFoe: (key: string) => boolean = () => false): Cue[] {
   const out: Cue[] = [];
   let actor: string | null = null;
   let actorKey = '';
@@ -50,8 +52,9 @@ export function battleCues(log: BattleEvent[], defIdOf: (key: string) => string 
       });
     } else if (ev.type === 'miss') out.push({ kind: 'miss', key: ev.target });
     else if (ev.type === 'ko') out.push({ kind: 'ko', key: ev.target });
-    // A revive stands the fallen up in the picture as a rise does (B1 review item 5); a member has no slot and ignores it.
-    else if (ev.type === 'revive') { out.push({ kind: 'fx', key: ev.target, fx: 'heal' }, { kind: 'rise', key: ev.target }, { kind: 'wait', ms: EVENT_MS }); return; }
+    // A foe revived stands up in the picture as a rise does (B1 review item 5); only a foe's, so a member's revive keeps
+    // the timing it had (confirmation review item 4).
+    else if (ev.type === 'revive' && isFoe(ev.target)) { out.push({ kind: 'fx', key: ev.target, fx: 'heal' }, { kind: 'rise', key: ev.target }, { kind: 'wait', ms: EVENT_MS }); return; }
     else if (ev.type === 'mech') { out.push({ kind: 'mech', key: ev.actor, cue: ev.cue }, { kind: 'wait', ms: EVENT_MS, keep: true }); return; }
     // A foe mechanic's moment (roster plan B3–B4): a summon joins the row and a risen foe stands again; the rest are lines.
     else if (ev.type === 'foe') {
