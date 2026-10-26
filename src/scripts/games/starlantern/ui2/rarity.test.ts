@@ -208,6 +208,11 @@ describe('ailment colours and words (plan 8b)', () => {
     expect(T.ailmentChip({ id: 'freeze' })).toBe('凍結');
   });
 
+  it("遺忘's chip is the colour scripts/starlantern-chip-colour.mjs picks (roster plan B9, the coordinator's ruling)", () => {
+    // Not the art's #8FD9B6: that sits under CHIP_DE against beat, expose and veil. The pick clears every chip by 15.5.
+    expect(AILMENT_FILL.forget).toBe(0x66b87e);
+  });
+
   it('the region trait burn reads 酷熱, apart from the ailment 灼燒', () => {
     expect(T.ui2.gate.traits.burn).toBe('酷熱');
     expect(T.ui2.gate.traits.burn).not.toBe(T.ailment.burn);

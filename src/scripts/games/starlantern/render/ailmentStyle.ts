@@ -10,8 +10,9 @@ import { T } from '../data/text.zh-TW';
  */
 export const AILMENT_FILL: Record<AilmentShown, number> = {
   poison: 0xb889fe, sleep: 0xc1c5d6, burn: 0xfe8a57, freeze: 0x92ebfd, chill: 0x8ea8fe, shock: 0xffe845, bleed: 0xff5c74,
-  // Roster plan B9: the art-tools PR's colour for 遺忘 (its icon publishes with E1c).
-  forget: 0x8fd9b6,
+  // Roster plan B9: 遺忘, as scripts/starlantern-chip-colour.mjs picks it (the coordinator's ruling: the art's #8FD9B6 sits
+  // under CHIP_DE against beat, expose and veil). Its icon publishes with E1c.
+  forget: 0x66b87e,
 };
 
 /** The ink colour of a row's 「+N」 (the folded ailments are not one colour). */
