@@ -1261,7 +1261,7 @@ def silhouette(reg, gid, workdir, ink=(29, 26, 46), rim=(143, 134, 184), out=Non
 ROSTER_HEIGHT = {'swarm': 52, 'normal': 64, 'heavy': 76, 'warden': 96, 'boss': 150}
 ROSTER_HEIGHT_BAND = {'swarm': (40, 64), 'normal': (48, 112), 'heavy': (48, 112), 'warden': (80, 120), 'boss': (120, 200)}
 ROSTER_SWARM_MAX_W = 72
-PALETTE_MAX = 32         # distinct opaque colours (contract: <= 32 per image)
+PALETTE_MAX = 32         # distinct opaque colours: recorded only (controller ruling 2026-10-26, roster plan ruling 26)
 LUM_RANGE_MIN = 0.35     # 5th to 95th percentile of opaque luminance (0..1): less is `too flat to tint`
 LUM_MEAN_MIN = 0.35      # a main-road species (recoloured by region: brightness x colour) must not be mostly dark
 LUM_PCT = (5, 95)
@@ -1271,7 +1271,7 @@ KEY_BLEND_STEP = 80      # ... and red and blue this far above it is the key ble
 ICON_HEIGHT = 32         # roster ruling 23: the material icons follow 5d's actual output (icon-blaze-core 33 x 35) ...
 ICON_BOX = 36            # ... so the final canvas fits a 36 x 36 box
 ROSTER_SPRITE_RULES = ('block downscale to the class height; alpha QA (residue, semi alpha, raw-canvas cut, spill, key tint); '
-                       'speckless subject height inside the class band, swarm width cap; opaque colours <= PALETTE_MAX; '
+                       'speckless subject height inside the class band, swarm width cap; opaque colours over PALETTE_MAX recorded, never failed; '
                        'luminance p5-p95 spread >= LUM_RANGE_MIN, main-road mean >= LUM_MEAN_MIN; enclosed pockets of any size '
                        'whose sampled raw is neither the key nor a dark key blend count as erased')
 ROSTER_ICON_RULES = ('block downscale to ICON_HEIGHT, or to fit a wide subject inside ICON_BOX with its pad; alpha QA with spill '
@@ -1308,7 +1308,10 @@ def palette_count(final):
 
 
 def palette_max(final):
-    return ['too many colours'] if palette_count(final) > PALETTE_MAX else []
+    """Notes (never reasons) for a final over PALETTE_MAX colours: controller ruling 2026-10-26 (roster plan ruling 26) made
+    the palette record-only, since codex never draws <= 32 colours (the approved legacy foes have 1.2k-10k) and quantizing
+    would change the images the user approved."""
+    return ['over the 32-colour palette (recorded only)'] if palette_count(final) > PALETTE_MAX else []
 
 
 def lum_stats(final):
@@ -1352,10 +1355,10 @@ def process_roster_sprite(reg, aid, img, workdir, raw, cls, mainline):
     qa = _finish(reg, aid, img, 'sprite', workdir, raw, height=ROSTER_HEIGHT[cls], despill_=True)
     final = Image.open(_final_path(reg.get(aid)['final'])).convert('RGBA')
     w, h = subject_size(final); erased = _erased_pixels(img, final, qa.get('block'))
-    gates = height_band(final, cls) + palette_max(final) + lum_range(final, mainline) + (['interior erased'] if erased > ROSTER_ERASED_MAX else [])
+    gates = height_band(final, cls) + lum_range(final, mainline) + (['interior erased'] if erased > ROSTER_ERASED_MAX else [])
     qa['reasons'] += [r for r in gates if r not in qa['reasons']]
     qa.update({'pass': not qa['reasons'], 'height': h, 'width': w, 'colours': palette_count(final), 'lum': list(lum_stats(final)),
-               'erased': erased, 'spec': qa_spec('roster-sprite')})
+               'erased': erased, 'palette_over': bool(palette_max(final)), 'spec': qa_spec('roster-sprite')})
     _save_final(reg, aid, final, qa, workdir, raw)
     reg.set(aid, kind='roster-sprite', roster_class=cls, mainline=bool(mainline))
     return qa

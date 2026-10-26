@@ -1619,7 +1619,7 @@ def test_height_band_ignores_a_stray_speck():
 def test_palette_max_counts_opaque_colours_only():
     assert A.PALETTE_MAX == 32
     assert A.palette_count(_final(64, 40, colours=32)) == 32 and A.palette_max(_final(64, 40, colours=32)) == []
-    assert A.palette_max(_final(64, 40, colours=33)) == ['too many colours']
+    assert A.palette_max(_final(64, 40, colours=33)) == ['over the 32-colour palette (recorded only)']     # a note, never a reason
 
 
 def test_lum_range_rejects_flat_art_and_dark_main_road_art():
@@ -1688,3 +1688,16 @@ def test_a_gap_of_dark_key_blend_is_not_an_erased_interior(tmp_path):
     q = A.process_roster_sprite(reg, 'enemy-gap', Image.open(raw), tmp_path / 'w', raw, 'normal', mainline=True)
     assert q['erased'] == 0 and 'interior erased' not in q['reasons'], q
     assert (A.KEY_BLEND_G_MAX, A.KEY_BLEND_STEP) == (64, 80)
+
+
+def test_a_sprite_over_the_32_colour_palette_passes_with_its_count_recorded(tmp_path):
+    """Controller ruling 2026-10-26 (roster plan ruling 26): palette_max is record-only. codex never draws <= 32 colours
+    (the approved legacy foes have 1.2k-10k) and quantizing would change the images the user approved."""
+    raw = _sprite_raw(tmp_path / 'raw.png'); arr = np.asarray(Image.open(raw).convert('RGB')).astype(np.int16)
+    body = ~((arr[..., 0] == 255) & (arr[..., 1] == 0) & (arr[..., 2] == 255))
+    noise = (np.indices(arr.shape[:2]).sum(axis=0) * 7919 % 7 - 3)[..., None]          # deterministic +-3 grain on the body
+    arr[body] = np.clip(arr + noise, 0, 255)[body]
+    Image.fromarray(arr.astype(np.uint8), 'RGB').save(raw)
+    q = A.process_roster_sprite(A.Registry(tmp_path / 'r.json'), 'enemy-grain', Image.open(raw), tmp_path / 'w', raw, 'normal', mainline=True)
+    assert q['colours'] > A.PALETTE_MAX and 'too many colours' not in q['reasons'] and q['pass'], q
+    assert q['palette_over'] is True
