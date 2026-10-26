@@ -11,13 +11,16 @@ export type FolkRole =
   /** 矮人地廳：礦石商、符文匠、長老（委託） */
   | 'ore_trader' | 'runesmith' | 'dwarf_elder'
   /** 路上遇見：行商、旅行藥師；洞穴裡：受困探險者 */
-  | 'peddler' | 'herbalist' | 'stranded';
+  | 'peddler' | 'herbalist' | 'stranded'
+  /** 荒野大陸的隱士小屋（gen2 M2a Task 18）與隱士島（Task 20）；chart 服務 */
+  | 'hermit';
 export type FolkRace = 'human' | 'dwarf';
-export type FolkOrigin = 'village' | 'hall' | 'road' | 'cave';
+export type FolkOrigin = 'village' | 'hall' | 'road' | 'cave' | 'hut';
 
 /** 服務：heal 治療、bless 祝福（回血 buff）、ward 守護（減傷 buff）、minesong 礦工之歌（挖掘 buff）、forge 鍛造（身邊就是鐵砧、依好感度打折）、
- *  deepforge 深岩升階（用錠代替星塵升稀有度）、hint 下一步提示、scout 標出附近沒去過的地點、invite 邀請到據點入住、rescue 救援 */
-export type FolkService = 'heal' | 'bless' | 'ward' | 'minesong' | 'forge' | 'deepforge' | 'hint' | 'scout' | 'invite' | 'rescue';
+ *  deepforge 深岩升階（用錠代替星塵升稀有度）、hint 下一步提示、scout 標出附近沒去過的地點、invite 邀請到據點入住、rescue 救援、
+ *  chart 隱士的海圖：標出下一片大陸上一處還沒去過的大東西（gen2 M2a Task 20；都去過了就同 scout） */
+export type FolkService = 'heal' | 'bless' | 'ward' | 'minesong' | 'forge' | 'deepforge' | 'hint' | 'scout' | 'invite' | 'rescue' | 'chart';
 
 export interface FolkShopEntry { item: ItemId; n: number; price: number; /** 好感度等級門檻（0 陌生 .. 3 摯友） */ tier?: number; }
 export interface FolkServiceDef { kind: FolkService; zh: string; price?: number; tier?: number; }
@@ -159,6 +162,12 @@ export const ROLES: Record<FolkRole, FolkRoleDef> = {
     shop: [], services: [{ kind: 'rescue', zh: '救援：讓對方跟著你走（帶到地表 / 村子 / 據點）' }, { kind: 'invite', zh: '邀請這位探險者到你的據點入住（成為據點的嚮導）' }],
     lines: ['救、救命……有人嗎？', '火把快燒完了……', '謝謝你！我跟緊你。'],
   },
+  hermit: {
+    role: 'hermit', race: 'human', title: '隱士', intro: '獨自住在荒野小屋裡的隱士。很少見到人，但願意把多的繩子、火把和烤魚分給路過的旅人。',
+    shop: [{ item: 'rope', n: 20, price: 30 }, { item: 'torch', n: 10, price: 30 }, { item: 'grilled_fish', n: 1, price: 30 }],
+    // 服務：chart（Task 20；島上的隱士 = 那道海朝外的下一片大陸、荒野小屋的隱士 = 那片大陸朝外的下一片大陸）
+    services: [{ kind: 'chart', zh: '標出下一片大陸上一處還沒去過的地點', price: 120 }], lines: ['好久沒有人走到這裡來了。', '荒野比你想的還大，走之前多帶點繩子吧。', '夜裡的聲音聽久了，也就不怕了。'],
+  },
 };
 
 // ── 名字 ─────────────────────────────────────────────────
@@ -210,6 +219,7 @@ export function folkLook(role: FolkRole, rng: Rng): FolkLook {
     case 'peddler': return { app: { ...app, outfit: 4, color1: 8, color2: 3 }, head: 'hat:straw', back: 'back:cape' };
     case 'herbalist': return { app: { ...app, outfit: 3, color1: 6, color2: 0 }, head: 'hat:flower' };
     case 'stranded': return { app: { ...app, outfit: 0, color1: 8, color2: 6 }, belt: 'depth' };
+    case 'hermit': return { app: { ...app, hairColor: 4, outfit: 3, color1: 9, color2: 4 }, back: 'back:cape' };
     default: return { app };
   }
 }

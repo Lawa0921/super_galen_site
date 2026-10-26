@@ -16,6 +16,14 @@ const piece = (look: string | undefined): DollPiece | null => (look ? { look, ra
 export function folkDollLook(l: FolkLook): DollLook {
   return { app: l.app, head: piece(l.head), body: piece(l.body), legs: piece(l.legs), back: piece(l.back), acc: null, feet: null, neck: l.neck ?? null, belt: l.belt ?? null };
 }
+// 動畫相位：聚落 NPC 的 id 是 2 的 52 次方等級的大數，直接 clock + id 會吃掉 clock 的小數（雙精度間距 0.5–1）；
+// 取 id 的小餘數（< 4096 的 id 原樣，遇見型 NPC 不變）
+export const folkPhase = (id: number): number => id % 4096;
+/** 站著的影格：眨眼（每 4 秒約 0.12 秒）或第幾張 idle */
+export function folkIdlePose(clock: number, id: number): 'blink' | number {
+  const p = folkPhase(id);
+  return (clock + p) % 4 < 0.12 ? 'blink' : Math.floor((clock + p * 0.3) * 4) % IDLE_FRAMES;
+}
 export interface FolkFrames { idle: Bmp[]; walk: Bmp[]; blink: Bmp; portrait: Bmp; }
 const oneCache = new Map<string, Bmp>();
 const folkKey = (l: FolkLook): string => `folk:${dollKey(folkDollLook(l))}:${l.dwarf ? 1 : 0}${l.beard ? 1 : 0}`;
@@ -105,8 +113,9 @@ export class FolkLayer {
       const dist = (this.walkDist.get(n.id) ?? 0) + Math.abs(b.x - prev);
       this.walkDist.set(n.id, dist);
       const walking = Math.abs(b.vx) > 4;
-      const img = walking ? this.frame(n, a, 'walk', Math.floor(dist / 5) % WALK_FRAMES)
-        : (clock + n.id) % 4 < 0.12 ? this.frame(n, a, 'blink', 0) : this.frame(n, a, 'idle', Math.floor((clock + n.id * 0.3) * 4) % IDLE_FRAMES);
+      const pose = walking ? null : folkIdlePose(clock, n.id);
+      const img = pose === null ? this.frame(n, a, 'walk', Math.floor(dist / 5) % WALK_FRAMES)
+        : pose === 'blink' ? this.frame(n, a, 'blink', 0) : this.frame(n, a, 'idle', pose);
       const cx = Math.round(b.x + b.w / 2), bottom = Math.round(b.y + b.h + b.gfxOffY);
       ctx.save();
       ctx.translate(cx, bottom);

@@ -1,0 +1,178 @@
+// objects.test.ts — gen2 藍圖物件（M2a Task 2）：分層槽寬（地下 / 深層 / 小點位 170、表層 / 天空 340）與槽邊距（wholeRegion 例外，Q2）、
+// UNDER / DEEP 的坑道避讓帶（Q3 / Q3b）、遺跡的地面覆寫（surfaceAt 吃 SURFACE 層藍圖的 ground，Q4）、箱子附加物品（withExtras）、
+// 免挖洞箱（solid：箱內不挖噪聲洞穴、不當入口，礦照常、主坑道照挖）、extrasIn；solid / ground 在外框內（M2a Task 7）。
+import { describe, it, expect } from 'vitest';
+import { Gen2Source } from './index';
+import { slotOf, slotWidth, BP_UNDER, BP_DEEP, BP_SURFACE, emptyObjects, type Layer, type Blueprint, type BlueprintIndex } from './blueprint';
+import { Filler2 } from './fill';
+import { shaftX, SHAFT_HALF, SHAFT_REACH } from './caves';
+import { seedInt } from '../noise';
+import { worldOf, loadColumns, firstSolid, FILL_DECOR } from './testUtil';
+import { withExtras } from '../loot';
+import { Column, li } from '../column';
+import { WORLD_H } from '../constants';
+import { T, isSolidTile } from '../tiles';
+
+const src = new Gen2Source('obj');
+
+describe('gen2 blueprint objects', () => {
+  it('slotWidth 與各層槽：地下 / 深層 / 小點位 170、表層 / 天空 340；slotOf 依層反查；非 wholeRegion 的外框離槽邊 ≥ 8', () => {
+    expect([0, 1, 2, 3, 4].map((l) => slotWidth(l as Layer))).toEqual([340, 170, 170, 340, 170]);
+    const all = src.blueprints.overlapping(-20_000, 20_000);
+    expect(all.filter((b) => b.layer === BP_UNDER).length).toBeGreaterThan(10);
+    let grounds = 0;
+    for (const b of all) {
+      const s = slotOf(b.id, src.layout);
+      expect(s.layer).toBe(b.layer);
+      // 區塊切分獨立的前提（overlapping 只看外框）：solid 與 ground 都在自己的外框內
+      if (b.solid) { expect(b.solid.x).toBeGreaterThanOrEqual(b.x); expect(b.solid.x + b.solid.w).toBeLessThanOrEqual(b.x + b.w);
+        expect(b.solid.y).toBeGreaterThanOrEqual(b.y); expect(b.solid.y + b.solid.h).toBeLessThanOrEqual(b.y + b.h); }
+      if (b.ground) { grounds++; expect(b.ground.x0).toBeGreaterThanOrEqual(b.x); expect(b.ground.x0 + b.ground.tops.length).toBeLessThanOrEqual(b.x + b.w); }
+      if (b.wholeRegion) { expect(b.x).toBeGreaterThanOrEqual(s.region.x0); expect(b.x + b.w).toBeLessThanOrEqual(s.region.x1); continue; } // Q2
+      // 坑道底藏物（Task 14）刻意放在主坑道底的圓室：外框在坑道觸及範圍內（可能伸出槽 ≤ SHAFT_REACH，fill / objectsIn 多查 FILL_REACH）
+      if ((b.kind as string) === 'shaft_cache') { const sx = shaftX(seedInt('obj', 'g2-shaft'), s.region); expect(Math.abs(b.x + 1 - sx)).toBeLessThanOrEqual(SHAFT_REACH); continue; }
+      expect(s.x1 - s.x0).toBeLessThan(2 * slotWidth(b.layer));
+      expect(b.x).toBeGreaterThanOrEqual(s.x0 + 8); expect(b.x + b.w).toBeLessThanOrEqual(s.x1 - 8);
+    }
+    expect(grounds).toBeGreaterThan(0);
+    // 地下層的槽真的是 170 格（不是 340 的槽換了名字）：有地下藍圖的槽起點不全是 340 的倍數
+    const under = all.filter((b) => b.layer === BP_UNDER && slotOf(b.id, src.layout).region.kind !== 'sea');
+    expect(under.some((b) => { const s = slotOf(b.id, src.layout); return (s.x0 - s.region.x0) % 340 !== 0; })).toBe(true);
+  }, 120_000);
+
+  it('UNDER / DEEP 外框不碰坑道避讓帶 [sx − SHAFT_HALF − 4, sx + SHAFT_HALF + 4]（shaft_cache 例外）（Q3）；DEEP 也離坑道觸及範圍 ≥ 1（Q3b）', () => {
+    const ss = seedInt('obj', 'g2-shaft');
+    let checked = 0;
+    for (const b of src.blueprints.overlapping(-20_000, 20_000, [BP_UNDER, BP_DEEP]).filter((q) => (q.kind as string) !== 'shaft_cache')) {
+      expect([BP_UNDER, BP_DEEP]).toContain(b.layer);
+      const sx = shaftX(ss, slotOf(b.id, src.layout).region);
+      if (!Number.isFinite(sx)) continue;
+      checked++;
+      expect(b.x + b.w <= sx - SHAFT_HALF - 4 || b.x > sx + SHAFT_HALF + 4, `${b.kind} ${b.x}`).toBe(true);
+      // Q3b：DEEP 層用 SHAFT_REACH（坑道底的圓室碰不到深層外框）
+      expect(b.x + b.w <= sx - SHAFT_REACH - 1 || b.x >= sx + SHAFT_REACH + 2, `${b.kind} ${b.x}`).toBe(true);
+    }
+    expect(checked).toBeGreaterThan(10);
+  }, 120_000);
+
+  it('遺跡的地面覆寫：surfaceAt = 第一個實心格（外框每一欄；遺跡自己的石磚牆 / 屋頂不算地面）', () => {
+    const w = worldOf(src), ruins = src.blueprints.overlapping(-20_000, 20_000).filter((q) => q.kind === 'ruin').slice(0, 12);
+    expect(ruins.length).toBe(12);
+    let moved = 0;
+    for (const b of ruins) {
+      expect(b.ground).not.toBeNull();
+      expect(b.ground!.x0).toBe(b.x); expect(b.ground!.tops.length).toBe(b.w);
+      loadColumns(w, b.x, b.x + b.w);
+      // 遺跡自己畫在地面以上的實心格（石磚牆、屋頂）
+      const own = new Set<number>();
+      for (let k = 0; k < b.cells.length; k += 5) if (isSolidTile(b.cells[k + 2]) && b.cells[k + 1] < b.ground!.tops[b.cells[k] - b.x]) own.add(b.cells[k] * 4096 + b.cells[k + 1]);
+      for (let x = b.x; x < b.x + b.w; x++) {
+        expect(src.surfaceAt(x), `x ${x}`).toBe(b.ground!.tops[x - b.x]);
+        expect(src.surfaceAt(x), `x ${x}`).toBe(firstSolid(w, x, (y) => own.has(x * 4096 + y)));
+        if (src.surfaceAt(x) !== src.profile.surfaceAt(x)) moved++;
+      }
+    }
+    // 覆寫真的改了東西（遺跡底 = 寬度內平均地表，不會每欄都剛好等於原地表）
+    expect(moved).toBeGreaterThan(0);
+    // 外框外照原側寫
+    const b = ruins[0];
+    expect(src.surfaceAt(b.x - 1)).toBe(src.profile.surfaceAt(b.x - 1));
+    expect(src.surfaceAt(b.x + b.w)).toBe(src.profile.surfaceAt(b.x + b.w));
+  }, 60_000);
+
+  it('箱子附加物品：withExtras 放第一個空格、滿了蓋最後一格', () => {
+    expect(withExtras([null, { item: 'torch', count: 3 }, null], ['magnet'])).toEqual([{ item: 'magnet', count: 1 }, { item: 'torch', count: 3 }, null]);
+    const full = [{ item: 'torch' as const, count: 1 }, { item: 'rope' as const, count: 1 }];
+    expect(withExtras(full, ['magnet']).at(-1)).toEqual({ item: 'magnet', count: 1 });
+    expect(full[1]).toEqual({ item: 'rope', count: 1 }); // 不改原陣列
+    expect(withExtras([null, null], ['magnet', 'jump_boots'])).toEqual([{ item: 'magnet', count: 1 }, { item: 'jump_boots', count: 1 }]);
+  });
+
+  it('免挖洞箱（solid）：箱內不挖噪聲洞穴、不當地表入口，礦照常（原本不是洞的格與沒有箱子時相同），箱外不變；主坑道照挖', () => {
+    // 有主坑道的地區：箱子蓋住坑道入口那一段 ± 60 欄、地表下 0..400 列
+    const ss = seedInt('obj', 'g2-shaft'), r = src.layout.landmass(1, 2).regions[1], sx = shaftX(ss, r);
+    expect(Number.isFinite(sx)).toBe(true);
+    const cx = sx >> 5, box = { x: cx * 32 - 40, y: src.profile.surfaceAt(sx) - 10, w: 112, h: 400 };
+    const fake: Blueprint = { id: 1, kind: 'ruin', layer: BP_SURFACE, x: box.x, y: box.y, w: box.w, h: box.h, cells: new Int32Array(0), chests: [], ...emptyObjects(), solid: box };
+    const real = src.blueprints;
+    const stub = { overlapping: (a: number, z: number, l?: readonly Layer[]) => [...real.overlapping(a, z, l), ...(fake.x < z && fake.x + fake.w > a ? [fake] : [])] } as unknown as BlueprintIndex;
+    const with_ = new Filler2('obj', src.layout, src.profile, stub), plain = new Filler2('obj', src.layout, src.profile, real);
+    // 真的藍圖畫的格（小屋坑道的空氣等）不算
+    const others = real.overlapping(box.x, box.x + box.w);
+    const inOther = (x: number, y: number): boolean => others.some((o) => x >= o.x && x < o.x + o.w && y >= o.y && y < o.y + o.h);
+    const ORES = [T.COPPER_ORE, T.IRON_ORE, T.SILVER_ORE, T.GOLD_ORE] as number[];
+    let dug = 0, ores = 0, oresIn = 0, shaft = 0;
+    for (const c of [cx - 1, cx, cx + 1]) {
+      const a = new Column(c, WORLD_H), p = new Column(c, WORLD_H);
+      with_.fill(a, c * 32, c * 32 + 32); plain.fill(p, c * 32, c * 32 + 32);
+      for (let x = c * 32; x < c * 32 + 32; x++) for (let y = 0; y < WORLD_H; y++) {
+        const i = li(x, y), inBox = x >= box.x && x < box.x + box.w && y >= box.y && y < box.y + box.h;
+        const near = Math.abs(x - sx) <= SHAFT_REACH;
+        // 箱外不變（fill 的裝飾看上下一格：箱子正下方的洞穴頂可能多一個鐘乳石，Task 12 → 裝飾當空氣比）
+        if (!inBox) { expect(FILL_DECOR.has(a.fg[i]) ? T.AIR : a.fg[i], `${x},${y}`).toBe(FILL_DECOR.has(p.fg[i]) ? T.AIR : p.fg[i]); continue; }
+        if (y < src.profile.surfaceAt(x) || inOther(x, y)) continue;
+        const t = a.fg[i];
+        // 原本不是洞的格（含礦）與沒有箱子時相同：礦照常換（洞穴格可能長了裝飾，Task 12：「不是洞」= 實心）
+        if (isSolidTile(p.fg[i])) expect(t, `${x},${y}`).toBe(p.fg[i]);
+        if (!isSolidTile(t)) { expect(near, `air at ${x},${y}`).toBe(true); shaft++; }
+        if (p.fg[i] === T.AIR && t !== T.AIR) dug++;
+        if (ORES.includes(p.fg[i])) ores++;
+        if (ORES.includes(t)) oresIn++;
+      }
+    }
+    // 箱內地表那格不當入口
+    for (let x = box.x; x < box.x + box.w; x++) if (box.y <= src.profile.surfaceAt(x)) expect(with_.isEntrance(x), `entrance ${x}`).toBe(false);
+    // 不是空測：原本箱內有洞穴與礦、主坑道也還在；有箱子時礦一格不少（原本是洞的格也可能換成礦）
+    expect(dug).toBeGreaterThan(50); expect(ores).toBeGreaterThan(5); expect(shaft).toBeGreaterThan(50); expect(oresIn).toBeGreaterThanOrEqual(ores);
+  }, 60_000);
+
+  it('extrasIn / objectsIn：物件只來自家鄉地城（陶罐 / 古碑 / 聚落，M2a Task 8）與村莊 / 地廳（聚落、礦車地標，Task 9）、礦坑的礦車 / 空島的守望石像（地標，Task 10）、小生態與蜂巢的地標（Task 11）、小屋 / 遺跡 / 湖 / 地下湖的地標與家鄉的 14 塊石碑（Task 14）；每次回新物件', () => {
+    const all = src.blueprints.overlapping(-20_000, 20_000), e = src.extrasIn(-20_000, 20_000);
+    const dg = all.filter((b) => b.kind === 'dungeon'), settle = all.filter((b) => b.kind === 'village' || b.kind === 'hall');
+    expect(dg).toHaveLength(1);
+    expect(settle.filter((b) => b.kind === 'village').length).toBeGreaterThanOrEqual(2); expect(settle.some((b) => b.kind === 'hall')).toBe(true);
+    // 依 (layer, id) 序：聚落 = 外框 x 在範圍內的每一份藍圖的 site
+    // 陶罐：家鄉地城與荒野大陸的小地城（Task 18）
+    expect(e.pots).toEqual(all.filter((b) => b.kind === 'dungeon' || b.kind === 'keep').flatMap((b) => b.pots)); expect(e.tablets).toEqual(all.flatMap((b) => b.tablets));
+    expect(e.tablets.map((t) => t.id).sort((a, b) => a - b)).toEqual([...Array(14).keys()]);
+    // 小點位（Task 19）：cairn / camp 各一個地標，stones 沒有；海上（Task 20）：珊瑚礁的遺落行囊、海底遺跡與燈塔島的守望石像（島的其他種類沒有）
+    const LANDMARKED = new Set(['mineshaft', 'sky_island', 'mushroom_biome', 'crystal_cave', 'hive', 'cabin', 'ruin', 'lake', 'cave_lake', 'minor', 'reef', 'sea_ruin', 'island']);
+    const marked = all.filter((b) => b.kind === 'village' || b.kind === 'hall' || LANDMARKED.has(b.kind));
+    expect(e.landmarks).toEqual(marked.flatMap((b) => b.landmarks));
+    // 每座地廳 / 礦坑 / 空島 / 小生態 / 蜂巢 / 小屋 / 遺跡 / 湖 / 地下湖 / 小點位至多一個地標（村莊、石柱圈小點位沒有）；九成以上有
+    expect(marked.every((b) => b.landmarks.length <= 1)).toBe(true);
+    expect(marked.filter((b) => b.kind === 'minor').every((b) => b.landmarks.length === (b.sub === 'stones' ? 0 : 1))).toBe(true);
+    // 九成的比例只算舊種類（小點位由上一行精確斷言、島由下面依種類精確斷言，不進分子 / 分母）
+    const old = marked.filter((b) => b.kind !== 'minor' && b.kind !== 'island');
+    expect(old.flatMap((b) => b.landmarks).length).toBeGreaterThanOrEqual(0.9 * old.filter((b) => b.kind !== 'village').length);
+    expect(marked.filter((b) => b.kind === 'mineshaft').length).toBeGreaterThan(3); expect(marked.filter((b) => b.kind === 'sky_island').length).toBeGreaterThanOrEqual(2);
+    for (const k of ['mushroom_biome', 'crystal_cave', 'hive']) expect(marked.some((b) => b.kind === k), k).toBe(true);
+    expect(e.sites).toEqual(all.filter((b) => b.site).map((b) => b.site));
+    expect(e.pots.length).toBeGreaterThan(0); expect(e.tablets.length).toBe(14);
+    expect(src.extrasIn(-20_000, 20_000)).not.toBe(e);
+    expect(src.extrasIn(-20_000, 20_000).sites[0]).not.toBe(e.sites[0]);
+    // 荒野大陸的小地城（地城 site、整片 solid、地面覆寫）與隱士小屋（hermit site、整片 solid、地面覆寫、沒有陶罐 / 地標），Task 18
+    const keeps = all.filter((q) => q.kind === 'keep'), huts = all.filter((q) => q.kind === 'hermit_hut');
+    expect(keeps.length).toBeGreaterThan(0); expect(huts.length).toBeGreaterThan(0);
+    for (const b of keeps) { expect(b.site?.kind).toBe('dungeon'); expect(b.solid).not.toBeNull(); expect(b.tablets).toEqual([]); expect(b.wholeRegion).toBe(false); }
+    for (const b of huts) { expect(b.site?.kind).toBe('hermit'); expect(b.solid).toEqual({ x: b.x, y: b.y, w: b.w, h: b.h }); expect(b.ground).not.toBeNull(); expect(b.pots).toEqual([]); expect(b.landmarks).toEqual([]); }
+    // 有建物的島（Task 20）：燈塔 = 守望石像地標、整片 solid、地面覆寫；隱士 = hermit site（同隱士小屋）；沉船島 = 都沒有
+    const isles = all.filter((q) => q.kind === 'island');
+    expect(new Set(isles.map((b) => b.variant))).toEqual(new Set(['lighthouse', 'hermit', 'wreck']));
+    for (const b of isles) {
+      const box = { x: b.x, y: b.y, w: b.w, h: b.h };
+      expect(b.pots).toEqual([]); expect(b.tablets).toEqual([]); expect(b.wholeRegion).toBe(false);
+      if (b.variant === 'lighthouse') { expect(b.landmarks.map((l) => l.tile)).toEqual([T.GUARDIAN_STATUE]); expect(b.solid).toEqual(box); expect(b.ground).not.toBeNull(); expect(b.site).toBeNull(); }
+      else if (b.variant === 'hermit') { expect(b.site?.kind).toBe('hermit'); expect(b.solid).toEqual(box); expect(b.ground).not.toBeNull(); expect(b.landmarks).toEqual([]); }
+      else { expect(b.variant).toBe('wreck'); expect(b.site).toBeNull(); expect(b.solid).toBeNull(); expect(b.ground).toBeNull(); expect(b.landmarks).toEqual([]); }
+    }
+    for (const b of all.filter((q) => q.kind !== 'dungeon' && q.kind !== 'village' && q.kind !== 'hall' && q.kind !== 'keep' && q.kind !== 'hermit_hut' && q.kind !== 'island')) {
+      // 石碑只在家鄉（lore.homeDecor）
+      expect(b.pots).toEqual([]); if (b.x < 0 || b.x >= 4200) expect(b.tablets).toEqual([]); expect(b.site).toBeNull(); expect(b.wholeRegion).toBe(false);
+      if (!LANDMARKED.has(b.kind)) expect(b.landmarks).toEqual([]);
+      if (b.kind !== 'ruin') expect(b.ground).toBeNull();
+      // 礦坑：外框整片 solid（Task 10）；其他沒有
+      if (b.kind === 'mineshaft') expect(b.solid).toEqual({ x: b.x, y: b.y, w: b.w, h: b.h }); else expect(b.solid).toBeNull();
+    }
+  }, 60_000);
+});

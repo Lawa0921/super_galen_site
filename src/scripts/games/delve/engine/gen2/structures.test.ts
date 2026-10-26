@@ -27,7 +27,7 @@ const count = (b: Blueprint, t: number): number => { let n = 0; for (let k = 0; 
 // 某片大陸某地區的某槽的 BpCtx
 function ctxOf(g: Gen2Source, seed: string, side: 1 | -1, i: number, region: number, slot: number, layer: 0 | 1 | 2): BpCtx {
   const id = structureId(side, i, region, slot, layer), q = slotOf(id, g.layout);
-  return { seed, s: seedInt(seed, 'g2-bp'), id, slotX0: q.x0, slotX1: q.x1, region: q.region, profile: g.profile, ver: 0 };
+  return { seed, s: seedInt(seed, 'g2-bp'), id, slotX0: q.x0, slotX1: q.x1, region: q.region, profile: g.profile, ver: 0, groundAt: (x) => g.surfaceAt(x) };
 }
 
 describe('gen2 structures: cabin / ruin', () => {
@@ -41,9 +41,10 @@ describe('gen2 structures: cabin / ruin', () => {
       const x0 = xs[0], x1 = xs[xs.length - 1] + 1, w = x1 - x0;
       expect(xs.length).toBe(w);
       expect(w).toBeGreaterThanOrEqual(9); expect(w).toBeLessThanOrEqual(15);
-      const tl = x0 - b.x, tr = b.x + b.w - x1;
-      expect(tl).toBeGreaterThanOrEqual(14); expect(tl).toBeLessThanOrEqual(30);
-      expect(tr).toBeGreaterThanOrEqual(14); expect(tr).toBeLessThanOrEqual(30);
+      // 家鄉的小屋（Task 14）接不上洞穴時會把坑道延長（外框 ≤ 75），所以兩側坑道只在外圍上限 30
+      const tl = x0 - b.x, tr = b.x + b.w - x1, home = b.x >= 0 && b.x < 4200;
+      expect(tl).toBeGreaterThanOrEqual(14); expect(tr).toBeGreaterThanOrEqual(14);
+      if (home) expect(b.w).toBeLessThanOrEqual(75); else { expect(tl).toBeLessThanOrEqual(30); expect(tr).toBeLessThanOrEqual(30); }
       for (let x = x0; x < x1; x++) {
         expect(src.profile.surfaceAt(x) + 26).toBeLessThanOrEqual(b.y);
         expect(b.y).toBeLessThanOrEqual(src.profile.layersAt(x).molten - 30);
@@ -78,7 +79,7 @@ describe('gen2 structures: cabin / ruin', () => {
       expect(rough).toBeLessThanOrEqual(5);
       expect(slotOf(b.id, src.layout).region.biome).not.toBe(BIOME.SNOW);
       // 底上全清空、底下的空隙補土
-      for (const x of xs) for (let y = base - 3; y < base; y++) expect([T.AIR, T.STONE_BRICK, T.CHEST, T.POT]).toContain(fgAt(b, x, y));
+      for (const x of xs) for (let y = base - 3; y < base; y++) expect([T.AIR, T.STONE_BRICK, T.CHEST, T.POT, T.GUARDIAN_STATUE, T.LORE_TABLET]).toContain(fgAt(b, x, y));
       for (const x of xs) for (let y = base + 1; y < src.profile.surfaceAt(x); y++) expect([T.DIRT, T.SAND, T.MUD]).toContain(fgAt(b, x, y));
       expect(count(b, T.STONE_BRICK)).toBeGreaterThan(w + 4);
     }

@@ -1,4 +1,4 @@
-// chunkgen.test.ts — 外圍生成器 v0（B9）：確定性 / 與順序無關、海與中央的接縫、深度層、生態段多樣性、礦與洞穴、禁用 API、效能。
+// chunkgen.test.ts — 外圍生成器 v0（B9）：確定性 / 與順序無關、海與中央的接縫、深度層、生態段多樣性、礦與洞穴、禁用 API（chunkgen 自己的檔）、效能。
 import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -261,24 +261,12 @@ describe('chunkgen：外圍生成器 v0', () => {
     expect(seen.size).toBe(4);
   });
 
-  it('(6) 禁用 API：chunkgen、engine/gen2（遞迴）與共用 primitives（engine/genPrims.ts）的原始碼沒有 Math.random / 超越函數 / 次方運算子；gen2 不 import legacy', () => {
-    const engine = join(process.cwd(), 'src', 'scripts', 'games', 'delve', 'engine');
-    const dir = join(engine, 'legacy', 'chunkgen');
+  it('(6) 禁用 API：chunkgen 的原始碼沒有 Math.random / 超越函數 / 次方運算子（gen2 與 engine/genPrims.ts 的掃描在 gen2/determinism.test.ts）', () => {
+    const dir = join(process.cwd(), 'src', 'scripts', 'games', 'delve', 'engine', 'legacy', 'chunkgen');
     const files = readdirSync(dir).filter((f) => f.endsWith('.ts') && !f.endsWith('.test.ts'));
     expect(files.sort()).toEqual(['fill.ts', 'index.ts', 'profile.ts']);
-    const g2 = join(engine, 'gen2');
-    const g2files = (readdirSync(g2, { recursive: true }) as string[])
-      .filter((f) => f.endsWith('.ts') && !f.endsWith('.test.ts')).map((f) => join(g2, f));
-    expect(g2files.length).toBeGreaterThanOrEqual(5);
     const banned = /Math\.random|Math\.sin|Math\.cos|Math\.pow|Math\.exp|Math\.log|Math\.sqrt|Math\.hypot|\*\*/;
-    for (const path of [...files.map((f) => join(dir, f)), ...g2files, join(engine, 'genPrims.ts')]) {
-      const src = readFileSync(path, 'utf8');
-      expect(banned.exec(src)?.[0] ?? null, path).toBeNull();
-    }
-    // gen2.perf.test.ts 例外：效能測試要拿 v1 OuterGen 當分母（只在測試裡，gen2 本體仍不得 import legacy）
-    const legacyImports = [...g2files, ...(readdirSync(g2, { recursive: true }) as string[]).filter((f) => f.endsWith('.test.ts') && f !== 'gen2.perf.test.ts').map((f) => join(g2, f))]
-      .filter((path) => /from\s+['"][^'"]*legacy\//.test(readFileSync(path, 'utf8')));
-    expect(legacyImports).toEqual([]);
+    for (const f of files) expect(banned.exec(readFileSync(join(dir, f), 'utf8'))?.[0] ?? null, f).toBeNull();
   });
 
   it('(7) 效能：height 1200 的 fill 20 欄中位數 ≤ 8 ms', () => {

@@ -12,4 +12,6 @@ export class HRng {
   int(lo: number, hi: number): number { return lo + Math.floor(this.next() * (hi - lo)); }
   // 1/n 機率為真
   chance(n: number): boolean { return this.int(0, n) === 0; }
+  // 從目前位置分出一條相同的數列（試畫用：照同樣的順序取值會得到同樣的數，不影響本身）
+  clone(): HRng { const r = new HRng(this.s, this.id); r.k = this.k; return r; }
 }

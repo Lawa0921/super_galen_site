@@ -195,6 +195,8 @@ const ICON_OF: Record<string, MapIcon> = {
   cavern: 'cavern', chasm: 'chasm', ravine: 'chasm', sinkhole: 'chasm', mushroom_biome: 'mushroom_biome', crystal_cave: 'crystal_cave',
   secret_room: 'secret_room', dungeon: 'dungeon', dungeon_treasure: 'treasure',
   village: 'village', dwarf_hall: 'dwarf_hall',
+  // gen2 的種類沿用既有圖示（不新增美術）：家鄉小湖、城寨、燈塔 / 隱士小屋 / 沉船島、礁 / 海底遺跡
+  pond: 'lake', keep: 'dungeon', lighthouse: 'cabin', hermit: 'cabin', wreck_isle: 'cabin', reef: 'ruin', sea_ruin: 'ruin',
 };
 const IC: Record<string, RGB> = {
   w: hex('#f2e2b0'), b: hex('#966139'), d: hex('#623924'), r: hex('#a83a10'), o: hex('#e8701c'), y: hex('#ffd86a'),
@@ -229,7 +231,7 @@ export function mapIconBmp(kind: MapIcon): Bmp {
 }
 
 export interface MapPin { id: number; x: number; y: number; icon: MapIcon; name: string; found: boolean; }
-/** 地圖上的地標：發現過的結構 / 洞窟 / 密室 / 地城（showAll = 有探險家地圖 → 全部，未發現的 found = false） */
+/** 地圖上的地標：發現過的結構 / 洞窟 / 密室 / 地城（showAll = 有探險家地圖 → 全部，未發現的 found = false）；regions = Discovery.listKnown() */
 export function mapPins(regions: readonly Region[], d: Discovery, showAll: boolean): MapPin[] {
   const out: MapPin[] = [];
   for (const r of regions) {
@@ -247,7 +249,7 @@ export function stonePins(stones: readonly Waystone[]): StonePin[] {
   return stones.map((s) => ({ icon: 'waystone' as const, x: s.x, y: s.y, name: s.name }));
 }
 export interface MapLabel { id: number; name: string; x: number; y: number; }
-/** 發現過的地域 / 地層名字（x = -1：跟著畫面置中） */
+/** 發現過的地域 / 地層名字（x = -1：跟著畫面置中）；regions = Discovery.listKnown()（gen2 含走過的外圍：海、島、大陸地區），以 id 為鍵、同名不合併 */
 export function mapLabels(regions: readonly Region[], d: Discovery): MapLabel[] {
   return regions.filter((r) => (r.cat === 'land' || r.cat === 'depth') && d.isFound(r.id))
     .map((r) => ({ id: r.id, name: r.name, x: r.ax, y: r.ay }));

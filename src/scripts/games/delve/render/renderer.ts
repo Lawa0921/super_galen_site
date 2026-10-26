@@ -1080,7 +1080,7 @@ export class Renderer {
       const surf = w.surfaceAt(x);
       this.ambientNow = ambientKind({
         molten: p.y >= w.layersAt(x).molten,
-        mushroom: g.discovery.regionsAt(p.x, p.y).some((r) => r.kind === 'mushroom_biome') || this.nearMushroomGrass(p.x, p.y),
+        mushroom: g.discovery.knownAt(p.x, p.y).some((r) => r.kind === 'mushroom_biome') || this.nearMushroomGrass(p.x, p.y),
         outdoors: p.y <= surf + 1 && w.getWall(p.x, p.y) === 0,
         underground: p.y > surf + 4,
         biome: w.biomeAt(x),

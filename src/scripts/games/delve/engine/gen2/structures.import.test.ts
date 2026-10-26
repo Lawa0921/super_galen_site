@@ -15,7 +15,7 @@ describe('gen2 structures 先 import', () => {
     for (const [b, build, layer] of [[cab, buildCabin, BP_UNDER], [ruin, buildRuin, BP_SURFACE]] as const) {
       const q = slotOf(b.id, g.layout);
       expect(q.layer).toBe(layer);
-      const c = { seed: 'imp', s: seedInt('imp', 'g2-bp'), id: b.id, slotX0: q.x0, slotX1: q.x1, region: q.region, profile: g.profile, ver: 0 };
+      const c = { seed: 'imp', s: seedInt('imp', 'g2-bp'), id: b.id, slotX0: q.x0, slotX1: q.x1, region: q.region, profile: g.profile, ver: 0, groundAt: (x: number) => g.surfaceAt(x) };
       expect(build(c)).toEqual(b);
     }
   });

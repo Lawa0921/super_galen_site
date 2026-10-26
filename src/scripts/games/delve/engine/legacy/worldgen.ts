@@ -16,10 +16,14 @@ import { WORLD_W, WORLD_H } from '../constants';
 import { chestLoot, type ChestKind } from '../loot';
 import { FbmField, NoiseField, fbm2, seedInt, vnoise1 } from '../noise';
 import { carveChamber, carveNetwork, carveNoiseTunnels, perlinWorm, carveDisc, paintBlob, noisePockets, fillTinyPockets } from './gen/caves';
-import { generateDungeon, type DungeonInfo } from './gen/dungeon';
+import { generateDungeon } from './gen/dungeon';
 import { createLiquidGen, type LiquidGenStats } from './gen/liquids';
-import { placeVillages, placeDwarfHalls, type VillageInfo, type HallInfo } from './gen/settlements';
-import { placeLandmarks, type LandmarkInfo } from './gen/landmarks';
+import { placeVillages, placeDwarfHalls } from './gen/settlements';
+import { placeLandmarks } from './gen/landmarks';
+import { gridCanvas } from './gen/gridCanvas';
+import { drawMineshaft, drawRamp, drawSecretRoom, secretRoomLayout, SECRET_RH } from '../gen2/draw/mineshaft';
+import { drawSkyIsland, SKY_HH } from '../gen2/draw/skyIsland';
+import type { BiomeSegment, Structure, Landform, LandformType, ReservedZone, GenLayers, GenRelic, DungeonInfo, VillageInfo, HallInfo, LandmarkInfo } from '../genTypes';
 import type { SpringSpec } from '../liquid';
 import { LORE_SITES, type LoreSite } from '../lore';
 import type { ItemId } from '../items';
@@ -32,31 +36,6 @@ export interface GenOptions {
 }
 export interface GenBands {
   surfaceLow: number; surfaceHigh: number; rockLow: number; rockHigh: number;
-}
-export interface BiomeSegment { biome: BiomeId; x0: number; x1: number; }
-export type StructureKind = 'cabin' | 'mineshaft' | 'ruin' | 'cavern' | 'chasm' | 'ravine' | 'frozen_lake'
-  | 'mushroom_biome' | 'crystal_cave' | 'sky_island' | 'lake_bed' | 'sinkhole' | 'dungeon' | 'secret_room'
-  // 液體（v5）
-  | 'pond' | 'oasis' | 'hive' | 'underground_lake'
-  // 泉水瀑布（v6）
-  | 'waterfall' | 'lavafall'
-  // NPC 聚落（地表村落 / 矮人地廳）
-  | 'village' | 'dwarf_hall';
-/** 每欄的深度層分界（第一個屬於該層的 y） */
-export interface GenLayers { rock: Int16Array; deep: Int16Array; molten: Int16Array; }
-/** 地表地形種類（依生態區挑）；reserved = 預留給地城的平地 */
-export type LandformType = 'plains' | 'hills' | 'mountains' | 'valley' | 'dunes' | 'mesa' | 'frozen_lake' | 'swamp' | 'reserved';
-export interface Landform { type: LandformType; x0: number; x1: number; }
-/** 預留給之後地城 pass 的區域（tile 座標，x1 / y1 不含） */
-export interface ReservedZone { x0: number; x1: number; y0: number; y1: number; side: 'left' | 'right'; }
-export interface Structure {
-  kind: StructureKind;
-  x: number; y: number; w: number; h: number;
-  /** 大洞窟的風味 */
-  flavor?: 'mushroom' | 'crystal' | 'plain';
-  chest?: { x: number; y: number };
-  /** 浮空島垂下的繩梯（x、上端 y0、下端 y1） */
-  rope?: { x: number; y0: number; y1: number };
 }
 export interface GenResult {
   world: GenGrid;
@@ -79,7 +58,7 @@ export interface GenResult {
   /** 所有古碑（含地城裡的）：id = 碑文編號（lore.ts） */
   tablets: { x: number; y: number; id: number }[];
   /** 放在難到達處的珍寶（獨特道具）箱子 */
-  relics: { x: number; y: number; item: ItemId; where: string }[];
+  relics: GenRelic[];
   /** 液體 pass 的統計（耗時 / 靜置刻數 / 各液體格數） */
   liquidStats: LiquidGenStats;
   /** 泉水（瀑布的無限源；liquid.ts LiquidSim.setSprings） */
@@ -1155,6 +1134,10 @@ export function* generateWorldSteps(seed: string | number, opts: GenOptions = {}
     put(x, y, T.CHEST);
     world.chests.set(y * WW + x, chestLoot(seedStr, x, y, kind, depthFrac(x, y)));
   };
+  // 礦坑 / 密室 / 浮空島的畫圖在 engine/gen2/draw/（與 gen2 共用），經 gridCanvas 直接寫 world；這裡只留選址與佔位。
+  // 這三種結構不補天然地層（natural 被叫到就是 bug）
+  const noNatural = (): never => { throw new Error('worldgen: mineshafts / secret rooms / sky islands fill no natural rock'); };
+  const cv = gridCanvas(world, seedStr, depthFrac, surface, noNatural);
 
   mark('礦坑：水平坑道 + 每');
   yield '礦坑：水平坑道 + 每';
@@ -1169,36 +1152,15 @@ export function* generateWorldSteps(seed: string | number, opts: GenOptions = {}
         const yTop = surface[Math.min(width - 1, x0)] + rng.int(28, 130);
         const r: Rect = { x: x0, y: yTop - 1, w: len, h: 6 };
         if (yTop + 6 >= height - 4 || !free(r, 4)) continue;
-        for (let x = x0; x < x0 + len; x++) {
-          for (let y = yTop; y < yTop + 4; y++) { put(x, y, T.AIR); if (!wall[y * WW + x]) putWall(x, y, W.DIRT_WALL); }
-          if (!isSolid(get(x, yTop + 4))) put(x, yTop + 4, T.PLANKS);
-          if (!isSolid(get(x, yTop - 1))) put(x, yTop - 1, T.PLANKS);
-        }
-        let frame = 0;
-        for (let fx = x0 + 2; fx < x0 + len - 2; fx += 6, frame++) {
-          const broken = rng.chance(6);
-          if (!broken) for (let dx = -1; dx <= 1; dx++) put(fx + dx, yTop, T.PLANKS);
-          for (let y = broken ? yTop : yTop + 1; y < yTop + 4; y++) { put(fx - 1, y, T.BEAM); put(fx + 1, y, T.BEAM); }
-          if (!broken && frame % 3 === 1) put(fx, yTop + 1, T.TORCH);
-        }
         const st: Structure = { kind: 'mineshaft', x: x0, y: yTop - 1, w: len, h: 6 };
-        if (rng.chance(2)) {
-          let cx = x0 + 4 + rng.int(0, Math.max(1, len - 8));
-          while (get(cx, yTop + 3) !== T.AIR && cx < x0 + len - 1) cx++;
-          if (get(cx, yTop + 3) === T.AIR && isSolid(get(cx, yTop + 4))) { addChest(cx, yTop + 3, 'mineshaft'); st.chest = { x: cx, y: yTop + 3 }; }
-        }
+        const { chest } = drawMineshaft(cv, { x0, len, yTop }, rng);
+        if (chest) st.chest = chest;
         occupied.push(r);
         // 入口斜坡：從坑道左端往左上每欄升一格（可走上走下）
         if (rng.chance(2) && yTop - surface[x0] < 100) {
           const stair: Rect = { x: x0 - (yTop - surface[x0]) - 6, y: surface[x0] - 6, w: yTop - surface[x0] + 6, h: yTop - surface[x0] + 6 };
           if (free(stair, 1)) {
-            for (let s = 1; s < 160; s++) {
-              const x = x0 - s, feet = yTop + 3 - s;
-              if (x < 2) break;
-              for (let y = feet - 3; y <= feet; y++) put(x, y, T.AIR);
-              if (!isSolid(get(x, feet + 1))) put(x, feet + 1, T.PLANKS);
-              if (feet - 3 < surface[x] - 1) break;
-            }
+            drawRamp(cv, { x0, yTop, xMin: 2 }, (x) => surface[x]);
             occupied.push(stair);
           }
         }
@@ -1216,28 +1178,13 @@ export function* generateWorldSteps(seed: string | number, opts: GenOptions = {}
     const shafts = structures.filter((s) => s.kind === 'mineshaft');
     for (const st of shafts) {
       if (secretRooms.length >= 5) break;
-      const yTop = st.y + 1, rw = rng.int(8, 13), rh = 6;
+      const yTop = st.y + 1, rw = rng.int(8, 13), rh = SECRET_RH;
       for (const right of rng.chance(2) ? [true, false] : [false, true]) {
-        const plug0 = right ? st.x + st.w : st.x - 2;
-        const rx0 = right ? st.x + st.w + 2 : st.x - 2 - rw;
-        const ry0 = yTop - 2;
-        const shell: Rect = { x: rx0 - 2, y: ry0 - 2, w: rw + 4, h: rh + 5 };
+        const lay = { shaftX0: st.x, shaftLen: st.w, yTop, right, rw }, { plug0, ry0, shell } = secretRoomLayout(lay);
         const outer: Rect = right ? { x: plug0, y: ry0 - 2, w: rw + 4, h: rh + 5 } : { x: shell.x, y: ry0 - 2, w: rw + 4, h: rh + 5 };
         if (!free(outer, 0) || shell.x < 4 || shell.x + shell.w > width - 4) continue;
-        for (let y = shell.y; y < shell.y + shell.h; y++) for (let x = Math.min(shell.x, plug0); x < Math.max(shell.x + shell.w, plug0 + 2); x++) {
-          put(x, y, T.STONE); putWall(x, y, W.STONE_WALL);
-        }
-        for (let y = ry0; y < ry0 + rh; y++) for (let x = rx0; x < rx0 + rw; x++) { put(x, y, T.AIR); putWall(x, y, W.PLANK_WALL); }
-        for (let x = rx0; x < rx0 + rw; x++) put(x, ry0 + rh, T.PLANKS);
-        for (let y = yTop; y < yTop + 4; y++) for (let k = 0; k < 2; k++) put(plug0 + k, y, T.CRACKED_STONE);
-        const floorY = ry0 + rh - 1;
-        const cx = right ? rx0 + rw - 3 : rx0 + 2;
-        addChest(cx, floorY, 'secret');
-        for (let k = 0; k < 2; k++) { const px = rx0 + 1 + rng.int(0, rw - 2); if (get(px, floorY) === T.AIR && Math.abs(px - cx) > 1) put(px, floorY, T.POT); }
-        put(right ? rx0 : rx0 + rw - 1, ry0, T.COBWEB);
-        // 天花板垂一根鐘乳石（不放會發光的水晶：光會穿過裂紋石，從坑道就看得到密室）
-        put(rx0 + Math.floor(rw / 2), ry0, T.STALACTITE);
-        const r: Structure = { kind: 'secret_room', x: rx0, y: ry0, w: rw, h: rh, chest: { x: cx, y: floorY } };
+        const room = drawSecretRoom(cv, lay, rng);
+        const r: Structure = { kind: 'secret_room', x: room.x, y: room.y, w: room.w, h: room.h, chest: room.chest };
         occupied.push(outer, shell);
         structures.push(r);
         secretRooms.push(r);
@@ -1564,64 +1511,18 @@ export function* generateWorldSteps(seed: string | number, opts: GenOptions = {}
         if (Math.abs(cxI - width / 2) < width * 0.06 || inDz(x0, 20) || inDz(x0 + iw, 20)) continue;
         let minTop = height;
         for (let x = x0 - 6; x < x0 + iw + 6; x++) minTop = Math.min(minTop, world.surface[Math.max(0, Math.min(width - 1, x))], surface[Math.max(0, Math.min(width - 1, x))]);
-        const thick = rng.int(9, 15), hh = 6;
+        const thick = rng.int(9, 15), hh = SKY_HH;
         const top = minTop - 30 - thick - rng.int(10, 50);
         const rect: Rect = { x: x0, y: top - hh - 2, w: iw, h: thick + hh + 3 };
         if (rect.y < 6 || islands.some((o) => overlap(o, rect, 40))) continue;
         const isNoise = seedInt(seed, `island-${k}`);
-        for (let x = x0; x < x0 + iw; x++) {
-          const t = ((x - x0) + 0.5) / iw * 2 - 1;
-          const edge = Math.min(x - x0, x0 + iw - 1 - x);
-          const y0 = top + (edge < 2 ? 2 - edge : 0);
-          const th = Math.max(2, Math.round(2 + thick * (1 - t * t) + (vnoise1(x, 4, isNoise) - 0.5) * 3));
-          for (let y = y0; y < top + th; y++) put(x, y, y === y0 ? T.GRASS : y < y0 + 4 ? T.DIRT : T.STONE);
-        }
-        // 小木屋
-        const hw = rng.int(8, 11), hx = x0 + Math.floor((iw - hw) / 2);
-        for (let x = hx; x < hx + hw; x++) {
-          put(x, top, T.PLANKS);
-          for (let y = top - hh; y < top; y++) {
-            const shell = y === top - hh || x === hx || x === hx + hw - 1;
-            put(x, y, shell ? T.PLANKS : T.AIR);
-            putWall(x, y, W.PLANK_WALL);
-          }
-        }
-        for (let x = hx + 1; x < hx + hw - 1; x++) put(x, top - hh - 1, T.PLANKS); // 屋脊
-        for (const dx of [hx, hx + hw - 1]) for (let y = top - 3; y < top; y++) put(dx, y, T.AIR);
-        const chest = { x: hx + 2, y: top - 1 };
-        addChest(chest.x, chest.y, 'sky');
-        put(hx + hw - 2, top - hh + 1, T.TORCH);
-        // 樹 + 花草
-        const tx = x0 + 3;
-        if (get(tx, top) === T.GRASS && tx < hx - 2) {
-          const th = rng.int(5, 8);
-          for (let dy = 1; dy <= th; dy++) put(tx, top - dy, T.WOOD);
-          for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
-            if (Math.abs(dx) + Math.abs(dy) <= 2 && get(tx + dx, top - th + dy) === T.AIR) put(tx + dx, top - th + dy, T.LEAVES);
-          }
-        }
-        for (let x = x0 + 1; x < x0 + iw - 1; x++) {
-          if (x >= hx - 1 && x <= hx + hw) continue;
-          let gy = top;
-          while (gy < top + 3 && get(x, gy) !== T.GRASS) gy++;
-          if (get(x, gy) === T.GRASS && get(x, gy - 1) === T.AIR) {
-            const r = rng.next();
-            if (r < 0.3) put(x, gy - 1, T.TALL_GRASS); else if (r < 0.42) put(x, gy - 1, T.FLOWER);
-          }
-        }
-        // v6：島底垂下一條繩梯，下端離地 2–3 格（跳一下抓得到）——不必自己蓋塔也上得去
-        let rope: { x: number; y0: number; y1: number } | undefined;
-        for (const rx of [x0 + iw - 5, x0 + 4, x0 + iw - 8, x0 + 7]) {
-          let by = top;
-          while (by < height - 1 && SOLID_LUT[get(rx, by + 1)] === 1) by++;
-          let gy = by + 1;
-          while (gy < height - 1 && get(rx, gy) === T.AIR) gy++;
-          if (SOLID_LUT[get(rx, gy)] !== 1 || gy - by < 8) continue; // 下面是樹葉 / 樹幹 → 換一欄
-          const end = gy - 3;
-          for (let y = by + 1; y <= end; y++) put(rx, y, T.ROPE);
-          rope = { x: rx, y0: by + 1, y1: end };
-          break;
-        }
+        // 繩梯下方：照舊逐格往下走過空氣，停下的那格是實心才算地面（樹葉 / 樹幹 → −1，換一欄）
+        const groundBelow = (x: number, fromY: number): number => {
+          let gy = fromY;
+          while (gy < height - 1 && get(x, gy) === T.AIR) gy++;
+          return SOLID_LUT[get(x, gy)] === 1 ? gy : -1;
+        };
+        const { chest, rope } = drawSkyIsland(cv, { x0, iw, top, thick, noiseSeed: isNoise }, rng, groundBelow);
         islands.push(rect);
         structures.push({ kind: 'sky_island', x: rect.x, y: rect.y, w: rect.w, h: rect.h, chest, ...(rope ? { rope } : {}) });
         break;
