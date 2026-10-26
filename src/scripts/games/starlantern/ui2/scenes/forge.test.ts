@@ -1,5 +1,6 @@
 import { STORY } from '../../data/story.zh-TW';
 import { describe, expect, it, vi } from 'vitest';
+import { artMissing, artSrc } from '../lateArt';
 import { T } from '../../data/text.zh-TW';
 import { Game } from '../../engine/game';
 import type { ForgeResult } from '../../engine/forge/cost';
@@ -68,9 +69,11 @@ describe('forgeRows', () => {
       gear(4, 'iron-sword', 'unique', { special: 'blaze-ember-ring' })];
     const published = [art.gear('blaze-heart-sword'), art.gear('iron-sword'), art.icon('hunter-bow')];
     const rows = forgeRows(s, { worn: false, right: () => '', art: { has: (u) => published.includes(u) } });
-    // A special with no art of its own never borrows its base's icon; an old base icon is not gear art.
-    expect(rows.map((r) => r.icon)).toEqual([art.gear('blaze-heart-sword'), undefined, art.gear('iron-sword'), undefined]);
-    expect(rows.map((r) => r.iconCls)).toEqual(['slx-gear-ico', undefined, 'slx-gear-ico', undefined]);
+    // A special with no art of its own never borrows its base's icon; an old base icon is not gear art. Each row asks for
+    // its own gear art and shows it once it has landed (ui2/lateArt).
+    expect(rows.map((r) => artSrc(r.icon))).toEqual([art.gear('blaze-heart-sword'), undefined, art.gear('iron-sword'), undefined]);
+    expect(rows.map((r) => artMissing(r.icon))).toEqual([undefined, art.gear('hunter-bow'), undefined, art.gear('blaze-ember-ring')]);
+    expect(rows.map((r) => r.iconCls)).toEqual(['slx-gear-ico', 'slx-gear-ico', 'slx-gear-ico', 'slx-gear-ico']);
     expect(forgeRows(s, { worn: false, right: () => '' }).every((r) => r.icon === undefined)).toBe(true);   // no art index: text rows
   });
 });

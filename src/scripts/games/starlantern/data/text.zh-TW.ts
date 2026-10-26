@@ -5,7 +5,8 @@ import { KEYSTONE_GATE } from './talents';
 import { EQUIPMENT } from './equipment';
 import { ITEMS } from './items';
 import { MATERIALS } from './materials';
-import { SETS } from './gear';
+import { SETS, SPECIALS } from './gear';
+import { ENEMIES } from './enemies';
 import type { RegionId } from './regions';
 import { RUNES, type RuneId, type RuneTier, type Tag } from './runes';
 import { numeral } from './numeral';
@@ -150,8 +151,6 @@ export const T = {
     echoAct: (name: string) => `殘響・${name}`,
     /** What the echo repeats, in numbers (plan 8g ruling 12): the repeated skill's battle line, its percent already in it. */
     echoNote: (pct: number, line: string) => `重現（已含 ${pct}%）：${line}`,
-    /** After a skill's name in the battle menu, one for each working rune on it (plan 8g ruling 12). */
-    runeMark: '◆',
     /** A skill's note in the battle menu: its final numbers (battleLine), then its words. */
     noteWith: (line: string, desc: string) => `${line}　${desc}`,
     /** After the note when the record left a variant's mechanic extras out (8d final review). */
@@ -190,6 +189,9 @@ export const T = {
   ailmentChip: (c: AilmentChip) => `${AILMENT_NAME[c.id]}${c.stacks !== undefined ? `×${c.stacks}` : c.turns !== undefined ? c.turns : ''}`,
   /** The ailments a full row folds away, counted: 「+2」. */
   ailmentMore: (n: number) => `+${n}`,
+  /** A tapped 「+N」's list (touch overflow): its name for a screen reader, and the +N's own, saying what a tap shows. */
+  ailmentAll: '全部狀態',
+  ailmentMoreLabel: (n: number) => `另有 ${n} 個狀態，點開看全部`,
   /** Character mechanics on the battle screen (plan 8c): words under a member or over a foe, and the moments that pop. */
   mech: {
     heat: (n: number) => `熱度${n}`,
@@ -313,9 +315,11 @@ export const T = {
       /** Beside a skill's name on the skills page: it can be cast outside battle (SkillDef.field). */
       fieldTag: '迷宮中可用',
       /** Column titles for statSources; a new source needs one line here. */
-      sources: { base: '基礎', growth: '成長', gear: '裝備', set: '套裝', talent: '天賦', memory: '記憶', primary: '主屬性' } as Record<string, string>,
+      sources: { base: '基礎', growth: '成長', gear: '裝備', set: '套裝', talent: '天賦', memory: '記憶', bond: '羈絆', primary: '主屬性' } as Record<string, string>,
       /** A column heading too long for its share of the table: the short word, the whole one in its title (plan 8g Task 5 review). */
       sourcesShort: { primary: '主屬' } as Record<string, string>,
+      /** Second review of bond plan Tasks 12-14: one character each, for a page whose columns are too narrow for two (statusTabs). */
+      sourcesOne: { base: '基', growth: '成', gear: '裝', set: '套', talent: '賦', memory: '憶', bond: '絆', primary: '主' } as Record<string, string>,
       total: '合計',
       /** Category headings of the stats page, in STAT_CATEGORIES order. */
       cats: { primary: '主屬性', attack: '攻擊', defense: '防禦', element: '元素', resource: '資源', other: '其他' } as Record<StatCategory, string>,
@@ -327,6 +331,8 @@ export const T = {
       affinityAll: '全能',
       /** Column of the cut a cap takes off a total (an em dash when the stat is under its cap). */
       capCol: '上限',
+      /** 上限 in one character, beside sourcesOne. */
+      capColOne: '限',
       targets: TARGETS,
       exp: (n: number, next: number) => `經驗 ${n}／${next}`,
       place: (where: string) => `站位 ${where}`,
@@ -610,7 +616,8 @@ export const T = {
       stages: { prologue: '序章', act1: '第一幕', act2: '第二幕', act3: '第三幕', act4: '第四幕', after: '終幕' },
       pieces: (found: number, total: number) => `${found}/${total}`,
       codex: { none: '無', rarity: { legendary: '傳說', unique: '獨特', set: '套裝' }, weak: (list: string) => `弱點：${list}`, weakUnknown: '弱點：？？？', setPieces: (have: number, total: number) => `${have}/${total} 件` },
-      pieceHint: (regions: string, deep: boolean) => `${regions}・${deep ? '深處' : '淺層'}`,
+      /** Where a piece lies, and the moon it waits for (time and moon ruling 4): 「本道、霜凍之地・深處・滿月」. */
+      pieceHint: (regions: string, deep: boolean, moon?: string) => `${regions}・${deep ? '深處' : '淺層'}${moon ? `・${moon}` : ''}`,
       hint: '←→ 換分頁　確定：選取　取消：返回',
       hintReadonly: '←→ 換分頁　確定：重看　取消：回到迷宮',
       empty: '還沒有可以重看的場景。',
@@ -631,8 +638,15 @@ export const T = {
         affixNote: '詞綴寫在敵人頭上那一列的最前面；選目標時，說明列會寫出它的作用。',
       },
     },
+    /** The calendar's words (time and moon ruling 2, 8): the moon's names are the battle's (`mech.phase`; waxing is its first quarter). */
+    calendar: {
+      moon: { new: '新月', waxing: '上弦', full: '滿月', waning: '下弦' },
+      season: { spring: '春', summer: '夏', autumn: '秋', winter: '冬' },
+    },
     town: {
       place: '邊境小鎮 露米亞',
+      /** The HUD window under the place plate: the season and today's moon, 「秋・下弦」. */
+      calendar: (season: string, moon: string) => `${season}・${moon}`,
       facilities: { guild: '冒險者公會', shop: '道具店', inn: '旅館', gate: '傳送門廣場', forge: '鍛造屋', handbook: '冒險者手冊', settings: '設定' },
       soon: (name: string) => `${name}的新介面正在製作中，下一階段開放。`,
       toTitle: '要回到標題畫面嗎？上次存檔之後的進度不會保留。',
@@ -766,6 +780,27 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
       nobodyDown: '大家都很有精神呢。', revived: (name: string) => `${name} 醒過來了！`,
       /** Plan 8h: the suggested builds screen, after 重置配點. */
       builds: '建議配點',
+      /** Bond plan Task 12 (spec §0 D9): the inn's one bond entry, and its heart-to-heart. */
+      partners: '夥伴', talk: '談心',
+      talkedToday: '今天已經談過心了，明天再來吧。', talkCut: '剛才那段談心沒能說完，等下次回城再說吧。', nobodyToTalk: '現在還沒有誰想找你談心。',
+      /** Bond plan Task 13: gifts and the night walk, under 夥伴. */
+      gift: '送禮', walk: '夜裡走走', together: '和大家一起',
+      giftedToday: '今天已經收過了', nothingToGive: '你手上沒有能送的東西。', nobodyToGift: '現在還沒有誰能收下你的禮物。',
+      askGift: (name: string, item: string) => `要把${item}送給${name}嗎？`,
+      askRomance: (name: string) => `和${name}兩個人走走嗎？\n選了就不能改。`,
+      togetherSaid: '大家一起在星燈下走了一段路。',
+    },
+    /** Bond plan Tasks 13-14: the bond's tiers and what a gift is to her (interface words: numerals are fine). */
+    bond: {
+      tiers: ['相識', '同行', '信賴', '羈絆', '心契'] as readonly string[],
+      taste: { loved: '最愛', liked: '喜歡', neutral: '普通', declined: '婉拒' } as Record<string, string>,
+      /** Bond plan Task 14: the status page's line, the handbook's block, the return's tier line. */
+      line: (tier: string) => `好感度　${tier}`,
+      score: (tier: string, n: number) => `${tier}　${n}／100`,
+      source: { memory: '記憶', talk: '談心', gift: '送禮', field: '同隊' } as Record<string, string>,
+      count: (name: string, now: number, cap: number, full: boolean) => `${name}　${now}／${cap}${full ? '（已滿）' : ''}`,
+      known: (item: string, taste: string) => `${item}　${taste}`,
+      rose: (name: string, tier: string) => `${name}的好感度提升到『${tier}』。`,
     },
     /** The suggested builds screen (plan 8h Task 7): each build of a member, what it does and lacks; apply and follow. */
     builds: {
@@ -807,8 +842,10 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
       sides: (names: string[]) => `二選一：${names.join('、')}`,
       runesHead: '建議符文',
       noRunes: '不裝符文。',
-      /** The mark of a rune in reach (a missing one says 缺 on its own row). */
-      have: '◆ 鑲得上（鑲著或袋子裡有）',
+      /** The legend of the filled-slot icon: a rune in reach (a missing one, the empty-slot icon, says 缺 on its own row). */
+      have: '鑲得上（鑲著或袋子裡有）',
+      /** The words of the two icons on a build's rune rows (art step 9). */
+      haveMark: '鑲得上', lackMark: '缺',
       /** What applying costs: the respec's price when her points move; free when they only grow or stay. */
       cost: (n: number) => `費用：${n} G（技能樹與天賦重新分配）`,
       costFree: '費用：免費（技能樹與天賦照這套補上）',
@@ -943,7 +980,7 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
     },
   },
   forge: {
-    kind: { essence: '精華', monster: '怪物素材', region: '地區素材', rare: '稀有素材', junk: '雜物' } as Record<MaterialKind, string>,
+    kind: { essence: '精華', monster: '怪物素材', region: '地區素材', rare: '稀有素材', junk: '雜物', trophy: '戰利品', keepsake: '遺物' } as Record<MaterialKind, string>,
     group: FORGE_GROUP,
     use: (u: MaterialUse): string => {
       switch (u.kind) {
@@ -956,6 +993,8 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
         case 'base': return `${SLOT_KIND[u.slot]}打造`;
         case 'set': return `${SETS[u.set]?.name ?? u.set}打造`;
         case 'unlock': return `${EQUIPMENT[u.base]?.name ?? u.base}解鎖`;
+        case 'inscribe': return `銘刻${ENEMIES[u.species]?.name ?? u.species}的銘文`;
+        case 'craft': return `製作${SPECIALS[u.unique]?.name ?? u.unique}`;
       }
     },
     usedFor: (list: string) => `用於：${list}`,
@@ -970,6 +1009,8 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
         case 'base': return `${SLOT_KIND[u.slot]}打造`;
         case 'set': return SETS[u.set]?.name ?? u.set;
         case 'unlock': return `${EQUIPMENT[u.base]?.name ?? u.base}解鎖`;
+        case 'inscribe': return '銘刻';
+        case 'craft': return '製作專屬裝備';
       }
     },
     junkOnly: '雜物：只能賣錢',
@@ -1052,6 +1093,8 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
     label: (id: RuneId, tier: RuneTier) => `${RUNES[id].name}（${RARITY[tier]}）`,
     /** The tier part of a label, kept whole where a long name is cut (plan 8g final review). */
     tierTag: (tier: RuneTier) => `（${RARITY[tier]}）`,
+    /** The words of a rune icon (ui2/runeArt.ts; art step 9): an empty slot, the plain filled slot, a rune doing nothing there. */
+    mark: { empty: '空插槽', filled: '已鑲插槽', off: (label: string) => `${label}（未生效）` },
     /** A rune found in a fight, a chest or a vault. */
     got: (label: string) => `得到符文：${label}`,
     /** A rune found with `n` (RUNE_STACK) already owned: paid as its sell price instead (plan 8f ruling 7). */

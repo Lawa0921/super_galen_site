@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import type { ScriptLine } from '../../data/story.zh-TW';
-import { memScene, type SceneId } from '../../data/story/scenes';
+import { NIGHT_RANK, memScene, type SceneId } from '../../data/story/scenes';
 import { meet } from '../party';
 import { newGame, type GameState } from '../state';
 import type { CharacterId } from '../types';
 import { NIGHT_BEATS } from '../../data/story.zh-TW';
-import { DAWN_BACKLOG, continuing, dawnMemory, eveMemories, nextBeat, nightCap, owedPieces, pickMemories, planNight, restoreNight, type NightBeats } from './nights';
+import { DAWN_BACKLOG, continuing, dawnMemory, eveMemories, nextBeat, nightCap, orderNight, owedPieces, pickMemories, planNight, restoreNight, type NightBeats } from './nights';
+import { tonightMoon } from '../calendar';
+import type { MoonPhase } from '../../data/story/chains';
+import type { NightBeat } from '../../data/story.zh-TW';
 
 /** A new game with the prologue behind it. */
 const base = (): GameState => {
@@ -312,5 +315,78 @@ describe('story L: the dawn before departure (controller ruling 2026-10-24)', ()
     const before = JSON.stringify(s);
     expect(dawnMemory(s, [m('noel', 1)])).toBe(dawnMemory(s, [m('noel', 1)]));
     expect(JSON.stringify(s)).toBe(before);
+  });
+});
+
+describe('time and moon: the beats keep to the moon (Task 6)', () => {
+  const N = (text: string, moon?: MoonPhase[]): NightBeat => ({ who: 'narrator', text, ...(moon ? { moon } : {}) });
+  const pool: NightBeats = { lines: [N('full', ['full']), N('lit', ['waxing', 'full', 'waning']), N('any')] };
+  /** The day whose night (the day before) is under `moon`. */
+  const tonightUnder = (s: GameState, moon: MoonPhase) => { s.story.day = [1, 2, 3, 4].find((d) => tonightMoon({ ...s, story: { ...s.story, day: d } }) === moon)!; };
+
+  it("a beat whose moon is not tonight's is passed over, and the cursor lands after the one said", () => {
+    const s = untold([m('noel', 1), m('safira', 1)]);
+    tonightUnder(s, 'new');
+    expect(nextBeat(s, m('noel', 1), m('safira', 1), pool)).toEqual({ line: N('any'), at: 2 });
+    tonightUnder(s, 'waning');
+    expect(nextBeat(s, m('noel', 1), m('safira', 1), pool)).toEqual({ line: N('lit', ['waxing', 'full', 'waning']), at: 1 });
+    tonightUnder(s, 'full');
+    expect(nextBeat(s, m('noel', 1), m('safira', 1), pool)).toEqual({ line: N('full', ['full']), at: 0 });
+    // from the cursor on, wrapping: under the new moon both moon lines are skipped and not used up
+    tonightUnder(s, 'new');
+    s.story.beat = 0;
+    const r = nextBeat(s, m('noel', 1), m('safira', 1), pool)!;
+    expect(r.at).toBe(2);
+    s.story.beat = (r.at + 1) % pool.lines.length;   // the caller moves the cursor past the one said
+    tonightUnder(s, 'full');
+    expect(nextBeat(s, m('noel', 1), m('safira', 1), pool)).toEqual({ line: N('full', ['full']), at: 0 });
+    // a pool whose every line waits on another moon has nothing
+    tonightUnder(s, 'waxing');
+    expect(nextBeat(s, m('noel', 1), m('safira', 1), { lines: [N('full', ['full'])] })).toBeNull();
+  });
+
+  it('a beat with no moon fits any night', () => {
+    const s = untold([m('noel', 1), m('safira', 1)]);
+    for (const moon of ['new', 'waxing', 'full', 'waning'] as MoonPhase[]) {
+      tonightUnder(s, moon);
+      expect(nextBeat(s, m('noel', 1), m('safira', 1), { lines: [N('any')] }), moon).toEqual({ line: N('any'), at: 0 });
+    }
+  });
+
+  it("the eve's beats read the night before the departure", () => {
+    // the eve is told on the departure's day, before it: its night is the day before's, as a return's is
+    const list = [m('selene', 1), m('noel', 1), m('safira', 1), m('bobby', 1)];
+    const s = untold(list);
+    s.story.day = 5;   // departing on day 5: last night was day 4's, a full moon
+    expect(tonightMoon(s)).toBe('full');
+    const eve = eveMemories(s);
+    expect(eve.length).toBeGreaterThanOrEqual(2);
+    expect(nextBeat(s, eve[0], eve[1], pool)).toEqual({ line: N('full', ['full']), at: 0 });
+    s.story.day = 6;   // last night was day 5's, the waning moon
+    expect(nextBeat(s, eve[0], eve[1], pool)?.at).toBe(1);
+  });
+});
+
+describe('time and moon: the festival night (Task 7)', () => {
+  it('a festival night tells no memory; they wait for the next night', () => {
+    const s = untold([m('noel', 1), m('safira', 1), m('bobby', 1)]);
+    expect(planNight(s, ['season:spring'])).toEqual({ before: [], night: [] });
+    expect(planNight(s, []).night.length).toBeGreaterThan(0);   // the next return's night picks as usual
+    expect(s.story.untold).toEqual([m('noel', 1), m('safira', 1), m('bobby', 1)]);
+  });
+
+  it('the night is ordered group, season, memory', () => {
+    expect(NIGHT_RANK).toEqual({ group: 0, season: 1, romance: 1.5, memory: 2 });   // bond plan Task 11 added romance
+    expect(orderNight([m('noel', 1), 'season:spring', m('liz', 1), 'group:act2'])).toEqual(['group:act2', 'season:spring', m('noel', 1), m('liz', 1)]);
+  });
+});
+
+describe('a romance cut short (bond plan Task 11)', () => {
+  it('a romance night tells no memory', () => {
+    const s = untold([m('noel', 1), m('safira', 1), m('bobby', 1)]);
+    expect(planNight(s, ['romance:liz'])).toEqual({ before: [], night: [] });
+    // what the day owes still leads (`owedPieces`), as on a festival night
+    expect(planNight(s, ['romance:liz', 'act2']).before).toEqual(planNight(s, ['act2']).before);
+    expect(orderNight([m('noel', 1), 'romance:liz', 'season:spring', 'group:act2'])).toEqual(['group:act2', 'season:spring', 'romance:liz', m('noel', 1)]);
   });
 });

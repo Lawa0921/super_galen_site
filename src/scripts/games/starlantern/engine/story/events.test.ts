@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { ACT_DEPTHS, ACT_NODES, ALONE, DEPARTURE_SCENES, EVE_DEPTH, FINALE_DEPTH, BANTER_COUNT, BANTER_PAYOFFS, BANTER_GATE, BANTER_PAIRS, CHAT_GATE, CLOSING_PIECES, GROUP_GATE, GROUP_MIN_LINES, HEAVY_ARRIVAL, REACTIONS, groupScene, heavyScene, isHeavyArrival, lineCap, memScene, sceneKind, type BanterPair, type SceneId } from '../../data/story/scenes';
+import { afterEach, describe, it, expect } from 'vitest';
+import { ACT_DEPTHS, ACT_NODES, ALONE, DEPARTURE_SCENES, EVE_DEPTH, FINALE_DEPTH, BANTER_COUNT, BANTER_PAYOFFS, BANTER_GATE, BANTER_PAIRS, CHAT_GATE, CLOSING_PIECES, GROUP_GATE, GROUP_MIN_LINES, HEAVY_ARRIVAL, REACTIONS, SCENE_TIME, SEASON_SCENES, groupScene, isNightSlot, sceneTime, heavyScene, isHeavyArrival, lineCap, memScene, sceneKind, type BanterPair, type SceneId } from '../../data/story/scenes';
 import { chainLength } from '../../data/story/chains';
 import { CHARACTER_IDS } from '../../data/characters';
 import { meet } from '../party';
@@ -7,12 +7,16 @@ import { MEETINGS } from '../../data/meetings';
 import { memoryPace } from './expect';
 import { newGame, type GameState } from '../state';
 import type { CharacterId } from '../types';
-import { arrivalScenes, banterOpen, chatOpen, gateExpired, gateOpen, markRead, nextBanter, nextChat, nextReaction, onReturn, openPairs, sceneDone, settleBellkeeper, settleOpening, storyPieces, storyStage, toldCount, afterWin } from './events';
+import { arrivalScenes, banterOpen, chatOpen, gateExpired, gateOpen, markRead, nextBanter, nextChat, nextReaction, onReturn, openPairs, sceneDone, settleBellkeeper, settleOpening, storyPieces, storyStage, toldCount, afterWin, calendarOf, nextSeasonScene } from './events';
+import { SPRING_AFTER, dayOf, nextDay } from '../calendar';
 import { constRng, withTold } from '../testing';
 import { Game } from '../game';
-import { DAWN_BACKLOG, dawnMemory, eveMemories, nextBeat, planNight } from './nights';
+import { DAWN_BACKLOG, dawnMemory, eveMemories, nextBeat, orderNight, planNight } from './nights';
 import { memoryTone } from '../../data/story/tone';
 import { NIGHT_BEATS } from '../../data/story.zh-TW';
+import { ENDINGS_WRITTEN, memScene as memOf } from '../../data/story/scenes';
+import { nextEnding } from './events';
+import type { Companion } from '../../data/story/bond';
 
 /** A new game with the prologue already behind it, so only what a test adds is waiting. */
 const base = (): GameState => {
@@ -27,6 +31,11 @@ const withMemories = (s: GameState, id: CharacterId, n: number): GameState => {
   return s;
 };
 const returned = (s: GameState): GameState => ({ ...s, story: onReturn(s) });
+
+// review 5: the after-story and romance registries go back to what is registered, not to empty
+const regAdd = <T,>(reg: T[], ...xs: T[]): void => { for (const x of xs) if (!reg.includes(x)) reg.push(x); };
+const ENDINGS_BASE = [...ENDINGS_WRITTEN];
+const endingsBack = (): void => { ENDINGS_WRITTEN.splice(0, ENDINGS_WRITTEN.length, ...ENDINGS_BASE); };
 
 describe('story triggers', () => {
   it('act nodes fire by depth alone', () => {
@@ -1057,19 +1066,26 @@ describe('town banter', () => {
         const prev = `banter:${pair}:${n - 1}` as SceneId;
         if (n === 1 || s.story.seen.includes(prev) || gateExpired(s, BANTER_GATE[prev])) opened[id] = at;
       }
-      const day = arrivalScenes(s, { chat: true, afterFinale: afterFinaleReturn, reactions: REACT });
+      // bond plan Task 20: the after-stories take the chat slot as `Game.arrive` gives them (`nextEnding`), now that they are written
+      const day = arrivalScenes(s, { chat: true, afterFinale: afterFinaleReturn, reactions: REACT, ending: (st) => nextEnding(st) });
       const plan = planNight(s, day);
       const dawn = dawnMemory(s, [...plan.before, ...plan.night]);
       s = { ...s, story: { ...s.story, tonight: [...plan.before, ...plan.night], dawn: dawn ?? undefined } };
-      const group = day.filter((id) => id.startsWith('group:'));
-      const daytime = day.filter((id) => !id.startsWith('group:'));
-      arrivals.push({ at, state: from, afterFinale: afterFinaleReturn, tonight: [...plan.before, ...plan.night], dawn: dawn ?? undefined, arrival: [...plan.before, ...daytime], night: [...group, ...plan.night] });
+      // the reaction slot's night scene: a group scene, or after the finale the spring festival (time and moon Task 7)
+      const group = day.filter(isNightSlot);
+      const daytime = day.filter((id) => !isNightSlot(id));
+      const festival = group.find((id) => id.startsWith('season:'));
+      s = { ...s, story: { ...s.story, festival } };
+      if (!festival) delete s.story.festival;
+      arrivals.push({ at, state: from, afterFinale: afterFinaleReturn, tonight: [...plan.before, ...plan.night], dawn: dawn ?? undefined, arrival: [...plan.before, ...daytime], night: orderNight([...group, ...plan.night]) });
       trace.push(`${at}: ${plan.before.length ? `[${plan.before.join(' ')}] ` : ''}${daytime.join(' ')}${group.length ? ` | ${group.join(' ')}` : ''} | night ${plan.night.join(' ') || '-'} (untold ${(s.story.untold ?? []).length}, pairs ready ${openPairs(s)})`);
       const pairs = day.filter((id) => id.startsWith('banter:')).map((id) => id.split(':')[1]);
       if (at < 100 && new Set(pairs).size !== pairs.length) samePair.push(`${at}: ${pairs.join(', ')}`);
       nights.push({ at: String(at), owed: plan.before, night: plan.night, beats: Math.max(0, plan.night.length - 1), alone: day.some((id) => ALONE.includes(id)) });
       beatNight(String(at), plan.night);
       for (const id of [...plan.before, ...daytime, ...group, ...plan.night]) play(id, at);
+      // time and moon Task 1: the return ends the dive's day, as Game.arrive does
+      s = { ...s, story: { ...s.story, day: nextDay(dayOf(s)) } };
     };
     /**
      * A departure, as `Game.departScenes` offers: the dawn, the eve and its memories, then the lone morning. A copy of the
@@ -1129,7 +1145,8 @@ describe('town banter', () => {
     const eve = eveOwed ? eveMemories(s) : [];
     if (eveOwed) nights.push({ at: 'eve finale', owed: [], night: eve, beats: Math.max(0, eve.length - 1), alone: false });
     if (eveOwed) beatNight('eve finale', eve);
-    s = { ...s, story: { ...s.story, finaleCleared: true, queue: s.story.queue.filter((id) => !DEPARTURE_SCENES.includes(id)) } };
+    // time and moon Task 7: the finale writes the spring day, as the game does
+    s = { ...s, story: { ...s.story, finaleCleared: true, springDay: dayOf(s) + SPRING_AFTER, queue: s.story.queue.filter((id) => !DEPARTURE_SCENES.includes(id)) } };
     if (!s.story.seen.includes('hero-alone')) s = { ...s, story: { ...s.story, seen: [...s.story.seen, 'hero-alone'], fresh: [...s.story.fresh, 'hero-alone'] } };
     const finale: SceneId[] = [...(eveOwed ? ['finale-eve' as SceneId, ...eve] : []), ...acts, ...confess, ...keeper, ...heroPieces, 'finale'];
     trace.push(`finale: ${finale.join(' ')}`);
@@ -1155,11 +1172,13 @@ describe('town banter', () => {
     const { s, report, trace, samePair, before, played } = scriptedPlay(depths, 3);
     for (const id of PAYOFFS) expect(s.story.seen, `${report}\n${trace.join('\n')}`).toContain(id);
     // Task 6 review: the §6 setup/payoffs outside the six, measured, no rule added: all but bobby-chizuru:2 land by the third
-    // return after the finale (its :1 is never heard before the finale here); it lands on the fifth
+    // return after the finale (its :1 is never heard before the finale here); it lands on the sixth (time and moon Task 8:
+    // the fifth return after the finale is the spring festival's, SPRING_AFTER days on, with no banter)
     expect(SETUP_PAYOFFS.filter((id) => !s.story.seen.includes(id)), `§6: ${report}\n${trace.join('\n')}`).toEqual(['banter:bobby-chizuru:2']);
-    const five = scriptedPlay(depths, 5);
+    const five = scriptedPlay(depths, 6);
     for (const id of SETUP_PAYOFFS) expect(five.s.story.seen, `§6: ${five.report}`).toContain(id);
-    expect(five.played['banter:bobby-chizuru:2']).toBe(105);
+    expect(five.played['banter:bobby-chizuru:2']).toBe(106);
+    expect(five.trace.find((l) => l.startsWith('105:'))).toMatch(/season:spring/);
     // Story L Task 6 (controller ruling 2026-10-24): the payoffs wait for the pieces told at night, so the count before the
     // finale is a measured pin (it was 4 before story L); the guarantee is the one above, every payoff by the third return
     // after the finale. Measured: Selene's before it (depth 29), Scarlet's on the third return after it. Controller
@@ -1644,5 +1663,338 @@ describe('story L: the reaction slot (Task 5)', () => {
     expect(done(s, 'act4').story.reacts ?? {}).toEqual({});
     s.story.reacts = { 'group:act4': 0 };
     expect(nextReaction(s, [], R)).toBeNull();
+  });
+});
+
+describe('time and moon: the calendar of a state (Task 1)', () => {
+  it('calendarOf reads the day, the stage and the time given', () => {
+    const s = base();
+    expect(calendarOf(s)).toEqual({ day: 1, moon: 'waning', season: 'autumn', time: 'day' });
+    s.story.day = 4;
+    expect(calendarOf(s, 'night')).toEqual({ day: 4, moon: 'full', season: 'autumn', time: 'night' });
+    // act 3 played: winter
+    s.story.nodes = ['act2', 'act3'];
+    s.story.seen.push('act2', 'act3');
+    s.dungeon.reached.mainline = ACT_DEPTHS.act3;
+    expect(calendarOf(s)).toMatchObject({ day: 4, moon: 'full', season: 'winter' });
+    // still waiting in the queue, act 3 moves nothing yet
+    s.story.queue = ['act3'];
+    expect(calendarOf(s).season).toBe('autumn');
+    s.story.queue = [];
+    // the finale cleared on day 6: winter until springDay, then spring
+    s.story.act1Cleared = true;
+    s.story.finaleCleared = true;
+    s.story.day = 6;
+    s.story.springDay = 10;
+    expect(calendarOf(s)).toMatchObject({ day: 6, moon: 'new', season: 'winter' });
+    s.story.day = 10;
+    expect(calendarOf(s)).toMatchObject({ day: 10, moon: 'new', season: 'spring' });
+  });
+});
+
+describe('time and moon: the spring festival (Task 7)', () => {
+  /** Task 8 wrote and registered the festival: the tests read the real registration. */
+  const register = () => { expect(SEASON_SCENES.spring).toBe('season:spring'); };
+  /** After the finale, Rin's choice made, Chizuru's five pieces told and (unless `home: false`) her homecoming seen; spring from `springDay`. */
+  const after = (o: { day?: number; springDay?: number; home?: boolean } = {}): GameState => {
+    const s = base();
+    s.story.act1Cleared = true;
+    s.story.finaleCleared = true;
+    s.story.nodes = ['act2', 'act3', 'act4'];
+    s.story.seen.push('prologue-inn', 'first-return', 'act1-after', 'act2', 'act3', 'act4', 'finale', 'epilogue');
+    s.dungeon.reached.mainline = 30;
+    withMemories(s, 'rin', chainLength('rin'));
+    s.party.roster.rin.oath = true;
+    withMemories(s, 'chizuru', chainLength('chizuru'));
+    for (let n = 1; n <= chainLength('chizuru'); n++) s.story.seen.push(memScene('chizuru', n));
+    if (o.home ?? true) s.story.seen.push('home:chizuru');
+    s.story.day = o.day ?? 20;
+    s.story.springDay = o.springDay ?? 20;
+    return s;
+  };
+
+  it('the spring festival waits for spring and the shrine', () => {
+    register();
+    const s = after();
+    expect(nextSeasonScene(s, dayOf(s))).toBe('season:spring');
+    expect(arrivalScenes(s, { chat: true }).at(-1)).toBe('season:spring');
+    // one condition short, none
+    const before = after();
+    before.story.finaleCleared = false;
+    expect(arrivalScenes(before, { chat: true })).not.toContain('season:spring');
+    expect(arrivalScenes(after({ day: 19 }), { chat: true })).not.toContain('season:spring');   // the night of day 19: winter
+    expect(arrivalScenes(after({ home: false }), { chat: true })).not.toContain('season:spring');
+    const seen = after();
+    seen.story.seen.push('season:spring');
+    expect(arrivalScenes(seen, { chat: true })).not.toContain('season:spring');
+    // a reload never decides it again (Task 7 review): only what the return recorded plays, until seen
+    expect(arrivalScenes(after({ day: 21 }), { chat: false })).not.toContain('season:spring');
+    const recorded = after({ day: 21 });
+    recorded.story.festival = 'season:spring';
+    expect(arrivalScenes(recorded, { chat: false }).at(-1)).toBe('season:spring');
+    recorded.story.seen.push('season:spring');
+    expect(arrivalScenes(recorded, { chat: false })).not.toContain('season:spring');
+    // after spring has come, it stays: any later return
+    expect(arrivalScenes(after({ day: 400 }), { chat: true }).at(-1)).toBe('season:spring');
+  });
+
+  it('it never enters the queue', () => {
+    register();
+    const back = returned(after());
+    expect(back.story.queue).not.toContain('season:spring');
+    expect(arrivalScenes(back, { chat: true }).at(-1)).toBe('season:spring');
+  });
+
+  it('the return that plays the homecoming does not play the festival; the next spring return does', () => {
+    register();
+    const first = returned(after({ home: false }));
+    expect(first.story.queue).toContain('home:chizuru');
+    const day = arrivalScenes(first, { chat: true });
+    expect(day).toContain('home:chizuru');
+    expect(day).not.toContain('season:spring');
+    const next = returned(sceneDone(first, 'home:chizuru', 'played'));
+    expect(arrivalScenes(next, { chat: true }).at(-1)).toBe('season:spring');
+  });
+
+  it('no chat or banter follows the festival, after-finale banters included', () => {
+    register();
+    const s = after();
+    for (const c of ['noel', 'selene', 'liz', 'scarlet', 'safira', 'sylvie', 'bobby'] as CharacterId[]) withMemories(s, c, 0);
+    const heard = { ...s, story: { ...s.story, seen: [...s.story.seen, 'season:spring' as SceneId] } };
+    const usual = arrivalScenes(heard, { chat: true });
+    expect(usual.some((id) => id.startsWith('banter:') || id.startsWith('chat:')), usual.join(' ')).toBe(true);   // without it, the town talks
+    const festival = arrivalScenes(s, { chat: true });
+    expect(festival.at(-1)).toBe('season:spring');
+    expect(festival.filter((id) => id.startsWith('banter:') || id.startsWith('chat:'))).toEqual([]);
+  });
+
+  it('it is not offered while unregistered', () => {
+    const s = after();
+    delete SEASON_SCENES.spring;
+    try {
+      expect(nextSeasonScene(s, dayOf(s))).toBeNull();
+      expect(arrivalScenes(s, { chat: true })).not.toContain('season:spring');
+    } finally {
+      SEASON_SCENES.spring = 'season:spring';
+    }
+  });
+
+  it('it is a night scene of the home kind, at most ten lines', () => {
+    expect(sceneKind('season:spring')).toBe('home');
+    expect(SCENE_TIME['season:spring']).toBe('night');
+    expect(sceneTime('season:spring')).toBe('night');
+    expect(lineCap('season:spring')).toBe(10);
+    expect(isHeavyArrival('season:spring')).toBe(true);
+    expect(isNightSlot('season:spring')).toBe(true);
+    expect(isNightSlot('group:act2')).toBe(true);
+    expect(isNightSlot('home:chizuru')).toBe(false);
+  });
+});
+
+describe('heart-to-hearts in the story (bond plan Task 9)', () => {
+  it("a bond scene marks the day's talk", () => {
+    const s = base();
+    s.story.day = 5;
+    s.story.bondDay = 4;
+    s.story.gifted = ['rin'];
+    const after = sceneDone(s, 'bond:rin:1', 'played');
+    expect([after.story.bondDay, after.story.talked, after.story.gifted]).toEqual([5, true, []]);   // yesterday's gifts cleared
+    const same = base();
+    same.story.day = 5;
+    same.story.bondDay = 5;
+    same.story.gifted = ['rin'];
+    expect(sceneDone(same, 'bond:rin:1', 'skipped').story.gifted).toEqual(['rin']);   // today's kept
+    expect(sceneDone(s, 'chat:rin:1', 'played').story.talked).toBeUndefined();   // only a bond scene
+    expect(s.story.talked).toBeUndefined();
+  });
+
+  it('arrivalScenes is unchanged by bond', () => {
+    const acts = (): GameState => { const s = base(); s.story.queue = ['mem:hero:10', 'town:anna', 'act4', 'mem:hero:7', 'act2']; return s; };
+    const home = (): GameState => { const s = withMemories(base(), 'liz', chainLength('liz')); for (let k = 1; k <= chainLength('liz'); k++) s.story.seen.push(`mem:liz:${k}`); s.story.queue = ['home:liz']; return s; };
+    const quiet = (): GameState => withMemories(base(), 'selene', 2);
+    // measured on the code before bond plan Task 9, written down
+    expect(arrivalScenes(acts(), { chat: false })).toEqual(['act2', 'mem:hero:7', 'mem:hero:10', 'town:anna']);
+    expect(arrivalScenes(home(), { chat: true })).toEqual(['home:liz', 'chat:hero:1']);
+    expect(arrivalScenes(quiet(), { chat: false })).toEqual([]);
+    const bonded = (s: GameState): GameState => {
+      for (const c of s.party.recruited) if (c !== 'hero') s.party.roster[c].bond = { talk: 12, field: 40, gifts: {} };
+      s.story.bondDay = 1;
+      s.story.talked = true;
+      s.story.seen.push('bond:rin:1');
+      return s;
+    };
+    expect(arrivalScenes(bonded(acts()), { chat: false })).toEqual(arrivalScenes(acts(), { chat: false }));
+    expect(arrivalScenes(bonded(home()), { chat: true })).toEqual(arrivalScenes(home(), { chat: true }));
+    expect(arrivalScenes(bonded(quiet()), { chat: false })).toEqual(arrivalScenes(quiet(), { chat: false }));
+  });
+
+  it('bond scenes never enter the queue', () => {
+    const s = base();
+    const done = sceneDone(s, 'bond:rin:1', 'played');
+    expect(done.story.queue).toEqual([]);
+    expect(onReturn(done).queue.some((q) => q.startsWith('bond:'))).toBe(false);
+  });
+});
+
+// ---- bond plan Task 10: the states the after-finale tests read
+/** After the finale, on the return the festival is owed: the act nodes passed, the festival queued. */
+const finaleDone = (): GameState => {
+  const s = base();
+  s.story.act1Cleared = true;
+  s.story.finaleCleared = true;
+  s.dungeon.reached.mainline = 30;
+  s.story.nodes = ['act2', 'act3', 'act4'];
+  s.story.seen.push('prologue-inn', 'first-return', 'act1-after', 'act2', 'act3', 'act4', 'group:act2', 'group:act3', 'group:act4', 'finale');
+  s.party.roster.rin.memories = chainLength('rin');
+  s.party.roster.rin.oath = true;
+  for (let k = 1; k <= chainLength('rin'); k++) s.story.seen.push(memOf('rin', k));
+  for (let n = 1; n <= 4; n++) s.story.seen.push(`chat:rin:${n}` as SceneId);
+  for (let n = 1; n <= 5; n++) s.story.seen.push(`chat:hero:${n}` as SceneId);
+  s.story.seen.push('rin-reveal', 'rin-confess', 'bellkeeper-arrives', 'hero-alone', 'finale-eve');
+  return s;
+};
+/** The return after the festival: it is seen; Liz met and whole, her homecoming seen. */
+const afterFestival = (home = true): GameState => {
+  const s = finaleDone();
+  s.story.seen.push('epilogue');
+  withMemories(s, 'liz', chainLength('liz'));
+  for (let k = 1; k <= chainLength('liz'); k++) s.story.seen.push(memOf('liz', k));
+  for (let n = 1; n <= 2; n++) s.story.seen.push(`chat:liz:${n}` as SceneId);
+  if (home) s.story.seen.push('home:liz');
+  return s;
+};
+
+describe('after the finale: the endings (bond plan Task 10)', () => {
+  /** Endings registered for the test (the registry starts empty), put back after. */
+  /** These after-stories registered, and only these (bond plan Task 20 registered all nine). */
+  const withEndings = <T,>(cs: Companion[], f: () => T): T => { ENDINGS_WRITTEN.splice(0, ENDINGS_WRITTEN.length, ...cs); try { return f(); } finally { endingsBack(); } };
+  const back = (s: GameState) => arrivalScenes(s, { chat: true, ending: (st) => nextEnding(st) });
+
+  it("the festival's return is as it was", () => withEndings(['liz'], () => {
+    const a = finaleDone();
+    withMemories(a, 'liz', chainLength('liz'));
+    for (let k = 1; k <= chainLength('liz'); k++) a.story.seen.push(memOf('liz', k));
+    a.story.seen.push('home:liz');
+    a.story.queue = ['epilogue'];
+    // measured before bond plan Task 10: the festival, a light chat after it, no banter
+    expect(arrivalScenes(a, { chat: true, afterFinale: true })).toEqual(['epilogue', 'chat:liz:1']);
+    expect(arrivalScenes(a, { chat: true, afterFinale: true, ending: (st) => nextEnding(st) })).toEqual(['epilogue', 'chat:liz:1']);
+    expect(nextEnding(a)).toBeNull();   // the festival not seen yet
+  }));
+
+  it("endings take the chat's place, from the next return", () => withEndings(['liz', 'noel'], () => {
+    const s = afterFestival();
+    expect(arrivalScenes(s, { chat: true })).toEqual([]);   // measured before: nothing owed, no chat, no banter (no pair met)
+    expect(back(s)).toEqual(['ending:liz']);                 // no banter: no pair is met
+    s.story.seen.push('ending:liz');
+    expect(back(s)).toEqual([]);                             // Noel is not met
+    withMemories(s, 'noel', chainLength('noel'));
+    for (let k = 1; k <= chainLength('noel'); k++) s.story.seen.push(memOf('noel', k));
+    for (let n = 1; n <= 2; n++) s.story.seen.push(`chat:noel:${n}` as SceneId);
+    expect(nextEnding(s)).toBe('ending:noel');
+    const order = back(s);
+    expect(order[0]).toBe('ending:noel');
+    expect(order.filter((x) => x.startsWith('banter:'))).toEqual(order.slice(1));   // an ending is light: banters may follow
+  }));
+
+  it("the spring festival's return plays no ending; the next return does", () => withEndings(['liz'], () => {
+    const d = afterFestival();
+    withMemories(d, 'chizuru', chainLength('chizuru'));
+    for (let k = 1; k <= chainLength('chizuru'); k++) d.story.seen.push(memOf('chizuru', k));
+    d.story.seen.push('home:chizuru', 'chat:chizuru:1', 'chat:chizuru:2');
+    d.story.day = 30;
+    d.story.springDay = 20;
+    expect(SEASON_SCENES.spring).toBe('season:spring');
+    expect(nextEnding(d)).toBe('ending:liz');
+    expect(back(d)).toEqual(['season:spring']);   // measured before: the festival alone
+    d.story.seen.push('season:spring');
+    const next = back(d);
+    expect(next[0]).toBe('ending:liz');
+    expect(next.slice(1).every((x) => x.startsWith('banter:'))).toBe(true);
+  }));
+
+  it('a homecoming and its ending never share an arrival', () => withEndings(['liz'], () => {
+    const c = afterFestival(false);
+    c.story.queue = ['home:liz'];
+    expect(back(c)).toEqual(['home:liz']);   // measured before, and still no ending with it
+    c.story.queue = [];
+    c.story.seen.push('home:liz');
+    expect(back(c)).toEqual(['ending:liz']);
+  }));
+
+  it("Chizuru's ending waits for the spring festival", () => withEndings(['chizuru'], () => {
+    const s = afterFestival();
+    withMemories(s, 'chizuru', chainLength('chizuru'));
+    for (let k = 1; k <= chainLength('chizuru'); k++) s.story.seen.push(memOf('chizuru', k));
+    s.story.seen.push('home:chizuru');
+    expect(nextEnding(s)).toBeNull();   // the festival is registered and not seen
+    s.story.seen.push('season:spring');
+    expect(nextEnding(s)).toBe('ending:chizuru');
+    const spring = SEASON_SCENES.spring;
+    s.story.seen.pop();
+    delete SEASON_SCENES.spring;
+    try { expect(nextEnding(s)).toBe('ending:chizuru'); } finally { SEASON_SCENES.spring = spring; }   // none registered: no wait
+  }));
+
+  it('an ending needs no bond; a late meeting still gets hers; none before the finale; unwritten ones are passed over', () => withEndings(['liz', 'sylvie'], () => {
+    const s = afterFestival();
+    expect(s.party.roster.liz.bond).toBeUndefined();   // 10 + 15: no record at all
+    expect(nextEnding(s)).toBe('ending:liz');
+    const late = afterFestival();
+    late.party.recruited = late.party.recruited.filter((c) => c !== 'liz');
+    expect(nextEnding(late)).toBeNull();
+    withMemories(late, 'sylvie', chainLength('sylvie'));   // met after the finale
+    for (let k = 1; k <= chainLength('sylvie'); k++) late.story.seen.push(memOf('sylvie', k));
+    late.story.seen.push('home:sylvie');
+    expect(nextEnding(late)).toBe('ending:sylvie');
+    const early = afterFestival();
+    early.story.finaleCleared = false;
+    expect(nextEnding(early)).toBeNull();
+    const noFestival = afterFestival();
+    noFestival.story.seen = noFestival.story.seen.filter((x) => x !== 'epilogue');
+    expect(nextEnding(noFestival)).toBeNull();
+    expect(nextEnding(afterFestival(), [])).toBeNull();   // not written
+    expect(nextEnding(afterFestival())).toBe('ending:liz');
+  }));
+
+  it('a queued romance is heavy', () => {
+    const s = afterFestival();
+    withMemories(s, 'noel', 1);
+    withMemories(s, 'selene', 1);
+    expect(arrivalScenes(s, { chat: true }).some((x) => x.startsWith('banter:'))).toBe(true);
+    s.story.queue = ['romance:liz'];
+    const r = arrivalScenes(s, { chat: true });
+    expect(r[0]).toBe('romance:liz');
+    expect(r.some((x) => x.startsWith('banter:'))).toBe(false);
+  });
+
+  it('the night, the dawn and the reactions are untouched', () => {
+    const s = afterFestival();
+    // one of Lorne's pieces held and untold, so the night and the dawn have something to pick
+    s.party.roster.hero.memories = 2;
+    s.story.seen.push('mem:hero:1');
+    s.story.untold = ['mem:hero:2'];
+    const plain = arrivalScenes(s, { chat: true });
+    const pick = () => withEndings(['liz'], () => back(s));
+    const ending = pick();
+    expect(ending).toEqual([...plain, 'ending:liz']);
+    expect(planNight(s, ending)).toEqual(planNight(s, plain));
+    // the dawn as Game.arrive picks it, from the night each list plans (review fix: no longer the same call twice)
+    const tonight = (day: SceneId[]) => { const p = planNight(s, day); return [...p.before, ...p.night]; };
+    expect(dawnMemory(s, tonight(ending))).toEqual(dawnMemory(s, tonight(plain)));
+    expect(tonight(plain).length + (dawnMemory(s, tonight(plain)) ? 1 : 0)).toBe(1);   // the piece is the night's or the dawn's
+    expect(nextReaction(s, ending)).toEqual(nextReaction(s, plain));
+    expect(nextSeasonScene(s, dayOf(s))).toBeNull();
+  });
+});
+
+describe('a romance cut short, in the story (bond plan Task 11)', () => {
+  it('the queue still ranks a romance as a day scene', () => {
+    const s = afterFestival();
+    s.story.queue = ['romance:liz'];
+    expect(arrivalScenes(s, { chat: true })).toEqual(['romance:liz']);   // moving it to the night is Game's
+    expect(arrivalScenes(s, { chat: false })).toEqual(['romance:liz']);
+    expect(isNightSlot('romance:liz')).toBe(true);
+    expect(isNightSlot('ending:liz')).toBe(false);
   });
 });

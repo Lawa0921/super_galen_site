@@ -234,3 +234,10 @@ describe('glimmers', () => {
     expect(run).not.toHaveProperty('played');   // a memory never plays in the labyrinth now
   });
 });
+
+describe('bond on a run (bond plan Task 5)', () => {
+  it('a new run holds no bond yet', () => {
+    expect(newRun(1, 'mainline', 'plain', 1).bond).toEqual({});
+    expect(newRun(1, 'blaze', 'plain', 3, {}, 'hell').bond).toEqual({});
+  });
+});

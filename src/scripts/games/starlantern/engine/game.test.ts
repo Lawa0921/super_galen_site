@@ -40,8 +40,8 @@ import { TALENT_NODES } from '../data/talents';
 import { PERKS, SHARD_PRICE, FRAGMENT_WEIGHT, SHARD_DROP, SHARD_IDS, TOWN_DROP, TOWN_FRAGMENTS } from '../data/story/fragments';
 import { fragmentItem } from './story/fragments';
 import type { FragmentGain } from './story/memories';
-import { ACT_DEPTHS, ALONE, FINALE_BOSS, FINALE_DEPTH, HEAVY_MAJORS, lineCap, memScene, REACTIONS, type SceneId } from '../data/story/scenes';
-import { NIGHT_BEATS, STORY, type ScriptLine } from '../data/story.zh-TW';
+import { ACT_DEPTHS, ALONE, FINALE_BOSS, FINALE_DEPTH, HEAVY_MAJORS, isNightSlot, lineCap, memScene, REACTIONS, SEASON_SCENES, type SceneId } from '../data/story/scenes';
+import { NIGHT_BEATS, STORY, type ScriptLine, flatLines } from '../data/story.zh-TW';
 import { dawnMemory, planNight } from './story/nights';
 import { linesOf } from '../ui2/story';
 import { chainLength } from '../data/story/chains';
@@ -50,6 +50,28 @@ import { RUNE_DROP, RUNE_SELL } from '../data/runeEconomy';
 import type { RuneRef } from '../data/runes';
 import { rollRune, RUNE_SALT, spotRuneRng } from './loot/runes';
 import { depthLevel } from './levels';
+import { SPRING_AFTER, dayOf, moonOf, tonightMoon } from './calendar';
+import { orderNight } from './story/nights';
+import { calendarOf } from './story/events';
+import { MEMORY_PITY } from '../data/story/chains';
+import { BOND_SWITCH, bondOf, bondPoints } from './story/bond';
+import { GIFT_LINES, RIN_OATH, type GiftPools } from '../data/bond.zh-TW';
+import { BOND_RUN_CAP, FIELD_POINTS } from '../data/story/bond';
+import { BONDS_WRITTEN, ROMANCES_WRITTEN, TOGETHER_WRITTEN, sceneTime } from '../data/story/scenes';
+import { today } from './story/bond';
+import { withBondEarn, withBondScale } from './testing';
+/**
+ * Bond plan Task 17: the registries hold what is written now, so a test that registers its own puts back what was there
+ * (`bondsBack`), registers a companion only once (`bondsAdd`), and gives a written scene back instead of deleting it.
+ */
+const BOND_BASE = [...BONDS_WRITTEN];
+const bondsAdd = (...cs: (typeof BONDS_WRITTEN)[number][]): void => { for (const c of cs) if (!BONDS_WRITTEN.includes(c)) BONDS_WRITTEN.push(c); };
+const bondsBack = (): void => { BONDS_WRITTEN.splice(0, BONDS_WRITTEN.length, ...BOND_BASE); };
+// review 5: the after-story and romance registries go back to what is registered, not to empty
+const regAdd = <T,>(reg: T[], ...xs: T[]): void => { for (const x of xs) if (!reg.includes(x)) reg.push(x); };
+const ROMANCES_BASE = [...ROMANCES_WRITTEN];
+const romancesBack = (): void => { ROMANCES_WRITTEN.splice(0, ROMANCES_WRITTEN.length, ...ROMANCES_BASE); };
+const TOGETHER_BASE = TOGETHER_WRITTEN.value;
 
 vi.mock('./portals', async (importOriginal) => {
   const mod = await importOriginal<typeof import('./portals')>();
@@ -302,7 +324,8 @@ describe('moving', () => {
     g.depart({ region: 'mainline', condition: 'bounty' }, 1);
     expect(stepOnto(g, plainChest(g))).toEqual({ kind: 'chest', item: 'old-coin', qty: 3 });   // 2 x 1.5
   });
-  it('descending past MAX_REACHED keeps reached capped, pays no exp, and the save still loads', () => {
+  // Bond plan Task 5: this pins the whole party across the stairs; the floor's field point is the bond tests' to check.
+  it('descending past MAX_REACHED keeps reached capped, pays no exp, and the save still loads', () => withBondEarn(false, () => {
     const st = memoryStorage();
     const g = new Game(calm(), st, undefined, 0, HERO_LINEUP);
     g.state.dungeon.reached.mainline = MAX_REACHED;
@@ -316,7 +339,7 @@ describe('moving', () => {
     expect(g.state.dungeon.reached.mainline).toBe(MAX_REACHED);
     expect(saveGame(st, g.state)).toBe(true);
     expect(loadGame(st).status).toBe('ok');
-  });
+  }));
   it('stairs go one deeper and never back', () => {
     const g = new Game(calm(), null, undefined, 0, LEGACY_LINEUP);
     g.depart(MAIN, 1);
@@ -1359,7 +1382,8 @@ describe('depth-clear exp', () => {
     for (const id of g.state.party.recruited) expect([id, g.state.party.roster[id].exp]).toEqual([id, 0]);
   });
 
-  it('a second run through a depth already cleared gets no grant', () => {
+  // Bond plan Task 5: the whole roster is pinned across the stairs; the floor's field point is the bond tests' to check.
+  it('a second run through a depth already cleared gets no grant', () => withBondEarn(false, () => {
     const g = new Game(calm(), null, undefined, 0, LEGACY_LINEUP);
     g.depart(MAIN, 1);
     const first = downstairs(g, g.map().down!);
@@ -1369,7 +1393,7 @@ describe('depth-clear exp', () => {
     const before = structuredClone(g.state.party.roster);
     expect(downstairs(g, g.map().down!)).toEqual({ kind: 'floor', floor: 2 });
     expect(g.state.party.roster).toEqual(before);
-  });
+  }));
 
   it("another region's first clear of the same depth does get the grant", () => {
     const g = new Game(calm(), null, undefined, 0, LEGACY_LINEUP);
@@ -3622,7 +3646,7 @@ describe('the finale', () => {
     killAll(g);
     expect(g.finale!.pieces).toContain('bellkeeper-arrives');
     expect(memoriesOf(g.state.party.roster.hero)).toBe(chainLength('hero'));
-    const lines = linesOf('bellkeeper-arrives', g.state);   // the reading the game plays, from its own state (re-review)
+    const lines = flatLines(linesOf('bellkeeper-arrives', g.state));   // the reading the game plays, from its own state (re-review)
     expect(lines.length).toBeLessThanOrEqual(lineCap('bellkeeper-arrives'));
     const said = lines.map((l) => l.text).join('');
     expect(said).toMatch(/燈座/);
@@ -5401,5 +5425,886 @@ describe('drops and kill keys by tier (difficulty plan Task 6a-prime)', () => {
     expect([g.state.dungeon.bossKills, g.run!.lootDraws, g.run!.runeDraws, g.rng()]).toEqual([{ 'iron:5': 1 }, 5, 2, 0.06393614131957293]);
     // The whole of each result, to the last affix of every piece.
     expect([fnv(elite), fnv(boss), fnv(chest)]).toEqual(['f5001d33', 'b08b01f5', 'e0f8ad6e']);
+  });
+});
+
+describe('time and moon: the day (Task 1)', () => {
+  /** In town on the main road, a depth reached past the first boss. */
+  const town = (storage: ReturnType<typeof memoryStorage> | null = null) => {
+    const g = new Game(calm(), storage, undefined, 0, HERO_LINEUP);
+    g.state.dungeon.reached.mainline = 3;
+    return g;
+  };
+
+  it("a return ends the day: walking home, the lamp, a wipe and the finale's clear each add one", () => {
+    // walking home by the entrance
+    const g = town();
+    expect(dayOf(g.state)).toBe(1);
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(g.returnToTown()).toBe(true);
+    expect(g.state.story.day).toBe(2);
+    // the return lamp, from a floor further down: the floors walked on one dive are one day
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(downstairs(g, g.map().down!)).toMatchObject({ kind: 'floor', floor: 2 });
+    expect(dayOf(g.state)).toBe(2);
+    g.state.inventory['return-lamp'] = 1;
+    expect(g.useReturnLamp()).toBe(true);
+    expect(g.state.story.day).toBe(3);
+    // a wipe
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    g.encounter = 99;
+    expect(g.move(DIRS.find((d) => tileAt(g.map(), { x: g.pos.x + DELTA[d].x, y: g.pos.y + DELTA[d].y }) === 'floor')!)).toEqual({ kind: 'battle' });
+    for (const c of g.battle!.party) { c.hp = 0; c.alive = false; }
+    expect(g.submitRound({})!.end!.outcome).toBe('lose');
+    expect([g.phase, g.notice, g.state.story.day]).toEqual(['town', 'wipe', 4]);
+    // the finale's clear: the dive is one day, its return the next
+    const f = finaleGame('normal');
+    f.state.story.day = 9;
+    expect(f.depart(MAIN, FINALE_DEPTH)).toEqual({ ok: true });
+    stepOnto(f, f.map().boss!);
+    expect(killAll(f).outcome).toBe('win');
+    expect([f.phase, f.state.story.finaleCleared, f.state.story.day]).toEqual(['clear', true, 9]);
+    f.restartAfterClear();
+    expect([f.phase, f.state.story.day]).toEqual(['town', 10]);
+  });
+
+  it('a departure keeps the day, and a reload of the town save departs on the same day', () => {
+    const storage = memoryStorage();
+    const g = town(storage);
+    expect(g.chooseTier('normal')).toEqual({ ok: true });   // the town saves at once
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(dayOf(g.state)).toBe(1);
+    // no save in the labyrinth: a reload is back in town, on the same day, and departs on it
+    const b = Game.boot(calm(), storage);
+    expect([b.phase, dayOf(b.state)]).toEqual(['town', 1]);
+    expect(b.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(dayOf(b.state)).toBe(1);
+    expect(b.returnToTown()).toBe(true);
+    expect(dayOf(b.state)).toBe(2);
+  });
+
+  it('a reload keeps the day', () => {
+    const storage = memoryStorage();
+    const g = town(storage);
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(g.returnToTown()).toBe(true);
+    expect(g.chooseTier('normal')).toEqual({ ok: true });   // the town saves the return
+    expect(g.state.story.day).toBe(2);
+    const b = Game.boot(calm(), storage);
+    expect(b.state.story.day).toBe(2);
+    expect(Game.boot(calm(), storage).state.story.day).toBe(2);
+    expect(Game.boot(calm(), memoryStorage()).state.story.day).toBeUndefined();   // a new game: day 1, unwritten
+  });
+
+  it("the night planned on a return is the night of the dive's day", () => {
+    const g = town();
+    for (let i = 0; i < 5; i++) {
+      const d = dayOf(g.state);
+      expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+      expect(g.returnToTown()).toBe(true);
+      expect(dayOf(g.state)).toBe(d + 1);
+      expect(tonightMoon(g.state)).toBe(moonOf(d));
+    }
+  });
+
+  it('a night at the inn tells no memory and keeps tonight and the dawn', () => {
+    const storage = memoryStorage();
+    const g = new Game(calm(), storage, undefined, 0, ['hero', 'rin']);
+    g.state.story.queue = [];
+    g.state.story.seen = ['prologue', 'prologue-inn'];
+    const eight: SceneId[] = ['mem:selene:1', 'mem:noel:1', 'mem:safira:1', 'mem:bobby:1', 'mem:sylvie:1', 'mem:liz:1', 'mem:scarlet:1', 'mem:chizuru:1'];
+    for (const id of eight) {
+      const c = id.split(':')[1] as CharacterId;
+      g.state.party = meet(g.state.party, c, 1);
+      g.state.party.roster[c].memories = 1;
+    }
+    g.state.story.untold = [...eight];
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(g.returnToTown()).toBe(true);
+    expect(g.night).toHaveLength(3);
+    expect(g.state.story.dawn).toBeDefined();
+    const story = structuredClone(g.state.story);
+    const [arrival, night] = [[...g.arrival], [...g.night]];
+    g.state.gold = 999;
+    expect(g.rest().ok).toBe(true);
+    expect(g.state.story.day).toBe(story.day! + 1);
+    expect([g.state.story.untold, g.state.story.tonight, g.state.story.dawn]).toEqual([story.untold, story.tonight, story.dawn]);
+    expect([g.arrival, g.night]).toEqual([arrival, night]);
+    expect(g.state.story.seen).toEqual(story.seen);
+    // saved with the rest: a reload holds the next day and the same night
+    const b = Game.boot(calm(), storage);
+    expect(b.state.story.day).toBe(story.day! + 1);
+    expect(b.night).toEqual(night);
+    expect(b.state.story.dawn).toBe(story.dawn);
+  });
+});
+
+describe('time and moon: the moon in the labyrinth (Task 2)', () => {
+  const PAIR: CharacterId[] = ['hero', 'selene'];
+  /** In town on `day`, Selene met holding `held`, the main road reached to `depth`. */
+  const inTown = (depth: number, day: number, held: number, pity: Partial<Record<CharacterId, number>> = {}, storage: ReturnType<typeof memoryStorage> | null = null) => {
+    const g = new Game(calm(), storage, undefined, 0, PAIR);
+    g.state.dungeon.reached.mainline = depth;
+    g.state.story.day = day;
+    g.state.party.roster.selene.memories = held;
+    g.state.story.pity = { ...pity };
+    return g;
+  };
+  const dive = (depth: number, day: number, held: number, pity: Partial<Record<CharacterId, number>> = {}) => {
+    const g = inTown(depth, day, held, pity);
+    expect(g.depart(MAIN, depth)).toEqual({ ok: true });
+    return g;
+  };
+  /** A glimmer on an open cell, as the floor would have made it. */
+  const plantGlimmer = (g: Game, owner?: CharacterId): Pos => {
+    const m = g.map();
+    for (let y = 0; y < m.height; y++) for (let x = 0; x < m.width; x++) {
+      if (m.tiles[y][x] !== 'floor' || (x === g.pos.x && y === g.pos.y)) continue;
+      m.tiles[y][x] = 'glimmer';
+      floorOf(g.run!, g.floor).contents.push({ kind: 'glimmer', at: { x, y }, room: 0, ...(owner ? { owner } : {}) });
+      return { x, y };
+    }
+    throw new Error('no cell for a glimmer');
+  };
+  const hers = (g: Game, floor: number) => floorOf(g.run!, floor).contents.find((c) => c.kind === 'glimmer' && c.owner === 'selene');
+
+  it("a glimmer planted for Selene's second piece pays under a full moon and leaves a shard under any other", () => {
+    expect([4, 1, 2, 3].map(moonOf)).toEqual(['full', 'waning', 'new', 'waxing']);
+    const full = dive(6, 4, 1);
+    expect(stepOnto(full, plantGlimmer(full, 'selene'))).toEqual({ kind: 'glimmer', gained: [{ kind: 'piece', id: 'selene', n: 2 }] });
+    expect(full.state.story.untold).toEqual(['mem:selene:2']);
+    for (const day of [1, 2, 3]) {
+      const g = dive(6, day, 1);
+      expect(stepOnto(g, plantGlimmer(g, 'selene')), `day ${day}`).toEqual({ kind: 'glimmer', gained: [{ kind: 'shard', grade: expect.any(String) }] });
+      expect(memoriesOf(g.state.party.roster.selene)).toBe(1);
+      expect(g.state.story.untold ?? []).toEqual([]);
+    }
+  });
+
+  it("the moon of a dive is its day's, the same at the glimmer's making and its pickup", () => {
+    // her fifth piece waits for the new moon (day 2); her pity is due
+    const g = dive(15, 2, 4, { selene: MEMORY_PITY });
+    expect(calendarOf(g.state)).toMatchObject({ day: 2, moon: 'new', time: 'day' });
+    expect(g.run!.glimmers[15]).toContain('selene');
+    const c = hers(g, 15)!;
+    expect(c).toBeDefined();
+    expect(dayOf(g.state)).toBe(2);
+    expect(stepOnto(g, c.at)).toEqual({ kind: 'glimmer', gained: [{ kind: 'piece', id: 'selene', n: 5 }] });
+    // the day after (the first quarter): no glimmer is made for her, and her pity still counts the floor
+    const next = dive(16, 3, 4, { selene: MEMORY_PITY });
+    expect(next.run!.glimmers[16]).not.toContain('selene');
+    expect(hers(next, 16)).toBeUndefined();
+    expect(downstairs(next, next.map().down!)).toMatchObject({ kind: 'floor', floor: 17 });
+    expect(next.state.story.pity.selene).toBe(MEMORY_PITY + 1);
+    expect(next.run!.glimmers[17]).not.toContain('selene');
+  });
+
+  it('a reload mid-town departs under the same moon', () => {
+    const storage = memoryStorage();
+    const g = inTown(15, 2, 4, { selene: MEMORY_PITY }, storage);
+    expect(g.chooseTier('normal')).toEqual({ ok: true });   // the town saves
+    expect(g.depart(MAIN, 15)).toEqual({ ok: true });
+    expect(g.run!.glimmers[15]).toContain('selene');
+    const b = Game.boot(calm(), storage);
+    expect([b.phase, dayOf(b.state), calendarOf(b.state).moon]).toEqual(['town', 2, 'new']);
+    expect(b.depart(MAIN, 15)).toEqual({ ok: true });
+    expect(b.run!.glimmers[15]).toContain('selene');
+    expect(stepOnto(b, hers(b, 15)!.at)).toEqual({ kind: 'glimmer', gained: [{ kind: 'piece', id: 'selene', n: 5 }] });
+  });
+
+  it('two games a day apart fight the same battle', () => {
+    // Selene holds no piece and her first waits for no moon: the floors are the same whatever the day
+    const fight = (day: number) => {
+      const g = new Game(mulberry32(7), null, undefined, 0, PAIR);
+      g.state.dungeon.reached.mainline = 3;
+      g.state.story.day = day;
+      expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+      g.encounter = 99;
+      expect(g.move(DIRS.find((d) => tileAt(g.map(), { x: g.pos.x + DELTA[d].x, y: g.pos.y + DELTA[d].y }) === 'floor')!)).toEqual({ kind: 'battle' });
+      return g;
+    };
+    const a = fight(1);
+    const b = fight(2);
+    expect(moonOf(1)).not.toBe(moonOf(2));
+    expect(a.battle).toEqual(b.battle);
+    expect(a.battle!.party.map((c) => c.defId)).toContain('selene');
+    expect([a.battle!.moon?.phase, b.battle!.moon?.phase]).toEqual(['first', 'first']);
+    for (let round = 0; round < 3; round++) {
+      const ra = a.submitRound({});
+      const rb = b.submitRound({});
+      expect(ra?.battle.log, `round ${round + 1}`).toEqual(rb?.battle.log);
+      if (!ra || ra.end) break;
+    }
+    expect(a.battle).toEqual(b.battle);
+  });
+});
+
+describe('time and moon: the seasons and the spring festival in the game (Task 7)', () => {
+
+  it('the finale writes the spring day', () => {
+    const f = finaleGame('normal');
+    f.state.story.day = 9;
+    expect(f.state.story.springDay).toBeUndefined();
+    expect(f.depart(MAIN, FINALE_DEPTH)).toEqual({ ok: true });
+    stepOnto(f, f.map().boss!);
+    expect(killAll(f).outcome).toBe('win');
+    expect([f.state.story.finaleCleared, f.state.story.springDay]).toEqual([true, 9 + SPRING_AFTER]);
+  });
+
+  it("spring comes SPRING_AFTER days after the finale's dive", () => {
+    const f = finaleGame('normal');
+    f.state.story.day = 9;
+    expect(f.depart(MAIN, FINALE_DEPTH)).toEqual({ ok: true });
+    stepOnto(f, f.map().boss!);
+    killAll(f);
+    expect(calendarOf(f.state).season).toBe('winter');   // the finale's own day: winter (acts 3 and 4 played)
+    f.restartAfterClear();
+    // each return's night is its dive's day: 9 (the finale's), 10, 11, 12 winter; 13 on, spring
+    const nights: string[] = [];
+    for (let i = 0; i < 6; i++) {
+      nights.push(`${dayOf(f.state)}:${calendarOf(f.state, 'night').season}`);
+      expect(f.depart(MAIN, 1)).toEqual({ ok: true });
+      expect(f.returnToTown()).toBe(true);
+    }
+    expect(nights).toEqual(['10:winter', '11:winter', '12:winter', '13:spring', '14:spring', '15:spring']);
+  });
+
+  it('the festival leads the night and a reload plays it again, as the return recorded it, until it is seen', () => {
+    expect(SEASON_SCENES.spring).toBe('season:spring');   // Task 8: written and registered
+    const storage = memoryStorage();
+    const g = new Game(calm(), storage, undefined, 0, ['hero', 'rin']);
+    const st = g.state;
+    st.dungeon.reached.mainline = 30;
+    st.story.nodes = ['act2', 'act3', 'act4'];
+    st.story.queue = [];
+    st.story.seen = ['prologue', 'prologue-inn', 'first-return', 'act1-after', 'act2', 'act3', 'act4', 'group:act2', 'group:act3', 'group:act4', 'finale', 'epilogue', 'home:chizuru'];
+    st.story.act1Cleared = true;
+    st.story.finaleCleared = true;
+    Object.assign(st.party.roster.rin, { memories: chainLength('rin'), oath: true });
+    st.party = meet(st.party, 'chizuru', 1);
+    st.party.roster.chizuru.memories = chainLength('chizuru');
+    for (let n = 1; n <= chainLength('chizuru'); n++) st.story.seen.push(memScene('chizuru', n));
+    st.party = meet(st.party, 'noel', 1);
+    st.party.roster.noel.memories = 1;
+    st.story.untold = ['mem:noel:1'];
+    st.story.day = 20;
+    st.story.springDay = 20;
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(g.returnToTown()).toBe(true);
+    expect(g.night).toEqual(['season:spring']);   // the festival's night tells no memory
+    expect(g.arrival).not.toContain('season:spring');
+    expect(g.state.story.queue).not.toContain('season:spring');
+    expect(g.state.story.untold).toEqual(['mem:noel:1']);
+    expect(g.state.story.tonight).toEqual([]);
+    expect(g.state.story.festival).toBe('season:spring');   // recorded with the return (Task 7 review)
+    expect(g.chooseTier('normal')).toEqual({ ok: true });   // the town saves
+    const b = Game.boot(calm(), storage);
+    expect(b.night).toEqual(['season:spring']);
+    expect(b.sceneDone('season:spring', 'played')).toBe(true);
+    expect(b.state.story.seen).toContain('season:spring');
+    const c = Game.boot(calm(), storage);
+    expect(c.state.story.seen).toContain('season:spring');
+    expect(c.night).toEqual([]);
+    // the next return tells the memory that waited
+    expect(c.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(c.returnToTown()).toBe(true);
+    expect(c.night).toEqual(['mem:noel:1']);
+  });
+
+  it('the night is ordered group, season, memory, as Game.arrive puts it', () => {
+    expect(orderNight(['mem:noel:1', 'season:spring', 'group:act2'])).toEqual(['group:act2', 'season:spring', 'mem:noel:1']);
+    expect((['group:act2', 'season:spring', 'mem:noel:1'] as SceneId[]).map(isNightSlot)).toEqual([true, true, false]);
+  });
+});
+
+describe('time and moon: a reload never decides the festival again (Task 7 review)', () => {
+  /** After the finale, Rin's choice made, Chizuru whole (`home`: her homecoming already seen), Noel holding an untold piece. */
+  const afterFinale = (storage: ReturnType<typeof memoryStorage>, o: { home: boolean; day: number; springDay: number }) => {
+    const g = new Game(calm(), storage, undefined, 0, ['hero', 'rin']);
+    const st = g.state;
+    st.dungeon.reached.mainline = 30;
+    st.story.nodes = ['act2', 'act3', 'act4'];
+    st.story.queue = [];
+    st.story.seen = ['prologue', 'prologue-inn', 'first-return', 'act1-after', 'act2', 'act3', 'act4', 'group:act2', 'group:act3', 'group:act4', 'finale', 'epilogue', ...(o.home ? ['home:chizuru' as SceneId] : [])];
+    st.story.act1Cleared = true;
+    st.story.finaleCleared = true;
+    Object.assign(st.party.roster.rin, { memories: chainLength('rin'), oath: true });
+    st.party = meet(st.party, 'chizuru', 1);
+    st.party.roster.chizuru.memories = chainLength('chizuru');
+    for (let n = 1; n <= chainLength('chizuru'); n++) st.story.seen.push(memScene('chizuru', n));
+    st.party = meet(st.party, 'noel', 1);
+    st.party.roster.noel.memories = 1;
+    st.story.untold = ['mem:noel:1'];
+    st.gold = 5000;
+    st.story.day = o.day;
+    st.story.springDay = o.springDay;
+    return g;
+  };
+
+  it('case A: the homecoming return skips the festival, and a reload after the homecoming does not bring it', () => {
+    const storage = memoryStorage();
+    const g = afterFinale(storage, { home: false, day: 20, springDay: 20 });
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(g.returnToTown()).toBe(true);
+    expect(g.arrival).toContain('home:chizuru');
+    expect(g.night).toEqual(['mem:noel:1']);
+    expect(g.state.story.festival).toBeUndefined();
+    for (const id of [...g.arrival]) g.sceneDone(id, 'played');   // the homecoming seen; the town saves
+    const b = Game.boot(calm(), storage);
+    expect(b.night).toEqual(['mem:noel:1']);
+    // the next spring return is the festival's
+    expect(b.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(b.returnToTown()).toBe(true);
+    expect(b.night).toEqual(['season:spring']);
+  });
+
+  it('case B: a winter return, then a night at the inn into spring, then a reload: no festival without a return', () => {
+    const storage = memoryStorage();
+    const g = afterFinale(storage, { home: true, day: 12, springDay: 13 });
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(g.returnToTown()).toBe(true);   // the night of day 12: winter
+    expect(g.night).toEqual(['mem:noel:1']);
+    expect(g.rest().ok).toBe(true);        // day 14, spring: the inn saves
+    expect(g.state.story.day).toBe(14);
+    const b = Game.boot(calm(), storage);
+    expect(b.night).toEqual(['mem:noel:1']);
+    expect(b.night).not.toContain('season:spring');
+  });
+
+  it('a reload after the festival return plays the festival again, because the return recorded it', () => {
+    const storage = memoryStorage();
+    const g = afterFinale(storage, { home: true, day: 20, springDay: 20 });
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(g.returnToTown()).toBe(true);
+    expect(g.night).toEqual(['season:spring']);
+    expect(g.state.story.festival).toBe('season:spring');
+    expect(g.chooseTier('normal')).toEqual({ ok: true });   // the town saves, the record with it
+    const b = Game.boot(calm(), storage);
+    expect(b.night).toEqual(['season:spring']);
+    expect(b.sceneDone('season:spring', 'played')).toBe(true);
+    expect(b.state.story.festival).toBeUndefined();
+    expect(Game.boot(calm(), storage).night).toEqual([]);
+  });
+
+  it('a night at the inn drops the record: a reload after it plays no festival under that moon; the next return does (bond batch fix)', () => {
+    // Before this fix a night at the inn kept the record, so a festival whose night never finished (its playback threw,
+    // ui2/scenes/town.ts playNight) came back on a reload under the inn night's moon.
+    const storage = memoryStorage();
+    const g = afterFinale(storage, { home: true, day: 20, springDay: 20 });
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(g.returnToTown()).toBe(true);
+    expect(g.night).toEqual(['season:spring']);
+    expect(g.rest().ok).toBe(true);   // the festival's night not seen; the inn saves
+    expect(g.state.story.festival).toBeUndefined();
+    const b = Game.boot(calm(), storage);
+    expect(b.night).not.toContain('season:spring');
+    expect(b.state.story.seen).not.toContain('season:spring');
+    // spring stays and the festival is unseen: the next return decides it again
+    expect(b.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(b.returnToTown()).toBe(true);
+    expect(b.night).toEqual(['season:spring']);
+    expect(b.state.story.festival).toBe('season:spring');
+  });
+});
+
+describe('bond from going down and fighting together (bond plan Task 5)', () => {
+  const field = (g: Game, id: CharacterId) => bondOf(g.state.party.roster[id]).field;
+  const fighter = (g: Game, id: CharacterId) => g.battle!.party.find((c) => c.key === id)!;
+  /** Every foe asleep for a while: a round passes and nobody's HP moves. */
+  const lull = (g: Game) => { for (const e of g.battle!.enemies) e.sleep = 9; };
+  /** HP at 20 % of her max: in danger. */
+  const low = (g: Game, id: CharacterId) => { const c = fighter(g, id); c.hp = Math.floor(c.max.hp * 0.2); };
+  const elite = (g: Game) => { stepOnto(g, plantAt(g, 'elite')); expect(g.phase).toBe('battle'); };
+
+  it('going down the stairs bonds whoever goes along', () => {
+    const g = inMap(1);
+    g.state.party = meet(g.state.party, 'rin', 1);   // a sixth: on the bench
+    expect(activeIds(g.state.party)).not.toContain('rin');
+    g.state.party.roster.noel.hp = 0;                  // down
+    expect(downstairs(g, g.map().down!)).toMatchObject({ kind: 'floor', floor: 2 });
+    for (const id of ['chizuru', 'liz', 'selene'] as const) expect(field(g, id), id).toBe(FIELD_POINTS.floor);
+    expect(field(g, 'noel')).toBe(0);
+    expect(field(g, 'rin')).toBe(0);
+    expect(g.state.party.roster.hero.bond).toBeUndefined();
+    expect(g.run!.bond).toEqual({ chizuru: 1, liz: 1, selene: 1 });
+  });
+
+  it('a boss or an elite bonds everyone in the fight', () => {
+    const g = inMap(1);
+    elite(g);
+    fighter(g, 'noel').hp = 0;
+    fighter(g, 'noel').alive = false;   // down at the end, but in the fight
+    expect(killAll(g).outcome).toBe('win');
+    for (const id of ['chizuru', 'liz', 'noel', 'selene'] as const) expect(field(g, id), id).toBe(FIELD_POINTS.strong);
+    expect(g.state.party.roster.hero.bond).toBeUndefined();
+    // a plain fight gives nothing
+    const p = inMap(1);
+    (p as unknown as { startBattle: (ids: string[], boss: boolean) => void }).startBattle(['slime'], false);
+    expect(killAll(p).outcome).toBe('win');
+    expect(field(p, 'chizuru')).toBe(0);
+  });
+
+  it('saved means she dropped into danger during the fight and stood at the end', () => {
+    const g = inMap(1);
+    elite(g);
+    lull(g);
+    low(g, 'selene');
+    expect(g.submitRound({})!.end).toBeNull();   // the round ends with her in danger
+    expect(killAll(g).outcome).toBe('win');
+    expect(field(g, 'selene')).toBe(FIELD_POINTS.strong + FIELD_POINTS.saved);
+    expect(field(g, 'chizuru')).toBe(FIELD_POINTS.strong);
+  });
+
+  it('coming in low is not being saved', () => {
+    const g = inMap(1);
+    g.state.party.roster.selene.hp = Math.floor(statsOf(g.state.party.roster.selene).hp * 0.2);
+    elite(g);
+    lull(g);
+    expect(g.submitRound({})!.end).toBeNull();
+    expect(killAll(g).outcome).toBe('win');
+    expect(field(g, 'selene')).toBe(FIELD_POINTS.strong);   // in danger the whole fight: no saved
+  });
+
+  it('low, mended, then low again counts', () => {
+    const g = inMap(1);
+    g.state.party.roster.selene.hp = Math.floor(statsOf(g.state.party.roster.selene).hp * 0.2);
+    elite(g);
+    lull(g);
+    fighter(g, 'selene').hp = fighter(g, 'selene').max.hp;   // mended
+    expect(g.submitRound({})!.end).toBeNull();
+    low(g, 'selene');                                         // and low again
+    expect(g.submitRound({})!.end).toBeNull();
+    expect(killAll(g).outcome).toBe('win');
+    expect(field(g, 'selene')).toBe(FIELD_POINTS.strong + FIELD_POINTS.saved);
+  });
+
+  it('in danger and down at the end gives nothing for being saved', () => {
+    const g = inMap(1);
+    elite(g);
+    lull(g);
+    low(g, 'selene');
+    expect(g.submitRound({})!.end).toBeNull();
+    fighter(g, 'selene').hp = 0;
+    fighter(g, 'selene').alive = false;
+    expect(killAll(g).outcome).toBe('win');
+    expect(field(g, 'selene')).toBe(FIELD_POINTS.strong);
+  });
+
+  it('a rescue fight and a flight give nothing', () => {
+    const r = new Game(calm(), memoryStorage(), undefined, 0, ['hero', 'rin']);
+    r.state.dungeon.reached.mainline = 3;
+    expect(r.depart(MAIN, 2)).toEqual({ ok: true });
+    const c = floorOf(r.run!, 2).contents.find((x) => x.kind === 'rescue')!;
+    expect(stepOnto(r, c.at)).toEqual({ kind: 'rescue', who: 'selene' });
+    lull(r);
+    low(r, 'rin');
+    expect(r.submitRound({})!.end).toBeNull();
+    expect(killAll(r).outcome).toBe('win');
+    expect(field(r, 'rin')).toBe(0);
+    expect(r.state.party.roster.selene.bond).toBeUndefined();
+    const f = inMap(1);
+    elite(f);
+    lull(f);
+    low(f, 'selene');
+    expect(f.submitRound({})!.end).toBeNull();
+    flee(f);
+    expect(field(f, 'selene')).toBe(0);
+    expect(f.run!.bond).toEqual({});
+  });
+
+  it('five a run, and a wipe keeps what was earned', () => {
+    const g = inMap(1);
+    elite(g);
+    lull(g);
+    low(g, 'selene');
+    expect(g.submitRound({})!.end).toBeNull();
+    expect(killAll(g).outcome).toBe('win');       // strong 2 + saved 2
+    expect(downstairs(g, g.map().down!)).toMatchObject({ kind: 'floor', floor: 2 });   // + floor 1: 5
+    expect(field(g, 'selene')).toBe(BOND_RUN_CAP);
+    elite(g);
+    expect(killAll(g).outcome).toBe('win');
+    expect(field(g, 'selene')).toBe(BOND_RUN_CAP);   // the dive's cap
+    expect(field(g, 'chizuru')).toBe(FIELD_POINTS.strong * 2 + FIELD_POINTS.floor);
+    // a wipe: what was earned stays
+    elite(g);
+    for (const p of g.battle!.party) { p.hp = 0; p.alive = false; }
+    expect(g.submitRound({})!.end!.outcome).toBe('lose');
+    expect(g.phase).toBe('town');
+    expect(field(g, 'selene')).toBe(BOND_RUN_CAP);
+    // the next dive counts from 0
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(g.run!.bond).toEqual({});
+    expect(downstairs(g, g.map().down!)).toMatchObject({ kind: 'floor', floor: 2 });
+    expect(field(g, 'selene')).toBe(BOND_RUN_CAP + FIELD_POINTS.floor);
+  });
+
+  it('bond draws nothing', () => {
+    type Trace = { rng: number; loot: number; memory: number; ends: unknown[]; fields: number[] };
+    const play = (earn: boolean): Trace => {
+      const was = BOND_SWITCH.earn;
+      BOND_SWITCH.earn = earn;
+      try {
+        return withBondScale(0, () => {
+          const base = mulberry32(7);
+          let calls = 0;
+          const rng: Rng = () => { calls++; return base(); };
+          const g = new Game(rng, memoryStorage(), undefined, 0, HERO_LINEUP);
+          g.state.dungeon.reached.mainline = 3;
+          for (const id of HERO_LINEUP) g.state.party.roster[id].level = 12;
+          expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+          const ends: unknown[] = [];
+          const fight = () => {
+            for (let i = 0; i < 40 && g.phase === 'battle'; i++) {
+              const acts = Object.fromEntries(g.battle!.party.filter((c) => c.alive).map((c) => [c.key, { kind: 'attack', target: g.battle!.enemies.find((e) => e.alive)?.key ?? '' }]));
+              const r = g.submitRound(acts as never)!;
+              if (r.end) ends.push({ outcome: r.end.outcome, drops: r.end.drops, gear: r.end.gear.map((it) => [it.base, it.rarity]), fragments: r.end.fragments ?? [] });
+            }
+          };
+          stepOnto(g, plantAt(g, 'elite'));
+          fight();
+          downstairs(g, g.map().down!);
+          downstairs(g, g.map().down!);
+          stepOnto(g, g.map().boss!);
+          fight();
+          const fields = HERO_LINEUP.map((id) => bondOf(g.state.party.roster[id]).field);
+          return { rng: calls, loot: g.run?.lootDraws ?? -1, memory: g.run?.memoryDraws ?? -1, ends, fields };
+        });
+      } finally {
+        BOND_SWITCH.earn = was;
+      }
+    };
+    const on = play(true), off = play(false);
+    expect(on.ends.length).toBeGreaterThanOrEqual(2);
+    expect({ ...on, fields: [] }).toEqual({ ...off, fields: [] });
+    expect(off.fields.every((n) => n === 0)).toBe(true);
+    expect(on.fields.some((n) => n > 0)).toBe(true);
+  });
+});
+
+describe('gifts in the game (bond plan Task 6)', () => {
+  const pools: GiftPools = { loved: ['一', '二'], liked: ['三', '四'], neutral: ['五'], declined: { 'old-coin': '六' }, healed: { 'old-coin': '七' } };
+  /** Selene's reactions registered for the test (the registry starts empty), put back after. */
+  const withSelene = <T,>(f: () => T): T => {
+    const had = GIFT_LINES.selene;
+    GIFT_LINES.selene = pools;
+    try { return f(); } finally {
+      if (had) GIFT_LINES.selene = had; else delete GIFT_LINES.selene;
+    }
+  };
+  const withHer = () => {
+    const storage = memoryStorage();
+    const g = new Game(calm(), storage, undefined, 0, ['hero', 'rin']);
+    g.state.party = meet(g.state.party, 'selene', 1);
+    g.state.inventory['star-tear'] = 3;
+    g.state.inventory['old-coin'] = 3;
+    g.state.inventory['dusk-cloth'] = 1;
+    return { g, storage };
+  };
+
+  it('gifts only in town, once a day', () => withSelene(() => {
+    const { g, storage } = withHer();
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(g.give('selene', 'star-tear')).toEqual({ ok: false, reason: 'phase' });
+    expect(g.returnToTown()).toBe(true);
+    const before = bondPoints(g.state.party.roster.selene);
+    const r = g.give('selene', 'star-tear');
+    expect(r.ok && [r.taste, r.gained]).toEqual(['loved', 4]);
+    expect(bondPoints(g.state.party.roster.selene)).toBe(before + 4);
+    const saved = loadGame(storage);
+    expect(saved.status === 'ok' && saved.state.party.roster.selene.bond!.gifts).toEqual({ 'star-tear': 1 });
+    expect(saved.status === 'ok' && saved.state.story.gifted).toEqual(['selene']);
+    expect(g.give('selene', 'star-tear')).toEqual({ ok: false, reason: 'today' });
+    // Rin takes gifts once both of her tables are written (plan ruling 6): Task 16 wrote them, so take the one after
+    // her choice away to see the refusal
+    const oath = RIN_OATH.value;
+    RIN_OATH.value = null;
+    try { expect(g.give('rin', 'dusk-cloth')).toEqual({ ok: false, reason: 'unwritten' }); } finally { RIN_OATH.value = oath; }
+    g.state.gold = 1000;
+    expect(g.rest().ok).toBe(true);
+    const again = g.give('selene', 'star-tear');
+    expect(again.ok && again.count).toBe(2);
+    // a reload of the same day reads the same gifts
+    const b = Game.boot(calm(), storage);
+    expect(b.state.party.roster.selene.bond!.gifts).toEqual({ 'star-tear': 2 });
+    expect(b.give('selene', 'star-tear')).toEqual({ ok: false, reason: 'today' });
+  }));
+
+  it('give draws nothing', () => withSelene(() => {
+    const base = calm();
+    let calls = 0;
+    const g = new Game(() => { calls++; return base(); }, memoryStorage(), undefined, 0, ['hero', 'rin']);
+    g.state.party = meet(g.state.party, 'selene', 1);
+    g.state.inventory['star-tear'] = 3;
+    g.state.inventory['old-coin'] = 3;
+    const was = calls;
+    expect(g.give('selene', 'old-coin').ok).toBe(true);   // handed back
+    expect(g.give('selene', 'star-tear').ok).toBe(true);
+    expect(calls).toBe(was);
+  }));
+});
+
+describe('a bond choice (bond plan Task 8)', () => {
+  it('a choice counts once', () => {
+    bondsAdd('selene');
+    try {
+      const g = new Game(calm(), memoryStorage(), undefined, 0, ['hero', 'rin']);
+      g.state.party = meet(g.state.party, 'selene', 1);
+      const talk = () => bondOf(g.state.party.roster.selene).talk;
+      expect(g.bondChoice('bond:selene:1', 'promise')).toBe(false);   // not pending
+      g.pending.push('bond:selene:1');
+      expect(g.bondChoice('chat:selene:1' as SceneId, 'promise')).toBe(false);   // no bond scene
+      expect(g.bondChoice('bond:selene:1', 'promise')).toBe(true);
+      expect(talk()).toBe(3);                                         // her preferred tone
+      expect(g.bondChoice('bond:selene:1', 'promise')).toBe(false);   // once
+      expect(talk()).toBe(3);
+      expect(g.sceneDone('bond:selene:1', 'played')).toBe(true);
+      expect(g.bondChoice('bond:selene:1', 'ask')).toBe(false);       // done
+      g.pending.push('bond:selene:2');
+      expect(g.bondChoice('bond:selene:2', null)).toBe(true);         // skipped: 2
+      expect(talk()).toBe(5);
+      g.state.party.roster.selene.bond!.talk = 11;
+      g.pending.push('bond:selene:3');
+      expect(g.bondChoice('bond:selene:3', 'promise')).toBe(true);
+      expect(talk()).toBe(12);                                        // the cap
+    } finally { bondsBack(); }
+  });
+});
+
+describe('a talk a day (bond plan Task 9)', () => {
+  const ready = (storage = memoryStorage()) => {
+    const g = new Game(calm(), storage, undefined, 0, ['hero', 'rin']);
+    g.state.party.roster.rin.memories = 2;
+    g.state.party.roster.rin.bond = { talk: 0, field: 10, gifts: {} };   // 10 + 6 + 10 = 26, 同行
+    return g;
+  };
+  const registered = <T,>(f: () => T): T => { bondsAdd('rin'); try { return f(); } finally { bondsBack(); } };
+
+  it('one talk a day', () => registered(() => {
+    const g = ready();
+    g.state.gold = 1000;
+    expect(g.openBond('rin')).toBe('bond:rin:1');
+    expect(g.pending).toContain('bond:rin:1');
+    expect(g.bondChoice('bond:rin:1', 'stay')).toBe(true);
+    expect(g.sceneDone('bond:rin:1', 'played')).toBe(true);
+    expect(today(g.state).talked).toBe(true);
+    g.state.party.roster.rin.memories = 4;
+    g.state.party.roster.rin.bond!.field = 30;   // 10 + 12 + 3 + 30 = 55: 信賴, the 2nd is open
+    expect(g.openBond('rin')).toBeNull();          // one a day
+    expect(g.rest().ok).toBe(true);
+    expect(g.openBond('rin')).toBe('bond:rin:2');  // a new day
+    g.sceneDone('bond:rin:2', 'skipped');
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(g.openBond('rin')).toBeNull();          // not in the labyrinth
+  }));
+
+  it('a talk cut short counts nothing', () => registered(() => {
+    const storage = memoryStorage();
+    const g = ready(storage);
+    expect(g.chooseTier('normal')).toEqual({ ok: true });   // the town saves
+    expect(g.openBond('rin')).toBe('bond:rin:1');            // and the scene never ends
+    const b = Game.boot(calm(), storage);
+    expect(b.state.story.talked).toBeUndefined();
+    expect(bondOf(b.state.party.roster.rin).talk).toBe(0);
+    expect(b.openBond('rin')).toBe('bond:rin:1');
+  }));
+});
+
+describe('the night walk and the romance (bond plan Task 10)', () => {
+  /** In town after the finale and the festival, Liz at 心契 with her 4th bond scene seen; her romance registered. */
+  const walk = (storage = memoryStorage()) => {
+    const g = new Game(calm(), storage, undefined, 0, ['hero', 'rin']);
+    const st = g.state;
+    st.story.act1Cleared = true;
+    st.story.finaleCleared = true;
+    st.story.queue = [];
+    st.story.seen.push('epilogue', 'bond:liz:1', 'bond:liz:2', 'bond:liz:3', 'bond:liz:4');   // in order (the save checks it)
+    st.party = meet(st.party, 'liz', 1);
+    st.party.roster.liz.memories = chainLength('liz');
+    st.party.roster.liz.bond = { talk: 12, field: 40, gifts: { 'old-coin': 24 } };
+    return g;
+  };
+  const registered = <T,>(f: () => T): T => {
+    regAdd(ROMANCES_WRITTEN, 'liz');
+    bondsAdd('liz');
+    try { return f(); } finally { romancesBack(); bondsBack(); TOGETHER_WRITTEN.value = TOGETHER_BASE; }
+  };
+
+  it('the choice is for keeps', () => registered(() => {
+    const storage = memoryStorage();
+    const g = walk(storage);
+    expect(g.walkOpen()).toBe(true);
+    expect(g.chooseRomance('liz')).toEqual({ ok: true, id: 'romance:liz' });
+    expect(g.state.story.romance).toBe('liz');
+    expect(g.state.story.queue).toContain('romance:liz');
+    expect(g.pending).toContain('romance:liz');
+    expect(g.walkOpen()).toBe(false);
+    expect(g.chooseRomance('liz')).toEqual({ ok: false, reason: 'chosen' });
+    expect(g.state.story.romance).toBe('liz');
+    const b = Game.boot(calm(), storage);
+    expect(b.state.story.romance).toBe('liz');
+    expect(b.chooseRomance('rin')).toEqual({ ok: false, reason: 'chosen' });
+  }));
+
+  it('together writes nothing', () => registered(() => {
+    const g = walk();
+    const before = JSON.stringify(g.state);
+    expect(g.walkTogether()).toBe(true);
+    expect(JSON.stringify(g.state)).toBe(before);
+    expect(g.walkOpen()).toBe(false);
+    expect(g.walkTogether()).toBe(false);   // asked already
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(g.returnToTown()).toBe(true);
+    expect(g.walkOpen()).toBe(true);        // the next return asks again
+  }));
+
+  it('nobody eligible, no night walk', () => {
+    const g = walk();
+    ROMANCES_WRITTEN.splice(0);   // not registered (bond plan Task 21 registered all nine: none here)
+    try {
+      expect(g.walkOpen()).toBe(false);
+      expect(g.chooseRomance('liz')).toEqual({ ok: false, reason: 'ineligible' });
+    } finally { romancesBack(); }
+    registered(() => {
+      g.state.party.roster.liz.bond = { talk: 0, field: 0, gifts: {} };
+      expect(g.walkOpen()).toBe(false);
+      expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+      expect(g.walkOpen()).toBe(false);   // not in the labyrinth either
+    });
+  });
+
+  it('a romance is a night scene', () => registered(() => {
+    expect(sceneTime('romance:liz')).toBe('night');
+    expect(sceneTime('ending:liz')).toBe('day');
+  }));
+});
+
+describe('a romance cut short plays at night (bond plan Task 11)', () => {
+  /** In town after the finale and the festival, Liz chosen and her romance never finished, the town saved. */
+  const chosen = (storage = memoryStorage(), prep?: (g: Game) => void) => {
+    const g = new Game(calm(), storage, undefined, 0, ['hero', 'rin']);
+    const st = g.state;
+    st.story.act1Cleared = true;
+    st.story.finaleCleared = true;
+    st.story.queue = [];
+    st.story.seen.push('epilogue', 'bond:liz:1', 'bond:liz:2', 'bond:liz:3', 'bond:liz:4');   // in order (the save checks it)
+    st.party = meet(st.party, 'liz', 1);
+    st.party.roster.liz.memories = 1;
+    st.party.roster.liz.bond = { talk: 12, field: 40, gifts: { 'old-coin': 24 } };   // 10 + 3 + 82 = 95
+    st.party = meet(st.party, 'noel', 1);
+    st.party = meet(st.party, 'selene', 1);   // a pair with a banter ready
+    st.party.roster.noel.memories = 1;
+    st.story.untold = ['mem:noel:1'];
+    prep?.(g);
+    expect(g.chooseRomance('liz')).toEqual({ ok: true, id: 'romance:liz' });   // saved; the walk never ends
+    return g;
+  };
+  const registered = <T,>(f: () => T): T => {
+    regAdd(ROMANCES_WRITTEN, 'liz');
+    bondsAdd('liz');
+    try { return f(); } finally { romancesBack(); bondsBack(); }
+  };
+
+  it('a romance cut short plays in the next night', () => registered(() => {
+    const storage = memoryStorage();
+    chosen(storage);
+    const g = Game.boot(calm(), storage);
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(g.returnToTown()).toBe(true);
+    expect(g.arrival).not.toContain('romance:liz');
+    expect(g.night).toContain('romance:liz');
+    expect(g.night[0]).toBe('romance:liz');                         // before any memory
+    expect(g.night.some((id) => id.startsWith('mem:'))).toBe(false); // a romance night tells none
+    expect(g.arrival.some((id) => id.startsWith('banter:'))).toBe(false);
+    expect(g.sceneDone('romance:liz', 'played')).toBe(true);
+    expect(g.state.story.queue).not.toContain('romance:liz');
+  }));
+
+  it('a reload in town keeps it in the night', () => registered(() => {
+    const storage = memoryStorage();
+    chosen(storage);
+    const g = Game.boot(calm(), storage);
+    expect(g.night).toContain('romance:liz');   // the town it was chosen in, read back
+    expect(g.arrival).not.toContain('romance:liz');
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(g.returnToTown()).toBe(true);
+    const b = Game.boot(calm(), storage);       // back in town, before it plays
+    expect(b.night).toContain('romance:liz');
+    expect(b.arrival).not.toContain('romance:liz');
+  }));
+
+  it('the spring festival comes before a romance on the same night', () => registered(() => {
+    expect(SEASON_SCENES.spring).toBe('season:spring');
+    const storage = memoryStorage();
+    chosen(storage, (g) => {
+      const st = g.state;
+      st.party = meet(st.party, 'chizuru', 1);
+      st.party.roster.chizuru.memories = chainLength('chizuru');
+      for (let n = 1; n <= chainLength('chizuru'); n++) st.story.seen.push(memScene('chizuru', n));
+      st.story.seen.push('home:chizuru');
+      st.story.day = 20;
+      st.story.springDay = 20;
+    });
+    const g = Game.boot(calm(), storage);
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(g.returnToTown()).toBe(true);
+    expect(g.night).toEqual(['season:spring', 'romance:liz']);   // no memory
+  }));
+});
+
+describe('one heart-to-heart at a time (bond review fix)', () => {
+  it('opening a second talk while one is pending returns null', () => {
+    bondsAdd('rin', 'selene');
+    try {
+      const g = new Game(calm(), memoryStorage(), undefined, 0, ['hero', 'rin']);
+      g.state.party.roster.rin.memories = 2;
+      g.state.party.roster.rin.bond = { talk: 0, field: 10, gifts: {} };    // 同行
+      g.state.party = meet(g.state.party, 'selene', 1);
+      g.state.party.roster.selene.memories = 1;
+      g.state.story.seen.push('mem:selene:1');
+      g.state.party.roster.selene.bond = { talk: 0, field: 7, gifts: {} };  // 20: 同行
+      expect(g.openBond('rin')).toBe('bond:rin:1');
+      expect(g.openBond('selene')).toBeNull();          // Rin's is still pending: one a day
+      expect(g.pending.filter((id) => id.startsWith('bond:'))).toEqual(['bond:rin:1']);
+      expect(g.openBond('rin')).toBeNull();             // nor the same one twice
+      expect(g.sceneDone('bond:rin:1', 'played')).toBe(true);
+      expect(g.openBond('selene')).toBeNull();          // and once done, today's talk is had
+    } finally { bondsBack(); }
+  });
+});
+
+describe('a tier gained on a dive (bond plan Task 14)', () => {
+  it('a run that raised a tier says so', () => {
+    const g = new Game(calm(), memoryStorage(), undefined, 0, HERO_LINEUP);
+    g.state.dungeon.reached.mainline = 3;
+    g.state.party.roster.chizuru.bond = { talk: 0, field: 9, gifts: {} };   // 19: one point from 同行
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(downstairs(g, g.map().down!)).toMatchObject({ kind: 'floor', floor: 2 });
+    g.state.inventory['return-lamp'] = 1;
+    expect(g.useReturnLamp()).toBe(true);
+    expect(g.bondUps).toEqual([{ id: 'chizuru', tier: 1 }]);   // and only her: the others are still 相識
+  });
+
+  it('a wipe keeps the news too', () => {
+    const g = new Game(calm(), memoryStorage(), undefined, 0, HERO_LINEUP);
+    g.state.dungeon.reached.mainline = 3;
+    g.state.party.roster.selene.bond = { talk: 0, field: 9, gifts: {} };
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    stepOnto(g, plantAt(g, 'elite'));
+    for (const e of g.battle!.enemies) e.sleep = 9;
+    for (const p of g.battle!.party) { p.hp = 0; p.alive = false; }
+    g.submitRound({});
+    expect(g.phase).toBe('town');
+    expect(g.bondUps).toEqual([]);   // nothing earned: a wipe is no floor
+    const h = new Game(calm(), memoryStorage(), undefined, 0, HERO_LINEUP);
+    h.state.dungeon.reached.mainline = 3;
+    h.state.party.roster.selene.bond = { talk: 0, field: 9, gifts: {} };
+    expect(h.depart(MAIN, 1)).toEqual({ ok: true });
+    stepOnto(h, plantAt(h, 'elite'));
+    expect(killAll(h).outcome).toBe('win');   // +2: 21, 同行
+    stepOnto(h, plantAt(h, 'elite'));
+    for (const p of h.battle!.party) { p.hp = 0; p.alive = false; }
+    h.submitRound({});
+    expect(h.phase).toBe('town');
+    expect(h.bondUps).toEqual([{ id: 'selene', tier: 1 }]);
   });
 });

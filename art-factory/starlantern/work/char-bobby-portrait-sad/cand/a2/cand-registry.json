@@ -1,0 +1,31 @@
+{
+  "assets": {
+    "char-bobby-portrait-sad": {
+      "allow_edge": [
+        "bottom"
+      ],
+      "generator": "codex/gpt-6-astra",
+      "defringe": null,
+      "neutralize_tint": null,
+      "final": "art-factory/starlantern/work/char-bobby-portrait-sad/cand/a2/char-bobby-portrait-sad.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-bobby-portrait-sad\\a2\\char-bobby-portrait-sad-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "block": 10,
+        "size": [
+          123,
+          121
+        ]
+      },
+      "status": "qa_passed"
+    }
+  }
+}

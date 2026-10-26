@@ -12,10 +12,14 @@ import { art } from '../../render/artPaths';
 import { NO_ART, type ArtIndex } from '../../render/textures';
 import { STATUS_TABS, resetStatsView, resetTalentView, resetTreeView, revealIn } from './statusTabs';
 import { StatusScene, WIDE_TABS } from './status';
+import { shortHeads } from './statusTabs';
 import { CHAINS, chainLength } from '../../data/story/chains';
 import { T } from '../../data/text.zh-TW';
+import { statSources } from '../../engine/party';
+import { bondStats, maxBondRecord } from '../../engine/story/bond';
 import { RUNES, type RuneRef } from '../../data/runes';
 import { fromMember, skillFor } from '../../engine/battle';
+import { fieldCost } from '../../engine/field';
 import { runeFits, runeWhy } from '../../engine/runes';
 import { memoryStorage } from '../../engine/testing';
 import type { SceneName } from '../scene';
@@ -224,8 +228,28 @@ describe('StatusScene', () => {
     it('the stats tab shows a 記憶 column', () => {
       const { root } = setup('scarlet', NO_ART, (g) => { g.state.party.roster.scarlet.memories = 3; });
       const heads = [...root.querySelectorAll('[data-cat=primary] thead th')].map((th) => th.textContent);
-      expect(heads.indexOf(T.ui2.status.sources.memory)).toBe(heads.indexOf(T.ui2.status.sources.talent) + 1);
+      // review of Tasks 12-14: only the sources she has are columns; no talent, so 記憶 follows 裝備
+      expect(heads).not.toContain(T.ui2.status.sources.talent);
+      expect(heads.indexOf(T.ui2.status.sources.memory)).toBe(heads.indexOf(T.ui2.status.sources.gear) + 1);
       expect(root.querySelector('[data-stat=str] .slx-memory')!.textContent).toBe('+' + 3 * CHAINS.scarlet.gain.str!);
+    });
+
+    it('the stat table has a bond column', () => {
+      const { root, game } = setup('scarlet', NO_ART, (g) => {
+        const m = g.state.party.roster.scarlet;
+        Object.assign(m, { level: 30, bond: maxBondRecord('scarlet') });
+      });
+      const heads = [...root.querySelectorAll('[data-cat=attack] thead th')].map((th) => th.textContent);
+      expect(T.ui2.status.sources.bond).toBe('羈絆');
+      expect(heads.indexOf('羈絆')).toBe(heads.indexOf(T.ui2.status.sources.gear) + 1);   // no set, talent or memory columns here
+      const want = bondStats(game.state.party.roster.scarlet);
+      expect(want.atk).toBe(1);
+      expect(root.querySelector('[data-stat=atk] .slx-bond')!.textContent).toBe('+1');
+      expect(root.querySelector('[data-stat=spd] .slx-bond')!.textContent).toBe('—');
+      // No bond: no column, as with no pieces there is no 記憶 column (review of Tasks 12-14).
+      const plain = setup('scarlet');
+      expect(plain.root.querySelector('.slx-bond')).toBeNull();
+      expect(plain.root.querySelector('.slx-memory')).toBeNull();
     });
 
     it('six collapsible categories; rows show base, growth, gear, set, talent and primary sources', () => {
@@ -241,7 +265,12 @@ describe('StatusScene', () => {
       expect(cats.map((c) => c.querySelector('.slx-stat-cat-head')!.getAttribute('aria-expanded'))).toEqual(['true', 'true', 'false', 'false', 'false', 'false']);
       expect(root.querySelector('[data-cat=defense] tbody')).toBeNull();     // folded: no rows to land on
       const cols = [...root.querySelectorAll('[data-cat=attack] thead th')].map((th) => th.textContent);
-      expect(cols).toEqual(['', '基礎', '成長', '裝備', '套裝', '天賦', '記憶', '主屬', '上限', '合計']);
+      // One column per stat source she has, in statSources order (bond plan Task 3 added 羈絆 after 記憶; review of Tasks 12-14:
+      // a source with nothing for any stat, and 上限 with nothing capped, leave the page).
+      const sourceCols = statSources(game.state.party.roster.scarlet).filter((p, i) => i === 0 || Object.values(p.stats).some((v) => v))
+        .map((p) => T.ui2.status.sourcesShort[p.source] ?? T.ui2.status.sources[p.source]);
+      expect(cols).toEqual(['', ...sourceCols, '合計']);
+      expect(sourceCols).toEqual(['基礎', '成長', '裝備', '天賦', '主屬']);
       expect(root.querySelector('[data-stat=str] .slx-talent')!.textContent).toBe(T.signed(TALENT_PER.str! * TALENT_SCALE));
       // str is scarlet's affinity: 3 str gives 4.5 atk, shown whole so the parts add up to the floored total.
       const atk = root.querySelector('[data-stat=atk]')!;
@@ -264,6 +293,19 @@ describe('StatusScene', () => {
       expect(line!.previousElementSibling).toBe(head(root, 'primary'));       // right after the heading
       expect(T.ui2.status.affinity(T.ui2.status.affinityAll)).toBe('取向：全能');
       expect(root.querySelectorAll('.slx-stat-affinity')).toHaveLength(1);    // the primary section only
+    });
+
+    it('the hero has no 羈絆 column: he never has a bond (bond plan Task 3)', () => {
+      const { root, tab } = setup('hero', NO_ART, (game) => {
+        const p = game.state.party;
+        p.recruited.push('hero');
+        p.grid[0] = 'hero';
+        p.roster.hero.level = 10;   // growth to show (review of Tasks 12-14: only the sources he has are columns)
+      });
+      expect(tab()).toBe('能力');
+      const heads = [...root.querySelectorAll('[data-cat=attack] thead th')].map((th) => th.textContent);
+      expect(heads).toEqual(['', '基礎', '成長', '合計']);
+      expect(root.querySelector('.slx-bond')).toBeNull();
     });
 
     it("the hero's affinity reads 全能", () => {
@@ -552,6 +594,42 @@ describe('StatusScene', () => {
     expect(root.querySelector('[data-skill=twin-slash] .slx-skill-cost')!.textContent).toBe(T.ui2.status.tp(want));
   });
 
+  it("the skills tab asks the field's price for every field skill (time and moon Task 10)", () => {
+    // Old debt (a), a guard: the tab and the field menu both price a skill by fromMember and skillCost, teacher's gift included.
+    const fields = Object.values(SKILLS).filter((sk) => sk.field && !sk.abyss);
+    const owners = [...new Set(fields.map((sk) => sk.owner))] as CharacterId[];
+    expect(owners.length).toBeGreaterThan(0);
+    let gifted = 0;
+    // the hero has no memory keystone in the table: his row is opened and taken out again
+    const keys = MEMORY_KEYSTONES as Partial<Record<CharacterId, (typeof MEMORY_KEYSTONES)[keyof typeof MEMORY_KEYSTONES]>>;
+    for (const id of owners) {
+      const own = keys[id];
+      keys[id] = 'teachers-gift';   // opened for this test only, as engine/field.test.ts does
+      try {
+        const mine = fields.filter((sk) => sk.owner === id).map((sk) => sk.id);
+        const { root, s, game } = setup(id, NO_ART, (g) => {
+          if (!g.state.party.recruited.includes(id)) g.state.party.recruited.push(id);
+          const m = g.state.party.roster[id];
+          m.level = 50;
+          m.memories = chainLength(id);
+          m.tree = Object.fromEntries(mine.map((sk) => [sk, 1]));
+        });
+        s.onAction('right'); s.onAction('right');   // the skills tab
+        const m = game.state.party.roster[id];
+        for (const sk of mine) {
+          const cost = root.querySelector(`.slx-tab-skills [data-skill=${sk}] .slx-skill-cost`);
+          expect(cost, `${id} ${sk}`).not.toBeNull();
+          expect(cost!.textContent, `${id} ${sk}`).toBe(T.ui2.status.tp(fieldCost(m, sk)));
+          if (fieldCost(m, sk) < SKILLS[sk].tp) gifted++;
+        }
+      } finally {
+        if (own === undefined) delete keys[id];
+        else keys[id] = own;
+      }
+    }
+    expect(gifted).toBeGreaterThan(0);   // the gift did lower a price, so the guard sees it
+  });
+
   it('a turret with both variants keeps its name whole (plan 8d Task 8)', () => {
     const { root, s, game } = setup('bobby', NO_ART, (g) => { g.state.party.recruited.push('bobby'); });
     game.state.party.roster.bobby.level = 50;
@@ -578,21 +656,31 @@ describe('StatusScene', () => {
     expect(root.querySelector('.slx-tree-info-name')!.textContent).toBe('修理無人機・急救');
   });
 
-  it('tree nodes and the skills tab show the skill icon when published', () => {
-    const has = (u: string) => u === art.icon('blaze-ring');
+  it('tree nodes and the skills tab show the skill icon when published: 16 in the tab, 14 in the tree (art step 9)', () => {
+    const has = (u: string) => u === art.skillIcon('blaze-ring', 16) || u === art.skillIcon('blaze-ring', 14);
     const { root, s } = setup('scarlet', { has }, (g) => { g.state.party.roster.scarlet.tree = { ...g.state.party.roster.scarlet.tree, 'blaze-ring': 1 }; });
     s.onAction('right'); s.onAction('right');                          // 技能
     const icons = [...root.querySelectorAll<HTMLImageElement>('.slx-tab-skills img.slx-skill-ico')];
     expect(icons.map((i) => i.closest('[data-skill]')!.getAttribute('data-skill'))).toEqual(['blaze-ring']);
-    expect(icons[0].getAttribute('src')).toBe(art.icon('blaze-ring'));
+    expect(icons[0].getAttribute('src')).toBe(art.skillIcon('blaze-ring', 16));
     expect(icons[0].getAttribute('alt')).toBe('');
+    expect([icons[0].getAttribute('width'), icons[0].getAttribute('height')]).toEqual(['16', '16']);
     expect(icons[0].nextElementSibling!.classList.contains('slx-skill-head')).toBe(true);
     s.onAction('right');                                               // 技能樹
     const withIcon = [...root.querySelectorAll('.slx-tree-node')].filter((n) => n.querySelector('img.slx-skill-ico')).map((n) => n.getAttribute('data-node'));
     // The skill's own node only: its variant (炎環斬・燎原) names the skill and goes without (8d Task 6 review).
     expect(withIcon).toEqual(['blaze-ring']);
     expect(TREES.scarlet.branches.flatMap((b) => b.nodes).filter((n) => n.skill === 'blaze-ring').map((n) => n.id)).toEqual(['blaze-ring', 'scarlet-ring-blaze']);
-    expect(root.querySelector('.slx-tree-node[data-node=blaze-ring] img')!.getAttribute('src')).toBe(art.icon('blaze-ring'));
+    const treeIco = root.querySelector('.slx-tree-node[data-node=blaze-ring] img')!;
+    expect(treeIco.getAttribute('src')).toBe(art.skillIcon('blaze-ring', 14));
+    expect([treeIco.getAttribute('width'), treeIco.getAttribute('height'), treeIco.getAttribute('alt')]).toEqual(['14', '14', '']);
+  });
+
+  it('a skill whose icon is not loaded keeps its name alone (the old plan 4 icon is never asked for)', () => {
+    const { root, s } = setup('scarlet', { has: (u: string) => u === art.icon('provoke') });
+    s.onAction('right'); s.onAction('right');
+    expect(root.querySelector('[data-skill=provoke] .slx-skill-name')!.textContent).toBe('挑釁');
+    expect(root.querySelector('.slx-skill-ico')).toBeNull();
   });
 
   it('without art no skill shows an icon', () => {
@@ -1346,7 +1434,7 @@ describe('StatusScene', () => {
       const { s, root, msg, noel, node, top, game, tab } = onTalent(6);
       for (let i = 0; i < 4; i++) s.onAction('left');
       expect(tab()).toBe('能力');
-      expect(root.querySelector('[data-stat=int] .slx-talent')!.textContent).toBe('—');
+      expect(root.querySelector('[data-stat=int] .slx-talent')).toBeNull();   // no talent yet: no column (review of Tasks 12-14)
       for (let i = 0; i < 4; i++) s.onAction('right');
       const spy = vi.spyOn(game, 'raiseTalent');
       s.onAction('confirm');
@@ -1829,7 +1917,10 @@ describe('the skills page and the workshop (plan 8g Task 5)', () => {
     expect(w.root.querySelector('.slx-tab-sel')!.textContent).toBe(T.ui2.status.tabs.skills);
     expect(w.root.querySelector('.slx-hint')!.textContent).toBe(T.ui2.status.hintSkills);
     const fire = w.skill('fire-star')!;
-    expect(fire.querySelector('.slx-skill-head .slx-skill-slots')!.textContent).toBe('◆○');
+    const slots = fire.querySelector('.slx-skill-head .slx-skill-slots')!;
+    expect([...slots.querySelectorAll('[data-mark]')].map((e) => e.getAttribute('data-mark'))).toEqual(['on:spread', 'empty']);
+    expect(slots.textContent).toBe('');
+    for (const img of slots.querySelectorAll('img')) expect(img.getAttribute('alt')).toBeTruthy();
     const rune = fire.querySelector('.slx-skill-rune')!;
     // What the rune does to this skill, in the card's final numbers (final review): not its own 「威力 60%」.
     const m0 = w.game.state.party.roster.noel;
@@ -1839,17 +1930,18 @@ describe('the skills page and the workshop (plan 8g Task 5)', () => {
     expect(rune.textContent).toContain('84');
     expect(rune.textContent).not.toContain(RUNES.spread.text('magic'));
     expect(rune.classList.contains('slx-line-off')).toBe(false);
-    expect(w.skill('ice-star')!.querySelector('.slx-skill-slots')!.textContent).toBe('○○');
+    expect([...w.skill('ice-star')!.querySelector('.slx-skill-slots')!.querySelectorAll('[data-mark]')].map((e) => e.getAttribute('data-mark'))).toEqual(['empty', 'empty']);
     // Enter: the workshop on her first skill that takes runes; a click on a skill: that skill.
     w.s.onAction('confirm');
     expect(w.go).toHaveBeenLastCalledWith('workshop', 'noel:fire-star');
     w.skill('ice-star')!.click();
     expect(w.go).toHaveBeenLastCalledWith('workshop', 'noel:ice-star');
-    // A rune that no longer works (火焰波 hits them all): ◇, greyed, with its reason.
+    // A rune that no longer works (火焰波 hits them all): its icon greyed, the line greyed, with its reason.
     const off = open(noel({ 'flame-wave': 1 }, { 'flame-wave': [R('spread')] }), 'tab:skills:noel');
     const m = off.game.state.party.roster.noel;
     const why = runeWhy(runeFits(skillFor(fromMember(m, 0), 'flame-wave')!, 'spread', [])!);
-    expect(off.skill('flame-wave')!.querySelector('.slx-skill-slots')!.textContent).toBe('◇○');
+    expect([...off.skill('flame-wave')!.querySelector('.slx-skill-slots')!.querySelectorAll('[data-mark]')].map((e) => e.getAttribute('data-mark'))).toEqual(['off:spread', 'empty']);
+    expect(off.skill('flame-wave')!.querySelector('.slx-skill-slots .slx-rune-off')).not.toBeNull();
     const line = off.skill('flame-wave')!.querySelector('.slx-skill-rune')!;
     expect(line.classList.contains('slx-line-off')).toBe(true);
     expect(line.textContent).toContain(T.ui2.workshop.off(why));
@@ -1910,7 +2002,8 @@ describe('the skills page and the workshop (plan 8g Task 5)', () => {
   });
 
   it('the stats tables name the primary column 主屬, the whole word in its title', () => {
-    const w = open(() => undefined, 'scarlet');
+    // a primary on her sword to convert, so the column is on her page (review of Tasks 12-14)
+    const w = open((g) => { g.state.party.roster.scarlet.equip.weapon = { ...plainItem('iron-sword', 2), affixes: [{ key: 'str', value: 3 }] }; }, 'scarlet');
     const head = [...w.root.querySelectorAll<HTMLElement>('.slx-stat-table thead th')].find((th) => th.getAttribute('title') === T.ui2.status.sources.primary)!;
     expect(head.textContent).toBe(T.ui2.status.sourcesShort.primary);
     expect(T.ui2.status.sourcesShort.primary).toBe('主屬');
@@ -2047,5 +2140,144 @@ describe('revealIn in stage px (legibility Task 2a)', () => {
       rect.mockRestore(); sh.mockRestore(); ch.mockRestore();
       screen.remove();
     }
+  });
+});
+
+describe('the status page and the bond (bond plan Task 14)', () => {
+  it("a companion's page shows her bond, the hero's does not", () => {
+    const { root } = setup('scarlet', NO_ART, (g) => { g.state.party.roster.scarlet.bond = { talk: 0, field: 10, gifts: {} }; });
+    expect(root.querySelector('.slx-stat-bond')!.textContent).toBe('好感度　同行');
+    const plain = setup('scarlet');
+    expect(plain.root.querySelector('.slx-stat-bond')!.textContent).toBe('好感度　相識');   // no record: the tier its pieces make
+    const hero = setup('hero', NO_ART, (game) => { const p = game.state.party; p.recruited.push('hero'); p.grid[0] = 'hero'; });
+    expect(hero.root.querySelector('.slx-stat-bond')).toBeNull();
+  });
+});
+
+describe("the stat table's columns (review of bond plan Tasks 12-14)", () => {
+  const heads = (root: HTMLElement, cat: string) => [...root.querySelectorAll(`[data-cat=${cat}] thead th`)].map((th) => th.textContent);
+  const alt = (root: HTMLElement, sel: string) => [...root.querySelectorAll(sel)].map((c) => c.classList.contains('slx-col-alt'));
+  /** Scarlet at Lv 1 with her sword and nothing else: no growth yet, no set, talent, memory, bond or conversion. */
+  const early = (g: Game) => {
+    const m = g.state.party.roster.scarlet;
+    Object.assign(m, { level: 1, talents: {}, memories: 0 });
+    delete m.bond;
+  };
+
+  it('an early companion shows only the sources she has, the same in every category; 上限 only once a stat is capped', () => {
+    const { root, game, s } = setup('scarlet', NO_ART, early);
+    expect(heads(root, 'primary')).toEqual(['', '基礎', '裝備', '合計']);
+    expect(heads(root, 'attack')).toEqual(heads(root, 'primary'));
+    expect(root.querySelector('.slx-growth, .slx-set, .slx-talent, .slx-memory, .slx-bond, .slx-primary, .slx-cap')).toBeNull();
+    // 3 agi converts into crit (主屬 shows), and 70 crit runs into its cap of 60 (上限 shows), on every category alike
+    game.state.party.roster.scarlet.equip.weapon = { ...plainItem('iron-sword', 2), affixes: [{ key: 'agi', value: 3 }, { key: 'crit', value: 70 }] };
+    s.onAction('next'); s.onAction('prev');
+    expect(heads(root, 'primary')).toEqual(['', '基礎', '裝備', '主屬', '上限', '合計']);
+    expect(heads(root, 'attack')).toEqual(heads(root, 'primary'));
+    expect(root.querySelector('[data-stat=crit] .slx-cap')!.textContent).toBe('−10.6');
+    expect(alt(root, '.slx-stat-table th, .slx-stat-table td').some(Boolean)).toBe(false);   // few columns: no tint
+  });
+
+  it('a fully built one shows them all, every other column tinted, header and cells alike', () => {
+    const { root } = setup('scarlet', NO_ART, (g) => {
+      const m = g.state.party.roster.scarlet;
+      const raised = raiseTalent({ ...m, level: 30 }, 'scarlet-t00');
+      if (!raised.ok) throw new Error(raised.reason);
+      Object.assign(m, raised.member, { memories: 3, bond: maxBondRecord('scarlet') });
+      m.equip.weapon = { ...plainItem('iron-sword', 2), affixes: [{ key: 'agi', value: 3 }, { key: 'crit', value: 70 }] };
+      m.equip.body = { ...plainItem('cloth-robe', 9), rarity: 'set', special: 'set-blaze-body' };      // two of 焰紋: +15 fireDmg
+      m.equip.hands = { ...plainItem('cloth-gloves', 10), rarity: 'set', special: 'set-blaze-hands' };
+      expect(statSources(m).every((p) => Object.values(p.stats).some((v) => v))).toBe(true);   // every source has something
+    });
+    expect(heads(root, 'attack')).toEqual(['', '基礎', '成長', '裝備', '套裝', '天賦', '記憶', '羈絆', '主屬', '上限', '合計']);
+    // every other one from the second, so any two side by side have one tinted: the header and each row the same
+    const want = [false, false, true, false, true, false, true, false, true, false, true];
+    expect(alt(root, '[data-cat=attack] thead th')).toEqual(want);
+    for (const tr of root.querySelectorAll('[data-cat=attack] tbody tr')) {
+      expect([...tr.children].map((c) => c.classList.contains('slx-col-alt'))).toEqual(want);
+    }
+  });
+});
+
+describe("the stat table's short headings (second review of bond plan Tasks 12-14)", () => {
+  it('the rule: one character once the narrowest source column no longer fits two with a 4px gap', () => {
+    expect(shortHeads([40, 30, 28])).toBe(false);     // 24px of heading + 4px apart: just fits
+    expect(shortHeads([40, 30, 27.9])).toBe(true);
+    expect(shortHeads([])).toBe(false);               // nothing measured
+    expect(shortHeads([0, 0, 0])).toBe(false);        // not laid out yet: the full words
+  });
+
+  it('the short forms sit beside the full names in the text table', () => {
+    const t = T.ui2.status;
+    expect(Object.keys(t.sourcesOne).sort()).toEqual(Object.keys(t.sources).sort());
+    expect(Object.values(t.sourcesOne).every((s) => [...s].length === 1)).toBe(true);
+    expect(['base', 'growth', 'gear', 'set', 'talent', 'memory', 'bond', 'primary'].map((k) => t.sourcesOne[k]).join('') + t.capColOne).toBe('基成裝套賦憶絆主限');
+  });
+
+  /** Every th of the stat tables `w` stage px wide while the test runs (jsdom lays nothing out; no screen, so rects are stage px). */
+  const wide = (w: number) => {
+    const was = HTMLElement.prototype.getBoundingClientRect;
+    HTMLElement.prototype.getBoundingClientRect = function (this: HTMLElement) {
+      const r = { x: 0, y: 0, left: 0, top: 0, right: this.tagName === 'TH' ? w : 0, bottom: 14, width: this.tagName === 'TH' ? w : 0, height: 14 };
+      return { ...r, toJSON: () => r } as DOMRect;
+    };
+    return () => { HTMLElement.prototype.getBoundingClientRect = was; };
+  };
+  const heads = (root: HTMLElement, cat: string) => [...root.querySelectorAll(`[data-cat=${cat}] thead th`)].map((th) => th.textContent);
+  const built = (g: Game) => {
+    const m = g.state.party.roster.scarlet;
+    const raised = raiseTalent({ ...m, level: 30 }, 'scarlet-t00');
+    if (!raised.ok) throw new Error(raised.reason);
+    Object.assign(m, raised.member, { memories: 3, bond: maxBondRecord('scarlet') });
+    m.equip.weapon = { ...plainItem('iron-sword', 2), affixes: [{ key: 'agi', value: 3 }, { key: 'crit', value: 70 }] };
+    m.equip.body = { ...plainItem('cloth-robe', 9), rarity: 'set', special: 'set-blaze-body' };
+    m.equip.hands = { ...plainItem('cloth-gloves', 10), rarity: 'set', special: 'set-blaze-hands' };
+  };
+
+  it('crowded columns take the one-character forms, 合計 and the row names stay; the full word stays in the title', () => {
+    const back = wide(25);
+    try {
+      const { root } = setup('scarlet', NO_ART, built);
+      for (const cat of ['primary', 'attack']) expect(heads(root, cat)).toEqual(['', '基', '成', '裝', '套', '賦', '憶', '絆', '主', '限', '合計']);
+      const titles = [...root.querySelectorAll('[data-cat=attack] thead th')].slice(1, -1).map((th) => th.getAttribute('title'));
+      expect(titles).toEqual(['基礎', '成長', '裝備', '套裝', '天賦', '記憶', '羈絆', '主屬性', '上限']);
+      expect(root.querySelector('[data-stat=str] th')!.textContent).toBe(T.gear.statName.str);
+    } finally { back(); }
+  });
+
+  it('a column of 27.6 stage px is read as it is, not rounded up to 28 (re-review)', () => {
+    const back = wide(27.6);
+    try {
+      const { root } = setup('scarlet', NO_ART, built);
+      expect(heads(root, 'attack')[1]).toBe('基');
+    } finally { back(); }
+  });
+
+  it('roomy columns keep the full words, so the short forms can be learnt from them', () => {
+    const back = wide(40);
+    try {
+      const { root } = setup('scarlet', NO_ART, built);
+      expect(heads(root, 'attack')).toEqual(['', '基礎', '成長', '裝備', '套裝', '天賦', '記憶', '羈絆', '主屬', '上限', '合計']);
+    } finally { back(); }
+  });
+});
+
+describe("the stat tables' size watch (re-review of bond plan Tasks 12-14)", () => {
+  it('watches only the tables on the page, and lets them go when the tab or the page goes', () => {
+    const watched = new Set<Element>();
+    class Watch { observe(t: Element) { watched.add(t); } unobserve(t: Element) { watched.delete(t); } disconnect() { watched.clear(); } }
+    vi.stubGlobal('ResizeObserver', Watch);
+    try {
+      const { root, s } = setup('scarlet');
+      const tables = () => [...root.querySelectorAll('.slx-stat-table')];
+      expect(tables().length).toBeGreaterThan(0);
+      expect([...watched]).toEqual(tables());
+      s.onAction('right');                                         // the gear tab: no stat table left to watch
+      expect(watched.size).toBe(0);
+      s.onAction('left');                                          // back: the new tables
+      expect([...watched]).toEqual(tables());
+      s.exit();
+      expect(watched.size).toBe(0);
+    } finally { vi.unstubAllGlobals(); }
   });
 });

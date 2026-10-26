@@ -1,5 +1,5 @@
 import type { StoryMood } from '../../render/artPaths';
-import { STORY } from '../story.zh-TW';
+import { STORY, flatLines } from '../story.zh-TW';
 import { CLOSING_PIECES, type SceneId } from './scenes';
 
 /** The glad faces (staging S3): a smiling normal says the same thing, so any scene may borrow it for them. */
@@ -11,5 +11,5 @@ export const WARM_MOODS: ReadonlySet<StoryMood> = new Set<StoryMood>(['smile', '
  */
 export function memoryTone(id: SceneId): 'warm' | 'heavy' {
   if (CLOSING_PIECES.includes(id)) return 'heavy';
-  return STORY.scenes[id].lines.some((l) => !!l.mood && WARM_MOODS.has(l.mood)) ? 'warm' : 'heavy';
+  return flatLines(STORY.scenes[id].lines).some((l) => !!l.mood && WARM_MOODS.has(l.mood)) ? 'warm' : 'heavy';
 }

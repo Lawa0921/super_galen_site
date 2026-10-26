@@ -1,0 +1,31 @@
+{
+  "assets": {
+    "char-bobby-portrait-excited": {
+      "allow_edge": [
+        "bottom"
+      ],
+      "generator": "codex/gpt-6-astra",
+      "defringe": null,
+      "neutralize_tint": null,
+      "final": "art-factory/starlantern/work/char-bobby-portrait-excited/cand/a1/char-bobby-portrait-excited.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-bobby-portrait-excited\\a1\\char-bobby-portrait-excited-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 4,
+        "block": 10,
+        "size": [
+          122,
+          121
+        ]
+      },
+      "status": "qa_passed"
+    }
+  }
+}

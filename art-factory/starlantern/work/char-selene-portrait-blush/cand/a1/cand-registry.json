@@ -1,0 +1,31 @@
+{
+  "assets": {
+    "char-selene-portrait-blush": {
+      "allow_edge": [
+        "bottom"
+      ],
+      "generator": "codex/gpt-6-astra",
+      "defringe": null,
+      "neutralize_tint": null,
+      "final": "art-factory/starlantern/work/char-selene-portrait-blush/cand/a1/char-selene-portrait-blush.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-selene-portrait-blush\\a1\\char-selene-portrait-blush-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 10,
+        "block": 10,
+        "size": [
+          123,
+          114
+        ]
+      },
+      "status": "qa_passed"
+    }
+  }
+}

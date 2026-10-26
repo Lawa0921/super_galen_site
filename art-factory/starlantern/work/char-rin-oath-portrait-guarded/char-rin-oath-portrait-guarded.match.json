@@ -1,0 +1,16 @@
+{
+  "pass": true,
+  "reasons": [],
+  "warnings": [],
+  "base_size": [
+    101,
+    112
+  ],
+  "size_delta": [
+    1,
+    0
+  ],
+  "block": 11,
+  "base_block": 11,
+  "palette_share": 0.998
+}

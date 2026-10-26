@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { stageSpan } from './stageAxis';
+import { stageSpan, stageWidth } from './stageAxis';
 
 /** A rect as getBoundingClientRect gives it, from its edges. */
 const rect = (r: { left?: number; top?: number; right?: number; bottom?: number }): DOMRectReadOnly => {
@@ -23,5 +23,15 @@ describe('stageSpan (legibility Task 2a)', () => {
     expect(stageSpan(rect({ left: 300, right: 340, top: 400, bottom: 500 }), screen)).toEqual({ top: 35, bottom: 75 });
     const twice = rect({ left: 0, right: 720, top: 0, bottom: 1280 });                // turned, s 2
     expect(stageSpan(rect({ left: 600, right: 680 }), twice)).toEqual({ top: 20, bottom: 60 });
+  });
+});
+
+describe('stageWidth (re-review of bond plan Tasks 12-14)', () => {
+  it('a rect along the stage row in stage px, unrounded', () => {
+    expect(stageWidth(rect({ left: 10, right: 37.6 }), null)).toBeCloseTo(27.6, 9);            // no screen: as it is
+    const screen = rect({ left: 0, top: 0, right: 1280, bottom: 720 });                         // upright, s 2
+    expect(stageWidth(rect({ left: 100, right: 155.2 }), screen)).toBeCloseTo(27.6, 9);
+    const turned = rect({ left: 0, right: 360, top: 0, bottom: 640 });                          // turned, s 1
+    expect(stageWidth(rect({ left: 0, right: 12, top: 100, bottom: 127.6 }), turned)).toBeCloseTo(27.6, 9);
   });
 });

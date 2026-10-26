@@ -18,6 +18,9 @@ $slx-dim: #b7ae9a;
 $slx-gold: #e8c46a;
 $slx-up: #8fe08f;
 $slx-down: #ff8a7a;
+// The stat table's 羈絆 column, and the faint tint of every other column when many show (review of bond plan Tasks 12-14).
+$slx-bond: #ff9ec4;
+$slx-col-tint: rgba($slx-ink, 0.12);
 // opaque so stacked windows never show the text underneath
 $slx-win: rgb(10, 14, 34);
 
@@ -150,6 +153,13 @@ $slx-upright: '(orientation: portrait) and (max-width: #{$slx-w - 1px})';
 .slx-talk-face--right { right: 10px; }
 .slx-confirm { left: 50%; top: 50%; translate: -50% -50%; translate: round(down, -50%, 1px) round(down, -50%, 1px); min-width: 200px; text-align: center; }
 .slx-confirm p { margin: 0 0 6px; white-space: pre-line; }
+// Bond plan Task 9: a bond scene's choice, above the dialogue box (its 12px rows, CHOICE_MAX_CHARS at most) while Lorne's plate shows.
+// Bond plan Task 14: the box stands 10px up and 86px tall while it waits (plate, frame, no text), so the choice sits 4px clear of it.
+// Review of Tasks 12-14: it stands on the side away from Lorne's portrait (story.ts sets --left or --right), in line with the
+// box's edge, so no face covers its end; and above the box (and a battle's or workshop's raised one) all the same.
+.slx-choice { bottom: 100px; min-width: 200px; z-index: 11; }
+.slx-choice--left { left: 12px; }
+.slx-choice--right { right: 12px; }
 @media (prefers-reduced-motion: reduce) { .slx-win, .slx-sel::before { animation: none; } }
 
 .slx-ui { transition: opacity 0.15s linear; }
@@ -162,6 +172,11 @@ $slx-upright: '(orientation: portrait) and (max-width: #{$slx-w - 1px})';
 // The place plate stays 36px tall at 24px (a 24px line, 4px padding), above the windows that start at 48px (the portal cards).
 .slx-place { left: 12px; top: 10px; padding: 4px 10px; font-size: $slx-fs-big; line-height: 24px; color: $slx-ink; }
 .slx-gold { right: 12px; top: 10px; color: $slx-gold; }
+// Time and moon (ruling 8): the season and today's moon, a 12px window beside the place plate, both in one row (the town
+// menu starts at 56px, so a window under the plate would cover it; the skinned plate is 48px tall).
+.slx-town-hud { position: absolute; left: 12px; top: 10px; display: flex; align-items: center; gap: 6px; }
+.slx-town-hud > .slx-win { position: static; }
+.slx-calendar { padding: 2px 10px; font-size: $slx-fs; line-height: 16px; color: $slx-ink; white-space: nowrap; }
 .slx-town-menu { left: 12px; top: 56px; min-width: 150px; }
 
 // Generated window frame and cursor; switched on by ui2/main.ts only when the art is published.
@@ -195,6 +210,10 @@ $slx-upright: '(orientation: portrait) and (max-width: #{$slx-w - 1px})';
 .slx-veil.slx-on { opacity: 1; }
 .slx-veil-past { background: rgba(46, 30, 12, 0.4); backdrop-filter: sepia(0.8) saturate(0.6) brightness(0.7); }
 .slx-veil-night { background: rgba(4, 8, 30, 0.58); }
+// Time and moon (ruling 8): tonight's moon tints the night. Full: a little lighter and bluer; new: darker. The quarters keep
+// the plain night.
+.slx-veil-night.slx-moon-full { background: rgba(14, 24, 58, 0.5); }
+.slx-veil-night.slx-moon-new { background: rgba(2, 4, 16, 0.66); }
 .slx-dungeon .slx-veil { z-index: 1; }
 // Where a scene is (story staging S6): a one-line card where the place plate stands, 12px on the type scale.
 .slx-place-card { left: 12px; top: 10px; padding: 3px 10px; font-size: $slx-fs; line-height: 16px; letter-spacing: 1px; color: $slx-ink; white-space: nowrap; }
@@ -203,16 +222,31 @@ $slx-upright: '(orientation: portrait) and (max-width: #{$slx-w - 1px})';
 @media (prefers-reduced-motion: reduce) { .slx-veil, .slx-talk, .slx-talk-face { transition: none; } }
 
 .slx-npc { position: absolute; right: 0; bottom: 0; height: 330px; }
+// review of bond plan Task 22: a bond scene set elsewhere plays with the keeper away (ui2/scenes/facility standOn)
+.slx-npc.slx-keeper-away { visibility: hidden; }
 .slx-cmd { left: 12px; top: 56px; min-width: 120px; }
 /* While a story scene plays in a facility or the town, its face stands where the command window is: hide the window, keep its place. */
-.slx-facility .slx-cmd.slx-cmd-hidden, .slx-town .slx-town-menu.slx-cmd-hidden, .slx-town .slx-back.slx-cmd-hidden, .slx-town .slx-place.slx-cmd-hidden, .slx-town .slx-gold.slx-cmd-hidden, .slx-facility .slx-place.slx-cmd-hidden, .slx-facility .slx-gold.slx-cmd-hidden, .slx-dungeon .slx-pad.slx-cmd-hidden, .slx-dungeon .slx-weight.slx-cmd-hidden, .slx-dungeon .slx-keyhint.slx-cmd-hidden { visibility: hidden; }
+.slx-facility .slx-cmd.slx-cmd-hidden, .slx-town .slx-town-menu.slx-cmd-hidden, .slx-town .slx-back.slx-cmd-hidden, .slx-town .slx-place.slx-cmd-hidden, .slx-town .slx-calendar.slx-cmd-hidden, .slx-town .slx-gold.slx-cmd-hidden, .slx-facility .slx-place.slx-cmd-hidden, .slx-facility .slx-gold.slx-cmd-hidden, .slx-dungeon .slx-pad.slx-cmd-hidden, .slx-dungeon .slx-weight.slx-cmd-hidden, .slx-dungeon .slx-keyhint.slx-cmd-hidden { visibility: hidden; }
 .slx-stage { position: absolute; inset: 0; pointer-events: none; }
 .slx-stage > * { pointer-events: auto; }
 .slx-layer { left: 150px; top: 56px; max-width: 300px; }
 .slx-opt { display: flex; align-items: center; gap: 4px; }
 .slx-ico { width: 12px; height: 12px; object-fit: contain; }
 .slx-right { margin-left: auto; padding-left: 12px; color: $slx-dim; }
-// ◆ for each working rune after a skill's name in the battle menu (plan 8g Task 7), in the rune's own blue.
+// Rune icons (art step 9, ui2/runeArt.ts): published images at their own size, never scaled or drawn by CSS. A 14px icon
+// sits in a line of 12px text (leading 14px or more): aligned to the line's top it never makes the line box taller.
+.slx-rune-ico { display: inline-block; flex: none; vertical-align: top; image-rendering: pixelated; }
+.slx-rune-ico-14 { width: 14px; height: 14px; }
+.slx-rune-ico-16 { width: 16px; height: 16px; }
+// A rune socketed where it does nothing: its own icon greyed.
+.slx-rune-off { filter: grayscale(1); opacity: 0.55; }
+.slx-rune-marks { display: inline-flex; flex: none; gap: 1px; vertical-align: top; }
+// A rune row's cell: 20 x 20, the 16px icon at 2,2 and the tier frame (.slx-rframe, the gear cells' own layer) over it in
+// the outer 2px. The 2px negative margins let it fill the row's padding, so a rune row is as tall as a text row.
+.slx-rune-cell { position: relative; z-index: 0; display: inline-block; flex: none; width: 20px; height: 20px; margin: -2px 2px -2px 0; vertical-align: top; }
+.slx-rune-cell > .slx-rune-ico { position: absolute; left: 2px; top: 2px; }
+.slx-bd-rune > .slx-rune-ico, .slx-bd-legend > .slx-rune-ico { margin-right: 2px; }
+// The working runes after a skill's name in the battle menu (plan 8g Task 7): their icons (art step 9).
 .slx-badge { flex: none; margin-left: 2px; font-size: $slx-fs; line-height: 14px; letter-spacing: 1px; color: #9fc1ff; }
 .slx-qty { left: 6px; top: 190px; width: 112px; text-align: center; }
 .slx-qty .slx-hint { white-space: pre-line; }
@@ -226,6 +260,9 @@ $slx-upright: '(orientation: portrait) and (max-width: #{$slx-w - 1px})';
 
 .slx-list { left: 150px; top: 56px; min-width: 170px; max-height: 240px; overflow: hidden; }
 .slx-list .slx-ico { width: 16px; height: 16px; }
+// A skill's native 16px icon in the battle skill menu (art step 9): its own size, never scaled (the battle's submenu is
+// not a .slx-list, so its rows would otherwise take the 12px .slx-ico).
+.slx-ico.slx-skill-menu-ico { width: 16px; height: 16px; image-rendering: pixelated; }
 // Gear art in a list row or a loot line (plan 5d Task 7) keeps its own 26 x 26, never scaled like an item icon; its row
 // grows to fit it.
 .slx-ico.slx-gear-ico { display: inline-block; flex: none; width: 26px; height: 26px; vertical-align: middle; image-rendering: pixelated; }
@@ -337,7 +374,8 @@ $slx-upright: '(orientation: portrait) and (max-width: #{$slx-w - 1px})';
 // Party bar (labyrinth and battle)
 .slx-partybar { position: absolute; left: 4px; right: 4px; bottom: 2px; height: 62px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
 .slx-pm { display: flex; gap: 4px; align-items: center; padding: 3px 4px; background: $slx-win; border: 1px solid #6e5a2e; }
-.slx-pm img { width: 40px; height: 40px; object-fit: contain; }
+// The face only: a word's chip icon (art step 9) in the panel keeps its own size and never recoils with the face.
+.slx-pm img:not(.slx-chip-ico) { width: 40px; height: 40px; object-fit: contain; }
 // Three 14px lines and three 4px bars fill the panel's 54px exactly, with no gap (legibility ruling 7, at the 14px leading).
 .slx-pm-body { display: grid; gap: 0; min-width: 0; flex: 1; }
 .slx-pm-name { color: $slx-ink; white-space: nowrap; overflow: hidden; line-height: 14px; }
@@ -360,7 +398,7 @@ $slx-upright: '(orientation: portrait) and (max-width: #{$slx-w - 1px})';
 .slx-pm-hit::after, .slx-pm-heal::after { content: ''; position: absolute; inset: 0; pointer-events: none; animation: slx-pm-flash 0.4s ease-out forwards; }
 .slx-pm-hit::after { background: rgba(255, 50, 40, 0.6); }
 .slx-pm-heal::after { background: rgba(110, 230, 140, 0.45); }
-.slx-pm-hit img { animation: slx-pm-recoil 0.4s ease-out 1; }
+.slx-pm-hit img:not(.slx-chip-ico) { animation: slx-pm-recoil 0.4s ease-out 1; }
 .slx-pm-heal { box-shadow: 0 0 10px #6fe08f; }
 .slx-pm-acting { animation: slx-pm-act 0.4s ease-out 1; box-shadow: 0 0 0 1px $slx-gold, 0 0 10px rgba(232, 196, 106, 0.8); }
 .slx-pm-ko { animation: slx-pm-ko 0.45s ease-in 1 forwards; }
@@ -381,7 +419,7 @@ $slx-upright: '(orientation: portrait) and (max-width: #{$slx-w - 1px})';
 .slx-pm-pop-heal { color: #6fe08f; }
 @keyframes slx-pm-pop { 0% { scale: 1.8; translate: 0 6px; opacity: 1; } 20% { scale: 1; translate: 0 0; } 70% { opacity: 1; } 100% { translate: 0 -16px; opacity: 0; } }
 @media (prefers-reduced-motion: reduce) {
-  .slx-pm-hit, .slx-pm-acting, .slx-pm-ko, .slx-pm-hit img, .slx-pm-pop { animation: none; }
+  .slx-pm-hit, .slx-pm-acting, .slx-pm-ko, .slx-pm-hit img:not(.slx-chip-ico), .slx-pm-pop { animation: none; }
 }
 
 // Battle
@@ -535,6 +573,9 @@ $slx-ailment: (poison: #b889fe, sleep: #c1c5d6, burn: #fe8a57, freeze: #92ebfd, 
 .slx-pm-ail { position: absolute; left: 0; right: 0; bottom: 100%; z-index: 3; margin-bottom: 1px; display: flex; flex-wrap: nowrap; gap: 1px; overflow: hidden; pointer-events: none; }
 .slx-pm-ail[hidden] { display: none; }
 .slx-ail, .slx-mech { flex: none; padding: 0 1px; font-size: $slx-fs; line-height: 14px; border: 1px solid currentColor; white-space: nowrap; background: rgba($slx-win, 0.92); }
+// A word's 14px icon (art step 9, G4): at the top of its 14px line so the chip stays 16 tall, 1px before the word. The
+// panel's face rules (40 x 40, the recoil) leave it out (:not(.slx-chip-ico)); two classes deep all the same.
+.slx-ail .slx-chip-ico, .slx-mech .slx-chip-ico { display: inline-block; width: 14px; height: 14px; vertical-align: top; margin-right: 1px; image-rendering: pixelated; }
 // Character mechanics (plan 8c): the same word look as an ailment, in their own colours (render/mechStyle.ts MECH_FILL).
 $slx-mech: (heat: #ff9a10, expose: #5cffa8, mark: #ff6cd9, veil: #92b4ac, ward: #4ac2ff, purify: #d6ff7b, moon: #e6c6ff, coins: #d3ae46, aim: #ff9bb8, embers: #ff3c2a, beat: #3fd8c4, devices: #c0a081, plain: #f1ead8);
 @each $k, $c in $slx-mech {
@@ -544,6 +585,30 @@ $slx-mech: (heat: #ff9a10, expose: #5cffa8, mark: #ff6cd9, veil: #92b4ac, ward: 
   .slx-ail-#{$k} { color: $c; }
 }
 .slx-ail-more { color: $slx-ink; }
+// Touch overflow (ui2/morePopover.ts): a +N is a button that lists its whole row, since a touch has no hover for its
+// title. The party row lets the pointer through; its +N takes it back. A foe's +N is drawn by the picture: a bare tap
+// target lies over it, centred in 2 px steps (classes, never an inline style), in a layer first in the battle scene,
+// under every window, that lets every other tap through.
+.slx-pm-ail .slx-ail-more[role='button'] { pointer-events: auto; cursor: pointer; }
+.slx-foe-more-layer { position: absolute; inset: 0; pointer-events: none; }
+.slx-foe-more { position: absolute; width: 28px; height: 24px; margin: -12px 0 0 -14px; pointer-events: auto; cursor: pointer; }
+@for $k from 0 through 320 { .slx-at-x-#{$k} { left: $k * 2px; } }
+@for $k from 0 through 180 { .slx-at-y-#{$k} { top: $k * 2px; } }
+// The list: every word of the row, one a line, each in its chip look (an elite's affix in the Pixi row's ink,
+// render/ailmentStyle.ts AFFIX_FILL), in a small window over the row: above a member's panel (the last two panels'
+// lists end at their right edge, inside the screen), under a foe's +N.
+.slx-more-pop {
+  position: absolute; z-index: 6; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 4px 6px;
+  background: $slx-win; border: 1px solid #c9a35a; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6); white-space: nowrap; cursor: default; pointer-events: auto;
+}
+.slx-more-pop[hidden] { display: none; }
+.slx-affix { color: #ffccbb; }
+.slx-more-pop .slx-affix { flex: none; padding: 0 1px; font-size: $slx-fs; line-height: 14px; border: 1px solid currentColor; }
+.slx-pm > .slx-more-pop { left: 0; bottom: calc(100% + 18px); }
+.slx-pm:nth-child(n + 4) > .slx-more-pop { left: auto; right: 0; }
+.slx-foe-more > .slx-more-pop { top: 100%; left: 50%; translate: -50% 0; translate: round(down, -50%, 1px) 0; }
+// A foe far right (ui2/scenes/battle.ts FOE_LIST_END_X): its list ends at the target's right edge, inside the screen.
+.slx-foe-more-end > .slx-more-pop { left: auto; right: 0; translate: none; }
 
 // Formation: 3x3 grid on the left (front row on top, nearest the enemies), rules on the right
 .slx-formation-grid { left: 10px; top: 10px; padding: 6px 10px; }
@@ -651,7 +716,7 @@ $slx-mech: (heat: #ff9a10, expose: #5cffa8, mark: #ff6cd9, veil: #92b4ac, ward: 
 .slx-hb-detail h4 { margin: 0 0 4px; font-size: $slx-fs; font-weight: normal; color: $slx-gold; }
 .slx-hb-detail p { margin: 0 0 6px; }
 .slx-hb-detail .slx-dim { color: $slx-dim; }
-.slx-handbook .slx-fresh { color: $slx-gold; }
+.slx-handbook .slx-fresh, .slx-inn .slx-fresh, .slx-town .slx-fresh { color: $slx-gold; }   // bond plan Task 12: the inn and the town's 新 too
 .slx-handbook .slx-lead-now { color: $slx-gold; }
 .slx-handbook.slx-hb-playing .slx-status-panel, .slx-handbook.slx-hb-playing .slx-status-art, .slx-handbook.slx-hb-playing > .slx-back { visibility: hidden; }
 .slx-status-facts { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; margin-bottom: 6px; }
@@ -661,14 +726,17 @@ $slx-mech: (heat: #ff9a10, expose: #5cffa8, mark: #ff6cd9, veil: #92b4ac, ward: 
 .slx-stat-cat-head::before { content: '→'; position: absolute; left: 5px; color: $slx-dim; }
 .slx-stat-cat-head[aria-expanded='true']::before { content: '↓'; }
 .slx-stat-cat-head:hover { color: #fff; }
-.slx-stat-affinity { margin: 0; padding: 2px 6px 2px 20px; color: $slx-dim; }
+.slx-stat-affinity, .slx-stat-bond { margin: 0; padding: 2px 6px 2px 20px; color: $slx-dim; }   // bond plan Task 14: her tier under her affinity
+.slx-hb-bond p { margin: 0; }
 .slx-row-cur { background: linear-gradient(90deg, rgba(232, 196, 106, 0.22), transparent); box-shadow: inset 2px 0 0 $slx-gold; }
 .slx-stat-cat-head.slx-row-cur, .slx-stat-table .slx-row-cur th { color: #fff; }
 /* Fixed layout (plan 8g Task 5): the row names take 22%, the total 11%, and the source columns share the rest evenly, so
    every category's table has the same column edges and the columns line up down the page; a long row name wraps rather
    than push the table past the page's edge. 22% keeps every row name on one line (「TP 消耗減少」 is 71px of the 348px table;
-   21% is the floor; e2e 'the status page: columns line up'). The headings are 12px and centred, 26px words in 31px columns;
-   主屬性 reads 主屬 there (its title whole). */
+   21% is the floor; e2e 'the status page: columns line up'). The headings are 12px and centred; 主屬性 reads 主屬 there (its
+   title whole). With the bond plan's 羈絆 column (Task 3) nine columns share the 67%: 25.8px each, so a heading's 24px word
+   keeps no side padding (it fits with none; the cells below keep theirs, and so does the total's heading, whose column
+   the fullest totals fill). */
 .slx-stat-table { width: 100%; table-layout: fixed; border-collapse: collapse; margin-bottom: 4px; }
 .slx-stat-table thead th:first-child { width: 22%; }
 .slx-stat-table thead th:last-child { width: 11%; }
@@ -680,11 +748,15 @@ $slx-mech: (heat: #ff9a10, expose: #5cffa8, mark: #ff6cd9, veil: #92b4ac, ward: 
 .slx-stat-table .slx-primary { color: #6fa7ff; }
 .slx-stat-table .slx-talent { color: #c99bff; }
 .slx-stat-table .slx-memory { color: #ffd27a; }
+.slx-stat-table .slx-bond { color: $slx-bond; }
+// Review of bond plan Tasks 12-14: with many columns, every other one is faintly tinted (statusTabs marks it), header and cells.
+.slx-stat-table .slx-col-alt { background: $slx-col-tint; }
 .slx-stat-table .slx-capped, .slx-stat-table .slx-cap { color: #ffb36b; }
 .slx-stat-table th, .slx-stat-table td { padding: 1px 1px; text-align: right; font-weight: normal; }
 .slx-stat-table thead th:first-child { text-align: left; }
 .slx-stat-table td { font-size: $slx-fs; }
 .slx-stat-table thead th { color: $slx-dim; border-bottom: 1px solid #3a3550; }
+.slx-stat-table thead th:not(:first-child):not(:last-child) { padding-left: 0; padding-right: 0; }
 .slx-stat-table tbody th { text-align: left; color: $slx-gold; }
 .slx-stat-table .slx-total { color: #fff; }
 .slx-stat-table .slx-gear { color: $slx-up; }
@@ -1359,8 +1431,9 @@ $slx-starlit: #bff6ff;
 // Reroll and fusion stack three or four windows; those under the top one (facility.ts marks them slx-under) darken,
 // so the open list or confirm reads cleanly. A filter, not opacity: the windows stay opaque, so one list's text never shows
 // through another. The forge's detail window is not a layer and stays bright. The shop dims the same way; its material page
-// is a layer holding two windows (list and detail), so the windows inside a marked layer darken too.
-.slx-forge, .slx-shop {
+// is a layer holding two windows (list and detail), so the windows inside a marked layer darken too. The inn's 夥伴 stacks
+// three lists (partners, who, what to give) and dims the same way (review of bond plan Tasks 12-14).
+.slx-forge, .slx-shop, .slx-inn {
   .slx-win.slx-under, .slx-under > .slx-win { filter: brightness(0.45) saturate(0.5); transition: filter 0.12s ease-out; }
 }
 .slx-lack { color: $slx-down; }
@@ -1403,6 +1476,24 @@ $slx-starlit: #bff6ff;
 .slx-ws-runes .slx-opt .slx-label { flex: 0 0 auto; }
 .slx-ws-runes .slx-opt .slx-right { flex: 0 4 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .slx-label-tail { flex: none; white-space: nowrap; }
+// With its rune cell (art step 9) a slot's rune and a rune row are 22px wider: a legendary's four-character name and its
+// tier still fit whole, the slot's rune without the right column's indent, a row's name and tier side by side.
+.slx-ws-slot .slx-right { display: inline-flex; align-items: center; justify-content: flex-end; }
+.slx-workshop .slx-ws-slot .slx-right { padding-left: 0; }
+// A slot clips its overflow (a long name ends in an ellipsis): its cell takes its full 20px there, never spilling.
+.slx-ws-slot .slx-rune-cell { margin: 0 2px 0 0; }
+// A rune row spends no space between its parts, so a two-character name, its tier and its bag count all fit whole: its
+// cell is the 16px icon itself, the tier frame's 2px band over the icon's own clear edge and outline (as a gear cell's).
+.slx-ws-runes .slx-opt { gap: 0; padding-right: 0; }
+.slx-ws-runes .slx-rune-cell { width: 16px; height: 16px; margin: 0; }
+.slx-ws-runes .slx-rune-cell > .slx-rune-ico { left: 0; top: 0; }
+.slx-workshop .slx-ws-runes .slx-opt .slx-right { padding-left: 1px; }
+// A rune row's bag count is never cut: the rune's name gives way instead (its tier stays whole; the cell and the card name
+// it in full). A giver's name or skill on the right still gives way first.
+.slx-workshop .slx-ws-runes .slx-opt .slx-label { flex: 0 1 auto; min-width: 0; }
+.slx-workshop .slx-ws-runes .slx-opt .slx-right.slx-ws-count { flex: none; }
+// A slot whose rune does nothing is dimmed as a whole: its greyed icon takes no second dimming of its own.
+.slx-ws-off .slx-right .slx-rune-off { opacity: 1; }
 .slx-ws-swapout { font-size: $slx-fs; line-height: 14px; color: $slx-dim; }
 // The card: its body scrolls inside the frame (no native bar; ▲/▼ stand in), the foot below never moves.
 .slx-ws-card-frame { flex: 1 1 auto; min-height: 0; }

@@ -18,16 +18,20 @@ import { el, itemName } from '../../ui/dom';
 import { playCutIn } from '../../ui/cutin';
 import { battleLines, fragmentLines, levelUpLines } from '../battleText';
 import { fragmentItem } from '../../engine/story/fragments';
-import { gearIconUrl } from '../gearArt';
+import { gearIconLate } from '../gearArt';
+import { anyLanded, lateArt, noteMissing } from '../lateArt';
+import { runeMark } from '../runeArt';
 import { fillRich, gearLabel, gearPart, rarityClass } from '../loot';
 import { RUNE_SLOT_LEVELS, RUNE_STACK } from '../../data/runes';
 import { autoLine, battleLine, shownDef, withoutPowerClause } from '../skillCard';
 import { clearPillars, dropMoment, skipPillar } from '../lootFx';
 import type { UiAction } from '../input';
 import { Menu, type MenuItem } from '../menu';
-import { PartyBar, type PulseOpts } from '../partyBar';
+import { PartyBar, chipWord, type PulseOpts } from '../partyBar';
+import { MorePopover, moreTrigger } from '../morePopover';
+import { mechIconUrls } from '../../render/chipIcons';
 import type { Scene, SceneCtx } from '../scene';
-import { Dialogue, MenuView, backControl, richNodes, win, type Rich } from '../widgets';
+import { Dialogue, MenuView, backControl, richInto, win, type Rich } from '../widgets';
 import { textCps } from '../settings';
 import { playAndRecord, storyCtx } from '../story';
 import { playRescue } from '../rescue';
@@ -37,6 +41,8 @@ import { memScene, type SceneId } from '../../data/story/scenes';
 export const BATTLE_LEFT = 150;
 /** How long a battle waits for its foes' pictures and its backdrop before it is drawn (a late one is drawn when it lands). */
 export const BATTLE_ART_WAIT_MS = 1500;
+/** Past this stage x a foe's +N list is ended at its target's right edge, not centred (a long affix list stays on screen). */
+const FOE_LIST_END_X = 440;
 const BANNER_MS = 1100;
 const WIN_MS = 1000;
 /**
@@ -57,10 +63,17 @@ export class BattleScene implements Scene {
   private marker!: HTMLElement;
   /** The field bar: the barrier up and the moon (plan 8c). */
   private field = el('div', { class: 'slx-fieldbar', attrs: { role: 'status', hidden: '' } });
+  /** The icons the field bar, and the foes' open lists, were last drawn without (ui2/lateArt). */
+  private fieldWait = new Set<string>();
+  private foeWait = new Set<string>();
   private cutin!: HTMLElement;
   private backEl!: HTMLElement;
   private note: HTMLElement | null = null;
   private bar: PartyBar;
+  /** The list a tapped 「+N」 opens (touch overflow), a member's or a foe's; one at a time. */
+  private more = new MorePopover();
+  /** The tap targets over the foes' 「+N」 (the picture draws the words): first in the scene, under every window. */
+  private foeMore = el('div', { class: 'slx-foe-more-layer' });
   private layers: Layer[] = [];
   private view: MenuView | null = null;
   private state!: BattleState;
@@ -86,7 +99,7 @@ export class BattleScene implements Scene {
   private picked = false;
 
   constructor(private ctx: SceneCtx, cps = textCps(ctx)) {
-    this.bar = new PartyBar(ctx.art);
+    this.bar = new PartyBar(ctx.art, this.more);
     this.talk = new Dialogue(cps);
   }
 
@@ -105,24 +118,41 @@ export class BattleScene implements Scene {
     this.marker = el('div', { class: 'slx-target', text: '▼', attrs: { hidden: '', 'aria-hidden': 'true' } });
     this.cutin = el('div', { class: 'sl-cutin', attrs: { hidden: '', 'aria-hidden': 'true' } });
     this.backEl = backControl(() => this.onAction('cancel'));
-    this.body = el('div', { class: 'slx-scene slx-battle' }, [this.msg, this.field, this.marker, this.bar.el, this.cmd, this.backEl, this.cutin, this.talk.el]);
+    this.body = el('div', { class: 'slx-scene slx-battle' }, [this.foeMore, this.msg, this.field, this.marker, this.bar.el, this.cmd, this.backEl, this.cutin, this.talk.el]);
     root.append(this.body);
     if (this.ctx.stage) {
       this.ctx.stage.show('battle');
       this.ctx.stage.battleView.setup(this.state, this.ctx.stage.size(), this.ctx.game.terrain(), BATTLE_LEFT, BATTLE_BOTTOM, this.ctx.game.run?.region);
+      // A foe's picture that lands late raises its row: the tap targets over the +N follow at once.
+      this.ctx.stage.battleView.onRowsMoved = () => this.showFoeMore();
     }
     this.msg.textContent = this.state.enemies.map((e) => e.name).join('、') + this.surviveLine();
     this.banner(this.state.boss ? T.ui2.banner.boss : T.ui2.banner.encounter, this.state.boss ? 'slx-banner-boss' : '');
     this.startRound();
   }
 
+  /**
+   * Faces and row icons that landed after they were drawn (ui2/lateArt): the party bar, the field bar and an open list of a
+   * foe's row, each only when it was drawn without one of `urls`; the lists and the lines draw their own, and the picture
+   * its own (BattleView).
+   */
+  artArrived(urls: ReadonlySet<string>): void {
+    this.bar.artArrived(urls);
+    if (!this.field.hidden && anyLanded(urls, this.fieldWait)) this.showField();
+    if (this.more.openId?.startsWith('foe:') && anyLanded(urls, this.foeWait)) this.showFoeMore();
+  }
+
   exit(): void {
     this.talk.stop();
+    this.more.dispose();
+    if (this.ctx.stage) this.ctx.stage.battleView.onRowsMoved = null;
     if (this.body) clearPillars(this.body);
     this.ctx.stage?.show(null);
   }
 
   onAction(a: UiAction): void {
+    // An open +N list takes cancel (Esc) for itself; any other key closes it and goes on as always.
+    if (this.more.onAction(a)) return;
     if (this.rescue) { this.rescue.onAction(a); return; }
     if (this.tutoring) { this.talk.onAction(a); return; }
     if (this.busy) return;
@@ -210,7 +240,9 @@ export class BattleScene implements Scene {
   /** The field bar (plan 8c): the barrier up and the moon, as words in their colours; hidden when there are none. */
   private showField(): void {
     const words = this.state.outcome === 'ongoing' ? fieldWords(this.state) : [];
-    this.field.replaceChildren(...words.map((w) => el('span', { class: `slx-mech slx-mech-${w.tone}`, text: w.text })));
+    // Each with its 14px icon in front once loaded (art step 9, G4): the barrier's kind, the moon's phase now.
+    const art = noteMissing(this.ctx.art, (this.fieldWait = new Set()));
+    this.field.replaceChildren(...words.map((w) => chipWord(art, `slx-mech slx-mech-${w.tone}`, w.text, mechIconUrls(w))));
     this.field.hidden = words.length === 0;
   }
 
@@ -225,6 +257,34 @@ export class BattleScene implements Scene {
     const tagged = live.filter((e) => e.affixes?.length);
     if (tagged.length) this.ctx.stage?.battleView.showAilments?.(chips, words, Object.fromEntries(tagged.map((e) => [e.key, e.affixes!.map((a) => AFFIXES[a].name)])));
     else this.ctx.stage?.battleView.showAilments?.(chips, words);
+    this.showFoeMore();
+  }
+
+  /**
+   * A tap target over each foe's 「+N」 (touch overflow): the picture draws the +N; this lays a bare button on it (centred,
+   * in 2 px steps: classes, never an inline style) that lists the foe's whole row. First in the scene, so every window
+   * covers it, and it lets every other tap through. An open list follows the redraw, and closes with the fold.
+   */
+  private showFoeMore(): void {
+    const rows = this.ctx.stage?.battleView.foldedRows?.() ?? [];
+    const step = (v: number) => Math.round(v / 2);
+    const art = noteMissing(this.ctx.art, (this.foeWait = new Set()));
+    const listOf = (r: (typeof rows)[number]) => r.words.map((w) => chipWord(art, w.cls, w.text, w.icons));
+    const hits = rows.map((r) => {
+      const id = `foe:${r.key}`;
+      const cx = r.at.x + r.at.width / 2;
+      // Far right, its list ends at the target's right edge (as the last two members' do), so it stays on the screen.
+      const end = cx > FOE_LIST_END_X ? ' slx-foe-more-end' : '';
+      const hit: HTMLElement = moreTrigger(r.more, () => this.more.toggle(id, hit, hit, listOf(r)),
+        `slx-foe-more slx-at-x-${step(cx)} slx-at-y-${step(r.at.y + r.at.height / 2)}${end}`, false);
+      hit.title = r.words.map((w) => w.text).join('、');
+      return { id, hit, r };
+    });
+    this.foeMore.replaceChildren(...hits.map((h) => h.hit));
+    const open = this.more.openId;
+    if (!open?.startsWith('foe:')) return;
+    const now = hits.find((h) => h.id === open);
+    if (now) this.more.show(open, now.hit, now.hit, listOf(now.r)); else this.more.close();
   }
 
   /**
@@ -303,11 +363,14 @@ export class BattleScene implements Scene {
         const cost = castCost(this.state, actor, sk.id);
         // A skill that would spend an empty resource (no coins, no barrier) is greyed, its reason in place of the TP.
         const why = whyNot(this.state, actor, sk);
-        // ◆ for each rune that works on it, and its final numbers before its words (plan 8g ruling 12).
-        const working = runeView(actor, sk.id, actor.runes?.[sk.id] ?? [])?.states.filter((x) => x.miss === null).length ?? 0;
+        // Each rune that works on it as its own 14px icon (plan 8g ruling 12; art step 9), and its final numbers before its words.
+        const working = runeView(actor, sk.id, actor.runes?.[sk.id] ?? [])?.states.filter((x) => x.miss === null) ?? [];
+        // Its 16px native icon before the name once loaded (art step 9); the name alone until then. Decorative (alt "").
+        const icon = lateArt(this.ctx.art, art.skillIcon(sk.id, 16));
         return {
           id: sk.id, label: sk.name, right: why ?? T.cmd.tp(cost), disabled: !!why || actor.tp < cost, note: this.noteOf(sk, actor),
-          ...(working ? { badge: T.cmd.runeMark.repeat(working) } : {}),
+          icon, iconCls: 'slx-skill-menu-ico',
+          ...(working.length ? { marks: working.map((x) => runeMark(x.ref, 14)) } : {}),
         };
       });
   }
@@ -628,11 +691,8 @@ export class BattleScene implements Scene {
       for (const l of fragmentLines(found)) lines.push({ text: l });
       lines.push({ text: T.battle.exp(end.exp) }, { text: T.battle.gold(end.gold) });
       if (end.coinGold) lines.push({ text: T.battle.coinGold(end.coinGold) });
-      // Won gear reads after its gear icon once that is published (the line keeps its rarity colour either way).
-      for (const it of end.gear) {
-        const icon = gearIconUrl(this.ctx.art, it);
-        lines.push({ text: icon ? [{ text: gearLabel(it), cls: 'slx-loot-name', icon }] : gearLabel(it), cls: `slx-loot-gear ${rarityClass(it)}` });
-      }
+      // Won gear reads after its gear icon once that is published and loaded (the line keeps its rarity colour either way).
+      for (const it of end.gear) lines.push({ text: [{ text: gearLabel(it), cls: 'slx-loot-name', icon: gearIconLate(this.ctx.art, it) }], cls: `slx-loot-gear ${rarityClass(it)}` });
       // Runes after the gear, each once and in the order they dropped, in its tier's colour (plan 8f); one past the stack
       // says the gold it became, where it fell.
       const kept = [...(end.runes ?? [])];
@@ -647,7 +707,7 @@ export class BattleScene implements Scene {
       }
       for (const [id, n] of Object.entries(end.drops)) lines.push({ text: T.battle.drop(itemName(id), n) });
       for (const [id, n] of Object.entries(end.left)) lines.push({ text: T.battle.leftBehind(itemName(id), n) });
-      for (const it of end.gearLeft) lines.push({ text: fillRich(T.battle.gearLeft, [gearPart(it, gearIconUrl(this.ctx.art, it))]), cls: 'slx-loot-left' });
+      for (const it of end.gearLeft) lines.push({ text: fillRich(T.battle.gearLeft, [gearPart(it, gearIconLate(this.ctx.art, it))]), cls: 'slx-loot-left' });
       lines.push(...levelUpLines(end.levelUps, this.ctx.game.state.party));
     } else if (end.outcome === 'lose') this.ctx.sfx.lose?.();
     const title = end.outcome === 'win' ? T.battle.win : end.outcome === 'lose' ? T.battle.lose : T.battle.fled;
@@ -670,7 +730,7 @@ export class BattleScene implements Scene {
     // A held or repeated key must not skip the rewards: accept input after a short beat.
     this.resultReady = !!this.ctx.fast;
     if (!this.resultReady) setTimeout(() => { this.resultReady = true; }, 300);
-    const box = win('slx-result', [el('h3', { text: title }), el('div', { class: 'slx-result-lines' }, lines.map((l) => el('p', { class: l.cls }, typeof l.text === 'string' ? [l.text] : richNodes(l.text)))), this.result.el]);
+    const box = win('slx-result', [el('h3', { text: title }), el('div', { class: 'slx-result-lines' }, lines.map((l) => { const p = el('p', { class: l.cls }, typeof l.text === 'string' ? [l.text] : []); if (typeof l.text !== 'string') richInto(p, l.text); return p; })), this.result.el]);
     this.body.append(box);
     // The gear won (not the gear left behind) raises one pillar, for its best piece. It stands on the result window, where
     // the loot is listed: the defeated enemies are gone by now, and their place is under this window.

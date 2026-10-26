@@ -1,6 +1,7 @@
 import { T } from '../data/text.zh-TW';
 import { itemName } from '../engine/loot/item';
 import type { ItemInstance } from '../engine/types';
+import type { ArtRef } from './lateArt';
 import type { Rich, RichPart } from './widgets';
 
 /**
@@ -24,8 +25,11 @@ export const rarityClass = (it: Pick<ItemInstance, 'rarity' | 'starlit'>): strin
 /** Gear the player has put work into that a sale, fusion or dismantle throws away: enhanced, or with a reroll-locked affix. */
 export const invested = (it: ItemInstance): boolean => it.enhance > 0 || it.locked !== undefined;
 
-/** A piece of gear as part of a line: its label in its rarity colour, after its gear icon when given one (ui2/gearArt.ts gearIconUrl). */
-export const gearPart = (it: ItemInstance, icon?: string): RichPart =>
+/**
+ * A piece of gear as part of a line: its label in its rarity colour, after its gear icon when given one (ui2/gearArt.ts
+ * gearIconLate, shown once it has landed).
+ */
+export const gearPart = (it: ItemInstance, icon?: ArtRef): RichPart =>
   ({ text: gearLabel(it), cls: `slx-gear-drop ${rarityClass(it)}`, ...(icon ? { icon } : {}) });
 
 /** Parts joined with 、 (the list separator of every loot line). */

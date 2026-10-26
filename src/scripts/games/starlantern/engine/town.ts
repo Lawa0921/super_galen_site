@@ -9,6 +9,7 @@ import { hasPerk } from './story/fragments';
 import { PERKS } from '../data/story/fragments';
 import { defaultSlotFor, slotsFor, statsOf } from './party';
 import type { GameState } from './state';
+import { dayOf, nextDay } from './calendar';
 import type { CharacterId, ItemInstance, Member, Party, Slot } from './types';
 
 type FailReason = 'gold' | 'locked' | 'stock' | 'invalid' | 'full';
@@ -190,6 +191,10 @@ export function rest(s: GameState): TownResult {
   const n = structuredClone(s);
   n.gold -= cost;
   if (hasPerk(n, 'inn-meal')) n.story.fed = true;   // Marta's meal waits for the next departure
+  n.story.day = nextDay(dayOf(s));   // time and moon (ruling 1): a night at the inn is a day; it tells no memory
+  // The festival a return recorded is that return's night; this is another night under another moon, so a reload must not
+  // play it here. Spring never goes back and the festival is still unseen, so the next return decides it again.
+  delete n.story.festival;
   for (const id of n.party.recruited) {
     const m = n.party.roster[id];
     if (m.hp <= 0) continue;
@@ -259,8 +264,9 @@ export function useFieldItem(s: GameState, itemId: string, targetId: CharacterId
   const t = n.party.roster[targetId];
   const max = statsOf(t);
   for (const e of def.effects) {
-    if (e.kind === 'restore') { t.hp = Math.min(max.hp, t.hp + (e.hp ?? 0)); t.tp = Math.min(max.tp, t.tp + (e.tp ?? 0)); }
-    if (e.kind === 'heal') t.hp = Math.min(max.hp, t.hp + e.power);
+    // time and moon Task 9 (old debt b): only ever up, as castField: an altar's HP or TP past the max is kept
+    if (e.kind === 'restore') { t.hp = Math.max(t.hp, Math.min(max.hp, t.hp + (e.hp ?? 0))); t.tp = Math.max(t.tp, Math.min(max.tp, t.tp + (e.tp ?? 0))); }
+    if (e.kind === 'heal') t.hp = Math.max(t.hp, Math.min(max.hp, t.hp + e.power));
     if (e.kind === 'revive') t.hp = Math.max(1, Math.floor(max.hp * e.hpPct));
   }
   addItem(n.inventory, itemId, -1);

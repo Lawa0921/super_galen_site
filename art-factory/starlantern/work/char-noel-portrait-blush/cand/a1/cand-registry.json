@@ -1,0 +1,31 @@
+{
+  "assets": {
+    "char-noel-portrait-blush": {
+      "allow_edge": [
+        "bottom"
+      ],
+      "generator": "codex/gpt-6-astra",
+      "defringe": null,
+      "neutralize_tint": null,
+      "final": "art-factory/starlantern/work/char-noel-portrait-blush/cand/a1/char-noel-portrait-blush.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-noel-portrait-blush\\a1\\char-noel-portrait-blush-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 5,
+        "block": 10,
+        "size": [
+          118,
+          119
+        ]
+      },
+      "status": "qa_passed"
+    }
+  }
+}

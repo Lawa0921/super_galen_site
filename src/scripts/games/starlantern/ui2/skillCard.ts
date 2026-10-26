@@ -1,6 +1,8 @@
 import { CHARACTERS } from '../data/characters';
 import { RESERVE_CAP, RUNES, RUNE_IDS, RUNE_NUMBERS, RUNE_TIERS, exclusiveGroupOf, parseRuneKey, type RuneRef, type RuneTier } from '../data/runes';
 import { T } from '../data/text.zh-TW';
+import type { RuneIconSize } from '../render/artPaths';
+import { slotMarks, type Mark } from './runeArt';
 import { castNow, fromMember, runeView, skillCost, skillFor, type Action, type BattleState } from '../engine/battle';
 import { autoActions } from '../engine/builds';
 import type { Combatant } from '../engine/combatant';
@@ -364,7 +366,10 @@ export function reserveLine(m: Member): string | null {
   return W.reserve(tp, battleMax(tp, held), held);
 }
 
-/** A skill's open slots as glyphs (controller ruling): ◆ a working rune, ◇ a rune that does nothing, ○ an empty slot. */
-export function slotDots(m: Member, skill: string): string {
-  return slotStates(m, skill).map((s) => (s.state === 'on' ? '◆' : s.state === 'off' ? '◇' : '○')).join('');
+/**
+ * A skill's open slots as icons (art step 9; once text glyphs): a working rune's own icon, a rune that does nothing
+ * there the same icon greyed, an empty slot the empty-slot icon; slots not open yet are not drawn.
+ */
+export function slotIcons(m: Member, skill: string, size: RuneIconSize = 14): Mark[] {
+  return slotMarks(slotStates(m, skill), size);
 }

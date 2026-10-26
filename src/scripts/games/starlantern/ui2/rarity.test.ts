@@ -319,7 +319,8 @@ describe('mechanic colours (plan 8c)', () => {
     // The panel: 4px of padding, the 40px portrait, a 4px gap, then its text; the word: 2px in, 2px padding, a 1px border.
     expect(rule('.slx-pm')).toMatch(/padding:\s*3px 4px;/);
     expect(rule('.slx-pm')).toMatch(/gap:\s*4px;/);
-    expect(rule('.slx-pm img')).toMatch(/width:\s*40px;/);
+    // The face (a word's 14px chip icon in the panel is left out of the face rules, art step 9).
+    expect(css).toMatch(/\.slx-pm img:not\(\.slx-chip-ico\)\s*\{[^}]*width:\s*40px;/);
     expect(rule('.slx-pm-cue')).toMatch(/left:\s*2px;[\s\S]*font-size:\s*12px;[\s\S]*padding:\s*0 2px;[\s\S]*border:\s*1px solid/);
     const textLeft = 4 + 40 + 4;
     // Every cue the battle can pop (a new MechCue fails to compile here until it is listed).

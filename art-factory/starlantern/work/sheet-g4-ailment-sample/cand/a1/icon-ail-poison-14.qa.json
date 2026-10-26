@@ -1,0 +1,35 @@
+{
+  "pass": false,
+  "reasons": [
+    "interior erased"
+  ],
+  "warnings": [
+    "enclosed holes"
+  ],
+  "residue": 0,
+  "semi": 0,
+  "edge": 0,
+  "holes": 13,
+  "magenta_spill": 0,
+  "key_tint_inside": 0,
+  "subject": {
+    "long": 12,
+    "short": 8,
+    "mass": 0.354,
+    "box": [
+      3,
+      1,
+      11,
+      13
+    ],
+    "centre_off": 0.0
+  },
+  "block": 28.5,
+  "scale": 28.5,
+  "size": [
+    14,
+    14
+  ],
+  "spec": "skill-cell:533a8c45dbc6",
+  "interior_holes": 13
+}

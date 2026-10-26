@@ -13,7 +13,8 @@ import type { UiAction } from '../input';
 import { Menu, type MenuItem } from '../menu';
 import type { Scene, SceneCtx } from '../scene';
 import type { GameState } from '../../engine/state';
-import { cardOf, compareCards, failWhy, previewOf, reserveLine, runeChoices, slotDots, slotStates, type Card, type RuneAction, type RuneChoice } from '../skillCard';
+import { cardOf, compareCards, failWhy, previewOf, reserveLine, runeChoices, slotIcons, slotStates, type Card, type RuneAction, type RuneChoice } from '../skillCard';
+import { runeCell, slotCell, type Mark } from '../runeArt';
 import { textCps } from '../settings';
 import { Dialogue, MenuView, backControl, win } from '../widgets';
 import { cueFrame, updateCues } from './statusTabs';
@@ -24,9 +25,13 @@ type Focus = 'skills' | 'slots' | 'runes';
 
 /** How far one R/F (or one click on the card's ▲/▼) scrolls the card: about three lines. */
 const CARD_STEP = 36;
-/** Rows of the skill list and the rune list on screen; longer lists scroll with the cursor. */
-const SKILL_ROWS = 13;
-const RUNE_ROWS = 12;
+/**
+ * Rows of the skill list and the rune list on screen, their ▲/▼ cues included (MenuView cuesInRows); longer lists scroll
+ * with the cursor. 11 rows of 20px under the head fill the panel's 254px (review 2026-10-24: 12 and 13 ran the last row
+ * and ▼ onto the frame).
+ */
+const SKILL_ROWS = 11;
+const RUNE_ROWS = 11;
 /**
  * Rows the 「缺：…」 line over the rune list may take (plan 8h): it wraps in the narrow column. With a followed build's line
  * under the title, both lists lose one row more.
@@ -414,9 +419,9 @@ export class WorkshopScene implements Scene {
     return [...(lack.length ? [W.lacking(lack)] : []), ...(ready.length ? [W.ready(ready)] : []), ...refused].join('　');
   }
 
-  /** ◆ a working rune, ◇ a rune that does nothing, ○ an empty slot; slots not open yet are not drawn (skillCard slotDots). */
-  private dots(skill: string): string {
-    return slotDots(this.member, skill);
+  /** A skill's open slots as icons (skillCard slotIcons): a rune's own icon, greyed when it does nothing; an empty slot. */
+  private dots(skill: string): Mark[] {
+    return slotIcons(this.member, skill);
   }
 
   private renderSkills(): void {
@@ -428,8 +433,8 @@ export class WorkshopScene implements Scene {
       return;
     }
     const c = fromMember(this.member, 0);
-    const items: MenuItem[] = skills.map((k) => ({ id: k, label: skillFor(c, k)?.name ?? k, right: this.dots(k) }));
-    const key = `${this.id}|${items.map((it) => `${it.id}:${it.label}:${it.right}`).join(',')}`;
+    const items: MenuItem[] = skills.map((k) => ({ id: k, label: skillFor(c, k)?.name ?? k, rightMarks: this.dots(k) }));
+    const key = `${this.id}|${items.map((it) => `${it.id}:${it.label}:${(it.rightMarks ?? []).map((x) => x.mark).join('+')}`).join(',')}`;
     if (!this.skillView || key !== this.skillKey) {
       this.skillKey = key;
       this.skillView = new MenuView(new Menu(items, Math.max(0, skills.indexOf(this.skill))), {
@@ -449,7 +454,7 @@ export class WorkshopScene implements Scene {
           this.ctx.sfx.cursor();
           this.render();
         },
-      }, this.followed ? SKILL_ROWS - 1 : SKILL_ROWS);
+      }, this.followed ? SKILL_ROWS - 1 : SKILL_ROWS, { cuesInRows: true });   // ▲/▼ inside the budget (review)
       this.skillsWin.replaceChildren(el('div', { class: 'slx-area-head', text: W.skillsHead }), this.skillView.el);
     } else {
       this.skillView.menu.setCursor(Math.max(0, skills.indexOf(this.skill)));
@@ -472,7 +477,10 @@ export class WorkshopScene implements Scene {
         attrs: { role: 'option', 'aria-selected': String(sel), 'aria-disabled': String(locked), 'data-id': `slot:${i}` },
       }, [
         el('span', { class: 'slx-label', text: W.slot(i + 1) }),
-        el('span', { class: `slx-right${s?.ref ? ` slx-rarity-${s.ref.tier}` : ''}`, text: right }),
+        // The rune's cell (its icon in its tier frame, greyed when it does nothing there) or the empty slot's, then its words.
+        el('span', { class: `slx-right${s?.ref ? ` slx-rarity-${s.ref.tier}` : ''}` }, [
+          ...(locked ? [] : [s?.ref ? runeCell(s.ref, s.state === 'off') : slotCell('empty')]), right,
+        ]),
         ...(s?.state === 'off' && s.why ? [el('span', { class: 'slx-ws-sub', text: W.off(s.why) })] : []),
       ]);
       if (!locked) {
@@ -506,15 +514,18 @@ export class WorkshopScene implements Scene {
     const choices = this.choices();
     const row = (c: RuneChoice): MenuItem => ({
       id: rowOf(c),
-      // The name may be cut; its tier stays whole beside it (final review).
+      // The name may be cut (its icon's cell and the card name it whole); its tier stays whole beside it (final review).
       label: RUNES[c.source.ref.id].name,
       tail: T.rune.tierTag(c.source.ref.tier),
+      rune: c.source.ref,
       cls: `slx-rarity-${c.source.ref.tier}${c.why !== null ? ' slx-ws-unfit' : ''}`,
-      // The bag's count; for a rune in a slot, who holds it, or on her own other skill, which skill (two 常駐 rows apart).
+      // The bag's count, never cut (slx-ws-count); for a rune in a slot, who holds it, or on her own other skill, which
+      // skill (two 常駐 rows apart), which gives way.
       right: c.source.kind === 'bag' ? T.rune.bag(c.source.count)
         : c.source.at.id === this.id ? skillFor(fromMember(this.member, 0), c.source.at.skill)?.name ?? c.source.at.skill
           : CHARACTERS[c.source.at.id].name,
-      ...(c.why !== null ? { rightClass: 'slx-lack' } : {}),
+      ...((c.source.kind === 'bag' || c.why !== null)
+        ? { rightClass: [c.source.kind === 'bag' ? 'slx-ws-count' : '', c.why !== null ? 'slx-lack' : ''].filter(Boolean).join(' ') } : {}),
     });
     const moves = choices.filter((c) => c.section === 'move');
     const items: MenuItem[] = [
@@ -556,7 +567,7 @@ export class WorkshopScene implements Scene {
           this.ctx.sfx.cursor();
           this.renderCard();
         },
-      }, RUNE_ROWS - (this.followed ? 1 : 0) - (lack ? LACK_ROWS : 0)) : null;
+      }, RUNE_ROWS - (this.followed ? 1 : 0) - (lack ? LACK_ROWS : 0), { cuesInRows: true }) : null;   // ▲/▼ inside the budget (review)
       // What pressed a row: read by `pick` above (a click event may carry no pointerType: Safari).
       this.runeView?.el.addEventListener('pointerdown', (e) => { this.pressedBy = e.pointerType; }, true);
       this.runeView?.el.addEventListener('click', (e) => { this.pressedBy = (e as PointerEvent).pointerType || this.pressedBy; }, true);

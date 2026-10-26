@@ -1,0 +1,488 @@
+{
+  "assets": {
+    "icon-exorcism-thrust-16": {
+      "final": "art-factory/starlantern/work/sheet-g4-skill-1/cand/a1/icon-exorcism-thrust-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-skill-1\\a1\\sheet-g4-skill-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 14,
+          "short": 14,
+          "mass": 0.76,
+          "box": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "centre_off": 0.0
+        },
+        "block": 29.071,
+        "scale": 29.071,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-skill-1\\a1\\sheet-g4-skill-1-a1.png",
+        "cell": "exorcism-thrust"
+      }
+    },
+    "icon-exorcism-thrust-14": {
+      "final": "art-factory/starlantern/work/sheet-g4-skill-1/cand/a1/icon-exorcism-thrust-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-skill-1\\a1\\sheet-g4-skill-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 12,
+          "mass": 0.785,
+          "box": [
+            1,
+            1,
+            13,
+            13
+          ],
+          "centre_off": 0.0
+        },
+        "block": 33.917,
+        "scale": 33.917,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-skill-1\\a1\\sheet-g4-skill-1-a1.png",
+        "cell": "exorcism-thrust"
+      }
+    },
+    "icon-jackpot-16": {
+      "final": "art-factory/starlantern/work/sheet-g4-skill-1/cand/a1/icon-jackpot-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-skill-1\\a1\\sheet-g4-skill-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 14,
+          "short": 12,
+          "mass": 0.694,
+          "box": [
+            2,
+            1,
+            14,
+            15
+          ],
+          "centre_off": 0.0
+        },
+        "block": 30.714,
+        "scale": 30.714,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-skill-1\\a1\\sheet-g4-skill-1-a1.png",
+        "cell": "jackpot"
+      }
+    },
+    "icon-jackpot-14": {
+      "final": "art-factory/starlantern/work/sheet-g4-skill-1/cand/a1/icon-jackpot-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-skill-1\\a1\\sheet-g4-skill-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 10,
+          "mass": 0.688,
+          "box": [
+            2,
+            1,
+            12,
+            13
+          ],
+          "centre_off": 0.0
+        },
+        "block": 35.833,
+        "scale": 35.833,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-skill-1\\a1\\sheet-g4-skill-1-a1.png",
+        "cell": "jackpot"
+      }
+    },
+    "icon-appraise-16": {
+      "final": "art-factory/starlantern/work/sheet-g4-skill-1/cand/a1/icon-appraise-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-skill-1\\a1\\sheet-g4-skill-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 14,
+          "short": 13,
+          "mass": 0.638,
+          "box": [
+            1,
+            1,
+            14,
+            15
+          ],
+          "centre_off": 0.5
+        },
+        "block": 28.0,
+        "scale": 28.0,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-skill-1\\a1\\sheet-g4-skill-1-a1.png",
+        "cell": "appraise"
+      }
+    },
+    "icon-appraise-14": {
+      "final": "art-factory/starlantern/work/sheet-g4-skill-1/cand/a1/icon-appraise-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-skill-1\\a1\\sheet-g4-skill-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 12,
+          "mass": 0.715,
+          "box": [
+            1,
+            1,
+            13,
+            13
+          ],
+          "centre_off": 0.0
+        },
+        "block": 32.667,
+        "scale": 32.667,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-skill-1\\a1\\sheet-g4-skill-1-a1.png",
+        "cell": "appraise"
+      }
+    },
+    "icon-sunder-arrow-16": {
+      "final": "art-factory/starlantern/work/sheet-g4-skill-1/cand/a1/icon-sunder-arrow-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-skill-1\\a1\\sheet-g4-skill-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 14,
+          "short": 13,
+          "mass": 0.653,
+          "box": [
+            1,
+            1,
+            14,
+            15
+          ],
+          "centre_off": 0.5
+        },
+        "block": 30.214,
+        "scale": 30.214,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-skill-1\\a1\\sheet-g4-skill-1-a1.png",
+        "cell": "sunder-arrow"
+      }
+    },
+    "icon-sunder-arrow-14": {
+      "final": "art-factory/starlantern/work/sheet-g4-skill-1/cand/a1/icon-sunder-arrow-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-skill-1\\a1\\sheet-g4-skill-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 11,
+          "mass": 0.653,
+          "box": [
+            1,
+            1,
+            12,
+            13
+          ],
+          "centre_off": 0.5
+        },
+        "block": 35.25,
+        "scale": 35.25,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-skill-1\\a1\\sheet-g4-skill-1-a1.png",
+        "cell": "sunder-arrow"
+      }
+    },
+    "icon-scatter-shot-16": {
+      "final": "art-factory/starlantern/work/sheet-g4-skill-1/cand/a1/icon-scatter-shot-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-skill-1\\a1\\sheet-g4-skill-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 14,
+          "short": 13,
+          "mass": 0.423,
+          "box": [
+            1,
+            1,
+            14,
+            15
+          ],
+          "centre_off": 0.5
+        },
+        "block": 29.429,
+        "scale": 29.429,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-skill-1\\a1\\sheet-g4-skill-1-a1.png",
+        "cell": "scatter-shot"
+      }
+    },
+    "icon-scatter-shot-14": {
+      "final": "art-factory/starlantern/work/sheet-g4-skill-1/cand/a1/icon-scatter-shot-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-skill-1\\a1\\sheet-g4-skill-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 11,
+          "mass": 0.479,
+          "box": [
+            1,
+            1,
+            12,
+            13
+          ],
+          "centre_off": 0.5
+        },
+        "block": 34.333,
+        "scale": 34.333,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-skill-1\\a1\\sheet-g4-skill-1-a1.png",
+        "cell": "scatter-shot"
+      }
+    },
+    "icon-deluge-volley-16": {
+      "final": "art-factory/starlantern/work/sheet-g4-skill-1/cand/a1/icon-deluge-volley-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-skill-1\\a1\\sheet-g4-skill-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 14,
+          "short": 12,
+          "mass": 0.556,
+          "box": [
+            2,
+            1,
+            14,
+            15
+          ],
+          "centre_off": 0.0
+        },
+        "block": 32.286,
+        "scale": 32.286,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-skill-1\\a1\\sheet-g4-skill-1-a1.png",
+        "cell": "deluge-volley"
+      }
+    },
+    "icon-deluge-volley-14": {
+      "final": "art-factory/starlantern/work/sheet-g4-skill-1/cand/a1/icon-deluge-volley-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-skill-1\\a1\\sheet-g4-skill-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 10,
+          "mass": 0.542,
+          "box": [
+            2,
+            1,
+            12,
+            13
+          ],
+          "centre_off": 0.0
+        },
+        "block": 37.667,
+        "scale": 37.667,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-skill-1\\a1\\sheet-g4-skill-1-a1.png",
+        "cell": "deluge-volley"
+      }
+    }
+  }
+}

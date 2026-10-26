@@ -1,4 +1,5 @@
 import type { MaterialDef } from '../engine/types';
+import { ROSTER_MATERIALS } from './materials.roster';
 
 const LIST: MaterialDef[] = [
   { id: 'moss', name: '發光苔', price: 6, kind: 'monster' },
@@ -25,4 +26,5 @@ const LIST: MaterialDef[] = [
   { id: 'essence-legendary', name: '傳說精華', price: 80, kind: 'essence' },
 ];
 
-export const MATERIALS: Record<string, MaterialDef> = Object.fromEntries(LIST.map((m) => [m.id, m]));
+/** Every material by id: the 22 above, then the monster roster's 98 (data/materials.roster.ts). */
+export const MATERIALS: Record<string, MaterialDef> = Object.fromEntries([...LIST, ...ROSTER_MATERIALS].map((m) => [m.id, m]));

@@ -25,7 +25,7 @@ import { textCps } from '../settings';
 import type { Scene, SceneCtx } from '../scene';
 import { Dialogue, MenuView, backControl, confirmBox, win, type Rich } from '../widgets';
 import { fragmentLines, levelUpLines } from '../battleText';
-import { speakerOf, storyCtx } from '../story';
+import { faceCandidates, speakerOf, storyCtx } from '../story';
 import { meetingPlate } from '../rescue';
 import { STORY } from '../../data/story.zh-TW';
 import { clearPillars, dropMoment, skipPillar } from '../lootFx';
@@ -98,6 +98,9 @@ export class DungeonScene implements Scene {
     this.refresh();
     if (this.ctx.from === 'gate') this.conditionBanner();
   }
+
+  /** Faces and row icons that landed after the party bar was drawn (ui2/lateArt); the lists and lines draw their own. */
+  artArrived(urls: ReadonlySet<string>): void { if (!this.exited) this.bar.artArrived(urls); }
 
   exit(): void {
     this.exited = true;
@@ -191,9 +194,11 @@ export class DungeonScene implements Scene {
     return b;
   }
 
-  private say(text: string | Rich, name = '', face?: { src: string; side: 'left' | 'right' }): Promise<void> {
+  /** `faces`: the speaker's faces, best first; a better one that lands while the line is up is shown then (ui2/lateArt). */
+  private say(text: string | Rich, name = '', face?: { src: string; side: 'left' | 'right' }, faces: readonly string[] = []): Promise<void> {
     this.said++;
     const shown = this.talk.say(name, text, face);
+    if (faces.length) this.talk.faceLater(faces, 'left', this.ctx.art);
     this.syncInert();
     return shown;
   }
@@ -310,7 +315,7 @@ export class DungeonScene implements Scene {
     try {
       for (const line of STORY.finaleWait) {
         const sp = speakerOf(line.who, this.ctx.game.state, this.ctx.art, line.mood);
-        await this.say(line.text, sp.name, sp.face ? { src: sp.face, side: 'left' } : undefined);
+        await this.say(line.text, sp.name, sp.face ? { src: sp.face, side: 'left' } : undefined, faceCandidates(line.who, this.ctx.game.state, line.mood));
         if (this.exited) return;
       }
     } finally {
@@ -327,7 +332,7 @@ export class DungeonScene implements Scene {
         // Each line has its own speaker: the found line is narration (no plate, no face), hers carry her portrait under a
         // 「？？？」 plate until she says her name after the fight (story polish Task 1).
         const sp = speakerOf(line.who, this.ctx.game.state, this.ctx.art, line.mood);
-        await this.say(line.text, meetingPlate(who, 'before', i, line) ?? sp.name, sp.face ? { src: sp.face, side: 'left' } : undefined);
+        await this.say(line.text, meetingPlate(who, 'before', i, line) ?? sp.name, sp.face ? { src: sp.face, side: 'left' } : undefined, faceCandidates(line.who, this.ctx.game.state, line.mood));
         if (this.exited) return;   // the scene went while a line was waiting: no fight from a scene that is gone
       }
       fighting = true;

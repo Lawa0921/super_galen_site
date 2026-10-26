@@ -1,18 +1,35 @@
-import { describe, it, expect } from 'vitest';
-import { CHARACTER_IDS } from '../../data/characters';
+import { afterEach, describe, it, expect } from 'vitest';
+import { CHARACTERS, CHARACTER_IDS } from '../../data/characters';
 import { ENEMIES } from '../../data/enemies';
+import { listedEnemy } from '../../data/monsters';
 import { SETS, SPECIALS } from '../../data/gear';
 import { REGIONS } from '../../data/regions';
 import { chainLength, CHAINS } from '../../data/story/chains';
 import { TOWN_FRAGMENTS } from '../../data/story/fragments';
-import { CHAT_COUNT, HOME_OWNERS, SCENE_IDS, STAGES, homeScene, memScene, sceneKind, type SceneId } from '../../data/story/scenes';
-import { STORY } from '../../data/story.zh-TW';
+import { BONDS_WRITTEN, CHAT_COUNT, ENDINGS_WRITTEN, HOME_OWNERS, ROMANCES_WRITTEN, SCENE_IDS, SEASON_SCENES, STAGES, bondScene, homeScene, memScene, sceneKind, type SceneId } from '../../data/story/scenes';
+import { SEASON_TITLES, STORY } from '../../data/story.zh-TW';
+import { T } from '../../data/text.zh-TW';
 import { meet } from '../party';
 import { newGame, type GameState } from '../state';
 import type { CharacterId } from '../types';
 import { handbook } from './handbook';
 import { withTold } from '../testing';
 import { arrivalScenes, onReturn, sceneDone } from './events';
+/**
+ * Bond plan Task 17: the registries hold what is written now, so a test that registers its own puts back what was there
+ * (`bondsBack`), registers a companion only once (`bondsAdd`), and gives a written scene back instead of deleting it.
+ */
+const BOND_BASE = [...BONDS_WRITTEN];
+const bondsAdd = (...cs: (typeof BONDS_WRITTEN)[number][]): void => { for (const c of cs) if (!BONDS_WRITTEN.includes(c)) BONDS_WRITTEN.push(c); };
+const bondsBack = (): void => { BONDS_WRITTEN.splice(0, BONDS_WRITTEN.length, ...BOND_BASE); };
+// review 5: the after-story and romance registries go back to what is registered, not to empty
+const regAdd = <T,>(reg: T[], ...xs: T[]): void => { for (const x of xs) if (!reg.includes(x)) reg.push(x); };
+const ENDINGS_BASE = [...ENDINGS_WRITTEN];
+const endingsBack = (): void => { ENDINGS_WRITTEN.splice(0, ENDINGS_WRITTEN.length, ...ENDINGS_BASE); };
+const ROMANCES_BASE = [...ROMANCES_WRITTEN];
+const romancesBack = (): void => { ROMANCES_WRITTEN.splice(0, ROMANCES_WRITTEN.length, ...ROMANCES_BASE); };
+const SCENES_BASE = { ...STORY.scenes };
+const scenesBack = (id: keyof typeof STORY.scenes): void => { if (SCENES_BASE[id]) STORY.scenes[id] = SCENES_BASE[id]; else delete (STORY.scenes as Partial<typeof STORY.scenes>)[id]; };
 
 /** Rin's banters, in the pairs' fixed order: what her people page lists after her chats (B1, B2; ids are frozen once shipped). */
 const RIN_BANTERS: SceneId[] = [
@@ -110,7 +127,11 @@ describe("the adventurer's handbook", () => {
     const s = everything();
     for (const c of HOME_OWNERS) {
       const page = handbook(s).people.find((p) => p.id === c)!;
-      expect(page.scenes.map((e) => e.scene).slice(-1), c).toEqual([homeScene(c)]);
+      // time and moon Task 8: the spring festival follows Chizuru's homecoming on her page
+      // bond plan Task 20: her after-story, once written, follows on her page
+      const ending: SceneId[] = [...(ENDINGS_WRITTEN.includes(c) ? [`ending:${c}` as SceneId] : []), ...(ROMANCES_WRITTEN.includes(c) ? [`romance:${c}` as SceneId] : [])];   // Task 21: then her romance
+      const tail: SceneId[] = c === 'chizuru' ? [homeScene(c), 'season:spring', ...ending] : [homeScene(c), ...ending];
+      expect(page.scenes.map((e) => e.scene).slice(-tail.length), c).toEqual(tail);
     }
     s.story.seen = s.story.seen.filter((id) => id !== 'home:liz');
     expect(handbook(s).people.find((p) => p.id === 'liz')!.scenes.map((e) => e.scene)).not.toContain('home:liz');
@@ -155,7 +176,7 @@ describe("the adventurer's handbook", () => {
     s.codex = [Object.keys(SPECIALS)[0], Object.keys(SETS)[0]];
     s.revealed = { slime: ['fire'] };
     const c = handbook(s).codex;
-    expect(c.monsters.map((m) => m.id)).toEqual(Object.values(ENEMIES).filter((e) => !e.story).map((e) => e.id));
+    expect(c.monsters.map((m) => m.id)).toEqual(Object.values(ENEMIES).filter((e) => listedEnemy(e.id) && !e.story).map((e) => e.id));
     expect(c.monsters.some((m) => m.id === 'scarlet-foe')).toBe(false);
     expect(c.monsters.find((m) => m.id === 'slime')!.weak).toEqual(['fire']);
     expect(c.monsters.find((m) => m.id === 'bat')!.weak).toBeNull();
@@ -226,7 +247,10 @@ describe("the adventurer's handbook", () => {
     // Task 10b: the inn night and the first return are the two of them before her story; they sit on her page, in story order.
     expect(rin.scenes.map((e) => [e.scene, e.fresh])).toEqual([
       ['prologue-inn', false], ['first-return', true], ['rin-reveal', true], ['rin-confess', false], ['bellkeeper-arrives', false], ['hero-alone', false], ['chat:rin:1', false], ['chat:rin:2', true], ['chat:rin:3', false], ['chat:rin:4', false],
+      ...(BONDS_WRITTEN.includes('rin') ? [1, 2, 3, 4].map((n) => [bondScene('rin', n), false]) : []),   // bond plan Task 17: her bond scenes after her chats
       ...RIN_BANTERS.map((id) => [id, false]),   // B1: her banters follow her chats, in the pairs' order (B2: all of them)
+      ...(ENDINGS_WRITTEN.includes('rin') ? [['ending:rin', false]] : []),   // bond plan Task 20: her after-story last
+      ...(ROMANCES_WRITTEN.includes('rin') ? [['romance:rin', false]] : []),   // bond plan Task 21: then her romance
     ]);
     expect(h.town.find((t) => t.id === 'orik')!.scene!.fresh).toBe(true);
     expect(h.town.find((t) => t.id === 'marta')!.scene!.fresh).toBe(false);
@@ -262,7 +286,8 @@ describe("the adventurer's handbook", () => {
     const rest = ids.filter((id) => sceneKind(id) !== 'banter');
     expect(new Set(rest).size).toBe(rest.length);
     for (const id of new Set(banters)) expect(banters.filter((b) => b === id), id).toHaveLength(2);
-    expect([...new Set(ids)].sort()).toEqual([...SCENE_IDS].sort());
+    // bond plan Task 14: every scene on its page but the walk with everyone, which is on none
+    expect([...new Set(ids)].sort()).toEqual([...SCENE_IDS].filter((id) => id !== 'together').sort());
     for (const id of CHARACTER_IDS) {
       expect(h.people.find((p) => p.id === id)!.scenes.filter((e) => e.scene.startsWith('chat:')).length).toBe(CHAT_COUNT[id]);
     }
@@ -390,5 +415,113 @@ describe("the handbook's leads (6c Task 16)", () => {
     expect(leads.current).toBeNull();
     expect(leads.followed).toHaveLength(8);
     expect(leads.allMet).toBe(true);
+  });
+});
+
+describe('time and moon: the handbook says the moon (Task 4)', () => {
+  it('a moon piece not found yet says its moon in the hint', () => {
+    const s = withMemories(fresh(), 'selene', 0);
+    const where = CHAINS.selene.pieces[0].regions.map((r) => REGIONS[r].name).join('、');
+    const hints = handbook(s).memories.find((m) => m.id === 'selene')!.pieces.map((p) => p.hint);
+    expect(hints).toEqual([`${where}・淺層`, `${where}・深處・滿月`, `${where}・深處`, `${where}・深處・滿月`, `${where}・深處・新月`]);
+    // no other chain waits on a moon: no moon in its hints
+    for (const id of CHARACTER_IDS.filter((c) => c !== 'selene')) {
+      for (const p of handbook(withMemories(fresh(), id, 0)).memories.find((m) => m.id === id)!.pieces) expect(p.hint, id).not.toMatch(/[新滿]月|[上下]弦/);
+    }
+  });
+
+  it('a piece under more than one moon names them all', () => {
+    expect(T.ui2.handbook.pieceHint('本道', true, '新月、滿月')).toBe('本道・深處・新月、滿月');
+    expect(T.ui2.handbook.pieceHint('本道', false)).toBe('本道・淺層');
+    const where = CHAINS.selene.pieces[1].regions.map((r) => REGIONS[r].name).join('、');
+    const piece = CHAINS.selene.pieces[1];
+    const was = piece.when;
+    piece.when = { moon: ['new', 'full'] };
+    try {
+      expect(handbook(withMemories(fresh(), 'selene', 0)).memories.find((m) => m.id === 'selene')!.pieces[1].hint).toBe(`${where}・深處・新月、滿月`);
+    } finally {
+      piece.when = was;
+    }
+  });
+});
+
+describe('time and moon: the spring festival in the handbook (Task 7)', () => {
+  it("the festival sits after Chizuru's homecoming on her page", () => {
+    expect(SEASON_SCENES.spring).toBe('season:spring');   // Task 8: written and registered
+    const s = withMemories(fresh(), 'chizuru', chainLength('chizuru'));
+    for (let n = 1; n <= chainLength('chizuru'); n++) s.story.seen.push(memScene('chizuru', n));
+    s.story.seen.push('home:chizuru');
+    const page = () => handbook(s).people.find((p) => p.id === 'chizuru')!.scenes.map((e) => e.scene);
+    expect(page().at(-1)).toBe('home:chizuru');   // not yet seen: not listed
+    s.story.seen.push('season:spring');
+    s.story.fresh = ['season:spring'];
+    expect(page().slice(-2)).toEqual(['home:chizuru', 'season:spring']);
+    expect(handbook(s).people.find((p) => p.id === 'chizuru')!.scenes.at(-1)).toMatchObject({ title: `${CHARACTERS.chizuru.name}・春祭`, fresh: true });
+    // no one else's page lists it
+    for (const p of handbook(s).people.filter((x) => x.id !== 'chizuru')) expect(p.scenes.map((e) => e.scene)).not.toContain('season:spring');
+  });
+});
+
+describe('the handbook and the bond (bond plan Task 14)', () => {
+  const page = (s: GameState, id: CharacterId) => handbook(s).people.find((p) => p.id === id)!;
+  it('the bond page counts every source against its cap', () => {
+    const s = newGame();
+    s.party.roster.rin.memories = 3;
+    s.party.roster.rin.bond = { talk: 5, field: 41, gifts: { 'dusk-cloth': 30 } };
+    const b = page(s, 'rin').bond!;
+    expect(b.tier).toBe(4);
+    expect(b.points).toBe(Math.min(100, 10 + 9 + 5 + 30 + 40));
+    expect(b.sources).toEqual({ memory: [9, 21], talk: [5, 12], gift: [30, 30], field: [40, 40] });
+    expect(page(s, 'hero').bond).toBeUndefined();
+    expect(page(s, 'selene').bond).toBeUndefined();   // not met
+    s.party = meet(s.party, 'selene', 1);
+    expect(page(s, 'selene').bond).toEqual({ tier: 0, points: 10, sources: { memory: [0, 15], talk: [0, 12], gift: [0, 30], field: [0, 40] }, tastes: [] });
+  });
+
+  it('a taste shows only once she has been offered it (a refusal too), in GIFTABLE order', () => {
+    const s = newGame();
+    s.party.roster.rin.bond = { talk: 0, field: 0, gifts: { 'star-tear': 1, 'dusk-cloth': 2, moss: 1 }, refused: ['king-scale'] };
+    expect(page(s, 'rin').bond!.tastes).toEqual([
+      { mat: 'moss', taste: 'neutral' }, { mat: 'dusk-cloth', taste: 'loved' }, { mat: 'star-tear', taste: 'liked' }, { mat: 'king-scale', taste: 'declined' },
+    ]);
+  });
+
+  it('bond scenes, endings and the romance are listed once seen', () => {
+    bondsAdd('rin', 'liz');
+    regAdd(ENDINGS_WRITTEN, 'rin', 'liz');
+    regAdd(ROMANCES_WRITTEN, 'rin', 'liz');
+    const titled = (id: SceneId) => { STORY.scenes[id] = { title: id, lines: [{ who: 'narrator', text: '甲。' }], summary: '乙。' }; };
+    const ids: SceneId[] = ['bond:rin:1', 'bond:rin:2', 'bond:rin:3', 'bond:rin:4', 'ending:rin', 'romance:rin', 'bond:liz:1', 'bond:liz:2', 'bond:liz:3', 'bond:liz:4', 'ending:liz', 'romance:liz'];
+    for (const id of ids) titled(id);
+    try {
+      const s = newGame();
+      s.party = meet(s.party, 'liz', 1);
+      s.story.seen.push('bond:rin:1', 'bond:rin:2', 'chat:rin:1', 'bond:liz:1', 'chat:liz:1', 'chat:liz:2');
+      const rin = page(s, 'rin').scenes.map((e) => e.scene);
+      expect(rin.indexOf('bond:rin:1')).toBe(rin.indexOf('chat:rin:1') + 1);   // her bonds after her chats
+      expect(rin).toContain('bond:rin:2');
+      expect(rin).not.toContain('bond:rin:3');
+      expect(page(s, 'liz').scenes.map((e) => e.scene)).toEqual(['chat:liz:1', 'chat:liz:2', 'bond:liz:1']);
+      s.party.roster.rin.oath = true;
+      s.story.seen.push('bond:rin:3', 'ending:rin', 'romance:rin', 'ending:liz');
+      const after = page(s, 'rin').scenes.map((e) => e.scene);
+      expect(after.slice(-2)).toEqual(['ending:rin', 'romance:rin']);
+      expect(after).toContain('bond:rin:3');
+      expect(page(s, 'liz').scenes.map((e) => e.scene).at(-1)).toBe('ending:liz');
+    } finally {
+      bondsBack(); endingsBack(); romancesBack();
+      for (const id of ids) scenesBack(id);
+    }
+  });
+});
+
+describe('the handbook and a healed refusal (review of bond plan Tasks 12-14)', () => {
+  it('a material she refused stays 婉拒 after her healing until she takes it', () => {
+    const s = withTold(newGame(), 'noel', chainLength('noel'));
+    s.party.roster.noel.bond = { talk: 0, field: 0, gifts: {}, refused: ['star-stone'] };
+    const page = () => handbook(s).people.find((p) => p.id === 'noel')!.bond!.tastes;
+    expect(page()).toEqual([{ mat: 'star-stone', taste: 'declined' }]);
+    s.party.roster.noel.bond.gifts['star-stone'] = 1;
+    expect(page()).toEqual([{ mat: 'star-stone', taste: 'liked' }]);
   });
 });

@@ -13,26 +13,73 @@ import {
 import type { RaiseFail, TalentFail } from '../../engine/progression';
 import { ABYSS_UNLOCK } from '../../data/hero';
 import { SLOTS, activeIds, expToNext, powersOf, sheetOf, statSources, statsOf } from '../../engine/party';
+import { bondTier } from '../../engine/story/bond';
 import { STAT_CATEGORIES, type StatCategory } from '../../engine/stats';
 import { chainLength } from '../../data/story/chains';
 import type { AnyStat, CharacterId, Member, Slot, StatKey, Stats } from '../../engine/types';
-import { art } from '../../render/artPaths';
+import { art, type SkillIconSize } from '../../render/artPaths';
 import { el } from '../../ui/dom';
 import type { UiAction } from '../input';
 import { gearLabel, rarityClass } from '../loot';
 import type { SceneCtx } from '../scene';
 import { cancelSpend, clickSpend, pressSpend, type SpendState } from '../spendPress';
-import { battleTp, cardOf, compareCards, slotDots, slotStates } from '../skillCard';
+import { battleTp, cardOf, compareCards, slotIcons, slotStates } from '../skillCard';
+import { marksEl } from '../runeArt';
 import { RUNES, type RuneRef } from '../../data/runes';
 import { socketable } from '../../engine/sockets';
 import { buildOf } from '../../data/builds';
-import { stageSpan } from '../stageAxis';
+import { stageSpan, stageWidth } from '../stageAxis';
+
+/** The stat table tints every other column once this many sit between the row names and 合計 (review of Tasks 12-14). */
+const TINT_FROM = 5;
+/** The 12px headings' gap the stat table keeps between two side by side, in stage px (second review of Tasks 12-14). */
+const HEAD_GAP = 4;
+
+/**
+ * Second review of bond plan Tasks 12-14: whether the stat table's middle headings go to one character. They are centred
+ * in their columns, so two of two characters (24 stage px) stand `width - 24` apart: once the narrowest column is under
+ * 24 + HEAD_GAP they would run together. Widths are layout px, which are stage px; none measured (or 0: not laid out
+ * yet) keeps the full words.
+ */
+export function shortHeads(widths: number[]): boolean {
+  const w = widths.filter((x) => x > 0);
+  return w.length > 0 && Math.min(...w) < 2 * 12 + HEAD_GAP;
+}
+
+/**
+ * Each middle heading of `table` in its full or its one-character form, as the columns' width allows: measured in stage
+ * px from the rect, unrounded (re-review: offsetWidth rounds a 27.6px column up to 28).
+ */
+function fitHeads(table: Element): void {
+  const heads = [...table.querySelectorAll<HTMLElement>('thead th[data-one]')];
+  const screen = table.closest('.slx-screen')?.getBoundingClientRect() ?? null;
+  const one = shortHeads(heads.map((th) => stageWidth(th.getBoundingClientRect(), screen)));
+  for (const th of heads) th.textContent = one ? th.dataset.one! : th.dataset.full!;
+}
+
+/** Fits the stat tables again whenever one changes size (a turn to the phone, another layout); one for the page at a time. */
+let headsWatch: ResizeObserver | null = null;
+/** The page's stat tables fitted now, and watched (only these: the ones drawn before are let go). */
+function watchHeads(body: HTMLElement): void {
+  headsWatch?.disconnect();
+  headsWatch = null;
+  const tables = [...body.querySelectorAll('.slx-stat-table')];
+  for (const table of tables) fitHeads(table);
+  if (typeof ResizeObserver === 'undefined') return;
+  headsWatch = new ResizeObserver((seen) => { for (const e of seen) fitHeads(e.target); });
+  for (const table of tables) headsWatch.observe(table);
+}
 
 export const STAT_ORDER: StatKey[] = ['hp', 'tp', 'atk', 'def', 'mag', 'res', 'spd'];
 
-/** A skill's icon (`icon/<skill>.png`) before its head line, once published; nothing before then. */
-const skillIco = (ctx: SceneCtx, skill: string): HTMLElement[] =>
-  (ctx.art.has(art.icon(skill)) ? [el('img', { class: 'slx-skill-ico', attrs: { src: art.icon(skill), alt: '' } })] : []);
+/**
+ * A skill's icon before its head line at its native size (art step 9: 16 in the skills tab, 14 on a tree node), once its
+ * picture is loaded; until then the name stands alone. Decorative (alt ""): the name beside it says which skill.
+ */
+const skillIco = (ctx: SceneCtx, skill: string, size: SkillIconSize = 16): HTMLElement[] => {
+  const src = art.skillIcon(skill, size);
+  return ctx.art.has(src) ? [el('img', { class: 'slx-skill-ico', attrs: { src, alt: '', width: String(size), height: String(size) } })] : [];
+};
 export const SLOT_ORDER: Slot[] = SLOTS;
 
 /**
@@ -119,33 +166,59 @@ const stats: StatusTab = {
     const def = CHARACTERS[id];
     const st = statsOf(m);
     const sheet = sheetOf(m);
-    const parts = statSources(m);
+    // Lorne never has a bond (bond plan Task 3): his sheet keeps its columns, and its width (the stat table fits nine).
+    const parts = statSources(m).filter((p) => p.source !== 'bond' || m.id !== 'hero');
     const cell = ctx.game.state.party.grid.indexOf(id);
     const row = cell >= 0 ? rowOfCell(cell) : null;
     if (!stops().includes(view.cur)) view.cur = 'cat:primary';
     const curCls = (key: string) => (view.cur === key ? ' slx-row-cur' : '');
 
-    const statRow = (k: AnyStat) => {
-      const key = `stat:${k}`;
+    // One column per stat source, so a new source shows up here without touching this table. Each stat's shown share of
+    // each source, its cut and its total, for every category (folded ones too): the page's columns are read from them all.
+    const figures = (k: AnyStat) => {
       let before = 0;
       let raw = 0;
-      // One column per stat source, so a new source shows up here without touching this table.
-      const cells = parts.map((p, i) => {
+      const ds = parts.map((p) => {
         raw += p.stats[k] ?? 0;
         const now = floorShown(k, raw);
         const d = Math.round((now - before) * 10) / 10;
         before = now;
-        return el('td', { class: `slx-${p.source}`, text: i === 0 ? base(d) : signed(d) });
+        return d;
       });
       // Any clamp in capSheet (a cap today, a floor tomorrow) shows here: the sheet differs from the plain sum.
       const capped = sheet[k] !== raw;
       const total = WHOLE.has(k) ? st[k as StatKey] : floorShown(k, sheet[k]);
       const cut = capped ? Math.round((total - before) * 10) / 10 : 0;
+      return { ds, capped, total, cut };
+    };
+    const every = STAT_CATEGORIES.flatMap((c) => c.keys.map(figures));
+    // Review of bond plan Tasks 12-14: a source with nothing for any stat of hers leaves the page (基礎 and 合計 always stay;
+    // 上限 only while a stat is capped), the same columns in every category so they still line up.
+    const shown = parts.map((_, i) => i === 0 || every.some((f) => f.ds[i] !== 0));
+    const capCol = every.some((f) => f.capped);
+    // With many columns left, every other one (from the second) wears a faint tint, header and cells alike, so two
+    // headings side by side never run together.
+    const cols = shown.filter(Boolean).length + (capCol ? 1 : 0);
+    const alt = (n: number) => (cols >= TINT_FROM && n % 2 === 1 ? ' slx-col-alt' : '');
+    /** The cells of one row after its name: its shown sources, 上限 when shown, 合計 (`n` counts them from 0). */
+    const columns = (src: (i: number) => HTMLElement, cap: () => HTMLElement, total: () => HTMLElement): HTMLElement[] => {
+      const out = parts.flatMap((_, i) => (shown[i] ? [src(i)] : []));
+      if (capCol) out.push(cap());
+      out.push(total());
+      out.forEach((c, n) => { if (alt(n)) c.classList.add('slx-col-alt'); });
+      return out;
+    };
+
+    const statRow = (k: AnyStat) => {
+      const key = `stat:${k}`;
+      const { ds, capped, total, cut } = figures(k);
       const tr = el('tr', { class: `${total === 0 ? 'slx-zero' : ''}${curCls(key)}`.trim(), attrs: { 'data-stat': k } }, [
         el('th', { text: T.gear.statName[k] }),
-        ...cells,
-        el('td', { class: 'slx-cap', text: signed(cut) }),
-        el('td', { class: capped ? 'slx-total slx-capped' : 'slx-total', text: t.value(k, total) }),
+        ...columns(
+          (i) => el('td', { class: `slx-${parts[i].source}`, text: i === 0 ? base(ds[i]) : signed(ds[i]) }),
+          () => el('td', { class: 'slx-cap', text: signed(cut) }),
+          () => el('td', { class: capped ? 'slx-total slx-capped' : 'slx-total', text: t.value(k, total) }),
+        ),
       ]);
       tr.addEventListener('pointermove', () => point(tr, key));
       tr.addEventListener('click', () => point(tr, key));
@@ -168,15 +241,24 @@ const stats: StatusTab = {
       const table = open
         ? [el('table', { class: 'slx-stat-table' }, [
           // A heading too long for its share reads short, the whole word in its title (主屬 for 主屬性).
-          el('thead', {}, [el('tr', {}, [el('th'), ...parts.map((p) => el('th', {
-            text: t.sourcesShort[p.source] ?? t.sources[p.source] ?? p.source, attrs: { title: t.sources[p.source] ?? p.source },
-          })), el('th', { text: t.capCol }), el('th', { text: t.total })])]),
+          // Each middle heading carries its full and its one-character form (data-full, data-one); fitHeads picks one once the
+          // table is laid out, the whole word in its title either way.
+          el('thead', {}, [el('tr', {}, [el('th'), ...columns(
+            (i) => {
+              const full = t.sourcesShort[parts[i].source] ?? t.sources[parts[i].source] ?? parts[i].source;
+              return el('th', { text: full, attrs: { title: t.sources[parts[i].source] ?? parts[i].source, 'data-full': full, 'data-one': t.sourcesOne[parts[i].source] ?? full } });
+            },
+            () => el('th', { text: t.capCol, attrs: { title: t.capCol, 'data-full': t.capCol, 'data-one': t.capColOne } }),
+            () => el('th', { text: t.total }),
+          )])]),
           el('tbody', {}, c.keys.map(statRow)),
         ])]
         : [];
       // The primary heading carries the member's affinity: the primary that converts best, or 全能 for all of them.
       const affinity = c.id === 'primary'
-        ? [el('p', { class: 'slx-stat-affinity', text: t.affinity(def.affinity === 'all' ? t.affinityAll : T.gear.statName[def.affinity]) })]
+        ? [el('p', { class: 'slx-stat-affinity', text: t.affinity(def.affinity === 'all' ? t.affinityAll : T.gear.statName[def.affinity]) }),
+          // bond plan Task 14: a companion's bond tier beside it; Lorne has none
+          ...(id === 'hero' ? [] : [el('p', { class: 'slx-stat-bond', text: T.ui2.bond.line(T.ui2.bond.tiers[bondTier(m)]) })])]
         : [];
       return el('section', { class: 'slx-stat-cat', attrs: { 'data-cat': c.id } }, [head, ...affinity, ...table]);
     });
@@ -210,7 +292,11 @@ const stats: StatusTab = {
     }
     return false;
   },
+  // re-review of Tasks 12-14: the size watch lets the tables go when the page or the tab goes
+  leave() { headsWatch?.disconnect(); },
   shown(body) {
+    // second review of Tasks 12-14: the headings fit the columns as laid out, and again whenever a table changes size
+    watchHeads(body);
     if (!view.reveal) return;
     view.reveal = false;
     // The first heading also brings the facts above it back into view; the last stop the end of the page (the margin
@@ -318,7 +404,7 @@ const skills: StatusTab = {
           el('span', { class: s.name.length >= LONG_SKILL_NAME ? 'slx-skill-name slx-skill-name-long' : 'slx-skill-name', text: s.name }),
           // A recovery skill that can also be cast from the labyrinth's field menu (SkillDef.field).
           ...(SKILLS[sk]?.field ? [el('span', { class: 'slx-field-tag', text: t.fieldTag })] : []),
-          ...(takes ? [el('span', { class: 'slx-skill-slots', text: slotDots(m, sk) })] : []),
+          ...(takes ? [marksEl(slotIcons(m, sk), 14, 'slx-skill-slots slx-rune-marks')] : []),
           ...(s.passive ? [] : [el('span', { class: 'slx-skill-target', text: t.targets[s.target] })]),
           el('span', { class: 'slx-skill-cost', text: s.passive ? t.passive : t.tp(treeCost(m, sk, skillCost(caster, sk))) }),
           // A skill she knows outside her tree (Rin's mark) has no rank to show.
@@ -613,7 +699,7 @@ const tree: StatusTab = {
       }, [
         // An active shows its skill's icon. A variant's name starts with the skill it changes (火之星彈・連星), so it goes
         // without, and the whole row is its name's (8d Task 6 review: no name wraps); a mechanic node has no skill at all.
-        ...(n.skill && !(n.kind === 'variant' && n.label !== undefined) ? skillIco(ctx, n.skill) : []),
+        ...(n.skill && !(n.kind === 'variant' && n.label !== undefined) ? skillIco(ctx, n.skill, 14) : []),
         el('div', { class: 'slx-skill-head' }, [
           // A name of five characters or more (護盾產生器) is set a size smaller, so it stays whole on its node. A variant's
           // (火之星彈・連星) may break onto a second line between its skill and its label, never inside either.

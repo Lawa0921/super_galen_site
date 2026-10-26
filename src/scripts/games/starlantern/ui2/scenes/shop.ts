@@ -13,7 +13,8 @@ import { buy, isUnlocked, priceOf, junkTotals, sell, sellGear, sellJunk } from '
 import type { AnyStat } from '../../engine/types';
 import { art } from '../../render/artPaths';
 import { el } from '../../ui/dom';
-import { gearIconUrl } from '../gearArt';
+import { gearIconLate } from '../gearArt';
+import { lateArt, type LateArt } from '../lateArt';
 import { gearLabel, invested, rarityClass } from '../loot';
 import { Menu, type MenuItem } from '../menu';
 import type { SceneCtx } from '../scene';
@@ -36,14 +37,14 @@ export class ShopScene extends FacilityScene {
     else this.sellList();
   }
 
-  private icon(id: string): string | undefined {
-    return this.ctx.art.has(art.icon(id)) ? art.icon(id) : undefined;
+  /** An item's or material's row icon, shown once it has landed (ui2/lateArt). */
+  private icon(id: string): LateArt {
+    return lateArt(this.ctx.art, art.icon(id));
   }
 
-  /** A base's row icon: its gear art at its own size (plan 5d); the old icon/ paths are all retired. */
+  /** A base's row icon: its gear art at its own size (plan 5d), once it has landed; the old icon/ paths are all retired. */
   private gearIcon(id: string): Pick<MenuItem, 'icon' | 'iconCls'> {
-    const icon = gearIconUrl(this.ctx.art, id);
-    return icon ? { icon, iconCls: 'slx-gear-ico' } : {};
+    return { icon: gearIconLate(this.ctx.art, id), iconCls: 'slx-gear-ico' };
   }
 
   private goods(): MenuItem[] {
@@ -261,18 +262,18 @@ export class ShopScene extends FacilityScene {
 
   /**
    * The rune rows (plan 8f Task 4): first what Orik sells (one grey line before runes are open), then, under a 收購
-   * heading, every rune in the bag by RUNE_IDS and tier. 持有 is `ownedCount` (bag and sockets, plan 8f ruling 13); only the bag's can be sold.
+   * heading, every rune in the bag by RUNE_IDS and tier. Each row leads with the rune's cell (its icon in its tier frame, art step 9). 持有 is `ownedCount` (bag and sockets, plan 8f ruling 13); only the bag's can be sold.
    */
   private runeRows(): MenuItem[] {
     const s = this.ctx.game.state;
     const stock = runeStock(s);
     const top: MenuItem[] = stock.length
-      ? stock.map((r) => ({ id: `buy:${runeKey(r)}`, label: T.rune.label(r.id, r.tier), cls: rarityClass({ rarity: r.tier }), right: T.rune.buyRight(runeBuyPrice(s, r)!, ownedCount(s, r)) }))
+      ? stock.map((r) => ({ id: `buy:${runeKey(r)}`, label: T.rune.label(r.id, r.tier), cls: rarityClass({ rarity: r.tier }), rune: r, right: T.rune.buyRight(runeBuyPrice(s, r)!, ownedCount(s, r)) }))
       : [{ id: 'closed', label: T.rune.fail.closed, disabled: true }];
     const bag = bagRunes(s);
     // A heading row (no cursor: the keys pass over it) keeps a rune to buy apart from the same rune to sell.
     const head: MenuItem[] = bag.length ? [{ id: 'sell-head', label: T.rune.sellHead, disabled: true, cls: 'slx-list-head' }] : [];
-    return [...top, ...head, ...bag.map((r) => ({ id: `sell:${runeKey(r)}`, label: T.rune.label(r.id, r.tier), cls: rarityClass({ rarity: r.tier }), right: T.rune.sellRight(runeSellPrice(r), ownedCount(s, r)) }))];
+    return [...top, ...head, ...bag.map((r) => ({ id: `sell:${runeKey(r)}`, label: T.rune.label(r.id, r.tier), cls: rarityClass({ rarity: r.tier }), rune: r, right: T.rune.sellRight(runeSellPrice(r), ownedCount(s, r)) }))];
   }
 
   /** A rune row's detail: what it does at this tier, the bag's count, and how many are socketed (they must come out first). */

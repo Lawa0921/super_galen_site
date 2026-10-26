@@ -9,6 +9,8 @@ import type { Difficulty } from './battle';
 export const BANDS: Record<Difficulty, readonly string[]> = {
   normal: [
     'balance.test.ts', 'balance.deep.test.ts', 'balance.lineups.test.ts', 'balance.pace.test.ts',
+    // Band 21 (bond plan Task 4): every companion at 心契; opt-in (BOND_BANDS=1), so the sim gate's four files stay as they are.
+    'balance.bond.test.ts',
     ...CHARACTER_IDS.map((id) => `builds.bands.${id}.test.ts`),
   ],
   // The difficulty bands (difficulty plan Task 5a, spec §6.2): one opt-in file a tier, the party on the cell's builds.

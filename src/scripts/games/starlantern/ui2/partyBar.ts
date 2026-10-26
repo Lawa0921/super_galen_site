@@ -5,7 +5,10 @@ import type { Row } from '../engine/types';
 import type { AilmentChip } from '../engine/ailments';
 import type { MechWord } from '../engine/mechanics/index';
 import { bySeverity, fitRow, isHalting, textWidth } from '../render/ailmentStyle';
+import { CHIP_ICON_PX, CHIP_ICON_W, ailmentIconUrl, mechIconUrls } from '../render/chipIcons';
 import type { ArtIndex } from '../render/textures';
+import { anyLanded, noteMissing } from './lateArt';
+import { moreTrigger, type MorePopover } from './morePopover';
 
 const ROW_TAG: Record<Row, string> = { front: '前', middle: '中', back: '後' };
 /**
@@ -14,6 +17,20 @@ const ROW_TAG: Record<Row, string> = { front: '前', middle: '中', back: '後' 
  */
 const AIL_ROW_W = 119;
 const ailWordWidth = (text: string): number => textWidth(text, 12) + 4;
+
+/**
+ * One word of the row (art step 9, G4): its loaded 14px icons first, decorative (alt "", the word names the state), then
+ * the word. `icons` is how many it shows, for the estimated width.
+ */
+export function chipWord(art: ArtIndex, cls: string, text: string, urls: readonly string[]): HTMLElement {
+  const shown = urls.filter((u) => art.has(u));
+  const word = el('span', { class: cls }, [
+    ...shown.map((src) => el('img', { class: 'slx-chip-ico', attrs: { src, alt: '', width: String(CHIP_ICON_PX), height: String(CHIP_ICON_PX) } })),
+    text,
+  ]);
+  word.dataset.icons = String(shown.length);
+  return word;
+}
 
 /** `row` shows a small 前／中／後 tag so the formation is visible during play. */
 export interface BarMember { key: string; name: string; hp: number; maxHp: number; tp: number; maxTp: number; limit: number; alive: boolean; row?: Row;
@@ -65,8 +82,12 @@ const TRANSIENT = ['slx-pm-hit', 'slx-pm-acting', 'slx-pm-heal', 'slx-pm-ko'];
 const PULSE_MS = 450;
 const POP_MS = 900;
 
-/** `ghost` is HP just lost, still drawn white behind the bar until it drains (GHOST_MS). */
-interface Panel { el: HTMLElement; body: HTMLElement; face: HTMLImageElement | null; member: BarMember; until: number; ghost: number | null; drain: ReturnType<typeof setTimeout> | null; shrinking?: boolean }
+/**
+ * `ghost` is HP just lost, still drawn white behind the bar until it drains (GHOST_MS). `faceWait` and `rowWait`: the
+ * pictures the face and the row were last drawn without (ui2/lateArt); only their landing draws the panel again.
+ */
+interface Panel { el: HTMLElement; body: HTMLElement; face: HTMLImageElement | null; member: BarMember; until: number; ghost: number | null; drain: ReturnType<typeof setTimeout> | null; shrinking?: boolean;
+  faceWait: Set<string>; rowWait: Set<string> }
 const GHOST_MS = 350;
 /** Matches the .slx-ghost width transition. */
 const GHOST_DRAIN_MS = 460;
@@ -76,7 +97,8 @@ export class PartyBar {
   readonly el = el('div', { class: 'slx-partybar' });
   private panels = new Map<string, Panel>();
 
-  constructor(private art: ArtIndex) {}
+  /** `more`: the battle's popover; with it, a tap on a row's +N lists the whole row (touch overflow). */
+  constructor(private art: ArtIndex, private more: MorePopover | null = null) {}
 
   /** Panels are updated in place (not rebuilt), so a shake or a number already on screen keeps playing. */
   update(members: BarMember[], active: string | null = null): void {
@@ -98,6 +120,18 @@ export class PartyBar {
     // Re-inserting a panel would restart its animation; only reorder when the order really changed.
     const current = [...this.el.children];
     if (current.length !== order.length || current.some((c, i) => c !== order[i])) this.el.replaceChildren(...order);
+  }
+
+  /**
+   * Art that landed after the panels were drawn (ui2/lateArt): a face or a row that was drawn without one of `urls` is
+   * drawn as it would be now; the rest are left alone (the row's layout is measured, so it is not redone for nothing).
+   * A panel in a momentary face (a hit, an act) keeps it; its reset draws the new face.
+   */
+  artArrived(urls: ReadonlySet<string>): void {
+    for (const p of this.panels.values()) {
+      if (anyLanded(urls, p.faceWait) && !TRANSIENT.some((c) => p.el.classList.contains(c))) this.resetFace(p);
+      if (anyLanded(urls, p.rowWait)) this.fillBody(p);
+    }
   }
 
   /** A momentary face, shake or glow, and the number that caused it. */
@@ -153,7 +187,7 @@ export class PartyBar {
   private create(m: BarMember): Panel {
     const panel = el('div', { class: 'slx-pm', attrs: { 'data-key': m.key } });
     const body = el('div', { class: 'slx-pm-body' });
-    const p: Panel = { el: panel, body, face: null, member: m, until: 0, ghost: null, drain: null };
+    const p: Panel = { el: panel, body, face: null, member: m, until: 0, ghost: null, drain: null, faceWait: new Set(), rowWait: new Set() };
     panel.append(body);
     this.panels.set(m.key, p);
     return p;
@@ -175,10 +209,12 @@ export class PartyBar {
     // each word's), and estimated only where nothing is laid out (tests).
     const chips = bySeverity(m.ailments ?? []);
     const halting = chips.filter(isHalting);
+    const art = noteMissing(this.art, (p.rowWait = new Set()));
+    const ailWord = (c: AilmentChip) => chipWord(art, `slx-ail slx-ail-${c.id}`, T.ailmentChip(c), [ailmentIconUrl(c.id)]);
     const words = [
-      ...halting.map((c) => el('span', { class: `slx-ail slx-ail-${c.id}`, text: T.ailmentChip(c) })),
-      ...(m.mech ?? []).map((x) => el('span', { class: `slx-mech slx-mech-${x.tone}`, text: x.text })),
-      ...chips.filter((c) => !isHalting(c)).map((c) => el('span', { class: `slx-ail slx-ail-${c.id}`, text: T.ailmentChip(c) })),
+      ...halting.map(ailWord),
+      ...(m.mech ?? []).map((x) => chipWord(art, `slx-mech slx-mech-${x.tone}`, x.text, mechIconUrls(x))),
+      ...chips.filter((c) => !isHalting(c)).map(ailWord),
     ];
     const moreEl = (n: number) => el('span', { class: 'slx-ail slx-ail-more', text: T.ailmentMore(n) });
     ail.hidden = words.length === 0;
@@ -187,17 +223,22 @@ export class PartyBar {
     ail.append(probe);
     // Layout px (offsetWidth, as clientWidth), not the scaled screen box.
     const measured = ail.clientWidth > 0 && [...words, probe].every((w) => w.offsetWidth > 0);
-    const widthOf = (w: HTMLElement) => (measured ? w.offsetWidth : ailWordWidth(w.textContent ?? ''));
+    const widthOf = (w: HTMLElement) => (measured ? w.offsetWidth : ailWordWidth(w.textContent ?? '') + CHIP_ICON_W * Number(w.dataset.icons ?? 0));
     const moreW = measured ? probe.offsetWidth : 0;
     probe.remove();
     const { shown, more } = fitRow(words, measured ? ail.clientWidth : AIL_ROW_W, widthOf, (n) => (measured ? moreW : ailWordWidth(T.ailmentMore(n))), 1, halting.length);
     // Whatever folds stays discoverable: the whole row, in its order, as the panel's title (the row lets the pointer
     // through) and the +N's.
     const all = more ? words.map((w) => w.textContent ?? '').join('、') : '';
-    const moreWord = more ? moreEl(more) : null;
+    // On touch there is no hover: with the battle's popover the +N is a button, and its tap lists the whole row there.
+    const pop = this.more, id = `pm:${m.key}`;
+    const listed = () => words.map((w) => w.cloneNode(true) as HTMLElement);
+    const moreWord = !more ? null : pop ? moreTrigger(more, () => pop.toggle(id, moreWord!, p.el, listed())) : moreEl(more);
     if (moreWord) moreWord.title = all;
     if (all) p.el.title = all; else p.el.removeAttribute('title');
     ail.replaceChildren(...shown, ...(moreWord ? [moreWord] : []));
+    // An open list follows the redraw (a new +N, the words now), and closes when nothing folds any more.
+    if (pop?.openId === id) { if (moreWord) pop.show(id, moreWord, p.el, listed()); else pop.close(); }
     tpNum.textContent = `TP ${m.tp}/${m.maxTp}`;
     name.replaceChildren(m.name, ...(m.row ? [el('span', { class: `slx-pm-row slx-pm-row-${m.row}`, text: ROW_TAG[m.row] })] : []));
     num.textContent = `${m.hp}/${m.maxHp}`;
@@ -228,7 +269,7 @@ export class PartyBar {
 
   /** The face for the member's current HP (normal, dying or down). */
   private resetFace(p: Panel): void {
-    const face = portraitImg(this.art, p.member.artId ?? p.member.key, p.member.hp, p.member.maxHp);
+    const face = portraitImg(noteMissing(this.art, (p.faceWait = new Set())), p.member.artId ?? p.member.key, p.member.hp, p.member.maxHp);
     if (!face) { p.face?.remove(); p.face = null; return; }
     if (p.face && p.face.getAttribute('src') === face.getAttribute('src') && p.face.className === face.className) return;
     if (p.face) p.face.replaceWith(face); else p.el.prepend(face);

@@ -1,19 +1,28 @@
 import { el } from '../ui/dom';
+import type { MoonPhase } from '../data/story/chains';
+import { MOON_ORDER } from '../engine/calendar';
 import type { UiAction } from './input';
+import type { ArtIndex } from '../render/textures';
+import { artMissing, artSrc, awaitArt, bestLanded, type ArtRef } from './lateArt';
 import { Menu, type MenuItem } from './menu';
+import { marksEl, runeCell } from './runeArt';
 
 /**
  * A line with coloured parts: plain text, or `{ text, cls }` drawn in a span of that class (a rarity colour, say). A part
- * with an `icon` (a piece's published gear art) shows it just before its span, from the part's first typed character.
+ * with an `icon` (a piece's published gear art) shows it just before its span, from the part's first typed character; a
+ * late icon (ui2/lateArt) once it has landed.
  */
-export type RichPart = string | { text: string; cls: string; icon?: string };
+export type RichPart = string | { text: string; cls: string; icon?: ArtRef };
 export type Rich = RichPart[];
 
 const partText = (p: RichPart): string => (typeof p === 'string' ? p : p.text);
 export const richText = (r: string | Rich): string => (typeof r === 'string' ? r : r.map(partText).join(''));
 
-/** The first `n` characters of a rich line as nodes; each coloured part keeps its span while it types out. */
-export function richNodes(r: Rich, n = Infinity): Node[] {
+/**
+ * The first `n` characters of a rich line as nodes; each coloured part keeps its span while it types out. The url of each
+ * shown part's late icon that has not landed yet goes into `missing`.
+ */
+export function richNodes(r: Rich, n = Infinity, missing: string[] = []): Node[] {
   const out: Node[] = [];
   let left = n;
   for (const p of r) {
@@ -23,11 +32,21 @@ export function richNodes(r: Rich, n = Infinity): Node[] {
     left -= chars.length;
     if (typeof p === 'string') out.push(document.createTextNode(shown));
     else {
-      if (p.icon && shown) out.push(el('img', { class: 'slx-ico slx-gear-ico', attrs: { src: p.icon, alt: '' } }));
+      const src = artSrc(p.icon);
+      if (src && shown) out.push(el('img', { class: 'slx-ico slx-gear-ico', attrs: { src, alt: '' } }));
+      const late = shown ? artMissing(p.icon) : undefined;
+      if (late) missing.push(late);
       out.push(el('span', { class: p.cls, text: shown }));
     }
   }
   return out;
+}
+
+/** Fills `target` with the first `n` characters of a rich line; a late icon not here yet is drawn in when it lands. */
+export function richInto(target: HTMLElement, r: Rich, n = Infinity): void {
+  const missing: string[] = [];
+  target.replaceChildren(...richNodes(r, n, missing));
+  awaitArt(target, 'rich', missing, () => richInto(target, r, n));
 }
 
 export function win(cls: string, children: Node[] = []): HTMLElement {
@@ -53,8 +72,13 @@ export class MenuView {
   /** Wheel travel gathered toward the next row, so a trackpad's many small deltas move one row per notch-sized sum. */
   private wheelAcc = 0;
 
-  /** `rows` limits how many options are on screen; the window scrolls to keep the cursor visible. */
-  constructor(readonly menu: Menu, private on: { pick(item: MenuItem): void; moved?(): void; cancel?(): void }, private rows = Infinity) {
+  /**
+   * `rows` limits how many options are on screen; the window scrolls to keep the cursor visible. With `cuesInRows` the
+   * ▲ and ▼ cues each take one of those rows (a cue is no taller than a row), so a window sized for `rows` rows holds the
+   * rows and their cues at any scroll (the skill workshop, review 2026-10-24); without it the cues come on top of `rows`.
+   */
+  constructor(readonly menu: Menu, private on: { pick(item: MenuItem): void; moved?(): void; cancel?(): void }, private rows = Infinity,
+    private opts: { cuesInRows?: boolean } = {}) {
     this.list = el('ul', { class: 'slx-menu', attrs: { role: 'listbox' } });
     this.el = this.list;
     // Mouse and touch reach every row of a long list: the wheel scrolls it, and the ▲/▼ markers are clickable.
@@ -74,21 +98,34 @@ export class MenuView {
     this.render();
   }
 
+  /** How many options show from `top`: `rows`, less a row for each cue shown when the cues take rows. */
+  private span(top: number): number {
+    const n = this.menu.items.length;
+    if (!this.opts.cuesInRows || n <= this.rows) return Math.min(this.rows, n - top);
+    const k = this.rows - (top > 0 ? 1 : 0);
+    return top + k >= n ? n - top : k - 1;
+  }
+
+  /** The last top the window can scroll to. */
+  private maxTop(): number {
+    const n = this.menu.items.length;
+    if (n <= this.rows) return 0;
+    return this.opts.cuesInRows ? n - (this.rows - 1) : n - this.rows;
+  }
+
   /** Whether the visible window can move by `d` rows. */
   private canScroll(d: 1 | -1): boolean {
-    const n = this.menu.items.length;
-    return this.rows < n && (d < 0 ? this.top > 0 : this.top < n - this.rows);
+    return this.rows < this.menu.items.length && (d < 0 ? this.top > 0 : this.top < this.maxTop());
   }
 
   /** Move the visible window by `d` rows; the cursor follows into view when it would fall outside. */
   scrollBy(d: 1 | -1): void {
-    const n = this.menu.items.length;
-    const top = Math.max(0, Math.min(n - Math.min(n, this.rows), this.top + d));
+    const top = Math.max(0, Math.min(this.maxTop(), this.top + d));
     if (top === this.top) return;
     this.top = top;
     const c = this.menu.cursor;
-    if (c < top || c >= top + this.rows) {
-      const visible = [...Array(Math.min(this.rows, n - top)).keys()].map((k) => top + k);
+    if (c < top || c >= top + this.span(top)) {
+      const visible = [...Array(this.span(top)).keys()].map((k) => top + k);
       const next = (c < top ? visible : visible.reverse()).find((i) => !this.menu.items[i].disabled);
       if (next !== undefined && this.menu.setCursor(next)) this.on.moved?.();
     }
@@ -99,24 +136,31 @@ export class MenuView {
     const n = this.menu.items.length;
     const c = Math.max(0, this.menu.cursor);
     if (c < this.top) this.top = c;
-    if (c >= this.top + this.rows) this.top = c - this.rows + 1;
-    this.top = Math.max(0, Math.min(this.top, n - Math.min(n, this.rows)));
-    const end = Math.min(n, this.top + this.rows);
+    // The first top that shows the cursor (with cues in the rows a lower top shows fewer rows, so step down to it).
+    while (c >= this.top + this.span(this.top) && this.top < this.maxTop()) this.top++;
+    this.top = Math.max(0, Math.min(this.top, this.maxTop()));
+    const end = this.top + this.span(this.top);
     const marker = (cls: string, text: string, d: 1 | -1) => {
       const li = el('li', { class: `slx-more ${cls}`, text, attrs: { 'aria-hidden': 'true' } });
       li.addEventListener('click', () => { if (!this.locked()) this.scrollBy(d); });
       return li;
     };
+    // A row's late icon that has not landed is left out; it is put into its row when it lands (ui2/lateArt, `drawLate`).
+    const late: { li: HTMLElement; item: MenuItem }[] = [];
     const rows = this.menu.items.slice(this.top, end).map((item, k) => {
       const i = this.top + k;
+      const icon = artSrc(item.icon);
       const li = el('li', { class: i === this.menu.cursor ? 'slx-opt slx-sel' : 'slx-opt', attrs: {
         role: 'option', 'aria-selected': String(i === this.menu.cursor), 'aria-disabled': String(!!item.disabled), 'data-id': item.id,
       } }, [
-        ...(item.icon ? [el('img', { class: item.iconCls ? `slx-ico ${item.iconCls}` : 'slx-ico', attrs: { src: item.icon, alt: '' } })] : []),
+        ...(icon ? [MenuView.icon(item, icon)] : []),
+        // Its label beside it names the rune and its tier, so the cell's icon is decorative (alt "").
+        ...(item.rune ? [runeCell(item.rune, false, true)] : []),
         el('span', { class: item.cls ? `slx-label ${item.cls}` : 'slx-label', text: item.label }),
         ...(item.tail ? [el('span', { class: item.cls ? `slx-label-tail ${item.cls}` : 'slx-label-tail', text: item.tail })] : []),
-        ...(item.badge ? [el('span', { class: 'slx-badge', text: item.badge })] : []),
-        ...(item.right !== undefined ? [el('span', { class: item.rightClass ? `slx-right ${item.rightClass}` : 'slx-right', text: item.right })] : []),
+        ...(item.marks?.length ? [marksEl(item.marks, 14, 'slx-badge slx-rune-marks')] : []),
+        ...(item.right !== undefined ? [el('span', { class: item.rightClass ? `slx-right ${item.rightClass}` : 'slx-right', text: item.right })]
+          : item.rightMarks?.length ? [marksEl(item.rightMarks, 14, 'slx-right slx-rune-marks')] : []),
       ]);
       // pointermove, not pointerenter: a window that opens under a resting mouse must not steal the keyboard cursor.
       li.addEventListener('pointermove', () => {
@@ -125,9 +169,31 @@ export class MenuView {
         if (this.menu.setCursor(i) && this.menu.cursor !== before) { this.render(); this.on.moved?.(); }
       });
       li.addEventListener('click', () => { if (this.locked()) return; if (!item.disabled && this.menu.setCursor(i)) { this.render(); this.flashPick(); this.on.pick(item); } });
+      if (artMissing(item.icon)) late.push({ li, item });
       return li;
     });
     this.list.replaceChildren(...(this.top > 0 ? [marker('slx-more-up', '▲', -1)] : []), ...rows, ...(end < n ? [marker('slx-more-down', '▼', 1)] : []));
+    this.drawLate(late);
+  }
+
+  /** A row's icon picture, first in its row. */
+  private static icon(item: MenuItem, src: string): HTMLElement {
+    return el('img', { class: item.iconCls ? `slx-ico ${item.iconCls}` : 'slx-ico', attrs: { src, alt: '' } });
+  }
+
+  /**
+   * The rows whose icon had not landed: each one that has now is put first in its own row, in place, and the rest wait on.
+   * The rows themselves are not drawn again, so a press under way (a touch between down and up) still ends in its click,
+   * and a pick's flash keeps running.
+   */
+  private drawLate(rows: { li: HTMLElement; item: MenuItem }[]): void {
+    const waiting = rows.filter(({ li, item }) => {
+      const src = artSrc(item.icon);
+      if (!src) return true;
+      li.prepend(MenuView.icon(item, src));
+      return false;
+    });
+    awaitArt(this.list, 'rows', waiting.map(({ item }) => artMissing(item.icon)!), () => this.drawLate(waiting));
   }
 
   /** A quick flash on the chosen row, so a pick is felt even when the next window opens at once. */
@@ -163,6 +229,11 @@ export class Dialogue {
   private resolve: (() => void) | null = null;
   /** A scene is playing (staging S4): a confirmed line leaves the box and its face up until the next line or `close()`. */
   private held = false;
+  /**
+   * Time and moon ruling 8: tonight's moon, set by the screen while it tells a night (the town on a return, the night before
+   * the descent); a night card's veil takes its tint. Null (the handbook, the labyrinth): the plain night.
+   */
+  moon: MoonPhase | null = null;
 
   /** `onClose` runs synchronously when a line is dismissed, so owners can unlock their windows before the next click. */
   constructor(private charsPerSecond: number, private onClose?: () => void) {
@@ -198,6 +269,13 @@ export class Dialogue {
       card.textContent = place.text;
     }
     this.veil('slx-veil-night', !!place?.night);
+    this.tint(place?.night ? this.moon : null);
+  }
+
+  /** The night veil's moon (`slx-moon-<phase>`), or none: it goes with the card. */
+  private tint(moon: MoonPhase | null): void {
+    const v = this.el.parentElement?.querySelector<HTMLElement>(':scope > .slx-veil-night');
+    if (v) for (const m of MOON_ORDER) v.classList.toggle(`slx-moon-${m}`, m === moon);
   }
 
   /** The place card on the box's screen, if one is up. */
@@ -225,7 +303,7 @@ export class Dialogue {
     this.held = on;
     // A scene starts with no face of its own: one left on the box from before it (a labyrinth line) is not kept by its
     // first narration line (staging review 2).
-    if (on) { this.face?.remove(); this.face = null; }
+    if (on) { this.face?.remove(); this.face = null; this.dropFaceWait(); }
   }
 
   /** Puts the box and its face away, unless a line is still waiting to be read. */
@@ -234,6 +312,12 @@ export class Dialogue {
     this.el.hidden = true;
     this.face?.remove();
     this.face = null;
+    this.dropFaceWait();
+  }
+
+  /** A face the line put away waited for is not drawn later (`faceLater`). */
+  private dropFaceWait(): void {
+    awaitArt(this.el, 'face', [], () => {});
   }
 
   /**
@@ -242,6 +326,7 @@ export class Dialogue {
    */
   say(name: string, text: string | Rich, face?: { src: string; side: 'left' | 'right' } | 'keep'): Promise<void> {
     this.stop();
+    this.dropFaceWait();   // a face the last line waited for is not this line's
     if (face === 'keep') this.face?.classList.add('slx-talk-face--dim');
     else {
       this.face?.remove();
@@ -263,15 +348,28 @@ export class Dialogue {
     if (!Number.isFinite(this.charsPerSecond)) this.complete();
     else {
       let n = 0;
-      this.text.textContent = '';
+      richInto(this.text, this.full, 0);
       this.el.setAttribute('aria-busy', 'true');
       this.timer = setInterval(() => {
         n += 1;
-        this.text.replaceChildren(...richNodes(this.full, n));
+        richInto(this.text, this.full, n);
         if (n >= [...richText(this.full)].length) this.complete();
       }, 1000 / this.charsPerSecond);
     }
     return new Promise((r) => { this.resolve = r; });
+  }
+
+  /**
+   * The line on screen takes the best of `faces` (best first) that lands while it is up (ui2/lateArt): a face that had not
+   * loaded when the line was said, or a better one than it shows. The next line drops the wait.
+   */
+  faceLater(faces: readonly string[], side: 'left' | 'right', idx: ArtIndex): void {
+    awaitArt(this.el, 'face', bestLanded(idx, faces).better, () => {
+      const src = bestLanded(idx, faces).src;
+      if (src && this.face) { this.face.setAttribute('src', src); this.face.classList.remove('slx-talk-face--dim'); }
+      else if (src) this.el.prepend((this.face = el('img', { class: `slx-talk-face slx-talk-face--${side}`, attrs: { src, alt: '', draggable: 'false' } })));
+      this.faceLater(faces, side, idx);
+    });
   }
 
   onAction(a: UiAction): boolean {
@@ -283,6 +381,7 @@ export class Dialogue {
       this.el.hidden = true;
       this.face?.remove();
       this.face = null;
+      this.dropFaceWait();
     }
     this.onClose?.();
     r();
@@ -292,7 +391,7 @@ export class Dialogue {
   /** Whole line on screen: the ▼ mark shows and screen readers (aria-busy off) read it once. */
   private complete(): void {
     this.stop();
-    this.text.replaceChildren(...richNodes(this.full));
+    richInto(this.text, this.full);
     this.next.removeAttribute('hidden');
     this.el.setAttribute('aria-busy', 'false');
   }
@@ -309,7 +408,8 @@ export function confirmBox(question: string | Rich, on: (yes: boolean) => void):
     pick: (it) => on(it.id === 'yes'),
     cancel: () => on(false),
   });
-  const q = typeof question === 'string' ? el('p', { text: question }) : el('p', {}, richNodes(question));
+  const q = el('p', typeof question === 'string' ? { text: question } : {});
+  if (typeof question !== 'string') richInto(q, question);
   return { el: win('slx-confirm', [q, view.el]), view };
 }
 

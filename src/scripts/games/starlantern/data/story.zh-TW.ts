@@ -4,9 +4,12 @@ import { MOODS_OF, type StoryMood } from '../render/artPaths';
 import { CHARACTERS, CHARACTER_IDS } from './characters';
 import { MEETINGS, type Meetable } from './meetings';
 import { numeral } from './numeral';
-import { CHAINS } from './story/chains';
+import { CHAINS, type MoonPhase, type Season } from './story/chains';
 import { TOWN_FRAGMENTS, type TownFragmentId } from './story/fragments';
-import { ACT_NODES, BANTER_COUNT, BANTER_PAIRS, CHAT_COUNT, type GroupScene, HOME_OWNERS, type HomeOwner, MAJOR_SCENES, type MajorScene, REACTIONS, banterScene, banterTwo, homeScene, memScene, type SceneId, type Stage } from './story/scenes';
+import { PL, type Place } from './story/places';
+import type { BondTier, Companion, Tone } from './story/bond';
+import { ACT_NODES, BANTER_COUNT, BANTER_PAIRS, BONDS_WRITTEN, CHAT_COUNT, ENDINGS_WRITTEN, type GroupScene, HOME_OWNERS, type HomeOwner, MAJOR_SCENES, type MajorScene, REACTIONS, ROMANCES_WRITTEN, SEASON_SCENES, TOGETHER_WRITTEN, banterScene, banterTwo, bondScene, homeScene, memScene, type SceneId, type Stage } from './story/scenes';
+import { BOND_SCENES } from './bond.zh-TW';
 
 export type NpcId = 'anna' | 'orik' | 'marta' | 'glen' | 'doran' | 'merchant' | 'bellkeeper';
 export const NPC_NAMES: Record<NpcId, string> = {
@@ -14,8 +17,7 @@ export const NPC_NAMES: Record<NpcId, string> = {
 };
 
 export type Speaker = CharacterId | NpcId | 'narrator';
-/** A scene's location card (story staging S6). */
-export interface Place { text: string; night?: true }
+export type { Place } from './story/places';
 export interface ScriptLine {
   who: Speaker; mood?: StoryMood; text: string;
   /**
@@ -33,12 +35,35 @@ export interface ScriptLine {
    * `oath`: Rin has made her choice (`true`) or has not yet (`false`).
    * `returned`: that townsfolk fragment has been given back; `notReturned`: not yet (Liz's last piece reads both ways).
    * `seen`: that scene has been seen; `notSeen`: not yet (story depth: a line that waits on a scene, or stands in for it).
+   * `tier`: that companion's bond is at least that tier (bond plan Task 7; `LineWhen.tiers`).
    */
   if?: {
     met?: CharacterId; notMet?: CharacterId; returned?: TownFragmentId; notReturned?: TownFragmentId; full?: CharacterId; notFull?: CharacterId; oath?: boolean;
-    seen?: SceneId; notSeen?: SceneId;
+    seen?: SceneId; notSeen?: SceneId; tier?: { who: Companion; min: BondTier };
   };
 }
+
+/**
+ * One way Lorne says it in a bond scene (spec §7.2, §7.3): its tone, his line (in 「」) or his action (in （）), at most
+ * CHOICE_MAX_CHARS, and the 1 to 2 lines that follow it.
+ */
+export interface Choice { tone: Tone; text: string; reply: ScriptLine[] }
+/** A fork in a bond scene (spec §7.3): Lorne picks one of 2 to 3 ways to say the same care. Never filtered by `if`. */
+export interface ChoiceLine { who: 'hero'; choices: Choice[] }
+/** A line of a scene as written: a plain line, or a choice (bond scenes only). */
+export type SceneLine = ScriptLine | ChoiceLine;
+/** The longest a choice's text may be (spec §0 D13): it is a 12px menu row. */
+export const CHOICE_MAX_CHARS = 20;
+export const isChoice = (l: SceneLine): l is ChoiceLine => 'choices' in l;
+/** How many lines a scene plays at worst (spec §7.3): each line one, a choice one and then its longest reply. */
+export const worstCount = (lines: readonly SceneLine[]): number =>
+  lines.reduce((n, l) => n + (isChoice(l) ? 1 + Math.max(0, ...l.choices.map((c) => c.reply.length)) : 1), 0);
+/**
+ * Every line as the gates read it (bond plan Task 7): a choice opened into each of its texts, said by Lorne, followed by that
+ * choice's reply. A scene with no choice is its own lines.
+ */
+export const flatLines = (lines: readonly SceneLine[]): ScriptLine[] =>
+  lines.flatMap((l) => (isChoice(l) ? l.choices.flatMap((c): ScriptLine[] => [{ who: 'hero', text: c.text }, ...c.reply]) : [l]));
 
 /** A line of the bellkeeper's pool in town (story depth Task 4): `returned`, once that townsfolk fragment is back. */
 export interface KeeperLine { text: string; if?: { returned?: TownFragmentId } }
@@ -47,11 +72,16 @@ export interface KeeperLine { text: string; if?: { returned?: TownFragmentId } }
  * What a scene's conditions are checked against. `seen` is the save's seen scenes; left out, nothing counts as seen (the one
  * caller in play, `ui2/story.ts`, always gives it; tests and the handbook readers that do not name it read it as empty).
  */
-export interface LineWhen { met: CharacterId[]; full: CharacterId[]; returned: TownFragmentId[]; oath: boolean; seen?: SceneId[] }
+export interface LineWhen {
+  met: CharacterId[]; full: CharacterId[]; returned: TownFragmentId[]; oath: boolean; seen?: SceneId[];
+  /** Each companion's bond tier (bond plan Task 7); one left out, or no `tiers` at all, reads as 0. */
+  tiers?: Partial<Record<Companion, BondTier>>;
+}
 
-/** The lines that play: every line whose conditions all hold (a line with none always plays). */
-export function linesWhen(lines: ScriptLine[], w: LineWhen): ScriptLine[] {
+/** The lines that play: every line whose conditions all hold (a line with none always plays, and so does a choice). */
+export function linesWhen<L extends SceneLine>(lines: readonly L[], w: LineWhen): L[] {
   return lines.filter((l) => {
+    if (isChoice(l)) return true;
     const c = l.if;
     if (!c) return true;
     if (c.met && !w.met.includes(c.met)) return false;
@@ -63,6 +93,7 @@ export function linesWhen(lines: ScriptLine[], w: LineWhen): ScriptLine[] {
     if (c.oath !== undefined && c.oath !== w.oath) return false;
     if (c.seen && !(w.seen ?? []).includes(c.seen)) return false;
     if (c.notSeen && (w.seen ?? []).includes(c.notSeen)) return false;
+    if (c.tier && (w.tiers?.[c.tier.who] ?? 0) < c.tier.min) return false;
     return true;
   });
 }
@@ -105,6 +136,8 @@ export const GROUP_TITLES: Record<GroupScene, string> = {
 };
 /** What each homecoming is called in the handbook, after her name (continuity fix 2). */
 const HOME_TITLES: Record<HomeOwner, string> = { chizuru: '鎮邊的小祠', safira: '廣場上的最後一支舞', sylvie: '窗外的新芽', liz: '店門口' };
+/** Time and moon ruling 7: what each season's scene is called in the handbook, after Chizuru's name (her page). */
+export const SEASON_TITLES: Partial<Record<Season, string>> = { spring: '春祭' };
 
 type Written = { lines: ScriptLine[]; summary: string };
 const N = (text: string, oath?: boolean): ScriptLine => (oath === undefined ? { who: 'narrator', text } : { who: 'narrator', text, if: { oath } });
@@ -112,24 +145,6 @@ const N = (text: string, oath?: boolean): ScriptLine => (oath === undefined ? { 
 const NP = (text: string): ScriptLine => ({ who: 'narrator', text, past: true });
 /** `line`, with the scene's location card from it on (story staging S6). */
 const at = (place: Place, line: ScriptLine): ScriptLine => ({ ...line, place });
-/**
- * The location cards (story staging S6), each where the scene's own narration names the place. Night dims the screen: the
- * deep nights and the dark before dawn.
- */
-const PL = {
-  plazaPredawn: { text: '傳送門廣場・黎明前' }, plaza: { text: '傳送門廣場' }, plazaNight: { text: '傳送門廣場・夜', night: true },
-  plazaDeepNight: { text: '傳送門廣場・深夜', night: true }, plazaBeforeDawn: { text: '傳送門廣場・天亮前', night: true },
-  plazaMorning: { text: '傳送門廣場・清晨' },
-  guild: { text: '冒險者公會' }, guildCellar: { text: '冒險者公會・地下室' }, guildClosed: { text: '冒險者公會・打烊以後' },
-  inn: { text: '月影旅館' }, innNight: { text: '月影旅館・夜', night: true }, innDeepNight: { text: '月影旅館・深夜', night: true },
-  innDawn: { text: '月影旅館・清晨' }, innBeforeDawn: { text: '月影旅館・天亮前', night: true }, innDinner: { text: '月影旅館・晚飯' },
-  innKitchen: { text: '月影旅館・廚房' }, innYard: { text: '月影旅館・後院' }, innDoor: { text: '月影旅館・門口' },
-  innRoof: { text: '月影旅館屋頂・深夜', night: true }, innHall: { text: '旅館走廊・夜', night: true },
-  roofNight: { text: '屋頂・夜', night: true },
-  shopClosed: { text: '道具店・打烊以後' }, shopEvening: { text: '道具店・傍晚' }, forge: { text: '鍛造屋' }, forgeDoor: { text: '鍛造屋門口' },
-  edgeMorning: { text: '鎮邊・清晨' }, squareDusk: { text: '廣場・黃昏' }, square: { text: '廣場' }, festival: { text: '廣場・星燈祭之夜', night: true },
-  depth16: { text: '本道第十六層' }, depth30: { text: '第三十層・燈前' }, lampBase: { text: '星燈之底' },
-} satisfies Record<string, Place>;
 /** Story L plan ruling 3: the night's card, over a return's memories (the owed ones before the day's scene, and the night's). */
 export const NIGHT_PLACE: Place = PL.innNight;
 /** 【控制者裁定 2026-10-24】 The card the dawn before departure tells its one memory under. */
@@ -137,7 +152,7 @@ export const DAWN_PLACE: Place = PL.innDawn;
 
 /**
  * Story L spec §4.4.1: the beats between two memories of a night, in their fixed order (the companions by `CHARACTER_IDS`,
- * six each, then twelve of narration). `engine/story/nights.ts` `nextBeat` walks it from the save's cursor (`story.beat`).
+ * six each, Selene eight, then twelve of narration). `engine/story/nights.ts` `nextBeat` walks it from the save's cursor (`story.beat`).
  */
 export interface NightBeats { lines: NightBeat[] }
 /**
@@ -146,10 +161,15 @@ export interface NightBeats { lines: NightBeat[] }
  * tags every line; a line with no tone (a test's pool) fits either.
  */
 export type BeatTone = 'quiet' | 'lively';
-export interface NightBeat extends ScriptLine { tone?: BeatTone }
 /**
- * The night's beats (story L Task 8; style bible §1.3.1; lore ledger I-191). Each companion has six, in `CHARACTER_IDS` order,
- * then twelve of the deep night. Each line carries its tone (cold read, 2026-10-24): `quiet` (a drink, a door kept, a night
+ * Time and moon ruling 10: `moon`, the nights a beat fits (`tonightMoon`): a line that speaks of the moon or its light says
+ * which, and the cursor passes it over on any other night, not used up. No `moon`: any night.
+ */
+export interface NightBeat extends ScriptLine { tone?: BeatTone; moon?: MoonPhase[] }
+/**
+ * The night's beats (story L Task 8; style bible §1.3.1; lore ledger I-191, I-201). Each companion has six (Selene eight:
+ * time and moon ruling 10), in `CHARACTER_IDS` order, then twelve of the deep night. A line that speaks of the moon carries
+ * the nights it fits (`moon`). Each line carries its tone (cold read, 2026-10-24): `quiet` (a drink, a door kept, a night
  * sound, a small touch) may follow any memory; `lively` (a joke, a show-off, clapping) only a warm one. None touches what a
  * memory told, says 你 or 妳 to whoever told it, names another companion (anyone may not be met yet), or leans on a stage
  * or on Rin's choice.
@@ -157,6 +177,10 @@ export interface NightBeat extends ScriptLine { tone?: BeatTone }
 const Q = (who: CharacterId, text: string, mood?: StoryMood): NightBeat => ({ who, text, tone: 'quiet', ...(mood ? { mood } : {}) });
 const J = (who: CharacterId, text: string, mood?: StoryMood): NightBeat => ({ who, text, tone: 'lively', ...(mood ? { mood } : {}) });
 const QN = (text: string): NightBeat => ({ who: 'narrator', text, tone: 'quiet' });
+/** Time and moon ruling 10: a beat that speaks of the moon, for the nights under one of `moon`. */
+const UNDER = (moon: MoonPhase[], l: NightBeat): NightBeat => ({ ...l, moon });
+/** The moon is up: any night but the new moon's. */
+const LIT: MoonPhase[] = ['waxing', 'full', 'waning'];
 export const NIGHT_BEATS: NightBeats = {
   lines: [
     // Noel: loud by day; at night a kindness she will not own
@@ -169,7 +193,7 @@ export const NIGHT_BEATS: NightBeats = {
     // Chizuru: the rites of her shrine, kept in a room at the inn; and the year she fell asleep in
     J('chizuru', '「近來的被子真輕。我們那時候，冬天得壓三層棉被，翻身前還得先跟神明打聲招呼。」', 'bewildered'),
     J('chizuru', '「鎮上的守夜人，最近改敲梆子了？去年還是打鼓的。」', 'bewildered'),
-    Q('chizuru', '「香點上了。煙往窗外飄，今晚的風很溫和。」', 'solemn'),
+    Q('chizuru', '「香點上了。煙直直往上升，今晚屋裡很靜。」', 'solemn'),
     Q('chizuru', '「我摺了一張護符，放在枕邊。說過心事的人，夜裡要有東西守著。」'),
     Q('chizuru', '「我在紙上記下今天的日子。一天一道，明天再添一道。」'),
     Q('chizuru', '「容我合掌一次。說出口的心裡話，要有人替它收好，這是我們那裡的規矩。」', 'solemn'),
@@ -184,9 +208,9 @@ export const NIGHT_BEATS: NightBeats = {
     J('sylvie', '「瑪莎的湯鹹了一點。明天下去前多裝一袋水，不然走到第三層就有人喊渴。」'),
     Q('sylvie', '「窗縫在灌冷風，我拿布塞起來了。誰再打開，自己去睡走廊。」'),
     Q('sylvie', '「多的被子在櫃子最下面。半夜會變冷，蓋好再睡。」'),
-    Q('sylvie', '「風停了，樹葉也不動了。明天是好天氣。」', 'alert'),
+    Q('sylvie', '「風停了，外頭安靜得很。明天是好天氣。」', 'alert'),
     Q('sylvie', '「後院有腳印，小小的一串，是貓。不用管牠。」', 'alert'),
-    Q('sylvie', '「外面的蟲還在叫，代表附近沒東西在走動。安心睡啦。」'),
+    Q('sylvie', '「外面的貓頭鷹還在叫，代表附近沒東西在走動。安心睡啦。」'),
     // Scarlet: a soldier's watch, kept to the letter
     J('scarlet', '「盾已經擦了三遍。再擦一遍，應該就能拿來當鏡子用。」', 'serious'),
     Q('scarlet', '「門閂檢查了三次，三次都很牢。回報完畢。」', 'serious'),
@@ -194,13 +218,16 @@ export const NIGHT_BEATS: NightBeats = {
     Q('scarlet', '「我聽到了。這些話我會守著，一個字也不會傳出去。」', 'serious'),
     Q('scarlet', '「下一班守夜是我。蠟燭剪短了，剛好點到換班。」'),
     Q('scarlet', '「說完了就請休息。門口由我負責，今晚沒有任何東西進得來。」'),
-    // Selene: the moon says it, and then she takes it back
-    J('selene', '「今晚的月亮缺了右邊一角。不是壞兆頭──大概不是。」', 'foresee'),
-    J('selene', '「月亮往西邊走了一點。今晚大家都睡得著──啊，這句不算。」', 'foresee'),
-    Q('selene', '「月亮剛才也在聽。它不會說出去的，我也不會呢。」', 'smile'),
-    Q('selene', '「我把窗簾拉開一點。月光照進來，比燈溫柔。」', 'wistful'),
+    // Selene: the moon says it, and then she takes it back. Time and moon ruling 10: each line that sees the moon keeps to
+    // the nights it is up (the waning one only to its own); the new moon has her a line of its own, and so has the full.
+    UNDER(['waning'], J('selene', '「今晚的月亮缺了右邊一半。不是壞兆頭──大概不是。」', 'foresee')),
+    UNDER(LIT, J('selene', '「月亮往西邊走了一點。今晚大家都睡得著──啊，這句不算。」', 'foresee')),
+    UNDER(LIT, Q('selene', '「月亮剛才也在聽。它不會說出去的，我也不會呢。」', 'smile')),
+    UNDER(LIT, Q('selene', '「我把窗簾拉開一點。月光照進來，比燈溫柔。」', 'wistful')),
     Q('selene', '「我在窗邊數星星，數到一半，忘了數到哪裡。這不算預言，請別記下來。」', 'wistful'),
-    Q('selene', '「今晚的月亮，適合說話。說完了，也適合睡覺。」'),
+    UNDER(LIT, Q('selene', '「今晚的月亮，適合說話。說完了，也適合睡覺。」')),
+    UNDER(['new'], Q('selene', '「今晚月亮請假了。那就由我替它聽著，只聽不讀。」', 'smile')),
+    UNDER(['full'], Q('selene', '「月亮好亮，亮得什麼都讀得出來。今晚不讀了，看大家就好。」', 'smile')),
     // Safira: on the beat, even sitting down
     J('safira', '「睡不著？那來跳一小段啊──不跳？坐著打拍子也算喔。」', 'wink'),
     J('safira', '「一、二──小洛，你的腳在桌子底下跟著拍子，我看見了喔。」', 'laugh'),
@@ -226,7 +253,7 @@ export const NIGHT_BEATS: NightBeats = {
     QN('走廊盡頭，瑪莎的房門底下還透著光，筆尖沙沙地響。'),
     QN('隔壁房的鼾聲停了一下，又接上了。'),
     QN('桌上的茶涼了，杯緣留著一圈淡淡的水痕。'),
-    QN('月光從窗縫斜斜照進來，落在地板上，慢慢挪了一寸。'),
+    UNDER(LIT, QN('月光從窗縫斜斜照進來，落在地板上，慢慢挪了一寸。')),
     QN('有人把一條毯子輕輕搭在椅背上，又走開了。'),
   ],
 };
@@ -832,21 +859,21 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
   },
   'chat:selene:1': {
     lines: [
-      at(PL.innRoof, N('深夜的月影旅館屋頂。瑟蕾抱著膝蓋，看月亮看得很專心。')),
+      at(PL.innRoof, N('深夜的月影旅館屋頂。瑟蕾抱著膝蓋，仰頭看著夜空，看得很專心。')),
       { who: 'hero', text: '「看得見明天嗎？」' },
       { who: 'selene', mood: 'foresee', text: '「一點點呢。明天的早餐是──不行。話一說出口，就會自己長出腳來。所以，我只說月亮的事。」' },
     ],
-    summary: '瑟蕾在旅館的屋頂看月亮。洛恩問她看不看得見明天，她說只說月亮的事。',
+    summary: '瑟蕾在旅館的屋頂看夜空。洛恩問她看不看得見明天，她說只說月亮的事。',
   },
   'chat:selene:2': {
     lines: [
       // Her last piece can come before this chat (one chat per return), and it turns 「洛恩先生／您」 into 「洛恩／你」 (I-22,
       // I-58). Story L Task 15 (spec §10): she names him neither way here, so it reads one way.
-      { who: 'selene', mood: 'foresee', text: '「今晚的月亮很好說話。想讀哪一件未來的事？什麼都可以──早餐除外。」' },
-      { who: 'hero', text: '「明天大家有沒有都回來。」' },
+      { who: 'selene', mood: 'foresee', text: '「月亮最近很好說話。想讀哪一件未來的事？什麼都可以──早餐除外。」' },
+      { who: 'hero', text: '「那就讀讀看，明天大家會不會都回來。」' },
       { who: 'selene', mood: 'smile', text: '「那一件，不用讀月亮也知道呢。每一次，大家都是跟著同一個人回來的。」' },
     ],
-    summary: '瑟蕾問洛恩想知道什麼未來。他只想知道明天大家有沒有都回來。',
+    summary: '瑟蕾問洛恩想知道什麼未來。他只想知道明天大家會不會都回來。',
   },
   // Task 8: Chizuru (spec §6, §11.2). She thinks she left days ago; the pieces show the ice kept her for decades and the
   // shrine is gone. Her last piece is the bell the last priest tied to her spear; she will build a small shrine by the town.
@@ -1541,6 +1568,30 @@ const HOME: Record<HomeOwner, Written> = {
 };
 
 /**
+ * Time and moon ruling 7 (lore ledger I-200): the spring festival at Chizuru's shrine, the first spring night after her
+ * homecoming once the finale is over. Two readings: with `group:act4` seen she stops a beat where she used to stop singing;
+ * without it she first tells the children what the old second half said, and that she changed it this year.
+ */
+const SEASON: Partial<Record<Season, Written>> = {
+  spring: {
+    lines: [
+      at(PL.shrineSpringNight, N('冬天過去了。鎮邊小祠的屋簷下掛滿紙燈，祠前的供品堆成一座小山，全是白蘿蔔。')),
+      { who: 'chizuru', mood: 'bewildered', text: '「春祭開始了。照我們那時候的規矩，先向神明報上供品：白蘿蔔、白蘿蔔，還有白蘿蔔。」' },
+      { who: 'marta', text: '「賣菜的婆婆起的頭，整條街都跟著供。今晚旅館大概只能煮蘿蔔湯了。」' },
+      { who: 'chizuru', mood: 'solemn', text: '「這首祭歌原本的後半，唱的是提燈的人沒有回來。從今年起，我改了這一句。」', if: { notSeen: 'group:act4' } },
+      N('千鶴清了清喉嚨。鎮上的孩子圍過來，跟著她唱。'),
+      { who: 'chizuru', mood: 'solemn', text: '「『春祭的燈，誰提下去？提燈的人，不留名字──』」' },
+      { who: 'narrator', text: '唱到她從前不唱的那一段，千鶴停了一拍。', if: { seen: 'group:act4' } },
+      { who: 'chizuru', mood: 'smile', text: '「『提燈的人，回來了。』」' },
+      { who: 'hero', mood: 'smile', text: '「回來是回來了。這麼多白蘿蔔，誰吃得完？」' },
+      { who: 'chizuru', mood: 'smile', text: '「歌是活著的人唱的，活著的人就改得了。至於蘿蔔，大家一起吃，就吃得完。」' },
+      N('屋簷下的鈴響了一聲。千鶴看著洛恩，孩子們又把新的那一句唱了一遍。'),
+    ],
+    summary: '冬天過去，千鶴在鎮邊的小祠辦春祭。供品全是白蘿蔔；她當著全鎮把改過的祭歌唱完：提燈的人，回來了。',
+  },
+};
+
+/**
  * B1: town banter (voice-pass sample §6). Two companions talk among themselves on a return; Lorne listens (one line at most,
  * or the narrator gives his reaction). Light scenes: one 「……」 at most. The gate (`BANTER_GATE`) guarantees both are met, so
  * neither line needs `if.met`. A banter with no gate can play before or after Rin's choice and before either one's first
@@ -1616,7 +1667,7 @@ const BANTER: Partial<Record<SceneId, Written>> = {
       { who: 'bobby', mood: 'surprised', text: '「希爾薇姊，妳老是叫我松鼠。我才不像松鼠！」' },
       { who: 'sylvie', mood: 'serious', text: '「手停不下來，看到什麼都撿，撿了就往口袋塞。入冬前的松鼠就長這樣。」' },
       { who: 'bobby', mood: 'excited', text: '「那些是零件！螺絲和彈簧，還有這顆──咦，口袋裡怎麼有核桃？」' },
-      { who: 'sylvie', mood: 'smile', text: '「妳自己撿的啦。今年核桃熟得早，冬天會很冷，多藏幾顆也好。」' },
+      { who: 'sylvie', mood: 'smile', text: '「妳自己撿的啦。果然是松鼠──撿了就忘。不過松鼠忘掉的核桃，後來都長成了樹。」' },
     ],
     summary: '波比抗議希爾薇老叫她松鼠。希爾薇說她手停不下來、什麼都往口袋藏；波比的口袋裡，翻出了一顆核桃。',
   },
@@ -1908,8 +1959,30 @@ const BANTER: Partial<Record<SceneId, Written>> = {
   },
 };
 
-function buildScenes(): Record<SceneId, { title: string; lines: ScriptLine[]; summary: string }> {
-  const out = {} as Record<SceneId, { title: string; lines: ScriptLine[]; summary: string }>;
+/** A scene as the game plays it: its handbook title, its lines as written (a bond scene's choices among them), its summary. */
+export interface Scene { title: string; lines: SceneLine[]; summary: string }
+
+/** What is registered of the bond's scenes (data/story/scenes.ts), as one argument. */
+export interface BondWritten { bonds: readonly Companion[]; endings: readonly Companion[]; romances: readonly Companion[]; together: boolean }
+/**
+ * Bond plan Task 8: the registered bond scenes with their titles (interface labels may carry numerals) and their text
+ * (`BOND_SCENES`), in `SCENE_IDS` order. A registered scene with no text throws: it is a bug, not a draft.
+ */
+export function bondSceneEntries(
+  w: BondWritten = { bonds: BONDS_WRITTEN, endings: ENDINGS_WRITTEN, romances: ROMANCES_WRITTEN, together: TOGETHER_WRITTEN.value },
+  texts: Partial<Record<SceneId, { lines: SceneLine[]; summary: string }>> = BOND_SCENES,
+): [SceneId, Scene][] {
+  const entry = (id: SceneId, title: string): [SceneId, Scene] => [id, { title, ...written(texts[id], id) }];
+  return [
+    ...w.bonds.flatMap((c) => [1, 2, 3, 4].map((n) => entry(bondScene(c, n), `${nameOf(c)}・羈絆${numeral(n)}`))),
+    ...w.endings.map((c) => entry(`ending:${c}`, `${nameOf(c)}・後日談`)),
+    ...w.romances.map((c) => entry(`romance:${c}`, `${nameOf(c)}・夜路`)),
+    ...(w.together ? [entry('together', '夜路・和大家一起')] : []),
+  ];
+}
+
+function buildScenes(): Record<SceneId, Scene> {
+  const out = {} as Record<SceneId, Scene>;
   // Plan 6c wrote every scene (Task 14 removed the drafts): a scene without its SCRIPT entry is a bug, not a draft.
   const scene = (id: SceneId, title: string): void => { out[id] = { title, ...written(SCRIPT[id], id) }; };
   for (const id of MAJOR_SCENES) scene(id, MAJOR_TITLES[id]);
@@ -1922,6 +1995,8 @@ function buildScenes(): Record<SceneId, { title: string; lines: ScriptLine[]; su
   }
   for (const f of TOWN_FRAGMENTS) out[`town:${f.id}`] = { title: `${f.npc}的記憶`, ...TOWN_SCENES[f.id] };
   for (const c of HOME_OWNERS) out[homeScene(c)] = { title: `${nameOf(c)}・${HOME_TITLES[c]}`, ...HOME[c] };
+  // time and moon ruling 7: a season's scene is in the script once registered (Task 8 writes the spring festival)
+  for (const [season, id] of Object.entries(SEASON_SCENES) as [Season, SceneId][]) out[id] = { title: `${nameOf('chizuru')}・${SEASON_TITLES[season]}`, ...written(SEASON[season], id) };
   for (const p of BANTER_PAIRS) {
     for (let n = 1; n <= (BANTER_COUNT[p] ?? 0); n++) {
       const id = banterScene(p, n);
@@ -1929,6 +2004,7 @@ function buildScenes(): Record<SceneId, { title: string; lines: ScriptLine[]; su
       out[id] = { title: `${nameOf(a)}與${nameOf(b)}・閒聊${numeral(n)}`, ...written(BANTER[id], id) };
     }
   }
+  for (const [id, scene] of bondSceneEntries()) out[id] = scene;   // bond plan Task 8: the registered bond scenes
   return out;
 }
 

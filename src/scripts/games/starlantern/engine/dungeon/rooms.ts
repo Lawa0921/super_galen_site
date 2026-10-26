@@ -8,8 +8,11 @@ import type { CharacterId, Pos } from '../types';
 import type { GenFloor } from './gen';
 
 export type RoomKind = 'empty' | 'chest' | 'fountain' | 'trap' | 'merchant' | 'altar' | 'elite' | 'vault';
-/** `stock` is a merchant's three item ids, drawn once when the floor is filled; `who` is the companion a `rescue` room holds; `owner` is the chain a forced `glimmer` holds a piece of. */
-export interface Content { kind: RoomKind | 'key' | 'rescue' | 'glimmer'; at: Pos; room: number; stock?: string[]; who?: Meetable; owner?: CharacterId }
+/**
+ * `stock` is a merchant's three item ids, drawn once when the floor is filled; `who` is the companion a `rescue` room holds; `owner` is the chain a forced `glimmer` holds a piece of;
+ * `warden` is the roster warden a `warden` room holds (roster plan ruling 10).
+ */
+export interface Content { kind: RoomKind | 'key' | 'rescue' | 'glimmer' | 'warden'; at: Pos; room: number; stock?: string[]; who?: Meetable; owner?: CharacterId; warden?: string }
 type Placed = Exclude<Content['kind'], 'empty'>;
 
 /** Share of ordinary rooms by kind. Elite and vault are capped at one per floor. */
@@ -18,7 +21,7 @@ const WEIGHTS: [RoomKind, number][] = [
 ];
 
 const TILE: Record<Placed, Tile> = {
-  chest: 'chest', fountain: 'fountain', trap: 'trap', merchant: 'merchant', altar: 'altar', elite: 'elite', vault: 'vault', key: 'key', rescue: 'rescue', glimmer: 'glimmer',
+  chest: 'chest', fountain: 'fountain', trap: 'trap', merchant: 'merchant', altar: 'altar', elite: 'elite', vault: 'vault', key: 'key', rescue: 'rescue', glimmer: 'glimmer', warden: 'warden',
 };
 
 /** Three distinct buyable items. */

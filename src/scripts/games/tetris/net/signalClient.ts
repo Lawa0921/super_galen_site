@@ -91,6 +91,25 @@ export async function getSlot(
   return json.data ?? null;
 }
 
+/**
+ * 一次讀多個槽位（GET ?slots=a,b,c；伺服器端一個 Upstash MGET）。回 slot → 值（空槽 null）。
+ * 伺服器上限 8 個槽位；非 2xx / 網路錯誤一律拋出。
+ */
+export async function getSlots(
+  room: string,
+  slots: Slot[],
+  ns = '',
+): Promise<Record<string, string | null>> {
+  for (const s of slots) if (!isValidSlot(s)) throw new Error(`invalid slot: ${s}`);
+  const res = await fetch(`${API}?room=${encodeURIComponent(nsRoom(ns, room))}&slots=${slots.join(',')}`);
+  if (!res.ok) throw new Error(`signal GET ${res.status}`);
+  const json = (await res.json()) as { data?: Record<string, string | null> | null };
+  const data = json.data ?? {};
+  const out: Record<string, string | null> = {};
+  for (const s of slots) out[s] = data[s] ?? null;
+  return out;
+}
+
 /** 輪詢直到該槽位有值或逾時。 */
 export async function pollSlot(
   room: string,

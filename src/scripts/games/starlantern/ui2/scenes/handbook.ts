@@ -7,7 +7,7 @@ import { TOWN_FRAGMENTS } from '../../data/story/fragments';
 import type { SceneId } from '../../data/story/scenes';
 import { STORY } from '../../data/story.zh-TW';
 import { T } from '../../data/text.zh-TW';
-import { handbook, type Handbook, type SceneEntry } from '../../engine/story/handbook';
+import { handbook, type BondPage, type Handbook, type SceneEntry } from '../../engine/story/handbook';
 import { AFFIXES, AFFIX_IDS } from '../../data/affixes';
 import { TIERS } from '../../data/difficulty';
 import type { Difficulty } from '../../engine/battle';
@@ -17,8 +17,9 @@ import type { Lead } from '../../engine/story/leads';
 import type { CharacterId } from '../../engine/types';
 import { art } from '../../render/artPaths';
 import { artIdOf } from '../../ui/art';
-import { el } from '../../ui/dom';
+import { el, itemName } from '../../ui/dom';
 import type { UiAction } from '../input';
+import { awaitArt } from '../lateArt';
 import { Menu, type MenuItem } from '../menu';
 import type { Scene, SceneCtx } from '../scene';
 import { textCps } from '../settings';
@@ -46,6 +47,16 @@ interface Shown { id: CharacterId; met: boolean }
 interface Level { key: string; /** No detail column at all: the list takes the whole width. */ solo?: boolean; rows: MenuItem[]; pick(id: string): void; detail(id: string | undefined): Node[]; shown(id: string | undefined): Shown | null }
 
 const paras = (lines: string[]) => lines.map((text) => el('p', { text }));
+/** Bond plan Task 14 (spec §4.8): her tier and points, each source against its cap (已滿 once full), and what she was offered. */
+const bondBlock = (b: BondPage): HTMLElement => {
+  const B = T.ui2.bond;
+  const src = (k: keyof BondPage['sources']) => { const [now, cap] = b.sources[k]; return B.count(B.source[k], now, cap, now >= cap); };
+  return el('div', { class: 'slx-hb-bond' }, paras([
+    B.score(B.tiers[b.tier], b.points),
+    ...(['memory', 'talk', 'gift', 'field'] as const).map(src),
+    ...b.tastes.map((x) => B.known(itemName(x.mat), B.taste[x.taste])),
+  ]));
+};
 const freshRight = (fresh: boolean): Pick<MenuItem, 'right' | 'rightClass'> => (fresh ? { right: H.fresh, rightClass: 'slx-fresh' } : {});
 
 /**
@@ -151,7 +162,7 @@ export class HandbookScene implements Scene {
     const pages = h.people;
     const page = (id: string | undefined) => pages.find((p) => p.id === id);
     const detail = (p: Handbook['people'][number] | undefined): Node[] => !p ? [] : p.met
-      ? [el('h4', { text: `${p.title} ${CHARACTERS[p.id].name}` }), ...paras(p.segments)]
+      ? [el('h4', { text: `${p.title} ${CHARACTERS[p.id].name}` }), ...paras(p.segments), ...(p.bond ? [bondBlock(p.bond)] : [])]
       : [];
     if (this.sub === null) {
       return {
@@ -306,6 +317,8 @@ export class HandbookScene implements Scene {
     const state = this.ctx.game.state;
     const face = shown ? artIdOf(state.party.roster[shown.id] ?? { id: shown.id, oath: undefined }) : null;
     const src = face && this.ctx.art.has(art.standee(face)) ? art.standee(face) : null;
+    // A standee not here yet is drawn when it lands, if the cursor is still on her (ui2/lateArt).
+    awaitArt(this.artEl, 'standee', face && !src ? [art.standee(face)] : [], () => { if (!this.closed) this.drawDetail(); });
     if (!src || !shown) { this.artEl.replaceChildren(); return; }
     // The same picture stays put, so its slide-in does not restart on every cursor move.
     const cur = this.artEl.firstElementChild;

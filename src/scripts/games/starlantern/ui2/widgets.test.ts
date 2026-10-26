@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Menu } from './menu';
+import { runeMark } from './runeArt';
 import { Dialogue, MenuView, QtyView, backControl, confirmBox, richNodes, richText, type Rich } from './widgets';
+import { drawLanded, lateArt } from './lateArt';
 
 const mk = () => new Menu([{ id: 'a', label: '冒險者公會' }, { id: 'b', label: '道具店', disabled: true }, { id: 'c', label: '旅館' }]);
 
@@ -473,6 +475,41 @@ describe('Dialogue faces', () => {
     expect(scene.querySelector('.slx-place-card')).toBeNull();
   });
 
+  it('a night card under a moon tints the veil; a day card or no moon does not (time and moon Task 5)', () => {
+    const scene = document.createElement('div');
+    const d = new Dialogue(Infinity);
+    scene.append(d.el);
+    expect(d.moon).toBeNull();
+    const tints = () => [...(scene.querySelector('.slx-veil-night')?.classList ?? [])].filter((c) => c.startsWith('slx-moon-'));
+    d.setPlace({ text: '月影旅館・夜', night: true });   // no moon: the plain night
+    expect(tints()).toEqual([]);
+    expect(scene.querySelector('.slx-veil-night')!.classList.contains('slx-on')).toBe(true);
+    d.moon = 'full';
+    d.setPlace({ text: '月影旅館・深夜', night: true });
+    expect(tints()).toEqual(['slx-moon-full']);
+    d.moon = 'new';
+    d.setPlace({ text: '月影旅館・夜', night: true });
+    expect(tints()).toEqual(['slx-moon-new']);
+    d.setPlace({ text: '月影旅館・清晨' });               // a day card: no veil, no tint
+    expect(tints()).toEqual([]);
+    expect(scene.querySelector('.slx-veil-night')!.classList.contains('slx-on')).toBe(false);
+  });
+
+  it('the tint goes with the card (time and moon Task 5)', () => {
+    const scene = document.createElement('div');
+    const d = new Dialogue(Infinity);
+    scene.append(d.el);
+    d.moon = 'waning';
+    d.setPlace({ text: '月影旅館・夜', night: true });
+    const veil = scene.querySelector('.slx-veil-night')!;
+    expect(veil.classList.contains('slx-moon-waning')).toBe(true);
+    d.setPlace(null);
+    expect([...veil.classList].filter((c) => c.startsWith('slx-moon-'))).toEqual([]);
+    d.moon = null;
+    d.setPlace({ text: '月影旅館・夜', night: true });
+    expect([...veil.classList].filter((c) => c.startsWith('slx-moon-'))).toEqual([]);
+  });
+
   it('memory style marks the box', () => {
     const d = new Dialogue(Infinity);
     d.setStyle('memory');
@@ -484,12 +521,175 @@ describe('Dialogue faces', () => {
 
 describe('MenuView badges (plan 8g Task 7)', () => {
   it('a badge follows the label', () => {
-    const v = new MenuView(new Menu([{ id: 'a', label: '火之星彈', badge: '◆◆', right: '4 TP' }, { id: 'b', label: '冰之星彈' }]), { pick: vi.fn() });
+    const marks = [runeMark({ id: 'spread', tier: 'magic' }, 14), runeMark({ id: 'flame', tier: 'rare' }, 14)];
+    const v = new MenuView(new Menu([{ id: 'a', label: '火之星彈', marks, right: '4 TP' }, { id: 'b', label: '冰之星彈' }]), { pick: vi.fn() });
     const [a, b] = [...v.el.querySelectorAll('[role=option]')];
     const badge = a.querySelector('.slx-badge')!;
-    expect(badge.textContent).toBe('◆◆');
+    expect([...badge.querySelectorAll('img')].map((e) => e.getAttribute('src'))).toEqual(marks.map((m) => m.src));
+    expect(badge.textContent).toBe('');
     expect(badge.previousElementSibling!.classList.contains('slx-label')).toBe(true);
     expect(badge.nextElementSibling!.classList.contains('slx-right')).toBe(true);
     expect(b.querySelector('.slx-badge')).toBeNull();
+  });
+});
+
+describe('MenuView cues inside the rows (workshop review)', () => {
+  /** What is on screen, top to bottom: ▲, ▼ and row ids; the selected row starred. */
+  const shown = (v: MenuView) => [...v.el.children].map((e) => (e.classList.contains('slx-more-up') ? '▲' : e.classList.contains('slx-more-down') ? '▼'
+    : `${(e as HTMLElement).dataset.id}${e.getAttribute('aria-selected') === 'true' ? '*' : ''}`));
+  const items = (n: number) => Array.from({ length: n }, (_, i) => ({ id: `r${i}`, label: `R${i}` }));
+
+  it('a cue takes a row of the budget, so rows and cues never pass it', () => {
+    const v = new MenuView(new Menu(items(20)), { pick: vi.fn() }, 5, { cuesInRows: true });
+    expect(shown(v)).toEqual(['r0*', 'r1', 'r2', 'r3', '▼']);
+    for (let i = 0; i < 19; i++) {
+      v.menu.move(1); v.render();
+      const s = shown(v);
+      expect(s.length, s.join(' ')).toBeLessThanOrEqual(5);
+      expect(s.some((x) => x.endsWith('*')), s.join(' ')).toBe(true);
+    }
+    expect(shown(v)).toEqual(['▲', 'r16', 'r17', 'r18', 'r19*']);
+    v.menu.move(1); v.render();                 // wraps to the top
+    expect(shown(v)).toEqual(['r0*', 'r1', 'r2', 'r3', '▼']);
+    v.menu.setCursor(10); v.render();
+    expect(shown(v)).toEqual(['▲', 'r8', 'r9', 'r10*', '▼']);
+  });
+
+  it('the wheel and the cues page by the same rows; a short list shows whole, no cues', () => {
+    const v = new MenuView(new Menu(items(20)), { pick: vi.fn() }, 5, { cuesInRows: true });
+    for (let i = 0; i < 30; i++) v.scrollBy(1);
+    const s = shown(v);
+    expect(s).toEqual(['▲', 'r16*', 'r17', 'r18', 'r19']);
+    for (let i = 0; i < 30; i++) v.scrollBy(-1);
+    expect(shown(v)[0]).toBe('r0');
+    expect(shown(v)).toHaveLength(5);
+    const short = new MenuView(new Menu(items(5)), { pick: vi.fn() }, 5, { cuesInRows: true });
+    expect(shown(short)).toEqual(['r0*', 'r1', 'r2', 'r3', 'r4']);
+  });
+
+  it('without the option a list keeps its old paging (rows apart from the cues)', () => {
+    const v = new MenuView(new Menu(items(20)), { pick: vi.fn() }, 5);
+    expect(shown(v)).toEqual(['r0*', 'r1', 'r2', 'r3', 'r4', '▼']);
+  });
+});
+
+describe('icons that land after the window was drawn (ui2/lateArt)', () => {
+  const SRC = '/assets/games/starlantern/gear/iron-sword.png';
+  const landed = () => { const set = new Set<string>(); return { set, idx: { has: (u: string) => set.has(u) } }; };
+  const onScreen = (node: HTMLElement) => { const root = document.createElement('div'); root.append(node); return root; };
+
+  it('a menu row drawn before its icon landed shows no image, then gains it once it lands; the cursor stays', () => {
+    const { set, idx } = landed();
+    const v = new MenuView(new Menu([{ id: 'a', label: '鐵劍', icon: lateArt(idx, SRC), iconCls: 'slx-gear-ico' }, { id: 'b', label: '回復藥' }], 1), { pick: () => {} });
+    const root = onScreen(v.el);
+    expect(v.el.querySelector('img')).toBeNull();
+    drawLanded(root, new Set([SRC]));                 // told before it is here: nothing to draw yet
+    expect(v.el.querySelector('img')).toBeNull();
+    set.add(SRC);
+    drawLanded(root, new Set([SRC]));
+    const img = v.el.querySelector('[data-id=a] img')!;
+    expect(img.getAttribute('src')).toBe(SRC);
+    expect(img.className).toBe('slx-ico slx-gear-ico');
+    expect(v.menu.cursor).toBe(1);
+    expect(v.el.querySelector('[aria-selected=true]')!.getAttribute('data-id')).toBe('b');
+  });
+
+  it('a late icon is put into its own row: the rows, a pick flash and a press under way stay as they were', () => {
+    const { set, idx } = landed();
+    const SRC2 = '/assets/games/starlantern/gear/hunter-bow.png';
+    const pick = vi.fn();
+    const v = new MenuView(new Menu([
+      { id: 'a', label: '鐵劍', icon: lateArt(idx, SRC), iconCls: 'slx-gear-ico' },
+      { id: 'b', label: '獵弓', icon: lateArt(idx, SRC2), iconCls: 'slx-gear-ico' },
+      { id: 'c', label: '回復藥' },
+    ]), { pick });
+    const root = onScreen(v.el);
+    const rows = [...v.el.children];
+    const a = v.el.querySelector<HTMLElement>('[data-id=a]')!;
+    a.dispatchEvent(new Event('pointerdown'));        // a finger is down on 鐵劍 when its icon lands
+    a.classList.add('slx-picked');                     // and a pick flash is running on it
+    set.add(SRC);
+    drawLanded(root, new Set([SRC]));
+    expect(v.el.children).toHaveLength(rows.length);
+    expect(rows.every((r, i) => v.el.children[i] === r)).toBe(true);
+    expect(a.classList.contains('slx-picked')).toBe(true);
+    expect(a.firstElementChild!.outerHTML).toBe(`<img class="slx-ico slx-gear-ico" src="${SRC}" alt="">`);
+    expect(v.el.querySelector('[data-id=b] img')).toBeNull();
+    a.click();                                         // the press ends on the same row: it picks
+    expect(pick).toHaveBeenCalledWith(expect.objectContaining({ id: 'a' }));
+    // The second icon lands in a later batch: put in too, the first not doubled.
+    set.add(SRC2);
+    drawLanded(root, new Set([SRC2]));
+    expect(v.el.querySelectorAll('[data-id=a] img')).toHaveLength(1);
+    expect(v.el.querySelector('[data-id=b] img')!.getAttribute('src')).toBe(SRC2);
+    expect(v.el.hasAttribute('data-art-wait')).toBe(false);
+    // Drawn late equals drawn with both icons here.
+    const both = new MenuView(new Menu([
+      { id: 'a', label: '鐵劍', icon: lateArt(idx, SRC), iconCls: 'slx-gear-ico' },
+      { id: 'b', label: '獵弓', icon: lateArt(idx, SRC2), iconCls: 'slx-gear-ico' },
+      { id: 'c', label: '回復藥' },
+    ]), { pick: () => {} });
+    v.el.querySelector('.slx-picked')!.classList.remove('slx-picked');
+    expect(v.el.innerHTML).toBe(both.el.innerHTML);
+  });
+
+  it('a picture no row waits for leaves the rows alone', () => {
+    const { set, idx } = landed();
+    const v = new MenuView(new Menu([{ id: 'a', label: '鐵劍', icon: lateArt(idx, SRC) }, { id: 'c', label: '回復藥' }]), { pick: () => {} });
+    const root = onScreen(v.el);
+    const rows = [...v.el.children];
+    set.add('/assets/games/starlantern/gear/other.png');
+    drawLanded(root, new Set(['/assets/games/starlantern/gear/other.png']));
+    expect(rows.every((r, i) => v.el.children[i] === r)).toBe(true);
+    expect(v.el.querySelector('img')).toBeNull();
+    expect(v.el.hasAttribute('data-art-wait')).toBe(true);
+  });
+
+  it('a menu with every icon here waits for nothing', () => {
+    const { set, idx } = landed();
+    set.add(SRC);
+    const v = new MenuView(new Menu([{ id: 'a', label: '鐵劍', icon: lateArt(idx, SRC) }]), { pick: () => {} });
+    expect(v.el.querySelector('img')!.getAttribute('src')).toBe(SRC);
+    expect(v.el.hasAttribute('data-art-wait')).toBe(false);
+  });
+
+  it('a dialogue line shown before its gear icon landed gains the icon in place when it lands', () => {
+    const { set, idx } = landed();
+    const d = new Dialogue(Infinity);
+    const root = onScreen(d.el);
+    void d.say('', ['拾到', { text: '鐵劍', cls: 'slx-gear-drop slx-rarity-rare', icon: lateArt(idx, SRC) }, '。']);
+    const text = d.el.querySelector('.slx-text')!;
+    expect(text.querySelector('img')).toBeNull();
+    expect(text.textContent).toBe('拾到鐵劍。');
+    set.add(SRC);
+    drawLanded(root, new Set([SRC]));
+    const img = text.querySelector('img.slx-ico.slx-gear-ico')!;
+    expect(img.getAttribute('src')).toBe(SRC);
+    expect(img.nextElementSibling!.textContent).toBe('鐵劍');
+    expect(text.textContent).toBe('拾到鐵劍。');
+  });
+
+  it('a face a line waits for is not drawn once the line is put away', () => {
+    const { set, idx } = landed();
+    const d = new Dialogue(Infinity);
+    const root = onScreen(d.el);
+    void d.say('凜', '一');
+    d.faceLater(['/face.png'], 'left', idx);
+    d.onAction('confirm');                       // the line is read: the box goes, its face with it
+    set.add('/face.png');
+    drawLanded(root, new Set(['/face.png']));
+    expect(d.el.querySelector('.slx-talk-face')).toBeNull();
+    void d.say('', '二', 'keep');                 // a narration line keeps no face it never had
+    expect(d.el.querySelector('.slx-talk-face')).toBeNull();
+  });
+
+  it('a confirm question gains its late icon too', () => {
+    const { set, idx } = landed();
+    const box = confirmBox(['賣掉', { text: '鐵劍', cls: 'slx-rarity-rare', icon: lateArt(idx, SRC) }, '？'], () => {});
+    const root = onScreen(box.el);
+    expect(box.el.querySelector('p img')).toBeNull();
+    set.add(SRC);
+    drawLanded(root, new Set([SRC]));
+    expect(box.el.querySelector('p img')!.getAttribute('src')).toBe(SRC);
   });
 });

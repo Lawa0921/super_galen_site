@@ -4,6 +4,9 @@
  * plan 8d Task 5): the full moon her healing, the new moon her sleep chances, the first quarter her TP, the waning moon her
  * ice. Recall steps it back one; the full-moon night holds the full moon three round ends (her 新月之夜, the new moon).
  * Nothing here draws.
+ * The moon in the sky is the story's (`engine/calendar.ts`); the moon in a fight is Selene's. Every fight starts hers at the
+ * first quarter whatever the day: no battle reads `story.day` (time and moon plan ruling 9), so the calendar is never a
+ * balance knob.
  */
 import type { BattleState } from '../battle';
 import type { Combatant } from '../combatant';

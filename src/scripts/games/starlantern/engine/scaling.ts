@@ -2,6 +2,7 @@ import { CHARACTERS, LEGACY_CHARACTER_IDS } from '../data/characters';
 import { ABYSS } from '../data/hero';
 import { CONDITIONS, type ConditionDef } from '../data/conditions';
 import { ENEMIES } from '../data/enemies';
+import { listedEnemy, rosterTable } from '../data/monsters';
 import { FLOORS } from '../data/floors';
 import { REGION_RIDER, type RegionDef, type RegionId } from '../data/regions';
 import { terrainOf } from './dungeon/run';
@@ -266,8 +267,12 @@ export const BOSS_PARTY_SCALE: Record<PartySize, number> = { 2: 0.62, 3: 0.96, 4
 export const bossPartyScale = (n: number): number => BOSS_PARTY_SCALE[sizeOf(n)];
 export const groupCap = (n: number, depth: number): number => (depth === 1 ? FIRST_DEPTH_CAP[sizeOf(n)] : undefined) ?? GROUP_CAP[sizeOf(n)];
 
-/** The ordinary monsters: every one but the boss (eight today; spec §3.7's "nine" counts the boss). */
-export const NORMAL_ENEMIES: string[] = Object.values(ENEMIES).filter((e) => !e.boss && !e.story).map((e) => e.id);
+/**
+ * The ordinary monsters: every listed one but a boss or a story foe (eight while no roster id is live; spec §3.7's "nine"
+ * counts the boss). Roster plan ruling 3: only `listedEnemy` ids count, so an unlisted roster definition never shows, and
+ * a warden or a boss's part is never an ordinary foe.
+ */
+export const NORMAL_ENEMIES: string[] = Object.values(ENEMIES).filter((e) => listedEnemy(e.id) && !e.boss && !e.story && !e.rank).map((e) => e.id);
 
 /**
  * The groups a random encounter is drawn from (`encounterGroup` picks one). The mainline uses the encounter table of the depth's terrain. A random region
@@ -276,6 +281,16 @@ export const NORMAL_ENEMIES: string[] = Object.values(ENEMIES).filter((e) => !e.
  * not met by temple golems.
  */
 export function encounterTable(region: RegionId, depth: number): string[][] {
+  // Roster plan Task A4 (spec §8.1): past depth 3 the roster's live groups join or replace the legacy table; with nothing
+  // live it is the legacy table, bit for bit.
+  return rosterTable(region, depth, legacyEncounterTable(region, depth));
+}
+
+/**
+ * The tables as they were before the roster (roster plan Task A1): `encounterTable` falls back to them, and parity always
+ * measures them (plan ruling 7: parity weighs the characters against each other, not the monsters).
+ */
+export function legacyEncounterTable(region: RegionId, depth: number): string[][] {
   if (region === 'mainline') return FLOORS[terrainOf(region, depth) - 1].encounters;
   return FLOORS.filter((f) => f.id <= depth).flatMap((f) => f.encounters);
 }

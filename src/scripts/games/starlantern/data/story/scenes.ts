@@ -1,7 +1,8 @@
 import type { CharacterId } from '../../engine/types';
 import { CHARACTER_IDS } from '../characters';
-import { CHAINS } from './chains';
+import { CHAINS, type Season } from './chains';
 import { TOWN_FRAGMENTS, type TownFragmentId } from './fragments';
+import type { Companion } from './bond';
 
 export type ActNode = 'act2' | 'act3' | 'act4';
 export const ACT_DEPTHS: Record<ActNode, number> = { act2: 4, act3: 10, act4: 16 };
@@ -21,7 +22,10 @@ export type SceneId =
   | 'prologue' | 'prologue-inn' | 'first-return' | 'act1-after' | ActNode | 'rin-reveal' | 'rin-confess' | 'bellkeeper-arrives' | 'hero-alone'
   | 'finale-eve' | 'finale' | 'epilogue'
   | `mem:${CharacterId}:${number}` | `chat:${CharacterId}:${number}` | `town:${TownFragmentId}` | `home:${HomeOwner}`
-  | `banter:${BanterPair}:${number}` | GroupScene;
+  | `banter:${BanterPair}:${number}` | GroupScene | `season:${Season}`
+  // bond plan Task 7: a companion's bond scenes, her after-story, her romance, and the night walk with everyone (types only;
+  // `SCENE_IDS` holds the registered ones, Task 8)
+  | `bond:${CharacterId}:${number}` | `ending:${CharacterId}` | `romance:${CharacterId}` | 'together';
 
 /**
  * Story L (spec §5): the group scene after an act, `group:<act>`. It plays in the reaction slot of the act's own arrival or
@@ -36,7 +40,26 @@ export const groupScene = (node: ActNode): GroupScene => `group:${node}`;
  */
 export const REACTIONS: Partial<Record<ActNode, GroupScene>> = { act2: 'group:act2', act3: 'group:act3', act4: 'group:act4' };
 
+/**
+ * Time and moon ruling 7: a season's scene, `season:<season>`, on the night of the first return its season brings once its
+ * conditions hold (`engine/story/events.ts` `nextSeasonScene`); never queued. Like `REACTIONS`, only the ones written are
+ * registered (the writing task adds each with its script); `isSceneId` reads it when called, `SCENE_IDS` when loaded.
+ */
+export const SEASON_SCENES: Partial<Record<Season, SceneId>> = { spring: 'season:spring' };   // time and moon Task 8: the spring festival, written
+/**
+ * Time and moon ruling 7 (review fix 4): the night's order. The group scene, then the season's scene, then (bond plan Task
+ * 11) a romance cut short, then the memories.
+ */
+export const NIGHT_RANK = { group: 0, season: 1, romance: 1.5, memory: 2 } as const;
+/**
+ * A scene the night plays though the day's list holds it: a group scene or (after the finale) a season's scene in the
+ * reaction slot, and (bond plan ruling 12) a romance cut short, queued, told on the next night (`Game.arrive`, `Game.boot`).
+ */
+export const isNightSlot = (id: SceneId): boolean => id.startsWith('group:') || id.startsWith('season:') || id.startsWith('romance:');
+
 export const memScene = (id: CharacterId, n: number): SceneId => `mem:${id}:${n}`;
+/** Bond plan Task 7: her `n`th bond scene (the 4th is 心契). */
+export const bondScene = (id: CharacterId, n: number): SceneId => `bond:${id}:${n}`;
 
 /**
  * The companions whose ending spec §6 places in the town (continuity fix 2): Chizuru's shrine, Safira's dance in the square,
@@ -107,6 +130,25 @@ const MAJOR_CAPS: Partial<Record<MajorScene, number>> = {
   'finale-eve': 2,   // story L spec §11
 };
 
+/**
+ * Bond plan ruling 6 (spec §0 D14): the bond's scenes are registered as each is written, never as drafts (as `REACTIONS`):
+ * a companion here has all four of her bond scenes (`bond:<c>:1` to `4`), her after-story (`ending:<c>`), her romance
+ * (`romance:<c>`); `TOGETHER_WRITTEN.value`, the night walk with everyone (`together`). Their text is `data/bond.zh-TW.ts`
+ * `BOND_SCENES` (data/bond.test.ts checks the two agree). Arrays and a box, not constants, so a test can register its own
+ * and put them back; `isSceneId` reads them when called, `SCENE_IDS` when loaded.
+ */
+export const BONDS_WRITTEN: Companion[] = ['rin', 'selene', 'chizuru', 'safira', 'sylvie', 'noel', 'bobby', 'liz', 'scarlet'];   // bond plan Tasks 17-19
+export const ENDINGS_WRITTEN: Companion[] = ['rin', 'noel', 'chizuru', 'liz', 'sylvie', 'scarlet', 'selene', 'safira', 'bobby'];   // bond plan Task 20
+export const ROMANCES_WRITTEN: Companion[] = ['rin', 'noel', 'chizuru', 'liz', 'sylvie', 'scarlet', 'selene', 'safira', 'bobby'];   // bond plan Task 21
+export const TOGETHER_WRITTEN: { value: boolean } = { value: true };   // bond plan Task 20
+/** The registered bond scene ids, in order: bond scenes, after-stories, romances, the walk together. */
+export const registeredBondScenes = (): SceneId[] => [
+  ...BONDS_WRITTEN.flatMap((c) => [1, 2, 3, 4].map((n) => bondScene(c, n))),
+  ...ENDINGS_WRITTEN.map((c): SceneId => `ending:${c}`),
+  ...ROMANCES_WRITTEN.map((c): SceneId => `romance:${c}`),
+  ...(TOGETHER_WRITTEN.value ? ['together' as const] : []),
+];
+
 /** Every scene id, in a fixed order: major scenes, then memories, chats, returns, homecomings, banters (B1) and the group scenes (story L). */
 export const SCENE_IDS: SceneId[] = [
   ...MAJOR_SCENES,
@@ -116,26 +158,46 @@ export const SCENE_IDS: SceneId[] = [
   ...HOME_OWNERS.map(homeScene),
   ...BANTER_PAIRS.flatMap((p) => Array.from({ length: BANTER_COUNT[p] ?? 0 }, (_, i) => banterScene(p, i + 1))),
   ...ACT_NODES.flatMap((n): SceneId[] => (REACTIONS[n] ? [REACTIONS[n]] : [])),   // story L: the written group scenes
+  ...Object.values(SEASON_SCENES),   // time and moon: the written season scenes
+  ...registeredBondScenes(),   // bond plan Task 8: the written bond scenes, after every other
 ];
 
 const SCENE_SET = new Set<string>(SCENE_IDS);
-export const isSceneId = (v: unknown): v is SceneId => typeof v === 'string' && SCENE_SET.has(v);
+export const isSceneId = (v: unknown): v is SceneId => typeof v === 'string'
+  && (SCENE_SET.has(v) || (Object.values(SEASON_SCENES) as string[]).includes(v) || (registeredBondScenes() as string[]).includes(v));
 
-export type SceneKind = 'major' | 'memory' | 'chat' | 'town' | 'home' | 'banter' | 'group';
+export type SceneKind = 'major' | 'memory' | 'chat' | 'town' | 'home' | 'banter' | 'group' | 'bond' | 'ending' | 'romance';
 export function sceneKind(id: SceneId): SceneKind {
+  // bond plan ruling 8: the bond scenes, the after-stories, the romances and the night walk with everyone
+  if (id.startsWith('bond:')) return 'bond';
+  if (id.startsWith('ending:')) return 'ending';
+  if (id.startsWith('romance:') || id === 'together') return 'romance';
   if (id.startsWith('mem:')) return 'memory';
   if (id.startsWith('chat:')) return 'chat';
   if (id.startsWith('town:')) return 'town';
-  if (id.startsWith('home:')) return 'home';
+  if (id.startsWith('home:') || id.startsWith('season:')) return 'home';   // time and moon ruling 7: a season's scene plays as a homecoming
   if (id.startsWith('banter:')) return 'banter';
   if (id.startsWith('group:')) return 'group';
   return 'major';
 }
 
+/**
+ * Time and moon ruling 5 (world spec §5.2, §11.1): the scenes the story sets at night beyond the memories (told at night in
+ * town, story L). Rin's reveal is the night of the return that brings it. Anything else is day.
+ */
+export const SCENE_TIME: Partial<Record<SceneId, 'night'>> = { 'rin-reveal': 'night', 'season:spring': 'night' };
+/**
+ * Whether a scene happens by day or by night: a memory, or one `SCENE_TIME` names, is night; so is a registered romance
+ * (bond plan ruling 12: the night walk under the lantern, spec §0 D8).
+ */
+export const sceneTime = (id: SceneId): 'day' | 'night' => (sceneKind(id) === 'memory' || SCENE_TIME[id] === 'night'
+  || (id.startsWith('romance:') && ROMANCES_WRITTEN.includes(id.split(':')[1] as Companion)) ? 'night' : 'day');
+
 const LONG_MEMORIES = new Set<SceneId>(['mem:hero:9', 'mem:hero:10', 'mem:rin:7']);
 
 /** The most lines a scene may have (spec §8.2, §17). */
 export function lineCap(id: SceneId): number {
+  if (id.startsWith('season:')) return 10;   // time and moon ruling 7: a festival night, light
   switch (sceneKind(id)) {
     case 'major': return MAJOR_CAPS[id as MajorScene] ?? 12;
     case 'memory': return LONG_MEMORIES.has(id) ? 12 : 5;
@@ -144,6 +206,10 @@ export function lineCap(id: SceneId): number {
     case 'home': return 4;
     case 'banter': return 4;
     case 'group': return 14;   // story L cold read (2026-10-24): room for a reaction after the turn (spec §5.1 said twelve)
+    // bond plan ruling 8 (spec §8.1): a bond scene six, its 心契 ten; an after-story six; a romance twelve, the walk together three
+    case 'bond': return id.endsWith(':4') ? 10 : 6;
+    case 'ending': return 6;
+    case 'romance': return id === 'together' ? 3 : 12;
   }
 }
 
@@ -267,6 +333,9 @@ const HEAVY_SCENES = new Set<SceneId>([
 /** Whether a scene is heavy: every memory, every townsfolk return, every group scene (story L), and the scenes the bible names. */
 export function heavyScene(id: SceneId): boolean {
   const kind = sceneKind(id);
+  // bond plan ruling 8: 心契 and a romance are heavy; the other bond scenes, an after-story and the walk together are light
+  if (kind === 'bond') return id.endsWith(':4');
+  if (kind === 'romance') return id !== 'together';
   return kind === 'memory' || kind === 'town' || kind === 'group' || HEAVY_SCENES.has(id);
 }
 
@@ -278,5 +347,5 @@ export function heavyScene(id: SceneId): boolean {
  * (a companion's happy after-story; the warm line comes last), middle memory pieces, `first-return`, `act1-after`.
  * 6d adds its heavy scenes here.
  */
-export const HEAVY_ARRIVAL: readonly string[] = ['rin-reveal', 'rin-confess', 'bellkeeper-arrives', 'hero-alone', ...ACT_NODES, ...CLOSING_PIECES, 'finale', 'epilogue', 'romance:'];
+export const HEAVY_ARRIVAL: readonly string[] = ['rin-reveal', 'rin-confess', 'bellkeeper-arrives', 'hero-alone', ...ACT_NODES, ...CLOSING_PIECES, 'finale', 'epilogue', 'romance:', 'season:'];
 export const isHeavyArrival = (id: string): boolean => HEAVY_ARRIVAL.some((h) => (h.endsWith(':') ? id.startsWith(h) : id === h));

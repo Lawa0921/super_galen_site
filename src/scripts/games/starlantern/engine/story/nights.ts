@@ -1,8 +1,9 @@
 import { CHARACTER_IDS } from '../../data/characters';
 import { NIGHT_BEATS, type NightBeat, type NightBeats } from '../../data/story.zh-TW';
-import { ALONE, BANTER_COUNT, BANTER_GATE, BANTER_PAIRS, CHAT_COUNT, CHAT_GATE, CLOSING_PIECES, GROUP_GATE, banterScene, banterTwo, type GroupScene, type SceneId, type StoryGate } from '../../data/story/scenes';
+import { ALONE, BANTER_COUNT, BANTER_GATE, BANTER_PAIRS, CHAT_COUNT, CHAT_GATE, CLOSING_PIECES, GROUP_GATE, NIGHT_RANK, banterScene, banterTwo, type GroupScene, type SceneId, type StoryGate } from '../../data/story/scenes';
 import { memoryTone } from '../../data/story/tone';
 import type { GameState } from '../state';
+import { tonightMoon } from '../calendar';
 import type { CharacterId } from '../types';
 import { banterOpen, chatOpen, gateExpired } from './events';
 
@@ -188,8 +189,18 @@ function arrange(picks: SceneId[]): SceneId[] {
 export function planNight(s: GameState, day: SceneId[]): NightPlan {
   const before = owedPieces(s, day);
   if (day.some((id) => ALONE.includes(id))) return { before, night: [] };
+  // Time and moon ruling 7: the spring festival is the whole night; the memories wait for the next one (the owed rule stays).
+  // Bond plan Task 11: so is a romance cut short.
+  if (day.some((id) => id.startsWith('season:') || id.startsWith('romance:'))) return { before, night: [] };
   const backlog = (s.story.untold ?? []).length - before.length;
   return { before, night: pickMemories(s, day, nightCap(backlog), before) };
+}
+
+/** Time and moon ruling 7: a night's items in their order (`NIGHT_RANK`: the group scene, the season's, the memories); each kind keeps its own order. */
+export function orderNight(ids: SceneId[]): SceneId[] {
+  const rank = (id: SceneId): number => (id.startsWith('group:') ? NIGHT_RANK.group : id.startsWith('season:') ? NIGHT_RANK.season
+    : id.startsWith('romance:') ? NIGHT_RANK.romance : NIGHT_RANK.memory);
+  return [...ids].sort((a, b) => rank(a) - rank(b));
 }
 
 /**
@@ -207,16 +218,19 @@ export function restoreNight(s: GameState, day: SceneId[]): NightPlan {
  * Spec §4.4.1: the beat between memories `prev` and `next`: from the cursor (`story.beat`) on, wrapping, the first line
  * that fits. A companion's fits once she is met and owns neither memory; narration always fits. Story L Task 8 (cold
  * read): the beat fits the memory it follows, so after a heavy one (`tone`) only a `quiet` line fits; a `lively` line
- * (a joke, a show-off, clapping) only after a warm one; an untagged line fits either. Null with no pool, or nothing
- * fitting. Pure: the caller moves the cursor past `at`.
+ * (a joke, a show-off, clapping) only after a warm one; an untagged line fits either. Time and moon ruling 10: a line
+ * with a `moon` fits only the nights under one (`tonightMoon`: a return's night, or the eve's, is the day before's).
+ * Null with no pool, or nothing fitting. Pure: the caller moves the cursor past `at`.
  */
 export function nextBeat(s: GameState, prev: SceneId, next: SceneId, pool: NightBeats = NIGHT_BEATS, tone: ToneOf = memoryTone): { line: NightBeat; at: number } | null {
   const n = pool.lines.length;
   if (!n) return null;
   const owners = [prev, next].filter((id) => id.startsWith('mem:')).map(ownerOf);
   const quietOnly = prev.startsWith('mem:') && tone(prev) === 'heavy';
+  const tonight = tonightMoon(s);
   const fits = (l: NightBeat): boolean => {
     if (quietOnly && l.tone === 'lively') return false;
+    if (l.moon && !l.moon.includes(tonight)) return false;   // time and moon ruling 10: a moon line on its own nights only
     if (!(CHARACTER_IDS as string[]).includes(l.who)) return true;
     const c = l.who as CharacterId;
     return s.party.recruited.includes(c) && !owners.includes(c);

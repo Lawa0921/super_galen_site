@@ -7,7 +7,7 @@ import { STORY_FIGHT_ROUNDS, createBattle, planEnemies, resolveRound, rewards, w
 import { floorOf, newRun, startDepths, terrainOf, type Portal, type Run } from './dungeon/run';
 import type { Content } from './dungeon/rooms';
 import { applyPieces, forcedGlimmers, memoryRng, pieceDrops, pityAfterFloor, type FragmentGain } from './story/memories';
-import { ACT_DEPTHS, ACT_NODES, ALONE, DEPARTURE_SCENES, FINALE_BOSS, FINALE_DEPTH, memScene, type SceneId } from '../data/story/scenes';
+import { ACT_DEPTHS, ACT_NODES, ALONE, DEPARTURE_SCENES, FINALE_BOSS, FINALE_DEPTH, isNightSlot, memScene, type SceneId } from '../data/story/scenes';
 import { STORY } from '../data/story.zh-TW';
 import { PERKS, SHARD_IDS, isFragmentItem, shardGrade, type ShardGrade, type TownFragmentId } from '../data/story/fragments';
 import { absorb, fragmentItem, gainOf, hasPerk, lootFragments, returnFragment, sellShards, type AbsorbResult } from './story/fragments';
@@ -24,7 +24,7 @@ import { tierOf } from '../data/difficulty';
 import { bossKey, rollAffixes, rollCrowdAffix, tierUnlocked } from './tiers';
 import { buyRune, fuseRunes, sellRunes, type RuneTradeFail } from './runeTrade';
 import { posKey, reveal, step, tileAt, type Dir, type FloorMap } from './map';
-import { CHARACTERS } from '../data/characters';
+import { CHARACTERS, CHARACTER_IDS } from '../data/characters';
 import { MAX_ACTIVE } from './formation';
 import { activeIds, awardExp, hasPassive, joinLevel, meet, placeInGrid, setFormation, START_LINEUP, statsOf, type LevelUp, type SetFormationFail } from './party';
 import { raiseNode, raiseTalent, swapPair, type RaiseFail, type TalentFail } from './progression';
@@ -34,9 +34,10 @@ import { loadGame, saveGame, type SaveStorage } from './save';
 import { MAX_REACHED } from './levels';
 import { rollPortals } from './portals';
 import { nextLead } from './story/leads';
-import { afterWin, arrivalScenes, markRead, onReturn, sceneDone, settleBellkeeper, settleOpening } from './story/events';
+import { afterWin, arrivalScenes, calendarOf, markRead, nextEnding, onReturn, sceneDone, settleBellkeeper, settleOpening } from './story/events';
 import { NIGHT_BEATS, type ScriptLine } from '../data/story.zh-TW';
-import { DAWN_BACKLOG, dawnMemory, eveMemories, nextBeat, planNight, restoreNight } from './story/nights';
+import { DAWN_BACKLOG, dawnMemory, eveMemories, nextBeat, orderNight, planNight, restoreNight } from './story/nights';
+import { SPRING_AFTER, dayOf, nextDay } from './calendar';
 import { newGame, type GameState } from './state';
 import { craftBase, craftItem, craftSet } from './forge/craft';
 import type { ForgeFail, RerollOpts } from './forge/cost';
@@ -46,6 +47,9 @@ import { moveRune, socketRune, unsocketRune, type SocketAt, type SocketFail } fr
 import type { RuneRef } from '../data/runes';
 import { addItem, buy as townBuy, rest as innRest, respec as townRespec, type TownResult } from './town';
 import { applyBuild, applyCost, followUp } from './builds';
+import { addField, bondOf, bondTier, giveGift, inDanger, nextBond, romanceCandidates, talkPoints, today, type GiveResult } from './story/bond';
+import { BOND_CAP, type BondTier, type Companion, type Tone } from '../data/story/bond';
+import { FIELD_POINTS } from '../data/story/bond';
 import type { CharacterId, GearSlot, ItemInstance, Member, Pos, Slot } from './types';
 
 export type Phase = 'town' | 'map' | 'battle' | 'clear';
@@ -116,9 +120,6 @@ function openStairs(m: FloorMap): void {
   m.boss = null;
 }
 
-/** Story L spec §5: a group scene, the reaction slot's (it plays as the night's first item). */
-const isGroup = (id: SceneId): boolean => id.startsWith('group:');
-
 export class Game {
   state: GameState;
   phase: Phase = 'town';
@@ -134,6 +135,14 @@ export class Game {
   private eliteAt: Pos | null = null;
   /** The rescue room whose fight is on; she is met and the tile turns to floor on a win. */
   private rescueAt: { at: Pos; who: Meetable } | null = null;
+  /** Bond plan ruling 3: who this fight has seen out of danger (at its start or after a round). Not saved. */
+  private safeSeen = new Set<CharacterId>();
+  /** Bond plan ruling 3: who dropped into danger during this fight, from out of it (`safeSeen`). Not saved. */
+  private endangered = new Set<CharacterId>();
+  /** Bond plan Task 8: the pending bond scenes whose choice has counted (once each). Not saved. */
+  private choiceCounted = new Set<SceneId>();
+  /** Bond plan ruling 12: the night walk was asked on this stay in town (set back on each arrival). Not saved. */
+  private walkAsked = false;
   /**
    * The tier the fight on now is played and paid at (difficulty plan ruling 17): the run's at `startBattle`, none for a
    * story fight or a Normal run. The fight's scale, affixes, gear, runes and boss-kill key read it, never `run.difficulty`;
@@ -146,6 +155,10 @@ export class Game {
    * later notice ('banked') never drops it. The town reads and empties it.
    */
   followEnded: CharacterId[] = [];
+  /** Bond plan ruling 14: who rose a bond tier on the last dive (CHARACTER_IDS order), for the town to say once. Not saved. */
+  bondUps: { id: Companion; tier: BondTier }[] = [];
+  /** Each companion's tier as the dive set out (ruling 14); null in town. */
+  private tiersAtDepart: Partial<Record<Companion, BondTier>> | null = null;
   /** Scenes the screen should play now (not saved): a returned townsfolk fragment. A memory never waits here (story L). */
   pending: SceneId[] = [];
   /** The scenes the town should play on this arrival, in order (not saved: a reload rebuilds it from the queue). */
@@ -209,8 +222,8 @@ export class Game {
     // Story L spec §4.6: the night is not picked again; what tonight still holds untold plays, the owed ones first. A
     // group scene the reaction slot holds again leads the night (spec §5.3).
     const plan = restoreNight(g.state, day);
-    g.arrival = [...plan.before, ...day.filter((id) => !isGroup(id))];
-    g.night = [...day.filter(isGroup), ...plan.night];
+    g.arrival = [...plan.before, ...day.filter((id) => !isNightSlot(id))];
+    g.night = orderNight([...day.filter(isNightSlot), ...plan.night]);
     return g;
   }
 
@@ -292,6 +305,7 @@ export class Game {
     const refused = this.departCheck(portal, startDepth);
     if (refused) return { ok: false, reason: refused };
     this.run = newRun(Math.floor(this.rng() * 2 ** 31), portal.region, portal.condition, startDepth, rescuesFor(portal.region, this.state.party.recruited), this.tier());
+    this.tiersAtDepart = Object.fromEntries(this.state.party.recruited.filter((c): c is Companion => c !== 'hero').map((c) => [c, bondTier(this.state.party.roster[c])]));
     this.pending = [];
     this.eve = [];
     this.finale = null;
@@ -374,7 +388,7 @@ export class Game {
     const memoKey = `frag:glimmer:${this.spotId()}`;
     const kept = run.rolls[memoKey];   // kept only when the pieces were already rolled empty
     const rng = kept ? null : memoryRng(run);
-    const ids = rng ? pieceDrops(this.state.party, this.state.story.pity, { region: run.region, depth: this.floor, source: 'glimmer', who: c.owner }, rng) : [];
+    const ids = rng ? pieceDrops(this.state.party, this.state.story.pity, { region: run.region, depth: this.floor, source: 'glimmer', who: c.owner, cal: calendarOf(this.state) }, rng) : [];
     if (ids.length > 0) {
       here.contents.splice(i, 1);
       this.map().tiles[this.pos.y][this.pos.x] = 'floor';
@@ -410,11 +424,14 @@ export class Game {
     });
   }
 
-  /** Before a depth is first made, fix the chains whose glimmer on it must hold their piece. */
+  /**
+   * Before a depth is first made, fix the chains whose glimmer on it must hold their piece. Under today's moon (time and
+   * moon ruling 3): a dive is one day, so the moon at the glimmer's making is the moon at its pickup.
+   */
   private forceGlimmers(floor: number): void {
     const run = this.run!;
     if (run.floors.has(floor)) return;
-    run.glimmers[floor] = forcedGlimmers(this.state.party, this.state.story.pity, run.region, floor);
+    run.glimmers[floor] = forcedGlimmers(this.state.party, this.state.story.pity, run.region, floor, calendarOf(this.state));
   }
 
   /** An ordinary step: fills the encounter gauge and may start a battle. Event tiles never come through here, so one step triggers one thing. */
@@ -618,6 +635,7 @@ export class Game {
       this.state.party = awarded.party;
       this.state = followUp(this.state, this.state.party.recruited, was);
     }
+    this.earnField(standing, FIELD_POINTS.floor);   // bond plan Task 5: a floor gone down together, whoever stands on the field
     const story = this.state.story;
     story.pity = pityAfterFloor(this.state.party, story.pity, this.run.region, this.floor, this.run.dropped[this.floor] ?? []);
     const floor = this.changeFloor(this.floor + 1);
@@ -683,6 +701,7 @@ export class Game {
     this.state.inventory = { ...b.inventory };
     this.state.revealed = structuredClone(b.revealed);
     this.state.party = writeBack(this.state.party, b);
+    this.watchDanger(b);
     if (b.outcome === 'ongoing') return { battle: b, end: null };
     this.battle = null;
     const empty: BattleEnd = { outcome: b.outcome, exp: 0, gold: 0, drops: {}, levelUps: [], left: {}, gear: [], gearLeft: [] };
@@ -734,6 +753,12 @@ export class Game {
       here.contents = here.contents.filter((c) => !(c.kind === 'rescue' && c.at.x === rescue.at.x && c.at.y === rescue.at.y));   // she is met: no marker stays
       met = { id: rescue.who, level, benched: !activeIds(this.state.party).includes(rescue.who) };
     }
+    // Bond plan Task 5 (spec §4.3): a boss or an elite won with her in it; then her life saved. A rescue gives none (she
+    // joins after it). Both share the dive's cap.
+    if (!rescue) {
+      if (b.boss || elite) this.earnField(b.party.map((c) => c.key as CharacterId), FIELD_POINTS.strong);
+      this.earnField(b.party.filter((c) => c.alive && c.hp > 0 && this.endangered.has(c.key as CharacterId)).map((c) => c.key as CharacterId), FIELD_POINTS.saved);
+    }
     // Memory pieces come after exp and the meeting, and before the phase can switch to clear (the story boss pays too).
     let fragments: FragmentGain[] = [];
     const finale = b.boss && this.isFinaleFight();
@@ -741,7 +766,7 @@ export class Game {
       const run = this.run!;
       const source = b.boss ? 'boss' : 'elite';
       const rng = memoryRng(run);
-      const ids = pieceDrops(this.state.party, this.state.story.pity, { region: run.region, depth: this.floor, source }, rng);
+      const ids = pieceDrops(this.state.party, this.state.story.pity, { region: run.region, depth: this.floor, source, cal: calendarOf(this.state) }, rng);
       fragments = this.takePieces(ids, finale);
       if (finale) this.finale = { pieces: this.finalePieces(fragments) };
       // Ownerless and townsfolk fragments ride in the run pack like materials; one that does not fit is left behind.
@@ -757,6 +782,8 @@ export class Game {
       // The act-one flag rides along, so a game that skipped straight to the end still writes a save that loads.
       this.state.story.finaleCleared = true;
       this.state.story.act1Cleared = true;
+      // time and moon ruling 6: spring comes one turn of the moon after the finale's dive
+      this.state.story.springDay = dayOf(this.state) + SPRING_AFTER;
       this.cleared = 'finale';
       this.phase = 'clear';
     }
@@ -1176,6 +1203,76 @@ export class Game {
     return true;
   }
 
+  /**
+   * Bond plan Task 9 (spec §8.2): her next heart-to-heart (`nextBond`), in town and once a day (`today`): it waits in
+   * `pending` for the screen to play it, and is today's talk once done. Null when none may open now. Not saved: a talk cut
+   * short (a reload before its end) counts nothing.
+   */
+  openBond(c: Companion): SceneId | null {
+    if (this.phase !== 'town' || today(this.state).talked) return null;
+    // bond review fix: a talk already waiting to play is today's; a second must not open before it is done
+    if (this.pending.some((p) => p.startsWith('bond:'))) return null;
+    const id = nextBond(this.state, c);
+    if (!id) return null;
+    if (!this.pending.includes(id)) this.pending.push(id);
+    return id;
+  }
+
+  /** Bond plan ruling 12: the night walk is offered: in town, not asked yet on this return, someone may be asked. */
+  walkOpen(): boolean {
+    return this.phase === 'town' && !this.walkAsked && romanceCandidates(this.state).length > 0;
+  }
+
+  /**
+   * Bond plan ruling 12 (spec §9.2, §14): she is the one, for keeps. Her romance (`romance:<c>`) is queued, so a walk cut
+   * short is told on the next return, and waits in `pending` for the screen; the town saves. Once chosen, never again.
+   */
+  chooseRomance(c: Companion): { ok: true; id: SceneId } | { ok: false; reason: 'chosen' | 'ineligible' | 'phase' } {
+    if (this.state.story.romance !== undefined) return { ok: false, reason: 'chosen' };
+    if (this.phase !== 'town') return { ok: false, reason: 'phase' };
+    if (!romanceCandidates(this.state).includes(c)) return { ok: false, reason: 'ineligible' };
+    const id: SceneId = `romance:${c}`;
+    this.state.story.romance = c;
+    if (!this.state.story.queue.includes(id)) this.state.story.queue.push(id);
+    if (!this.pending.includes(id)) this.pending.push(id);
+    this.walkAsked = true;
+    this.saveInTown();
+    return { ok: true, id };
+  }
+
+  /** Bond plan ruling 12: the walk with everyone. Nothing is written; the walk is not offered again until the next return. */
+  walkTogether(): boolean {
+    if (!this.walkOpen()) return false;
+    this.walkAsked = true;
+    return true;
+  }
+
+  /**
+   * Bond plan Task 8 (spec §7.4): the choice of a bond scene that is playing, before its `sceneDone`: her talk points
+   * (`talkPoints`; `null` for skipped) up to BOND_CAP.talk. Only for a bond scene in `pending`, not yet seen, once.
+   */
+  bondChoice(id: SceneId, tone: Tone | null): boolean {
+    if (!id.startsWith('bond:') || !this.pending.includes(id) || this.state.story.seen.includes(id) || this.choiceCounted.has(id)) return false;
+    const c = id.split(':')[1] as Companion;
+    const m = this.state.party.roster[c];
+    if (!m || !this.state.party.recruited.includes(c)) return false;
+    this.choiceCounted.add(id);
+    const b = bondOf(m);
+    const party = this.state.party;
+    this.state.party = { ...party, roster: { ...party.roster, [c]: { ...m, bond: { ...b, gifts: { ...b.gifts }, talk: Math.min(BOND_CAP.talk, b.talk + talkPoints(c, tone)) } } } };
+    return true;
+  }
+
+  /** Bond plan Task 6: one gift to a companion (`giveGift`), town only, saved at once like a shard absorbed. */
+  give(c: Companion, mat: string): GiveResult | { ok: false; reason: 'phase' } {
+    if (this.phase !== 'town') return { ok: false, reason: 'phase' };
+    const r = giveGift(this.state, c, mat);
+    if (!r.ok) return r;
+    this.state = r.state;
+    if (!(this.storage && saveGame(this.storage, this.state))) this.notice = 'save-failed';
+    return r;
+  }
+
   /** One shard into a member who was met: town only, saved at once so a reload cannot re-roll the gain. */
   absorb(id: CharacterId, grade: ShardGrade): AbsorbResult {
     if (this.phase !== 'town') return { ok: false, reason: 'invalid' };
@@ -1256,6 +1353,7 @@ export class Game {
     this.night = this.night.filter((s) => s !== id);
     this.eve = this.eve.filter((s) => s !== id);
     this.pending = this.pending.filter((s) => s !== id);
+    this.choiceCounted.delete(id);
     this.state = sceneDone(this.state, id, how);
     if (eve) {
       this.eve = eveMemories(this.state);
@@ -1316,19 +1414,38 @@ export class Game {
    * spec §4.6: then the night (`planNight`), kept in `story.tonight`; the memories the day owes lead the arrival.
    */
   private arrive(afterFinale = false): void {
+    // bond plan ruling 14: whoever rose a tier on this dive (a wipe comes home too), in CHARACTER_IDS order
+    const was = this.tiersAtDepart;
+    this.tiersAtDepart = null;
+    if (was) {
+      for (const c of CHARACTER_IDS) {
+        if (c === 'hero' || was[c] === undefined) continue;
+        const now = bondTier(this.state.party.roster[c]);
+        if (now > was[c]!) this.bondUps.push({ id: c, tier: now });
+      }
+    }
     this.state.story = onReturn(this.state);
-    const day = arrivalScenes(this.state, { chat: true, afterFinale });
+    // bond plan ruling 11: after the finale an after-story takes the chat's place
+    const day = arrivalScenes(this.state, { chat: true, afterFinale, ending: (s) => nextEnding(s) });
+    this.walkAsked = false;   // bond plan ruling 12: the night walk is asked again on each return
     const plan = planNight(this.state, day);
     this.state.story.tonight = [...plan.before, ...plan.night];
     // 【控制者裁定 2026-10-24】 the dawn before the next departure, picked now and saved with the return
     const dawn = dawnMemory(this.state, [...plan.before, ...plan.night]);
     if (dawn) this.state.story.dawn = dawn;
     else delete this.state.story.dawn;
-    // Story L spec §4.5: a group scene in the reaction slot is the night's first item, after the day's notices.
-    const group = day.filter(isGroup);
-    this.arrival = [...plan.before, ...day.filter((id) => !isGroup(id))];
-    this.night = [...group, ...plan.night];
+    // Story L spec §4.5: a group scene in the reaction slot is the night's first item, after the day's notices; after the
+    // finale the slot may hold the spring festival instead (time and moon ruling 7). The night in `NIGHT_RANK` order.
+    const slot = day.filter(isNightSlot);
+    // Task 7 review: the season's scene this return decided, saved with it, so a reload plays the same night
+    const festival = slot.find((id) => id.startsWith('season:'));
+    if (festival) this.state.story.festival = festival;
+    else delete this.state.story.festival;
+    this.arrival = [...plan.before, ...day.filter((id) => !isNightSlot(id))];
+    this.night = orderNight([...slot, ...plan.night]);
     this.leadSaid = false;
+    // time and moon (ruling 1): the return and its night end the dive's day; the town wakes on the next, saved with it
+    this.state.story.day = nextDay(dayOf(this.state));
   }
 
   /** The main road's depth 30 boss is the finale until it has been beaten once (spec §8.4); after that it is an ordinary boss. */
@@ -1540,6 +1657,28 @@ export class Game {
     this.battle = createBattle({ party: this.state.party, enemyIds, boss, inventory: this.state.inventory, revealed: this.state.revealed, scale, depth: this.floor, altar: this.run?.altarBuffs, extra, ...rest });
     planEnemies(this.battle, this.rng);
     this.phase = 'battle';
+    // Bond plan ruling 3: who starts this fight out of danger. One who starts in it is not saved by living through it.
+    this.safeSeen.clear();
+    this.endangered.clear();
+    for (const c of this.battle.party) if (c.alive && !inDanger(c)) this.safeSeen.add(c.key as CharacterId);
+  }
+
+  /** Bond plan ruling 3, after a round: one in danger who was seen out of it is endangered; one out of it is seen so. */
+  private watchDanger(b: BattleState): void {
+    for (const c of b.party) {
+      const id = c.key as CharacterId;
+      if (!c.alive || inDanger(c)) { if (this.safeSeen.has(id)) this.endangered.add(id); }
+      else this.safeSeen.add(id);
+    }
+  }
+
+  /** Bond plan Task 5: field points for `ids` on this dive (engine/story/bond.ts `addField`). */
+  private earnField(ids: readonly CharacterId[], pts: number): void {
+    const run = this.run;
+    if (!run || !ids.length) return;
+    const r = addField(this.state.party, run, ids, pts);
+    this.state.party = r.party;
+    for (const [id, n] of Object.entries(r.gained) as [CharacterId, number][]) run.bond[id] = (run.bond[id] ?? 0) + n;
   }
 
   private wipe(): void {

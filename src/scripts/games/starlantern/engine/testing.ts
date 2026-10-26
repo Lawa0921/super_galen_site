@@ -8,6 +8,8 @@ import { NODES, TREES, type TreeNode } from '../data/trees';
 import type { CharacterId, ItemInstance, Party } from './types';
 import { CHARACTER_IDS } from '../data/characters';
 import { newGame, type GameState } from './state';
+import { BOND_SWITCH } from './story/bond';
+import { ROSTER_ART, ROSTER_LIVE } from '../data/monsters';
 
 /** A plain common instance of a base (no affixes) at the base's own level, for fixtures. */
 export function plainItem(base: string, uid: number): ItemInstance {
@@ -85,6 +87,33 @@ export function version8Save(trees8b: Record<string, { id: string }[][]>): { raw
 }
 
 /**
+ * Bond plan ruling 5: `f` with the bond's battle bonus at `scale` (0: off), set back afterwards even when `f` throws.
+ */
+export function withBondScale<T>(scale: number, f: () => T): T {
+  const was = BOND_SWITCH.scale;
+  BOND_SWITCH.scale = scale;
+  try {
+    return f();
+  } finally {
+    BOND_SWITCH.scale = was;
+  }
+}
+
+/**
+ * Bond plan Task 5: `f` with field points earned (`earn` true) or not, set back afterwards even when `f` throws. For a test
+ * that pins the whole party across a floor or a fight, where the field points would be the only change.
+ */
+export function withBondEarn<T>(earn: boolean, f: () => T): T {
+  const was = BOND_SWITCH.earn;
+  BOND_SWITCH.earn = earn;
+  try {
+    return f();
+  } finally {
+    BOND_SWITCH.earn = was;
+  }
+}
+
+/**
  * Story L plan ruling 1: `c` holds at least `n` pieces and has told the first `n` (`mem:c:1` to `mem:c:n` in `seen`); she
  * is met first when she is not yet. Everything else is left as it was. For tests that pin a gate, not the gap between held
  * and told. Returns a new state.
@@ -96,4 +125,22 @@ export function withTold(s: GameState, c: CharacterId, n: number): GameState {
   const seen = [...s.story.seen];
   for (let k = 1; k <= n; k++) if (!seen.includes(memScene(c, k))) seen.push(memScene(c, k));
   return { ...s, party: { ...party, roster }, story: { ...s.story, seen } };
+}
+
+/**
+ * Roster plan Task A4: runs `f` with `ids` live (and their art published, ROSTER_LIVE ⊆ ROSTER_ART), then puts both sets back
+ * as they were, even when `f` throws. For tests of what the lists do once a foe goes live, before any has.
+ */
+export function withRosterLive<T>(ids: string[], f: () => T): T {
+  const art = ROSTER_ART as Set<string>, live = ROSTER_LIVE as Set<string>;
+  const added = ids.filter((id) => !live.has(id));
+  const addedArt = ids.filter((id) => !art.has(id));
+  for (const id of addedArt) art.add(id);
+  for (const id of added) live.add(id);
+  try {
+    return f();
+  } finally {
+    for (const id of added) live.delete(id);
+    for (const id of addedArt) art.delete(id);
+  }
 }

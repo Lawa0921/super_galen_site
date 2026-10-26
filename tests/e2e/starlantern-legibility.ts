@@ -212,6 +212,49 @@ const commandMenu = async (page: Page) => {
   await expect(page.locator('.slx-bcmd [role=option]').first()).toBeVisible();
 };
 
+/**
+ * Art step 9: every row in `scope` that holds a rune icon keeps the height of one line of its own text (its line-height
+ * and padding), and every icon sits inside its row; at least one such row is on screen. Measured in layout px.
+ */
+const runeRowsKeepTheirLine = async (page: Page, scope: string) => {
+  const rows = await page.locator(`${scope} [role=option]`).evaluateAll((els) => els.filter((e) => e.querySelector('img.slx-rune-ico')).map((e) => {
+    const li = e as HTMLElement; const cs = getComputedStyle(li); const box = li.getBoundingClientRect();
+    const out = [...li.querySelectorAll('img.slx-rune-ico')].filter((i) => { const r = i.getBoundingClientRect(); return r.top < box.top - 0.5 || r.bottom > box.bottom + 0.5; }).length;
+    return { id: li.dataset.id, h: li.offsetHeight, line: parseFloat(cs.lineHeight) + parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom), lh: parseFloat(cs.lineHeight), out };
+  }));
+  expect(rows.length, `${scope}: rows with rune icons`).toBeGreaterThan(0);
+  for (const r of rows) {
+    expect(r.lh, `${r.id} leading`).toBeGreaterThanOrEqual(14);
+    expect(r.h, `${r.id} as tall as one line`).toBe(r.line);
+    expect(r.out, `${r.id} icons inside the row`).toBe(0);
+  }
+};
+
+/**
+ * Art step 9: every picture matching `img` in `scope` is shown at its own native size (`px` x `px` layout px, the file
+ * that size: never scaled), decorative (alt ""), and inside its row; a row with a 14 or 16 px icon keeps the height of one
+ * line of its own text. At least `min` are on screen.
+ */
+const nativeIcons = async (page: Page, scope: string, img: string, px: number, min = 1) => {
+  const found = await page.locator(`${scope} ${img}`).evaluateAll((els) => els.filter((e) => (e as HTMLElement).checkVisibility()).map((e) => {
+    const i = e as HTMLImageElement; const r = i.getBoundingClientRect();
+    const row = (i.closest('[role=option], .slx-skill, .slx-ail, .slx-mech') ?? i.parentElement!) as HTMLElement;
+    const b = row.getBoundingClientRect(); const cs = getComputedStyle(row);
+    return { src: i.getAttribute('src'), w: i.offsetWidth, h: i.offsetHeight, nw: i.naturalWidth, nh: i.naturalHeight, alt: i.getAttribute('alt'),
+      // 1 screen px of slack: on a phone held upright the stage is turned and scaled by a fraction, so edges land between pixels.
+      out: r.top < b.top - 1 || r.bottom > b.bottom + 1 || r.left < b.left - 1 || r.right > b.right + 1,
+      boxes: `icon ${r.left},${r.top},${r.right},${r.bottom} row ${row.className} ${b.left},${b.top},${b.right},${b.bottom}`,
+      chip: row.matches('.slx-ail, .slx-mech'), rowH: row.offsetHeight, line: parseFloat(cs.lineHeight) + parseFloat(cs.borderTopWidth) + parseFloat(cs.borderBottomWidth) };
+  }));
+  expect(found.length, `${scope} ${img}: icons on screen`).toBeGreaterThanOrEqual(min);
+  for (const f of found) {
+    expect(f.out ? f.boxes : '', `${f.src} inside its row`).toBe('');
+    expect([f.w, f.h, f.nw, f.nh], `${f.src} native ${px}`).toEqual([px, px, px, px]);
+    expect(f.alt, `${f.src} decorative`).toBe('');
+    if (f.chip) expect(f.rowH, `${f.src}: its chip stays one 14px line`).toBe(f.line);
+  }
+};
+
 /** The chests and event rooms the sweep put down, taken up again before it walks to the stairs. */
 const chests: { x: number; y: number }[] = [];
 
@@ -281,6 +324,33 @@ export const SWEEP: { name: string; visit(page: Page, w: SpecHelpers): Promise<v
       if (!(await page.locator('.slx-town .slx-talk .slx-next').isVisible())) await w.key('z');   // the line whole
     },
   },
+  ...(['full', 'new'] as const).map((moon) => ({
+    // Time and moon (Task 5): a night told under tonight's moon, the veil tinted (full: lighter and bluer; new: darker).
+    name: `night-moon-${moon}`, visit: async (page: Page, w: SpecHelpers) => {
+      await readAll(page, w);   // what is still on screen
+      await page.evaluate((day) => {
+        const d = (window as unknown as { __starlanternDebug: { game: { arrival: string[]; night: string[]; state: { story: { day?: number } } } } }).__starlanternDebug;
+        d.game.arrival = [];
+        d.game.night = ['mem:rin:1'];
+        d.game.state.story.day = day;   // tonight is the day before's
+      }, moon === 'full' ? 5 : 3);
+      await go(page, 'town');
+      await expect(page.locator('.slx-town .slx-talk')).toBeVisible();
+      await w.key('z');   // the day's line
+      if (!(await page.locator('.slx-town .slx-place-card').isVisible())) await w.key('z');   // the line whole first
+      await expect(page.locator(`.slx-town .slx-veil-night.slx-on.slx-moon-${moon}`)).toHaveCount(1);
+      // Task 7 review: on to the memory's present lines, so no sepia past veil hides the moon's tint
+      for (let i = 0; i < 20 && (await page.locator('.slx-town .slx-talk.slx-talk--memory').count()) > 0; i++) {
+        if (!(await page.locator('.slx-town .slx-talk .slx-next').isVisible())) await w.key('z');   // the line whole
+        await w.key('z');
+      }
+      await expect(page.locator('.slx-town .slx-talk.slx-talk--memory')).toHaveCount(0);
+      await expect(page.locator('.slx-town .slx-veil-past.slx-on')).toHaveCount(0);
+      await expect(page.locator(`.slx-town .slx-veil-night.slx-on.slx-moon-${moon}`)).toHaveCount(1);
+      if (!(await page.locator('.slx-town .slx-talk .slx-next').isVisible())) await w.key('z');   // the line whole
+      await page.waitForTimeout(500);   // the past veil fades out (0.45s)
+    },
+  })),
   {
     // Story L: a group scene, the first thing of the night, under its own card (the inn's dinner, not the night's).
     name: 'group-scene', visit: async (page, w) => {
@@ -342,6 +412,8 @@ export const SWEEP: { name: string; visit(page: Page, w: SpecHelpers): Promise<v
       await expect(page.locator('.slx-shop .slx-list')).toHaveCount(0);
       await page.locator('.slx-shop .slx-cmd [data-id=runes]').click();
       await expect(page.locator('.slx-shop .slx-list [role=option]').first()).toBeVisible();
+      // Art step 9: each rune row leads with its cell (icon in its tier frame) and stays one line tall.
+      await runeRowsKeepTheirLine(page, '.slx-shop .slx-list');
     },
   },
   { name: 'inn', visit: async (page, w) => facility(page, w, 'inn', '.slx-inn') },
@@ -379,6 +451,9 @@ export const SWEEP: { name: string; visit(page: Page, w: SpecHelpers): Promise<v
       await expect(page.locator(`.slx-status-scene [data-tab=${tab}]`)).toHaveAttribute('aria-selected', 'true');
     },
   })),
+  // Art step 9: the skills tab and the tree with every skill's native icon (16 in a row, 14 on a node), each whole.
+  { name: 'status-skills-icons', visit: async (page) => { await go(page, 'status', 'tab:skills:noel'); await nativeIcons(page, '.slx-tab-skills', 'img.slx-skill-ico', 16); } },
+  { name: 'status-tree-icons', visit: async (page) => { await go(page, 'status', 'tab:tree:noel'); await nativeIcons(page, '.slx-status-scene', '.slx-tree-node img.slx-skill-ico', 14, 3); } },
   { name: 'equip', visit: async (page) => { await go(page, 'equip'); await expect(page.locator('.slx-equip-scene')).toBeVisible(); } },
   ...HANDBOOK_TABS.map((tab, i) => ({
     name: i === 0 ? 'handbook' : `handbook-${tab}`, visit: async (page: Page) => {
@@ -406,6 +481,16 @@ export const SWEEP: { name: string; visit(page: Page, w: SpecHelpers): Promise<v
     },
   },
   {
+    // Time and moon (Task 4): Selene's pieces not found yet say the moon each waits for, the longest hints in the list.
+    name: 'handbook-moon', visit: async (page) => {
+      await go(page, 'handbook');
+      await page.locator('.slx-handbook .slx-hb-list [role=option][data-id=selene]').click();
+      const full = page.locator('.slx-handbook .slx-hb-list [role=option]').filter({ hasText: `・${T.ui2.calendar.moon.full}` });
+      await expect(full.first()).toBeVisible();
+      await expect(page.locator('.slx-handbook .slx-hb-list [role=option]').filter({ hasText: `・${T.ui2.calendar.moon.new}` })).toHaveCount(1);
+    },
+  },
+  {
     // The first workshop visit with runes in the bag tells the rune tutorial (plan 8g).
     name: 'rune-tutorial', visit: async (page, w) => {
       await go(page, 'workshop');
@@ -429,6 +514,28 @@ export const SWEEP: { name: string; visit(page: Page, w: SpecHelpers): Promise<v
       await w.key('Enter');                                   // her slots
       await w.key('Enter');                                   // slot 1's runes
       await expect(page.locator('.slx-ws-runes [role=option]').first()).toBeVisible();
+    },
+  },
+  {
+    // Art step 9: runes socketed on 火之星彈, one working (擴散) and one doing nothing there (重擊 needs a skill of more than
+    // one hit): the skill list's slot icons, and the slots with each rune's cell in its tier frame.
+    name: 'workshop-socketed', visit: async (page, w) => {
+      await page.evaluate(() => {
+        const g = (window as unknown as Dbg).__starlanternDebug.game;
+        g.state.party.roster.noel.sockets = { 'fire-star': [{ id: 'spread', tier: 'rare' }, { id: 'heavy', tier: 'common' }] };
+      });
+      await go(page, 'workshop', 'noel:fire-star');
+      await expect(page.locator('.slx-ws-skills [data-id=fire-star] .slx-right [data-mark]')).toHaveCount(2);
+      await w.key('Enter');                                   // her slots
+      await expect(page.locator('.slx-ws-slot .slx-rune-cell')).toHaveCount(2);
+    },
+  },
+  {
+    // Art step 9: the skills page's slot icons after a skill's name (a working rune, one greyed).
+    name: 'status-skills-runed', visit: async (page) => {
+      await go(page, 'status', 'tab:skills:noel');
+      await expect(page.locator('.slx-skill[data-skill=fire-star] .slx-skill-slots [data-mark]')).toHaveCount(2);
+      await expect(page.locator('.slx-skill[data-skill=fire-star] .slx-skill-slots .slx-rune-off')).toHaveCount(1);
     },
   },
   { name: 'builds', visit: async (page) => { await go(page, 'builds'); await expect(page.locator('.slx-builds')).toBeVisible(); } },
@@ -663,7 +770,45 @@ export const SWEEP: { name: string; visit(page: Page, w: SpecHelpers): Promise<v
     },
   },
   {
+    // Art step 9 (G4): the party's ailment and mechanic words with their 14px icons (one member's row folding into +N),
+    // the field bar's barrier and moon with theirs, and the foes' rows (Pixi) with theirs.
+    name: 'battle-chips', visit: async (page, w) => {
+      await game(page, `
+        const [a, b] = g.battle.party;
+        a.poison = true; a.burn = { tick: 1, turns: 3, src: 'e0' }; a.bleed = [{ tick: 1, turns: 3, src: 'e0' }]; a.shock = 3; a.chill = 3;
+        b.sleep = 3;
+        for (const e of g.battle.enemies) { e.burn = { tick: 1, turns: 3, src: 'hero' }; e.shock = 3; }
+        g.battle.barriers = [{ skill: 'ward', kind: 'guard', power: 30, turns: 9, src: 'chizuru' }];
+        g.battle.moon = { phase: 'full' };`);
+      // One round on guard redraws every panel, the bar and the foes' rows with the words.
+      for (let i = 0; i < 60 && (await game<number>(page, 'return g.battle?.round ?? -1;')) === 0; i++) {
+        if (await page.locator('.slx-bcmd [role=option]').count()) await w.choose('.slx-bcmd', '防禦');
+        else await page.waitForTimeout(50);
+      }
+      await commandMenu(page);
+      await nativeIcons(page, '.slx-partybar', 'img.slx-chip-ico', 14, 2);
+      await nativeIcons(page, '.slx-fieldbar', 'img.slx-chip-ico', 14, 2);
+      await expect(page.locator('.slx-partybar .slx-ail-more').first()).toBeVisible();
+      const foeIcons = await page.evaluate(() => {
+        type N = { children?: N[]; texture?: { width: number; height: number }; width?: number; height?: number; text?: unknown; destroyed?: boolean };
+        const v = (window as unknown as { __starlanternDebug: { stage: { battleView: { ailmentIcons(k: string): N[] } } } }).__starlanternDebug.stage.battleView;
+        return v.ailmentIcons('e0').map((s) => [s.width, s.height]);
+      });
+      expect(foeIcons.length).toBeGreaterThan(0);
+      for (const s of foeIcons) expect(s).toEqual([14, 14]);
+    },
+  },
+  {
+    // Touch overflow: a member's +N tapped (clicked here) opens the list of her whole row, over the battle.
+    name: 'battle-chips-more', visit: async (page) => {
+      await page.locator('.slx-partybar .slx-ail-more').first().click();
+      await expect(page.locator('.slx-more-pop')).toBeVisible();
+      expect(await page.locator('.slx-more-pop > *').count()).toBeGreaterThan(3);
+    },
+  },
+  {
     name: 'battle-skills', visit: async (page, w) => {
+      if (await page.locator('.slx-more-pop').isVisible()) await w.key('Escape');   // the +N list, closed first
       for (let i = 0; i < 8; i++) {
         await w.choose('.slx-bcmd', '技能');
         if (await page.locator('.slx-bsub').isVisible()) break;
@@ -671,6 +816,23 @@ export const SWEEP: { name: string; visit(page: Page, w: SpecHelpers): Promise<v
         await commandMenu(page);
       }
       await expect(page.locator('.slx-bsub [role=option]').first()).toBeVisible();
+      await nativeIcons(page, '.slx-bsub', 'img.slx-skill-menu-ico', 16);   // art step 9: each skill's 16px icon in its row
+    },
+  },
+  {
+    // Art step 9: the skill menu with working runes on its skills: each rune's 14px icon after the name, the row one line.
+    name: 'battle-skills-runed', visit: async (page, w) => {
+      await page.evaluate(() => {
+        const g = (window as unknown as Dbg).__starlanternDebug.game;
+        const who = document.querySelector('.slx-bcmd .slx-who')?.textContent ?? '';
+        const c = g.battle.party.find((x: { name: string }) => who.startsWith(x.name));
+        const ids = [...document.querySelectorAll<HTMLElement>('.slx-bsub [role=option]')].map((e) => e.dataset.id!);
+        c.runes = Object.fromEntries(ids.map((id) => [id, [{ id: 'on-struck', tier: 'magic' }, { id: 'multistrike', tier: 'magic' }, { id: 'drain', tier: 'rare' }]]));
+      });
+      await w.key('Escape');                                  // the command menu
+      await w.choose('.slx-bcmd', '技能');                     // the skills again, drawn with their runes
+      await expect(page.locator('.slx-bsub [role=option] .slx-badge img.slx-rune-ico-14').first()).toBeVisible();
+      await runeRowsKeepTheirLine(page, '.slx-bsub');
     },
   },
   {
@@ -738,8 +900,26 @@ export const SWEEP: { name: string; visit(page: Page, w: SpecHelpers): Promise<v
     },
   },
   {
+    // Touch overflow review: the rightmost of the five, its +N tapped (clicked here): its whole row, the elite's two
+    // long affixes first, in a list that ends at the target's right edge and stays on the screen.
+    name: 'battle-affix-more', visit: async (page) => {
+      const hits = page.locator('.slx-foe-more');
+      expect(await hits.count()).toBeGreaterThan(0);
+      const last = hits.last();
+      await expect(last).toHaveClass(/slx-foe-more-end/);
+      await last.click();
+      const pop = page.locator('.slx-foe-more-end > .slx-more-pop');
+      await expect(pop).toBeVisible();
+      await expect(pop.locator('.slx-affix')).toHaveCount(2);
+      const b = await stageBox(page, pop);
+      expect(b.x, 'the list starts on the screen').toBeGreaterThanOrEqual(-0.5);
+      expect(b.x + b.width, 'the list ends on the screen').toBeLessThanOrEqual(640.5);
+    },
+  },
+  {
     // The target list over the first of them: the note says each affix, a line each.
     name: 'battle-affix-target', visit: async (page, w) => {
+      if (await page.locator('.slx-more-pop').isVisible()) await w.key('Escape');   // the +N list, closed first
       await w.choose('.slx-bcmd', '攻擊');
       await expect(page.locator('.slx-btarget')).toBeVisible();
       await expect(page.locator('.slx-bnote')).toHaveClass(/slx-bnote-lines/);

@@ -13,6 +13,7 @@ import { el } from '../../ui/dom';
 import type { UiAction } from '../input';
 import { Menu, type MenuItem } from '../menu';
 import type { Scene, SceneCtx } from '../scene';
+import { markEl, slotMark } from '../runeArt';
 import { MenuView, backControl, confirmBox, win } from '../widgets';
 import { cueFrame, updateCues } from './statusTabs';
 
@@ -356,14 +357,17 @@ export class BuildsScene implements Scene {
       ...(b.scenario ? [el('p', { class: 'slx-bd-scenario', text: B.scenario[b.scenario] })] : []),
       // What is in reach and what is missing first (the user: 「缺什麼直接寫出來」), then the play and the tree.
       el('h5', { class: 'slx-bd-sub', text: B.runesHead }),
-      ...(skills.length ? [el('p', { class: 'slx-bd-legend', text: B.have })] : [el('p', { text: B.noRunes })]),
+      // The filled-slot icon marks a rune in reach and the empty-slot icon one that is missing (art step 9; once text glyphs).
+      ...(skills.length ? [el('p', { class: 'slx-bd-legend' }, [markEl(slotMark('filled', 14, ''), 14), B.have])] : [el('p', { text: B.noRunes })]),
       ...skills.map((skill) => el('div', { class: 'slx-bd-skill' }, [
         el('span', { class: 'slx-bd-skill-name', text: SKILLS[skill]?.name ?? skill }),
         ...rows.filter((r) => r.skill === skill).map((r) => el('span', {
           class: `slx-bd-rune slx-bd-${r.state}${r.tier ? ` slx-rarity-${r.tier}` : ''}`,
           attrs: { 'data-skill': skill, 'data-rune': r.id, 'data-state': r.state },
-          text: r.state === 'have' ? `◆${r.text}` : r.state === 'lack' ? `○${r.text}` : r.text,
-        })),
+        }, [
+          ...(r.state === 'have' ? [markEl(slotMark('filled', 14, B.haveMark), 14)] : r.state === 'lack' ? [markEl(slotMark('empty', 14, B.lackMark), 14)] : []),
+          r.text,
+        ])),
       ])),
       el('h5', { class: 'slx-bd-sub', text: B.policyHead }),
       el('ul', { class: 'slx-bd-policy' }, policyText(b).map((line) => el('li', { text: line }))),

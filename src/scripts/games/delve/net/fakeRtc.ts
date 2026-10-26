@@ -9,7 +9,7 @@ const FAKE_ROOMS = ['ABCDE', 'FGHJK', 'MNPQR', 'STUVW', 'XYZ23'];
 
 export class FakeSignal implements SignalApi {
   readonly store = new Map<string, string>();
-  readonly calls = { createRoom: 0, put: 0, get: 0 };
+  readonly calls = { createRoom: 0, put: 0, get: 0, getMany: 0 };
   /** 非 null 時 get 會卡到它 resolve（模擬卡住的 fetch） */
   hold: Promise<void> | null = null;
 
@@ -24,6 +24,19 @@ export class FakeSignal implements SignalApi {
     this.calls.get++;
     if (this.hold) await this.hold;
     return this.store.get(`${room}:${slot}`) ?? null;
+  }
+}
+
+/** 有批次讀（getMany）的假信令：對應 realSignalApi 的 GET ?slots= */
+export class FakeBatchSignal extends FakeSignal {
+  /** 每次 getMany 讀了哪些槽 */
+  readonly manySlots: string[][] = [];
+
+  async getMany(room: string, slots: string[]): Promise<(string | null)[]> {
+    this.calls.getMany++;
+    this.manySlots.push([...slots]);
+    if (this.hold) await this.hold;
+    return slots.map((s) => this.store.get(`${room}:${s}`) ?? null);
   }
 }
 

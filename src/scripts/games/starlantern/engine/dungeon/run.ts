@@ -1,6 +1,7 @@
 import { CONDITIONS, type ConditionId } from '../../data/conditions';
 import type { Meetable } from '../../data/meetings';
 import { REGIONS, type RegionId } from '../../data/regions';
+import { wardenFor } from '../../data/monsters';
 import type { FloorMap } from '../map';
 import { mulberry32 } from '../rng';
 import { GLIMMER_CHANCE } from '../../data/story/chains';
@@ -56,13 +57,18 @@ export interface Run {
    * run is the run it always was. Not saved (a run never is).
    */
   difficulty?: Difficulty;
+  /**
+   * Bond plan Task 5 (spec §4.3): the field points each companion has earned on this dive, against BOND_RUN_CAP. Not saved
+   * (a run never is); the points themselves go straight into `Member.bond.field`, so a wipe keeps them.
+   */
+  bond: Partial<Record<CharacterId, number>>;
 }
 
 export function newRun(seed: number, region: RegionId, condition: ConditionId, startDepth: number, rescues: Record<number, Meetable> = {}, difficulty?: Difficulty): Run {
   return {
     seed, region, condition, startDepth, floors: new Map(), opened: new Set(), explored: {},
     loot: { items: {}, gold: 0, gear: [] }, rolls: {}, gearRolls: {}, waiting: {}, lootDraws: 0, usedFountain: false, altarBuffs: [], keys: new Set(), rescues: { ...rescues },
-    glimmers: {}, memoryDraws: 0, dropped: {}, runeDraws: 0,
+    glimmers: {}, memoryDraws: 0, dropped: {}, runeDraws: 0, bond: {},
     ...(difficulty && difficulty !== 'normal' ? { difficulty } : {}),
   };
 }
@@ -94,6 +100,11 @@ const floorSeed = (seed: number, depth: number): number => (Math.imul(seed ^ 0x5
 const RESCUE_SALT = 0x6a09e667;
 /** Salts the glimmers' own rng, so placing them moves nothing else on the floor. */
 export const GLIMMER_SALT = 0x9b05688c;
+/**
+ * Salts the warden room's own rng (roster plan ruling 10), so placing it moves nothing else on the floor: SHA-256's first
+ * round constant, since all eight initial words are in use.
+ */
+export const WARDEN_SALT = 0x428a2f98;
 
 /** The floor at a depth of this run, generated on first visit and cached afterwards. */
 export function floorOf(run: Run, depth: number): RunFloor {
@@ -107,6 +118,9 @@ export function floorOf(run: Run, depth: number): RunFloor {
   const r = mulberry32(seed ^ GLIMMER_SALT);
   if (r() < GLIMMER_CHANCE) placeSpecial(f, g, r, { kind: 'glimmer' });
   for (const owner of run.glimmers[depth] ?? []) placeSpecial(f, g, r, { kind: 'glimmer', owner });
+  // Last of all, so nothing above moves (ruling 10): a live warden's room on depths 8, 13, 18 ... (never a boss depth).
+  const warden = isBossDepth(run.region, depth) ? null : wardenFor(run.region, depth);
+  if (warden) placeSpecial(f, g, mulberry32(seed ^ WARDEN_SALT), { kind: 'warden', warden });
   run.floors.set(depth, f);
   return f;
 }

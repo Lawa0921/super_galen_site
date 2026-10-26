@@ -20,6 +20,23 @@ import type { CharacterId } from './types';
 import { ABSORB_CAP, ABSORB_GAIN } from '../data/story/fragments';
 import { chainLength } from '../data/story/chains';
 import { NIGHT_BEATS } from '../data/story.zh-TW';
+import { MAX_DAY, SPRING_AFTER, dayOf } from './calendar';
+import { BONDS_WRITTEN, ENDINGS_WRITTEN, ROMANCES_WRITTEN, SEASON_SCENES, TOGETHER_WRITTEN, isSceneId, memScene, type SceneId } from '../data/story/scenes';
+import { meet } from './party';
+/**
+ * Bond plan Task 17: the registries hold what is written now, so a test that registers its own puts back what was there
+ * (`bondsBack`), registers a companion only once (`bondsAdd`), and gives a written scene back instead of deleting it.
+ */
+const BOND_BASE = [...BONDS_WRITTEN];
+const bondsAdd = (...cs: (typeof BONDS_WRITTEN)[number][]): void => { for (const c of cs) if (!BONDS_WRITTEN.includes(c)) BONDS_WRITTEN.push(c); };
+const bondsBack = (): void => { BONDS_WRITTEN.splice(0, BONDS_WRITTEN.length, ...BOND_BASE); };
+// review 5: the after-story and romance registries go back to what is registered, not to empty
+const regAdd = <T,>(reg: T[], ...xs: T[]): void => { for (const x of xs) if (!reg.includes(x)) reg.push(x); };
+const ENDINGS_BASE = [...ENDINGS_WRITTEN];
+const endingsBack = (): void => { ENDINGS_WRITTEN.splice(0, ENDINGS_WRITTEN.length, ...ENDINGS_BASE); };
+const ROMANCES_BASE = [...ROMANCES_WRITTEN];
+const romancesBack = (): void => { ROMANCES_WRITTEN.splice(0, ROMANCES_WRITTEN.length, ...ROMANCES_BASE); };
+const TOGETHER_BASE = TOGETHER_WRITTEN.value;
 
 describe('save', () => {
   it('round-trips a game', () => {
@@ -1186,5 +1203,338 @@ describe('story L: the dawn pick in the save (controller ruling 2026-10-24)', ()
       mut(g);
       expect(status(g), name).toBe('corrupt');
     }
+  });
+});
+
+describe('time and moon: the day in the save (Task 1)', () => {
+  const status = (g: GameState) => loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(g) })).status;
+  /** The finale cleared on day 40: spring on day 44. */
+  const cleared = (): GameState => {
+    const g = newGame();
+    g.story.act1Cleared = true;
+    g.story.finaleCleared = true;
+    g.story.day = 41;
+    g.story.springDay = 44;
+    return g;
+  };
+
+  it('day and springDay save and load', () => {
+    const st = memoryStorage();
+    expect(saveGame(st, cleared())).toBe(true);
+    const r = loadGame(st);
+    expect(r.status === 'ok' && [r.state.story.day, r.state.story.springDay]).toEqual([41, 44]);
+    const edge = cleared();
+    edge.story.day = MAX_DAY;
+    edge.story.springDay = MAX_DAY + SPRING_AFTER;
+    expect(status(edge)).toBe('ok');
+    edge.story.day = 1;
+    edge.story.springDay = 1;
+    expect(status(edge)).toBe('ok');
+  });
+
+  it('a day below 1, a fraction, or above MAX_DAY is refused', () => {
+    for (const day of [0, -1, 1.5, MAX_DAY + 1, '3', null, Number.NaN]) {
+      const g = newGame();
+      (g.story as { day?: unknown }).day = day;
+      expect(status(g), String(day)).toBe('corrupt');
+    }
+  });
+
+  it('springDay without the finale cleared is refused', () => {
+    const g = newGame();
+    g.story.springDay = 5;
+    expect(status(g)).toBe('corrupt');
+    for (const springDay of [0, 2.5, MAX_DAY + SPRING_AFTER + 1, '44']) {
+      const c = cleared();
+      (c.story as { springDay?: unknown }).springDay = springDay;
+      expect(status(c), String(springDay)).toBe('corrupt');
+    }
+    const absent = cleared();
+    delete absent.story.springDay;
+    expect(status(absent)).toBe('ok');   // read as spring already (ruling 6)
+  });
+
+  it('a save without day reads as day 1', () => {
+    const st = memoryStorage();
+    expect(saveGame(st, newGame())).toBe(true);
+    const r = loadGame(st);
+    if (r.status !== 'ok') throw new Error(r.status);
+    expect(r.state.story.day).toBeUndefined();
+    expect(dayOf(r.state)).toBe(1);
+  });
+});
+
+describe('time and moon: the spring festival in the save (Task 7)', () => {
+  const status = (g: GameState) => loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(g) })).status;
+  const cleared = (): GameState => {
+    const g = newGame();
+    g.story.act1Cleared = true;
+    g.story.finaleCleared = true;
+    g.story.day = 30;
+    g.story.springDay = 24;
+    g.story.seen.push('season:spring');
+    return g;
+  };
+  it('a queued or seen season:spring loads, only once it is registered', () => {
+    expect(SEASON_SCENES.spring).toBe('season:spring');   // Task 8 wrote and registered it
+    expect(status(cleared())).toBe('ok');
+    // a season with no scene written is not a scene
+    const summer = cleared();
+    summer.story.seen.push('season:summer' as SceneId);
+    expect(status(summer)).toBe('corrupt');
+    const queued = newGame();
+    queued.story.queue.push('season:spring');
+    expect(status(queued)).toBe('ok');
+    expect(isSceneId('season:spring')).toBe(true);
+    expect(isSceneId('season:summer')).toBe(false);
+  });
+});
+
+describe('time and moon: the festival recorded in the save (Task 7 review)', () => {
+  const status = (g: GameState) => loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(g) })).status;
+  const recorded = (): GameState => {
+    const g = newGame();
+    g.story.act1Cleared = true;
+    g.story.finaleCleared = true;
+    g.story.day = 21;
+    g.story.springDay = 20;
+    g.story.festival = 'season:spring';
+    return g;
+  };
+  it('festival saves and loads; one unregistered, not a season scene, before the finale or already seen is refused', () => {
+    const st = memoryStorage();
+    expect(saveGame(st, recorded())).toBe(true);
+    const r = loadGame(st);
+    expect(r.status === 'ok' && r.state.story.festival).toBe('season:spring');
+    const cases: [string, (g: GameState) => void][] = [
+      ['not a season scene', (g) => { (g.story as { festival?: unknown }).festival = 'home:chizuru'; }],
+      ['before the finale', (g) => { g.story.finaleCleared = false; delete g.story.springDay; }],
+      ['already seen', (g) => { g.story.seen.push('season:spring'); }],
+    ];
+    for (const [name, mut] of cases) {
+      const g = recorded();
+      mut(g);
+      expect(status(g), name).toBe('corrupt');
+    }
+    const summer = recorded();
+    (summer.story as { festival?: unknown }).festival = 'season:summer';   // no such scene written
+    expect(status(summer), 'unregistered').toBe('corrupt');
+  });
+});
+
+describe('bond in the save (bond plan Task 2)', () => {
+  const status = (g: GameState) => loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(g) })).status;
+  /** Day 5, the finale cleared; Rin with a bond, and Selene met (`told`: all her pieces told). */
+  const base = (told = false): GameState => {
+    const g = newGame();
+    g.story.act1Cleared = true;
+    g.story.finaleCleared = true;
+    g.story.day = 5;
+    g.party.roster.rin.bond = { talk: 5, field: 12, gifts: { 'dusk-cloth': 2 }, refused: ['king-scale'] };
+    g.party = meet(g.party, 'selene', 1);
+    if (told) {
+      g.party.roster.selene.memories = chainLength('selene');
+      for (let k = 1; k <= chainLength('selene'); k++) g.story.seen.push(memScene('selene', k));
+    }
+    return g;
+  };
+  const corrupt = (name: string, mut: (g: GameState) => void, told = false) => {
+    const g = base(told);
+    mut(g);
+    expect(status(g), name).toBe('corrupt');
+  };
+  const ok = (name: string, mut: (g: GameState) => void, told = false) => {
+    const g = base(told);
+    mut(g);
+    expect(status(g), name).toBe('ok');
+  };
+
+  it('the save version stays 9', () => {
+    expect(SAVE_VERSION).toBe(9);
+    expect(status(base())).toBe('ok');
+  });
+
+  it('every bond field round-trips', () => {
+    const g = base();
+    g.story.bondDay = 5;
+    g.story.gifted = ['rin'];
+    g.story.talked = true;
+    g.story.romance = 'rin';
+    const st = memoryStorage();
+    expect(saveGame(st, g)).toBe(true);
+    const r = loadGame(st);
+    if (r.status !== 'ok') throw new Error(r.status);
+    expect(r.state.party.roster.rin.bond).toEqual({ talk: 5, field: 12, gifts: { 'dusk-cloth': 2 }, refused: ['king-scale'] });
+    expect([r.state.story.bondDay, r.state.story.gifted, r.state.story.talked, r.state.story.romance]).toEqual([5, ['rin'], true, 'rin']);
+    expect(r.state.party.roster.selene.bond).toBeUndefined();
+  });
+
+  it('a bond that cannot have happened is corrupt', () => {
+    const bond = () => ({ talk: 0, field: 0, gifts: {} });
+    corrupt('hero.bond', (g) => { g.party.roster.hero.bond = bond(); });
+    corrupt('an unmet Sylvie with a bond', (g) => { g.party.roster.sylvie.bond = bond(); });
+    corrupt('talk 13', (g) => { g.party.roster.rin.bond!.talk = 13; });
+    corrupt('talk -1', (g) => { g.party.roster.rin.bond!.talk = -1; });
+    corrupt('field 41', (g) => { g.party.roster.rin.bond!.field = 41; });
+    corrupt('field 1.5', (g) => { g.party.roster.rin.bond!.field = 1.5; });
+    corrupt('no gifts object', (g) => { (g.party.roster.rin.bond as { gifts?: unknown }).gifts = undefined; });
+    corrupt('a gift of essence', (g) => { g.party.roster.rin.bond!.gifts['essence-common'] = 1; });
+    corrupt('a gift of a potion', (g) => { g.party.roster.rin.bond!.gifts.potion = 1; });
+    corrupt('a gift count of 0', (g) => { g.party.roster.rin.bond!.gifts.moss = 0; });
+    corrupt('a gift count of 1000', (g) => { g.party.roster.rin.bond!.gifts.moss = 1000; });
+    corrupt('Rin took a king scale', (g) => { g.party.roster.rin.bond!.gifts['king-scale'] = 1; });
+    corrupt('Selene took an old coin before her pieces were told', (g) => { g.party.roster.selene.bond = { ...bond(), gifts: { 'old-coin': 1 } }; });
+    ok('Selene took an old coin after her pieces were told', (g) => { g.party.roster.selene.bond = { ...bond(), gifts: { 'old-coin': 1 } }; }, true);
+    corrupt('Selene holds every piece but none told', (g) => {
+      g.party.roster.selene.memories = chainLength('selene');
+      g.party.roster.selene.bond = { ...bond(), gifts: { 'old-coin': 1 } };
+    });
+    ok('the same Selene with no coin', (g) => {
+      g.party.roster.selene.memories = chainLength('selene');
+      g.party.roster.selene.bond = { ...bond(), gifts: { 'star-tear': 1 } };
+    });
+    corrupt('refused twice', (g) => { g.party.roster.rin.bond!.refused = ['king-scale', 'king-scale']; });
+    corrupt('refused something she never declines', (g) => { g.party.roster.rin.bond!.refused = ['dusk-cloth']; });
+    corrupt('refused not a list', (g) => { (g.party.roster.rin.bond as { refused?: unknown }).refused = 'king-scale'; });
+    ok('Selene still remembers declining the coin once healed', (g) => { g.party.roster.selene.bond = { ...bond(), refused: ['old-coin'] }; }, true);
+  });
+
+  it("today's gifts and talk, and the romance, are checked", () => {
+    corrupt('gifted the hero', (g) => { g.story.bondDay = 5; (g.story as { gifted?: unknown }).gifted = ['hero']; });
+    corrupt('gifted twice', (g) => { g.story.bondDay = 5; g.story.gifted = ['rin', 'rin']; });
+    corrupt('gifted with no bondDay', (g) => { g.story.gifted = ['rin']; });
+    corrupt('gifted someone unmet', (g) => { g.story.bondDay = 5; g.story.gifted = ['sylvie']; });
+    corrupt('talked false', (g) => { g.story.bondDay = 5; (g.story as { talked?: unknown }).talked = false; });
+    corrupt('talked with no bondDay', (g) => { g.story.talked = true; });
+    corrupt('bondDay 0', (g) => { g.story.bondDay = 0; });
+    corrupt('bondDay 1.5', (g) => { g.story.bondDay = 1.5; });
+    corrupt('bondDay after today', (g) => { g.story.day = 3; g.story.bondDay = 4; });
+    corrupt('bondDay after a new game\'s day 1', (g) => { delete g.story.day; g.story.bondDay = 2; });
+    corrupt('a romance before the finale', (g) => { g.story.finaleCleared = false; g.story.romance = 'rin'; });
+    corrupt('a romance with the hero', (g) => { (g.story as { romance?: unknown }).romance = 'hero'; });
+    corrupt('a romance with someone unmet', (g) => { g.story.romance = 'sylvie'; });
+    ok('bondDay today', (g) => { g.story.bondDay = 5; g.story.gifted = ['rin', 'selene']; g.story.talked = true; });
+    ok('bondDay yesterday', (g) => { g.story.bondDay = 4; g.story.gifted = ['rin']; });
+    ok('a romance with Selene', (g) => { g.story.romance = 'selene'; });
+  });
+});
+
+describe('bond scene ids in the save (bond plan Task 8)', () => {
+  const status = (g: GameState) => loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(g) })).status;
+  /** The romance and the walk together registered for the test (the registries start empty), put back after. */
+  const withRegistered = (f: () => void) => {
+    regAdd(ROMANCES_WRITTEN, 'liz', 'rin');
+    TOGETHER_WRITTEN.value = true;
+    try { f(); } finally { romancesBack(); TOGETHER_WRITTEN.value = TOGETHER_BASE; }
+  };
+  const after = (): GameState => {
+    const g = newGame();
+    g.story.act1Cleared = true;
+    g.story.finaleCleared = true;
+    g.party = meet(g.party, 'liz', 1);
+    return g;
+  };
+  it('the walk together is never recorded', () => withRegistered(() => {
+    expect(isSceneId('together')).toBe(true);
+    for (const list of ['seen', 'fresh', 'queue'] as const) {
+      const g = after();
+      g.story.seen.push('together');
+      if (list !== 'seen') g.story[list].push('together');
+      if (list === 'queue') g.story.seen = g.story.seen.filter((s) => s !== 'together');
+      expect(status(g), list).toBe('corrupt');
+    }
+  }));
+  it("a romance scene is only the chosen one's", () => withRegistered(() => {
+    const g = after();
+    g.story.romance = 'liz';
+    g.story.seen.push('romance:liz');
+    expect(status(g)).toBe('ok');
+    g.story.romance = 'rin';
+    expect(status(g)).toBe('corrupt');
+    delete g.story.romance;
+    expect(status(g)).toBe('corrupt');
+    const q = after();
+    q.story.romance = 'liz';
+    q.story.queue.push('romance:rin');
+    expect(status(q)).toBe('corrupt');
+    q.story.queue = ['romance:liz'];
+    expect(status(q)).toBe('ok');
+  }));
+});
+
+describe('bond scenes and the story they need (bond review fix)', () => {
+  const status = (g: GameState) => loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(g) })).status;
+  const registered = (f: () => void) => {
+    bondsAdd('selene', 'rin');
+    regAdd(ENDINGS_WRITTEN, 'liz');
+    try { f(); } finally { bondsBack(); endingsBack(); }
+  };
+  /** Selene met with her pieces told and a bond worth `field` more, after the finale when `after`. */
+  const story = (o: { field?: number; after?: boolean } = {}): GameState => {
+    const g = newGame();
+    if (o.after) { g.story.act1Cleared = true; g.story.finaleCleared = true; }
+    g.party = meet(g.party, 'selene', 1);
+    g.party.roster.selene.memories = 4;
+    for (let k = 1; k <= 4; k++) g.story.seen.push(memScene('selene', k));
+    g.party.roster.selene.bond = { talk: 0, field: o.field ?? 40, gifts: {} };   // 10 + 12 + 40 = 62: 羈絆
+    return g;
+  };
+
+  it('an ending only after the finale', () => registered(() => {
+    const ok = story({ after: true });
+    ok.party = meet(ok.party, 'liz', 1);
+    ok.story.seen.push('ending:liz');
+    expect(status(ok)).toBe('ok');
+    for (const list of ['seen', 'fresh', 'queue'] as const) {
+      const g = story();
+      g.party = meet(g.party, 'liz', 1);
+      if (list !== 'queue') g.story.seen.push('ending:liz');
+      g.story[list].push('ending:liz');
+      if (list === 'queue') g.story.seen = g.story.seen.filter((x) => x !== 'ending:liz');
+      expect(status(g), list).toBe('corrupt');
+    }
+  }));
+
+  it('bond scenes are seen in order', () => registered(() => {
+    const g = story();
+    g.story.seen.push('bond:selene:1', 'bond:selene:2', 'bond:selene:3');
+    expect(status(g)).toBe('ok');
+    const skip = story();
+    skip.story.seen.push('bond:selene:1', 'bond:selene:3');
+    expect(status(skip)).toBe('corrupt');
+    const first = story();
+    first.story.seen.push('bond:selene:2');
+    expect(status(first)).toBe('corrupt');
+    // Rin's first two expire with her choice: her third may come with neither seen
+    const rin = newGame();
+    rin.party.roster.rin.memories = chainLength('rin');
+    rin.party.roster.rin.oath = true;
+    rin.party.roster.rin.bond = { talk: 0, field: 40, gifts: {} };   // 71: 羈絆
+    rin.story.seen.push('bond:rin:3');
+    expect(status(rin)).toBe('ok');
+    const early = newGame();
+    early.party.roster.rin.memories = 4;
+    early.party.roster.rin.bond = { talk: 0, field: 40, gifts: {} };
+    early.story.seen.push('bond:rin:2');   // no oath: her first is not passed over
+    expect(status(early)).toBe('corrupt');
+  }));
+
+  it("a bond scene is never seen above the bond it needs (bond never falls)", () => registered(() => {
+    const low = story({ field: 10 });   // 10 + 12 + 10 = 32: 同行
+    low.story.seen.push('bond:selene:1');
+    expect(status(low)).toBe('ok');
+    low.story.seen.push('bond:selene:2');   // needs 信賴
+    expect(status(low)).toBe('corrupt');
+    const at = story({ field: 18 });   // 40: 信賴
+    at.story.seen.push('bond:selene:1', 'bond:selene:2');
+    expect(status(at)).toBe('ok');
+  }));
+
+  it('the romance is someone met (spec §12.2)', () => {
+    const g = story({ after: true });
+    g.story.romance = 'selene';
+    expect(status(g)).toBe('ok');
+    g.story.romance = 'liz';
+    expect(status(g)).toBe('corrupt');
   });
 });

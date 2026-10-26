@@ -2,6 +2,7 @@ import { T } from '../../data/text.zh-TW';
 import { art } from '../../render/artPaths';
 import { el } from '../../ui/dom';
 import type { UiAction } from '../input';
+import { bestPicture } from '../lateArt';
 import { Menu } from '../menu';
 import type { Scene, SceneCtx } from '../scene';
 import { MenuView, confirmBox, win } from '../widgets';
@@ -21,10 +22,13 @@ export class TitleScene implements Scene {
       { id: 'new', label: t.newGame }, { id: 'cont', label: t.cont, disabled: !this.ctx.hasSave() }, { id: 'settings', label: t.settings },
     ], this.ctx.hasSave() ? 1 : 0);
     this.view = new MenuView(menu, { pick: (it) => this.pick(it.id), moved: () => this.ctx.sfx.cursor() });
-    const bg = this.ctx.art.has(art.scene('title')) ? [el('img', { class: 'slx-bg', attrs: { src: art.scene('title'), alt: '' } })] : [];
-    const logo = this.ctx.art.has(art.logo) ? el('img', { class: 'slx-logo', attrs: { src: art.logo, alt: '星燈迷宮' } }) : el('h1', { class: 'slx-logo-text', text: '星燈迷宮' });
+    // The words stand for the logo until its picture lands (its request may outlast the title's wait for its art).
+    const words = el('h1', { class: 'slx-logo-text', text: '星燈迷宮' });
     this.menuWin = win('slx-title-menu', [this.view.el]);
-    root.append(el('div', { class: 'slx-scene slx-title' }, [...bg, logo, this.menuWin, el('p', { class: 'slx-keyhint', text: T.ui2.hints.title })]));
+    const scene = el('div', { class: 'slx-scene slx-title' }, [words, this.menuWin, el('p', { class: 'slx-keyhint', text: T.ui2.hints.title })]);
+    bestPicture(scene, 'bg', this.ctx.art, [art.scene('title')], (src) => el('img', { class: 'slx-bg', attrs: { src, alt: '' } }), (n) => scene.prepend(n));
+    bestPicture(scene, 'logo', this.ctx.art, [art.logo], (src) => el('img', { class: 'slx-logo', attrs: { src, alt: '星燈迷宮' } }), (n) => words.replaceWith(n));
+    root.append(scene);
   }
 
   exit(): void {}

@@ -4,11 +4,13 @@ import { T } from '../../data/text.zh-TW';
 import { art } from '../../render/artPaths';
 import { el } from '../../ui/dom';
 import type { UiAction } from '../input';
+import { bestPicture } from '../lateArt';
 import { Menu } from '../menu';
 import type { Scene, SceneCtx } from '../scene';
 import { textCps } from '../settings';
 import { playAndRecord, playBeat, playNight, storyCtx, type SceneOpts } from '../story';
 import { Dialogue, MenuView, win } from '../widgets';
+import { tonightMoon } from '../../engine/calendar';
 
 /**
  * The card after a clear. Act 1's clear (the lantern-eater falls) shows its card and goes back to town, where 'act1-after'
@@ -30,8 +32,8 @@ export class ClearScene implements Scene {
 
   enter(root: HTMLElement): void {
     this.exited = false;
-    const bg = this.ctx.art.has(art.scene('title')) ? [el('img', { class: 'slx-bg', attrs: { src: art.scene('title'), alt: '' } })] : [];
-    this.body = el('div', { class: 'slx-scene slx-clear' }, [...bg, this.talk.el]);
+    this.body = el('div', { class: 'slx-scene slx-clear' }, [this.talk.el]);
+    bestPicture(this.body, 'bg', this.ctx.art, [art.scene('title')], (src) => el('img', { class: 'slx-bg', attrs: { src, alt: '' } }), (n) => this.body.prepend(n));
     root.append(this.body);
     if (this.ctx.game.cleared === 'finale') void this.playFinale().then(() => { if (!this.exited) this.showCard(STORY.endingTitle, STORY.scenes.finale.summary, T.ending.back); });
     else this.showCard(STORY.act1Card.title, STORY.act1Card.body, T.clear.back);
@@ -56,7 +58,13 @@ export class ClearScene implements Scene {
     const game = this.ctx.game;
     const ids: SceneId[] = [...(game.finale?.pieces ?? []), 'finale'];
     const n = ids[0] === 'finale-eve' ? 1 + ids.slice(1).findIndex((id) => !game.eve.includes(id)) : 0;
-    await playNight(ids.slice(0, n), storyCtx(this.ctx), (id, o) => this.playOne(id, o), (line) => this.beat(line));
+    // Time and moon review fix 8: the eve told here is the night before this dive, under its moon.
+    this.talk.moon = tonightMoon(game.state);
+    try {
+      await playNight(ids.slice(0, n), storyCtx(this.ctx), (id, o) => this.playOne(id, o), (line) => this.beat(line));
+    } finally {
+      this.talk.moon = null;
+    }
     for (const id of ids.slice(n)) await this.playOne(id);
   }
 

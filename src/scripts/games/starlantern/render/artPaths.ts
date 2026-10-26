@@ -1,16 +1,36 @@
 import { CHARACTER_IDS } from '../data/characters';
 import { ENEMIES } from '../data/enemies';
+import { artEnemy, artMaterial, artSpecial } from '../data/monsters';
 import { EQUIPMENT, WEAPON_KINDS } from '../data/equipment';
 import { RARITIES, SETS, SPECIALS, regionSpecials } from '../data/gear';
 import { ITEMS } from '../data/items';
 import { MATERIALS } from '../data/materials';
 import { REGIONS, type RegionId } from '../data/regions';
+import { RUNES, type RuneId } from '../data/runes';
 import { SKILLS } from '../data/skills';
+import type { AilmentShown } from '../engine/ailments';
 import type { BattleEvent } from '../engine/combatant';
 import type { Dir, Tile } from '../engine/map';
 import type { CharacterId, FxKey, ItemInstance, Rarity, WeaponKind } from '../engine/types';
 
 export const ART_BASE = '/assets/games/starlantern';
+/** A rune icon (art step 9, G4): a rune, or a slot state. */
+export type RuneIconId = RuneId | 'slot-empty' | 'slot-filled';
+/** 14 x 14 inline with 12px text (a skill's slots, the battle menu); 16 x 16 in a rune row's 20 x 20 cell. */
+export type RuneIconSize = 14 | 16;
+export const RUNE_ICON_SIZES: readonly RuneIconSize[] = [14, 16];
+/** Every rune icon id: each rune of the data and both slot states (registry `icon-rune-<id>-<size>`). */
+export const RUNE_ICON_IDS = (): RuneIconId[] => ['slot-empty', 'slot-filled', ...(Object.keys(RUNES) as RuneId[])];
+/** A skill icon at its native size (art step 9, G3/G4; registry `icon-<skill>-<size>`): 16 in a skill row, 14 in the tree. */
+export type SkillIconSize = 16 | 14;
+export const SKILL_ICON_SIZES: readonly SkillIconSize[] = [16, 14];
+/** Every ailment shown in battle (render/ailmentStyle AILMENT_FILL): its 14px chip icon (registry `icon-ail-<id>-14`). */
+export const AILMENT_ICON_IDS: readonly AilmentShown[] = ['poison', 'sleep', 'burn', 'freeze', 'chill', 'shock', 'bleed'];
+/** A mechanic's 14px chip icon (registry `icon-mech-<key>-14`); a device uses its own skill's 14px icon instead. */
+export type MechIconKey = 'heat' | 'coins' | 'embers' | 'beat' | 'shield' | 'aim' | 'mark' | 'ward' | 'purify' | 'thunder'
+  | 'moon-first' | 'moon-full' | 'moon-waning' | 'moon-new';
+export const MECH_ICON_KEYS: readonly MechIconKey[] = ['heat', 'coins', 'embers', 'beat', 'shield', 'aim', 'mark', 'ward', 'purify', 'thunder',
+  'moon-first', 'moon-full', 'moon-waning', 'moon-new'];
 export const MANIFEST_URL = `${ART_BASE}/manifest.json`;
 export type TileKey = Tile | 'chest-open';
 export type { FxKey };
@@ -48,17 +68,29 @@ export const MOODS_OF: Record<string, StoryMood[]> = Object.fromEntries(
 );
 /** Story faces on disk, by art id. An art batch adds its moods here in the same commit as its registry entries. */
 export const PUBLISHED_FACES: Record<string, StoryMood[]> = {
-  hero: ['smile', 'sad'], rin: ['smile', 'sad'], 'rin-oath': ['smile', 'sad'],
+  // Wave 2 (art-factory/starlantern/runs/2026-10-24-faces-wave2; user approval 2026-10-24): Lorne's and both Rin looks'
+  // grave faces. Each Rin look has its own (cracked bell / flattened bell); `artIdOf` picks the look, as for her normal.
+  hero: ['smile', 'sad', 'serious', 'distant'],
+  // Wave 4 (art-factory/starlantern/runs/2026-10-24-faces-wave4; user approval 2026-10-24 「可以，照這風格」): each look's own
+  // averted (guilty before her oath, shy after), and only the oath look blushes (her heart pact and romance come after it).
+  rin: ['smile', 'sad', 'serious', 'guarded', 'averted'], 'rin-oath': ['smile', 'sad', 'serious', 'guarded', 'averted', 'blush'],
   // Companion faces, wave 1 (art-factory/starlantern/runs/2026-10-23-faces-wave1; user approval 2026-10-23): the grave faces
   // the script uses, plus Liz's hushed.
-  scarlet: ['serious', 'sad', 'vow', 'shaken'], chizuru: ['serious', 'sad', 'solemn'], sylvie: ['serious', 'sad'],
-  selene: ['sad', 'wistful'], safira: ['sad'], bobby: ['serious', 'sad'], liz: ['serious', 'sad', 'hushed'], noel: ['sad'],
+  scarlet: ['serious', 'sad', 'vow', 'shaken', 'blush'], chizuru: ['serious', 'sad', 'solemn', 'blush'],
+  sylvie: ['serious', 'sad', 'blush', 'unguarded'],   // + wave 4's blush and unguarded
+  // Wave 3 (art-factory/starlantern/runs/2026-10-24-faces-wave3; user approval 2026-10-24 「可以」): Safira's serious and
+  // Noel's pout, so no heavy line of the script hides its portrait any more.
+  // Wave 4 (same approval): every companion's blush, Sylvie's unguarded, Noel's smug and Bobby's excited, for the bond scenes
+  // and the lines the script already tags with them (a glad one no longer borrows the smiling normal).
+  selene: ['sad', 'wistful', 'blush'], safira: ['sad', 'serious', 'blush'], bobby: ['serious', 'sad', 'blush', 'excited'],
+  liz: ['serious', 'sad', 'hushed', 'blush'], noel: ['sad', 'pout', 'blush', 'smug'],
 };
 /**
  * Art ids whose `normal` portrait smiles (story depth final review, checked by eye on the published art): every companion.
  * Lorne's and Rin's normal faces are calm, so they are not here. A grave line of theirs shows its own face or a mapped near
  * one (ui2/story.ts `GRAVE_FALLBACK`), never the smiling normal; with neither published it shows no portrait. In a heavy
- * scene (staging S3) Lorne's normal, whose calm carries a soft smile, is no stand-in either: see ui2/story.ts `CALM_NORMALS`.
+ * scene (staging S3) Lorne's normal, whose calm carries a soft smile, is no stand-in either; since wave 2 his grave moods
+ * have faces of their own (ui2/story.ts `CALM_NORMALS`).
  */
 export const NORMAL_SMILES: ReadonlySet<string> = new Set(['selene', 'chizuru', 'safira', 'sylvie', 'noel', 'bobby', 'liz', 'scarlet']);
 
@@ -100,6 +132,14 @@ export const art = {
   portalPlaza: `${ART_BASE}/scene/portal-plaza.png`,
   portalCard: (k: PortalCardKey) => `${ART_BASE}/portal/${k}.png`,
   traitIcon: (k: TraitIconKey) => `${ART_BASE}/icon/trait-${k}.png`,
+  /** A rune or slot-state icon at its native size (art step 9, G4; registry `icon-rune-<id>-<size>`). */
+  runeIcon: (id: RuneIconId, size: RuneIconSize) => `${ART_BASE}/icon/rune-${id}-${size}.png`,
+  /** A skill's icon at its native size (art step 9): 16 x 16 in a skill row, 14 x 14 in the tree; never scaled. */
+  skillIcon: (id: string, size: SkillIconSize) => `${ART_BASE}/icon/${id}-${size}.png`,
+  /** An ailment's 14px icon in front of its word (art step 9, G4). */
+  ailmentIcon: (id: AilmentShown) => `${ART_BASE}/icon/ail-${id}-14.png`,
+  /** A mechanic's 14px icon in front of its word (art step 9, G4). */
+  mechIcon: (k: MechIconKey) => `${ART_BASE}/icon/mech-${k}-14.png`,
   logo: `${ART_BASE}/ui/logo.png`,
   window: `${ART_BASE}/ui/window.png`,
   cursor: `${ART_BASE}/ui/cursor.png`,
@@ -135,37 +175,6 @@ const SILHOUETTE_IDS = (): string[] => [
   ...(Object.keys(REGIONS) as RegionId[]).flatMap((r) => regionSpecials(r).map((s) => s.id)),
   ...Object.keys(SETS),
 ];
-
-/**
- * Icons not on disk yet; allArtUrls leaves them out. Only the tree skills of plan 5d's skills batch (G3) remain: every
- * gear piece (small and large), codex silhouette, rarity layer, material, the forge and both of Doran's faces are
- * published (plan 5d Tasks 8 and 10), and every old base icon is retired. The skills publish takes its ids out.
- */
-/**
- * Skills a roster change replaced whose published icon stays on disk and in the registry until step ⑨'s G3 batch retires
- * it (plan 8c ruling 2: deleting art is not this plan's), but is no longer requested.
- */
-export const RETIRED_ICON_IDS: readonly string[] = ['triple-slash'];
-
-export const NO_ICON_YET_IDS: ReadonlySet<string> = new Set([
-  // plan 8c: skills that replaced others (their icons are step ⑨'s)
-  'purify-ward', 'exorcism-thrust', 'moon-recall', 'full-moon-night',
-  'pickpocket', 'jackpot', 'appraise', 'sunder-arrow', 'scatter-shot', 'deluge-volley',
-  'cover', 'atoning-flame', 'clap', 'mirage-step', 'repair-drone',
-  // plan 5b: the skill-tree skills have no icon yet
-  'flame-wave', 'inferno', 'frost-bind', 'blizzard', 'judgement',
-  'spiral-spear', 'thousand-spear', 'great-barrier', 'heaven-spear',
-  'smoke-bomb', 'fortune-strike', 'quickstep', 'phantom-step',
-  'heart-shot', 'starfall-arrow', 'hunters-mark',
-  'unbreakable', 'blaze-ring', 'crimson-end', 'shield-bash',
-  'moon-rain', 'full-moon', 'moon-arrow', 'lunar-eclipse',
-  'sand-cyclone', 'thousand-shadows', 'desert-festival', 'shadow-step',
-  'cannon', 'overclock', 'emergency-repair', 'shock-mine', 'tesla-coil',
-  // plan 6a: Rin's skills have no icon yet
-  'rin-needle', 'rin-fan', 'rin-venom-needle', 'rin-storm', 'rin-backstab', 'rin-veil', 'rin-shadowless', 'rin-mark', 'rin-execute', 'rin-deathblow',
-  // plan 6a: the hero's skills have no icon yet
-  ...Object.values(SKILLS).filter((s) => s.owner === 'hero').map((s) => s.id),
-]);
 
 /** Event tiles with art of their own in the art factory; a chest uses its terrain's chest tile instead. */
 export type EventTileKey = 'fountain' | 'merchant' | 'altar' | 'elite' | 'vault'
@@ -219,7 +228,8 @@ export function allArtUrls(): string[] {
   for (const d of DIRS) urls.push(art.party(d));
   urls.push(art.fog);
   for (const f of [1, 2, 3]) { for (const k of TILE_KEYS) urls.push(art.tile(f, k)); urls.push(art.wallTop(f), art.wallFace(f), art.bg(f)); }
-  for (const id of Object.keys(ENEMIES)) if (!ENEMIES[id].look) urls.push(art.enemy(id));
+  // Roster plan ruling 3: a roster enemy's art is listed once its art batch is published (ROSTER_ART).
+  for (const id of Object.keys(ENEMIES)) if (artEnemy(id) && !ENEMIES[id].look) urls.push(art.enemy(id));
   for (const k of FX_KEYS) urls.push(art.fx(k), art.fxAnim(k));
   urls.push(art.frame);
   for (const s of ['title', 'town', 'guild', 'shop', 'inn', 'gate'] as const) urls.push(art.scene(s));
@@ -228,16 +238,21 @@ export function allArtUrls(): string[] {
   for (const k of PORTAL_CARD_KEYS) urls.push(art.portalCard(k));
   for (const k of TRAIT_ICON_KEYS) urls.push(art.traitIcon(k));
   for (const k of EVENT_TILE_KEYS) urls.push(art.eventTile(k));
-  for (const id of [...Object.keys(SKILLS), ...Object.keys(ITEMS), ...Object.keys(MATERIALS)]) {
-    if (!NO_ICON_YET_IDS.has(id)) urls.push(art.icon(id));
-  }
+  for (const id of [...Object.keys(ITEMS), ...Object.keys(MATERIALS).filter(artMaterial)]) urls.push(art.icon(id));
+  // Art step 9 (G3 and G4): every skill at its two native sizes (the plan 4 icon/<skill>.png they re-derive are retired),
+  // and the 14px chip icons of every ailment and mechanic.
+  for (const id of Object.keys(SKILLS)) for (const size of SKILL_ICON_SIZES) urls.push(art.skillIcon(id, size));
+  for (const id of AILMENT_ICON_IDS) urls.push(art.ailmentIcon(id));
+  for (const k of MECH_ICON_KEYS) urls.push(art.mechIcon(k));
   // Plan 5d: the gear art of every base and special (small and large; a base no longer lists an icon/ path), the codex
   // silhouettes, the rarity layers, the forge and Doran. A piece merged into SPECIALS later (a roster unique) comes with
   // its own art batch, which must list it here.
-  for (const id of [...Object.keys(EQUIPMENT), ...Object.keys(SPECIALS)]) urls.push(art.gear(id), art.gearLarge(id));
+  for (const id of [...Object.keys(EQUIPMENT), ...Object.keys(SPECIALS).filter(artSpecial)]) urls.push(art.gear(id), art.gearLarge(id));
   for (const id of SILHOUETTE_IDS()) urls.push(art.gearSilhouette(id));
   for (const r of FRAMED_RARITIES) urls.push(art.rarityFrame(r));
   urls.push(art.rarityGlow, art.starlitOverlay, art.scene('forge'), art.npc('forge', 'normal'), art.npc('forge', 'happy'));
+  // Art step 9 (G4): every rune and both slot states, 14 and 16.
+  for (const id of RUNE_ICON_IDS()) for (const size of RUNE_ICON_SIZES) urls.push(art.runeIcon(id, size));
   return urls;
 }
 

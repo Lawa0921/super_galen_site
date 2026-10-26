@@ -1,6 +1,7 @@
 import type { AilmentId } from './ailments';
 import type { DeviceKind } from './mech';
 import type { RuneId, RuneRef } from '../data/runes';
+import type { RegionId } from '../data/regions';
 
 export type Element = 'phys' | 'fire' | 'ice' | 'thunder';
 export type StatKey = 'hp' | 'tp' | 'atk' | 'def' | 'mag' | 'res' | 'spd';
@@ -203,6 +204,21 @@ export interface EnemyDef {
   look?: CharacterId;
   /** Never drops below 1 HP in a fight (Scarlet's story fight). */
   undying?: true;
+  /**
+   * Roster plan (spec §5): a warden (a named elite with a room of its own, met through the elite path) or a part of a
+   * many-part boss (never in a table, takes no affix). Absent on every ordinary foe and boss.
+   */
+  rank?: 'warden' | 'part';
+  /** The companion whose past this foe echoes (the bestiary's gates and gifts; ruling 6). Not `story`, which is a story fight's foe. */
+  lore?: CharacterId;
+  /** The remnant of a person: its fall reads 「散成了霧」 in the log, not a defeat (ruling 6). */
+  remnant?: true;
+  /** A main-road ordinary species' depth band (spec §3.1); its material's price follows it. */
+  band?: 'B' | 'C' | 'D' | 'E' | 'F';
+  /** The region a native species, warden or boss belongs to (spec §5.4–§5.6). */
+  home?: RegionId;
+  /** The affix key an ordinary species' gear can carry as its inscription (spec §7.2, ruling 16). */
+  inscribe?: AnyStat;
 }
 export interface ItemDef {
   id: string; name: string; price: number; target: Target | null; effects: Effect[]; battle: boolean; returnToTown?: boolean; desc: string;
@@ -223,8 +239,10 @@ export interface ItemInstance {
   /** Plan 5g: a legendary-tier drop with every affix at its maximum and one more (engine/loot/drops.ts applyStarlit). */
   starlit?: true;
 }
-export type MaterialKind = 'essence' | 'monster' | 'region' | 'rare' | 'junk';
-export interface MaterialDef { id: string; name: string; price: number; kind: MaterialKind }
+/** Roster plan ruling 12: `trophy`, a boss's or warden's spoil; `keepsake`, the warden of a companion's story drops it. */
+export type MaterialKind = 'essence' | 'monster' | 'region' | 'rare' | 'junk' | 'trophy' | 'keepsake';
+/** `owner`: the roster foe that drops it (data/materials.roster.ts); its icon waits on that foe's art (ROSTER_ART). */
+export interface MaterialDef { id: string; name: string; price: number; kind: MaterialKind; owner?: string }
 export interface FloorDef {
   id: 1 | 2 | 3; name: string; rows: string[]; encounters: string[][]; rate: [number, number]; chestLoot: { item: string; qty: number }[];
 }
@@ -252,6 +270,24 @@ export interface Member {
    * points its way. Absent: none (the standard policy). Nothing writes it before plan 8h Task 6.
    */
   build?: string;
+  /**
+   * Her bond with Lorne (bond plan Task 1, spec §4.1): a record of what has happened, never a score; `bondPoints` derives the
+   * score from it and the pieces she holds. Companions only, never the hero. Absent: nothing earned yet. Read it through `bondOf`.
+   */
+  bond?: BondRecord;
+}
+/** A giftable material's id (`data/story/bond.ts` `GIFTABLE` says which materials are giftable). */
+export type GiftId = string;
+/** What a companion's bond is made of (spec §4.1); each source has its own cap (`BOND_CAP`). */
+export interface BondRecord {
+  /** Points from the bond scenes' choices, 0..BOND_CAP.talk. */
+  talk: number;
+  /** Points from exploring and fighting together, 0..BOND_CAP.field. */
+  field: number;
+  /** Gifts she has taken: how many of each giftable material. */
+  gifts: Partial<Record<GiftId, number>>;
+  /** Materials she has handed back (only for the handbook's 婉拒); no points either way. */
+  refused?: GiftId[];
 }
 export interface Party {
   /** 3x3 placement, cells 0-2 front, 3-5 middle, 6-8 back (see engine/formation.ts). */

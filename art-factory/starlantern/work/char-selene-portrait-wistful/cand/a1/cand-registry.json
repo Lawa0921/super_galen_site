@@ -4,7 +4,7 @@
       "allow_edge": [
         "bottom"
       ],
-      "generator": "codex",
+      "generator": "codex/gpt-6-astra",
       "defringe": null,
       "neutralize_tint": null,
       "final": "art-factory/starlantern/work/char-selene-portrait-wistful/cand/a1/char-selene-portrait-wistful.png",

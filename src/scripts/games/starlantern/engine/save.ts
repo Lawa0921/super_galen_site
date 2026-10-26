@@ -16,6 +16,10 @@ import { tierUnlocked } from './tiers';
 import { buildOf } from '../data/builds';
 import { BANTER_PAIRS, GROUP_GATE, isSceneId, type BanterPair } from '../data/story/scenes';
 import { MAX_WAITED } from './story/events';
+import { MAX_DAY, SPRING_AFTER } from './calendar';
+import { BOND_CAP, BOND_GATE, COMPANIONS, GIFTABLE, GIFT_TASTE, ROMANCEABLE, type Companion } from '../data/story/bond';
+import { bondTier, tasteOf } from './story/bond';
+import { storyPieces } from './story/events';
 import { ABSORB_CAP, ABSORB_GAIN, TOWN_FRAGMENTS } from '../data/story/fragments';
 import { chainLength } from '../data/story/chains';
 import { NIGHT_BEATS } from '../data/story.zh-TW';
@@ -59,6 +63,25 @@ const validMemory = (id: CharacterId, m: Record<string, unknown>): boolean => {
   }
   if (m.oath !== undefined && !(m.oath === true && id === 'rin' && m.memories === chainLength('rin'))) return false;
   return true;
+};
+/** The most of one material a save may say she took: far above any play, as `pity`'s 999. */
+const MAX_GIFTS = 999;
+/**
+ * A companion's bond record (bond plan Task 2; spec §4.7, §0 D22): never on the hero, never on someone not met yet; `talk`
+ * and `field` whole numbers within their caps; each gift a giftable material she would take (her healed taste once her
+ * pieces are all told, `told`), 1 to MAX_GIFTS of it; `refused` once each, only what her table declines (kept after healing).
+ */
+const validBond = (id: CharacterId, m: Record<string, unknown>, ctx: { met: boolean; told: number }): boolean => {
+  if (m.bond === undefined) return true;
+  if (id === 'hero' || !ctx.met) return false;
+  const b = m.bond;
+  if (!isObj(b) || !isObj(b.gifts)) return false;
+  const whole = (v: unknown, max: number) => Number.isInteger(v) && (v as number) >= 0 && (v as number) <= max;
+  if (!whole(b.talk, BOND_CAP.talk) || !whole(b.field, BOND_CAP.field)) return false;
+  const c = id as Companion;
+  const healed = ctx.told >= chainLength(c);
+  if (!Object.entries(b.gifts).every(([mat, n]) => GIFTABLE.includes(mat) && Number.isInteger(n) && (n as number) >= 1 && (n as number) <= MAX_GIFTS && tasteOf(c, mat, healed) !== 'declined')) return false;
+  return b.refused === undefined || isUniqueList(b.refused, (x) => GIFT_TASTE[c].declined.includes(x as string));
 };
 /**
  * A boss-kill key: `region:depth`, a known region and a depth from 1 to MAX_DEPTH; a Nightmare or Hell kill has its tier
@@ -110,6 +133,24 @@ function isStory(v: unknown): boolean {
   // story L: a group scene's chances, one of the three groups not yet seen, 0 or 1
   if (v.reacts !== undefined && !(isObj(v.reacts) && Object.entries(v.reacts).every(([k, n]) => Object.hasOwn(GROUP_GATE, k) && !(v.seen as unknown[]).includes(k) && (n === 0 || n === 1)))) return false;
   if (v.waited !== undefined && !(isObj(v.waited) && Object.entries(v.waited).every(([k, n]) => BANTER_PAIRS.includes(k as BanterPair) && Number.isInteger(n) && (n as number) >= 0 && (n as number) <= MAX_WAITED))) return false;
+  // time and moon (ruling 12): today, a whole day from 1 to MAX_DAY; spring's day, only once the finale is cleared
+  if (v.day !== undefined && !(Number.isInteger(v.day) && (v.day as number) >= 1 && (v.day as number) <= MAX_DAY)) return false;
+  if (v.springDay !== undefined && !(v.finaleCleared && Number.isInteger(v.springDay) && (v.springDay as number) >= 1 && (v.springDay as number) <= MAX_DAY + SPRING_AFTER)) return false;
+  // the season's scene a return recorded (Task 7 review): a registered season scene, after the finale, not yet seen
+  if (v.festival !== undefined && !(isSceneId(v.festival) && v.festival.startsWith('season:') && v.finaleCleared && !(v.seen as unknown[]).includes(v.festival))) return false;
+  // bond plan Task 2: today's gifts and talk need their day, never after today (`dayOf`); the romance only after the finale
+  const day = v.day ?? 1;
+  if (v.bondDay !== undefined && !(Number.isInteger(v.bondDay) && (v.bondDay as number) >= 1 && (v.bondDay as number) <= MAX_DAY && (v.bondDay as number) <= (day as number))) return false;
+  if (v.gifted !== undefined && !(v.bondDay !== undefined && isUniqueList(v.gifted, (x) => COMPANIONS.includes(x as Companion)))) return false;
+  if (v.talked !== undefined && !(v.talked === true && v.bondDay !== undefined)) return false;
+  if (v.romance !== undefined && !(ROMANCEABLE.includes(v.romance as Companion) && v.finaleCleared)) return false;
+  // bond plan Task 8: the walk together is never recorded; a romance scene is only the chosen one's
+  for (const list of [v.seen, v.fresh, v.queue] as unknown[][]) {
+    if (list.includes('together')) return false;
+    if (list.some((id) => typeof id === 'string' && id.startsWith('romance:') && id !== `romance:${v.romance as string}`)) return false;
+    // bond review fix: an after-story only after the finale
+    if (!v.finaleCleared && list.some((id) => typeof id === 'string' && id.startsWith('ending:'))) return false;
+  }
   return isObj(v.pity) && Object.entries(v.pity).every(([k, n]) => CHARACTER_IDS.includes(k as never) && Number.isInteger(n) && (n as number) >= 0 && (n as number) <= 999);
 }
 
@@ -151,6 +192,27 @@ function isValid(d: Record<string, unknown>): boolean {
   if (!Array.isArray(d.codex) || !d.codex.every((id) => has(SPECIALS, id) || has(SETS, id))) return false;
   if (!['off', 'common', 'magic'].includes(d.autoJunk as string)) return false;
   if (!isStory(d.story)) return false;
+  // bond plan Task 2: a bond only on someone met (gates read what is told, `storyPieces`); today's gifts and the romance too
+  const s = d as unknown as GameState;
+  for (const id of CHARACTER_IDS) {
+    if (!validBond(id, (p.roster as Record<string, Record<string, unknown>>)[id], { met: s.party.recruited.includes(id), told: storyPieces(s, id) })) return false;
+  }
+  if (s.story.romance !== undefined && !s.party.recruited.includes(s.story.romance)) return false;
+  // bond review fix: a bond scene seen follows the one before it (or that one expired: Rin's first two, once she chose),
+  // and never above the tier it needs: the bond is derived from the save and never falls, so it is at least that tier now
+  for (const id of s.story.seen) {
+    const m = /^bond:([a-z]+):([1-4])$/.exec(id);
+    if (!m) continue;
+    const c = m[1] as Companion;
+    const n = Number(m[2]) as 1 | 2 | 3 | 4;
+    if (!COMPANIONS.includes(c) || bondTier(s.party.roster[c]) < BOND_GATE[c][n].tier) return false;
+    if (n > 1) {
+      const prev = BOND_GATE[c][(n - 1) as 1 | 2 | 3];
+      const passed = s.story.seen.includes(`bond:${c}:${n - 1}`) || (!!prev.beforeChoice && !!s.party.roster.rin.oath);
+      if (!passed) return false;
+    }
+  }
+  if (!(s.story.gifted ?? []).every((c) => s.party.recruited.includes(c))) return false;
   // Rin's reveal is only ever queued once she holds all her pieces; the oath it sets needs them (see validMemory).
   if ((d.story as { queue: unknown[] }).queue.includes('rin-reveal') && memoriesOf((p.roster as Record<string, Member>).rin) !== chainLength('rin')) return false;
   // story L: an untold piece is one she has met and holds (`mem:<c>:<k>`, k up to her pieces)

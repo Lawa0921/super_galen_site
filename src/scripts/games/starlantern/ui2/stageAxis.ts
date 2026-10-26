@@ -8,6 +8,15 @@
  * `r`'s top and bottom edges in stage px (0..360 down the stage). `screen` is the stage's own rect: null or of no size
  * hands `r` back as it is. A screen wider than tall is upright (s = width / 640); else it is turned (s = width / 360).
  */
+/**
+ * `r`'s length along the stage's rows in stage px, unrounded (re-review of bond plan Tasks 12-14): its width on an upright
+ * screen, its height on a turned one. `screen` as for stageSpan; none (or of no size) hands back `r.width`.
+ */
+export function stageWidth(r: DOMRectReadOnly, screen: DOMRectReadOnly | null): number {
+  if (!screen || !screen.width || !screen.height) return r.width;
+  return screen.width >= screen.height ? r.width / (screen.width / 640) : r.height / (screen.width / 360);
+}
+
 export function stageSpan(r: DOMRectReadOnly, screen: DOMRectReadOnly | null): { top: number; bottom: number } {
   if (!screen || !screen.width || !screen.height) return { top: r.top, bottom: r.bottom };
   if (screen.width >= screen.height) {

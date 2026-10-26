@@ -16,6 +16,9 @@ import { CHAINS, chainLength } from '../data/story/chains';
 import { convertPrimary } from './stats';
 import { TALENT_PER, TALENT_SCALE } from '../data/talents';
 import type { AnyStat, CharacterId, Member } from './types';
+import { bondStats, bondTier, maxBondRecord } from './story/bond';
+import { BOND_PCT } from '../data/story/bond';
+import { withBondScale } from './testing';
 
 const per = (stat: AnyStat) => TALENT_PER[stat]! * TALENT_SCALE;
 
@@ -36,7 +39,7 @@ describe('stat sources', () => {
   it('splits a member\u2019s numbers by where they come from and adds up to statsOf', () => {
     const m = { ...newMember('scarlet'), level: 3, equip: { weapon: plainItem('iron-sword', 1) } };
     const parts = statSources(m);
-    expect(parts.map((p) => p.source)).toEqual(['base', 'growth', 'gear', 'set', 'talent', 'memory', 'primary']);
+    expect(parts.map((p) => p.source)).toEqual(['base', 'growth', 'gear', 'set', 'talent', 'memory', 'bond', 'primary']);
     const total = statsOf(m);
     for (const k of ['hp', 'atk', 'def'] as const) expect(parts.reduce((n, p) => n + (p.stats[k] ?? 0), 0)).toBe(total[k]);
     expect(parts[2].stats.atk).toBeGreaterThan(0);
@@ -113,7 +116,7 @@ describe('gear instances', () => {
       m = r.member;
     }
     const parts = Object.fromEntries(statSources(m).map((p) => [p.source, p.stats]));
-    expect(statSources(m).map((p) => p.source)).toEqual(['base', 'growth', 'gear', 'set', 'talent', 'memory', 'primary']);
+    expect(statSources(m).map((p) => p.source)).toEqual(['base', 'growth', 'gear', 'set', 'talent', 'memory', 'bond', 'primary']);
     expect(parts.talent).toEqual({ int: 3 * per('int') });
     expect(sheetOf(m).mag - sheetOf(before).mag).toBeCloseTo(3 * per('int') * 1.5);   // 1.5: the 5a affinity multiplier
     expect(parts.base.int).toBe(CHARACTERS.noel.base.mag + CHARACTERS.noel.growth.mag * 9);   // natural int unchanged: Lv10 mag
@@ -467,5 +470,67 @@ describe('joinLevel and meet', () => {
     const snapshot = JSON.parse(JSON.stringify(p));
     meet(p, 'selene', 5);
     expect(JSON.parse(JSON.stringify(p))).toEqual(snapshot);
+  });
+});
+
+describe('bond as a stat source (bond plan Task 3, spec §5.1)', () => {
+  /** Scarlet at Lv30 with a maxed bond (心契). */
+  const devoted = (): Member => ({ ...newMember('scarlet'), level: 30, bond: maxBondRecord('scarlet') });
+
+  it('bond adds a share of her natural stats', () => {
+    // Her base plus growth at Lv30, × BOND_PCT[4] (2 %, band 21's tuning; spec §5.1 proposed 4 %), rounded down: hp
+    // 48 + 7 × 29 = 251 → 5; atk and def 13 + 2 × 29 = 71 → 1; mag and res 6 + 1 × 29 = 35 → 0. No spd, no tp.
+    expect(bondStats(devoted())).toEqual({ hp: 5, atk: 1, def: 1, mag: 0, res: 0 });
+    const parts = statSources(devoted());
+    expect(parts.map((p) => p.source)).toEqual(['base', 'growth', 'gear', 'set', 'talent', 'memory', 'bond', 'primary']);
+    expect(parts.find((p) => p.source === 'bond')!.stats).toEqual({ hp: 5, atk: 1, def: 1, mag: 0, res: 0 });
+    const plain = { ...devoted(), bond: undefined };
+    const a = statsOf(devoted()), b = statsOf(plain);
+    expect([a.hp - b.hp, a.atk - b.atk, a.def - b.def, a.mag - b.mag, a.res - b.res, a.spd - b.spd, a.tp - b.tp]).toEqual([5, 1, 1, 0, 0, 0, 0]);
+    // Tier by tier: 同行 1 %, 信賴 2 %, 羈絆 2 % of the same 251 HP.
+    const at = (talk: number, field: number) => bondStats({ ...newMember('scarlet'), level: 30, bond: { talk, field, gifts: {} } }).hp;
+    expect([at(10, 0), at(12, 18), at(12, 38)]).toEqual([2, 5, 5]);   // 20, 40, 60 points
+    expect(BOND_PCT).toEqual({ 0: 0, 1: 1, 2: 2, 3: 2, 4: 2 });
+  });
+
+  it('no bond, no bond stats', () => {
+    const m = { ...newMember('scarlet'), level: 30 };
+    expect(bondStats(m)).toEqual({});
+    expect(bondStats({ ...m, bond: { talk: 0, field: 0, gifts: {} } })).toEqual({});   // 10 points: 相識, 0 %
+    expect(statSources(m).find((p) => p.source === 'bond')!.stats).toEqual({});
+    // Pieces alone are a tier, but no record is no bonus (spec §5.3): the sim's parties hold pieces (the memory
+    // expectation), never a record, so every frozen band stays bit-identical.
+    const rin = { ...newMember('rin'), level: 30, memories: chainLength('rin') };
+    expect(bondTier(rin)).toBe(1);
+    expect(bondStats(rin)).toEqual({});
+    expect(bondStats({ ...rin, bond: { talk: 0, field: 0, gifts: {} } }).hp).toBeGreaterThan(0);
+    // The sheet is what it was before the source existed: every other source summed.
+    const sum: Partial<Record<AnyStat, number>> = {};
+    for (const p of statSources(m)) if (p.source !== 'bond') for (const [k, v] of Object.entries(p.stats)) sum[k as AnyStat] = (sum[k as AnyStat] ?? 0) + v;
+    for (const k of ['hp', 'atk', 'def', 'mag', 'res', 'spd', 'tp'] as const) expect(sheetOf(m)[k], k).toBeCloseTo(sum[k] ?? 0, 9);
+  });
+
+  it('the hero never has bond stats', () => {
+    const hero = { ...newMember('hero'), level: 30, memories: 10, bond: { talk: 12, field: 40, gifts: { moss: 30 } } };
+    expect(bondStats(hero)).toEqual({});
+    expect(statSources(hero).find((p) => p.source === 'bond')!.stats).toEqual({});
+  });
+
+  it('scale zero switches it off', () => {
+    expect(withBondScale(0, () => bondStats(devoted()))).toEqual({});
+    expect(withBondScale(0, () => statsOf(devoted()))).toEqual(statsOf({ ...devoted(), bond: undefined }));
+    expect(bondStats(devoted()).hp).toBe(5);   // switched back on after
+    expect(() => withBondScale(0, () => { throw new Error('boom'); })).toThrow('boom');
+    expect(bondStats(devoted()).hp).toBe(5);   // even when the body throws
+  });
+
+  it('a maxed record is 心契 with no pieces at all', () => {
+    for (const id of CHARACTER_IDS) {
+      if (id === 'hero') continue;
+      const r = maxBondRecord(id);
+      expect(r.talk, id).toBe(12);
+      expect(r.field, id).toBe(40);
+      expect(Object.keys(r.gifts), id).toHaveLength(2);
+    }
   });
 });

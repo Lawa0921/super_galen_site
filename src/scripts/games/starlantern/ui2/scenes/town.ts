@@ -7,17 +7,21 @@ import type { ArtIndex } from '../../render/textures';
 import type { Game } from '../../engine/game';
 import type { ItemInstance } from '../../engine/types';
 import { BAG_SIZE } from '../../engine/loot/bag';
-import { storyStage } from '../../engine/story/events';
+import { calendarOf, storyStage } from '../../engine/story/events';
+import { tonightMoon } from '../../engine/calendar';
 import { bellkeeperPool } from '../../engine/story/keeper';
 import { el, itemName } from '../../ui/dom';
-import { gearIconUrl } from '../gearArt';
+import { gearIconLate } from '../gearArt';
+import { bestPicture } from '../lateArt';
 import { fillRich, gearPart, joinParts } from '../loot';
 import type { UiAction } from '../input';
 import { Menu } from '../menu';
 import type { Scene, SceneCtx } from '../scene';
 import { textCps } from '../settings';
-import { playAndRecord, playBeat, playNight, shouldPlay, storyCtx, type SceneOpts } from '../story';
+import { playAndRecord, playBeat, playNight, putBackdrop, sceneStaging, shouldPlay, storyCtx, type SceneOpts } from '../story';
 import { Dialogue, MenuView, backControl, confirmBox, win, type Rich, type RichPart } from '../widgets';
+import { innNews } from './inn';
+import { ROMANCE_LINES } from '../../data/bond.zh-TW';
 
 const FACILITIES = ['guild', 'shop', 'inn', 'gate', 'forge', 'handbook', 'settings'] as const;
 /** The notices of a return home: the day's line still follows them (staging S2). The others are about the interface. */
@@ -29,7 +33,7 @@ const RETURNS: ReadonlySet<NonNullable<Game['notice']>> = new Set(['banked', 'la
  * not take is named once more as lost.
  */
 export function bankedLine(b: NonNullable<Game['banked']>, idx?: ArtIndex): Rich {
-  const piece = (it: ItemInstance) => gearPart(it, idx && gearIconUrl(idx, it));
+  const piece = (it: ItemInstance) => gearPart(it, idx && gearIconLate(idx, it));
   const parts: RichPart[] = Object.entries(b.items).filter(([, n]) => n > 0).map(([id, n]) => `${itemName(id)} ×${n}`);
   parts.push(...b.gear.map(piece));
   if (b.gold > 0) parts.push(T.gold(b.gold));
@@ -42,10 +46,13 @@ export class TownScene implements Scene {
   private view!: MenuView;
   private menuWin!: HTMLElement;
   private backEl!: HTMLElement;
-  /** The place plate and the gold: the town's HUD, put away while a story scene plays (staging S1). */
+  /** The place plate, the calendar and the gold: the town's HUD, put away while a story scene plays (staging S1). */
   private hud: HTMLElement[] = [];
+  /** Time and moon ruling 8: the season and today's moon, in its own window under the place plate. */
+  private calEl!: HTMLElement;
   private talk: Dialogue;
   private root!: HTMLElement;
+  private sceneEl!: HTMLElement;
   private ask: MenuView | null = null;
   /** The story scene (or a night's beat) on screen, if any: it takes the actions while it plays. */
   private playing: { onAction(a: UiAction): void } | null = null;
@@ -61,17 +68,22 @@ export class TownScene implements Scene {
   enter(root: HTMLElement): void {
     this.root = root;
     const t = T.ui2.town;
-    const menu = new Menu(FACILITIES.map((id) => ({ id, label: t.facilities[id] })));
-    this.view = new MenuView(menu, { pick: (it) => this.pick(it.id, it.label), moved: () => this.ctx.sfx.cursor(), cancel: () => { this.ctx.sfx.cancel(); this.askTitle(); } });
-    const bg = this.ctx.art.has(art.scene('town')) ? [el('img', { class: 'slx-bg', attrs: { src: art.scene('town'), alt: '' } })] : [];
-    root.append(el('div', { class: 'slx-scene slx-town' }, [
-      ...bg,
-      ...(this.hud = [win('slx-place', [document.createTextNode(t.place)]), win('slx-gold', [document.createTextNode(`${this.ctx.game.state.gold} G`)])]),
+    this.view = new MenuView(new Menu(this.menuItems()), { pick: (it) => this.pick(it.id, it.label), moved: () => this.ctx.sfx.cursor(), cancel: () => { this.ctx.sfx.cancel(); this.askTitle(); } });
+    const place = win('slx-place', [document.createTextNode(t.place)]);
+    this.calEl = win('slx-calendar', [document.createTextNode(this.calendarText())]);
+    const gold = win('slx-gold', [document.createTextNode(`${this.ctx.game.state.gold} G`)]);
+    this.hud = [place, this.calEl, gold];
+    const sceneEl = this.sceneEl = el('div', { class: 'slx-scene slx-town' }, [
+      // the place plate and the calendar beside it, in one row (time and moon ruling 8); then the gold
+      el('div', { class: 'slx-town-hud' }, [place, this.calEl]),
+      gold,
       (this.menuWin = win('slx-town-menu', [this.view.el])),
       (this.backEl = backControl(() => this.onAction('cancel'))),
       el('p', { class: 'slx-keyhint', text: T.ui2.hints.town }),
       this.talk.el,
-    ]));
+    ]);
+    bestPicture(sceneEl, 'bg', this.ctx.art, [art.scene('town')], (src) => el('img', { class: 'slx-bg', attrs: { src, alt: '' } }), (n) => sceneEl.prepend(n));
+    root.append(sceneEl);
     void this.arrive();
   }
 
@@ -86,6 +98,8 @@ export class TownScene implements Scene {
   private async arrive(): Promise<void> {
     const game = this.ctx.game;
     this.nightAhead = game.night.some((id) => shouldPlay(id, storyCtx(this.ctx).mode));
+    // Time and moon ruling 8: this arrival's night scenes (the owed memories, the reveal, the night) wear tonight's moon.
+    this.talk.moon = tonightMoon(game.state);
     try {
       for (const id of [...game.arrival]) await this.playScene(id, sceneKind(id) === 'memory' ? { place: NIGHT_PLACE } : {});
     } catch (e) {
@@ -104,11 +118,43 @@ export class TownScene implements Scene {
     if (banked && (notice === 'banked' || notice === 'lamp')) says.push({ who: '', text: bankedLine(banked, this.ctx.art) });
     else if (notice) says.push({ who: '', text: T.notices[notice] });
     if (endedLine) says.push({ who: '', text: endedLine });
+    // bond plan ruling 14: who rose a tier on the dive, after what came home; the day's line draws as it did without it
+    const draw = says.length === 0;
+    for (const u of game.bondUps.splice(0)) says.push({ who: '', text: T.ui2.bond.rose(CHARACTERS[u.id].name, T.ui2.bond.tiers[u.tier]) });
     // The day's line. With nothing before it, it is drawn from the game rng as it always was; after a notice it is picked
     // without a draw, so the rng stream (the next portal roll, the next run's seed) is what it was before staging S2.
-    if (!notice || RETURNS.has(notice)) says.push(this.dayLine(says.length === 0));
+    if (!notice || RETURNS.has(notice)) says.push(this.dayLine(draw));
     for (const l of says) await this.speak(l.who, l.text);
     await this.playNight();
+    this.refreshCalendar();
+    this.refreshMenu();
+  }
+
+  /** The town's menu: each facility, the inn marked 新 while a talk waits there (bond plan Task 12). */
+  private menuItems() {
+    const t = T.ui2.town;
+    const fresh = innNews(this.ctx.game);
+    return FACILITIES.map((id) => ({ id, label: t.facilities[id], ...(id === 'inn' && fresh ? { right: T.ui2.handbook.fresh, rightClass: 'slx-fresh' } : {}) }));
+  }
+
+  /** The menu's marks read again once the arrival's scenes have played (they may have opened a talk). */
+  private refreshMenu(): void {
+    this.view.menu.items.splice(0, this.view.menu.items.length, ...this.menuItems());
+    this.view.render();
+  }
+
+  /** 「秋・下弦」: the season the story stands in and today's moon (time and moon ruling 8). */
+  private calendarText(): string {
+    const c = calendarOf(this.ctx.game.state);
+    return T.ui2.town.calendar(T.ui2.calendar.season[c.season], T.ui2.calendar.moon[c.moon]);
+  }
+
+  /**
+   * Reads the calendar again (review fix 9): the scenes of this arrival may have moved the story (act 3 turns autumn to
+   * winter), so the HUD says it as it comes back.
+   */
+  refreshCalendar(): void {
+    this.calEl.textContent = this.calendarText();
   }
 
   /**
@@ -127,6 +173,7 @@ export class TownScene implements Scene {
       this.nightAhead = false;
       this.inNight = false;
       this.talk.setPlace(null);
+      this.talk.moon = null;
       if (shown) {
         this.putAway(false);
         this.menuWin.removeAttribute('inert');
@@ -146,6 +193,7 @@ export class TownScene implements Scene {
   private putAway(on: boolean): void {
     if (on) { this.menuWin.setAttribute('inert', ''); this.backEl.setAttribute('inert', ''); }
     for (const e of [this.menuWin, this.backEl, ...this.hud]) e.classList.toggle('slx-cmd-hidden', on);
+    if (!on) this.refreshCalendar();
   }
 
   /**
@@ -164,6 +212,8 @@ export class TownScene implements Scene {
       ...STORY.townLines[stage].map((text) => ({ who: '', text })),
       ...rinSays.map((text) => ({ who: CHARACTERS.rin.name, text })),
       ...bellkeeperPool(s).map((text) => ({ who: NPC_NAMES.bellkeeper, text })),
+      // bond plan ruling 13: the one chosen says her two lines too, last in the pool (the draw is the same one)
+      ...(s.story.romance ? (ROMANCE_LINES[s.story.romance] ?? []).map((text) => ({ who: CHARACTERS[s.story.romance!].name, text })) : []),
     ];
     const i = draw ? Math.floor(this.ctx.game.rng() * pool.length) : (s.gold + s.story.seen.length) % pool.length;
     return pool[i];
@@ -177,11 +227,14 @@ export class TownScene implements Scene {
     // One the story setting does not show is only recorded (auto): the town stays as it is.
     if (!shouldPlay(id, storyCtx(this.ctx).mode)) { await playAndRecord(this.talk, id, storyCtx(this.ctx), o).done; return; }
     this.putAway(true);
+    // whole-branch review M1: an after-story stands on its own place here too (`sceneStaging`; the town has no keeper)
+    const takeDown = putBackdrop(this.sceneEl, this.ctx.art, sceneStaging(id, 'town')?.backdrop ?? null);
     try {
       const p = playAndRecord(this.talk, id, storyCtx(this.ctx), o);
       this.playing = p;
       await p.done;
     } finally {
+      takeDown();
       this.playing = null;
       if (!this.inNight) this.putAway(false);
     }

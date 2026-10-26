@@ -4,8 +4,11 @@ import { ITEMS } from '../items';
 import { MATERIALS } from '../materials';
 import { REGIONS } from '../regions';
 import { MEETINGS } from '../meetings';
-import { FOUND_LINE, GROUP_TITLES, NIGHT_BEATS, NIGHT_PLACE, introIndex, numeral, STORY, PLACEHOLDERS, NPC_NAMES, MAX_LINE_CHARS, MEMORY_GUESTS, moodAllowed, linesWhen, type LineWhen, type ScriptLine } from '../story.zh-TW';
-import { CHAINS, HERO_TOPUP, chainLength, whenHolds } from './chains';
+import { bondSceneEntries, FOUND_LINE, GROUP_TITLES, NIGHT_BEATS, SEASON_TITLES, NIGHT_PLACE, DAWN_PLACE, introIndex, numeral, STORY, PLACEHOLDERS, NPC_NAMES, MAX_LINE_CHARS, CHOICE_MAX_CHARS, MEMORY_GUESTS, moodAllowed, linesWhen, flatLines, isChoice, worstCount, type ChoiceLine, type LineWhen, type SceneLine, type ScriptLine } from '../story.zh-TW';
+import { PL } from './places';
+import { BOND_GATE, COMPANIONS as COMPANION_IDS, type Companion } from './bond';
+import { BONDS_WRITTEN, ROMANCES_WRITTEN, bondScene } from './scenes';
+import { CHAINS, HERO_TOPUP, chainLength, whenHolds, type CalendarNow } from './chains';
 import { AFTER_CHOICE, dots, groupShapeBreaks, opensOnDots, pinBeat, sceneReadings, speakerOf, storyTexts, type Text } from './voiceGates';
 import { T } from '../text.zh-TW';
 import type { CharacterId } from '../../engine/types';
@@ -13,9 +16,24 @@ import { TOWN_FRAGMENTS, type TownFragmentId, shardGrade, isFragmentItem, fragme
 import { memoryPace } from '../../engine/story/expect';
 import { leadOpen } from '../../engine/story/leads';
 import type { StoryMood } from '../../render/artPaths';
-import { ACT_DEPTHS, ACT_NODES, DEPARTURE_SCENES, GROUP_GATE, REACTIONS, groupScene, type GroupScene, BANTER_COUNT, BANTER_GATE, BANTER_PAIRS, CHAT_COUNT, CHAT_GATE, HOME_OWNERS, SCENE_IDS, STAGES, MAJOR_SCENES, homeScene, isSceneId, lineCap, memScene, sceneKind, type SceneId, type Stage, type StoryGate } from './scenes';
+import { ACT_DEPTHS, ACT_NODES, DEPARTURE_SCENES, GROUP_GATE, REACTIONS, groupScene, heavyScene, registeredBondScenes, type GroupScene, BANTER_COUNT, BANTER_GATE, BANTER_PAIRS, CHAT_COUNT, CHAT_GATE, HOME_OWNERS, SCENE_IDS, STAGES, MAJOR_SCENES, homeScene, isSceneId, lineCap, memScene, sceneKind, SCENE_TIME, SEASON_SCENES, sceneTime, type SceneId, type Stage, type StoryGate } from './scenes';
 
 const COMPANIONS = CHARACTER_IDS.filter((id) => id !== 'hero' && id !== 'rin');
+/**
+ * Review 5: the key is in a bond scene whose gate waits on `c` whole (`BOND_GATE[x][n].full`), so it only plays once she is;
+ * bond plan Tasks 20-21: or in her after-story or her romance (`nextEnding` waits on her chain told whole, a romance on her
+ * 心契 seen), which only ever play once she is.
+ */
+const bondWhole = (c: CharacterId, key: string): boolean => {
+  if (key.startsWith(`scenes.ending:${c}.`) || key.startsWith(`scenes.romance:${c}.`)) return true;
+  const m = /^scenes\.bond:([a-z]+):([1-4])\./.exec(key);
+  return !!m && BOND_GATE[m[1] as Companion]?.[Number(m[2]) as 1 | 2 | 3 | 4]?.full === c;
+};
+
+// review 5: the after-story and romance registries go back to what is registered, not to empty
+const regAdd = <T,>(reg: T[], ...xs: T[]): void => { for (const x of xs) if (!reg.includes(x)) reg.push(x); };
+const ROMANCES_BASE = [...ROMANCES_WRITTEN];
+const romancesBack = (): void => { ROMANCES_WRITTEN.splice(0, ROMANCES_WRITTEN.length, ...ROMANCES_BASE); };
 
 describe('story data', () => {
   it('every chain is as long as the spec says', () => {
@@ -113,6 +131,54 @@ describe('story data', () => {
     expect(whenHolds(undefined)).toBe(true);
   });
 
+  it("memories and the reveal are night scenes; the day's scenes are not (time and moon Task 5)", () => {
+    expect(SCENE_TIME).toEqual({ 'rin-reveal': 'night', 'season:spring': 'night' });   // Task 7 adds the spring festival
+    expect(sceneTime('rin-reveal')).toBe('night');
+    const memories = SCENE_IDS.filter((id) => sceneKind(id) === 'memory');
+    expect(memories.length).toBe(57);
+    for (const id of memories) expect(sceneTime(id), id).toBe('night');
+    // read through sceneTime (bond review fix): the night scenes beyond the memories are the table's and the registered romances
+    const nights = SCENE_IDS.filter((x) => sceneKind(x) !== 'memory' && sceneTime(x) === 'night').sort();
+    expect(nights).toEqual([...(Object.keys(SCENE_TIME) as SceneId[]), ...ROMANCES_WRITTEN.map((c): SceneId => `romance:${c}`)].sort());
+    expect(sceneTime('season:spring')).toBe('night');   // Task 8: the festival, registered, is a night scene
+  });
+
+  it('a romance registered reads as night; one not registered as day (bond review fix)', () => {
+    // bond plan Task 21 registered all nine: here only Liz's is, then none
+    ROMANCES_WRITTEN.splice(0, ROMANCES_WRITTEN.length, 'liz');
+    try {
+      expect(sceneTime('romance:liz')).toBe('night');
+      expect(sceneTime('romance:rin')).toBe('day');
+      expect(sceneTime('ending:liz')).toBe('day');
+      ROMANCES_WRITTEN.splice(0);
+      expect(sceneTime('romance:liz')).toBe('day');
+    } finally { romancesBack(); }
+    expect(sceneTime('romance:liz')).toBe('night');
+  });
+
+  it('whenHolds checks the moon, the time and the season given a calendar, and holds without one', () => {
+    const cal: CalendarNow = { moon: 'full', season: 'autumn', time: 'day' };
+    expect(whenHolds(undefined, cal)).toBe(true);
+    expect(whenHolds({}, cal)).toBe(true);
+    expect(whenHolds({ moon: ['new'] })).toBe(true);   // no calendar: holds
+    expect(whenHolds({ moon: ['full'] }, cal)).toBe(true);
+    expect(whenHolds({ moon: ['new'] }, cal)).toBe(false);
+    expect(whenHolds({ moon: ['new', 'full'] }, cal)).toBe(true);
+    expect(whenHolds({ time: 'day' }, cal)).toBe(true);
+    expect(whenHolds({ time: 'night' }, cal)).toBe(false);
+    expect(whenHolds({ time: 'night' }, { ...cal, time: 'night' })).toBe(true);
+    expect(whenHolds({ season: ['autumn', 'winter'] }, cal)).toBe(true);
+    expect(whenHolds({ season: ['spring'] }, cal)).toBe(false);
+    // every field written must hold
+    expect(whenHolds({ moon: ['full'], time: 'night' }, cal)).toBe(false);
+    expect(whenHolds({ moon: ['full'], season: ['winter'] }, cal)).toBe(false);
+    expect(whenHolds({ moon: ['full'], time: 'day', season: ['autumn'] }, cal)).toBe(true);
+    const p = CHAINS.selene.pieces;
+    expect(whenHolds(p[1].when, cal)).toBe(true);
+    expect(whenHolds(p[4].when, cal)).toBe(false);
+    expect(whenHolds(p[4].when, { ...cal, moon: 'new' })).toBe(true);
+  });
+
   it('the catalogue covers 57 memories, the acts, Rin, the finale, chats and returns', () => {
     expect(SCENE_IDS.filter((s) => s.startsWith('mem:')).length).toBe(57);
     const chats = CHARACTER_IDS.reduce((n, id) => n + CHAT_COUNT[id], 0);
@@ -158,7 +224,7 @@ describe('story data', () => {
       expect(sc.summary.trim()).not.toBe('');
       expect(sc.summary).not.toMatch(/TODO/);
       expect(sc.lines.length).toBeGreaterThanOrEqual(1);   // the cap is checked on the lines that play, by the combination test below
-      for (const l of sc.lines) {
+      for (const l of flatLines(sc.lines)) {
         expect(l.text.trim()).not.toBe('');
         expect(l.text).not.toMatch(/TODO/);
         expect(speakers.has(l.who)).toBe(true);
@@ -316,6 +382,10 @@ function position(key: string): Stage {
       }
       if (kind === 'home') return metStage(c);   // after her last piece; placed like the rest of her story (I-58)
       if (kind === 'group') return c as Stage;   // story L: a group scene plays on its act's arrival or the next return
+      // bond plan Task 7: a bond scene at her gate (a companion's open once she is met, the pieces it waits on are hers;
+      // Rin's at the piece it waits on, or her choice); an ending, a romance and the walk together after the finale
+      if (kind === 'bond') return gateStage(c === 'rin' ? 'prologue' : metStage(c), BOND_GATE[c as Companion][Number(n) as 1 | 2 | 3 | 4]);
+      if (kind === 'ending' || kind === 'romance' || id === 'together') return 'after';
       if (kind === 'mem') {
         if (c === 'hero' || c === 'rin') return stageOf(CHAINS[c].pieces[Number(n) - 1].minDepth);
         return metStage(c);
@@ -424,38 +494,78 @@ const banterTwo = (key: string): string[] => {
   const [top, a] = key.split('.');
   return top === 'scenes' && a.startsWith('banter:') ? a.split(':')[1].split('-') : [];
 };
-/** The companion a scene belongs to: her memory, her chat or her meeting. */
+/**
+ * The companion a scene belongs to: her memory, her chat or her meeting; bond plan Task 7: her bond scenes, her ending and
+ * her romance (no `BOND_GUESTS`, spec §0 D7; bond plan Task 20: a townsperson may still speak in an after-story, as Glen,
+ * Doran and Orik do, under the voice rules of the whole script). The walk together is nobody's.
+ */
 const ownerOf = (key: string): string | undefined => {
   const [top, a] = key.split('.');
   if (top === 'meet') return a;
-  if (top === 'scenes') { const [kind, c] = a.split(':'); return kind === 'mem' || kind === 'chat' || kind === 'home' ? c : undefined; }
+  if (top === 'scenes') {
+    const [kind, c] = a.split(':');
+    return ['mem', 'chat', 'home', 'bond', 'ending', 'romance'].includes(kind) && c ? c : undefined;
+  }
   return undefined;
 };
 
-describe('the script gates', () => {
-  it('no scene plays more lines than its cap, in any party', () => {
-    const subsets = Array.from({ length: 1 << COMPANIONS.length }, (_, mask) => COMPANIONS.filter((_, i) => mask & (1 << i)));
-    const returnedAll = TOWN_FRAGMENTS.map((f) => f.id);
-    for (const id of SCENE_IDS) {
-      const lines = STORY.scenes[id].lines;
-      const cap = lineCap(id);
-      // every combination of the scenes its lines wait on (story depth Task 1): each seen or not
-      const waits = [...new Set(lines.flatMap((l) => [l.if?.seen, l.if?.notSeen].filter((x): x is SceneId => !!x)))];
-      const seens = Array.from({ length: 1 << waits.length }, (_, mask) => waits.filter((_, i) => mask & (1 << i)));
-      for (const met of subsets) {
-        for (const full of [[], met]) {
-          for (const returned of [[], returnedAll]) {
-            for (const oath of AFTER_CHOICE.has(id) ? [true] : [false, true]) {
-              for (const seen of seens) {
-                const w: LineWhen = { met: ['hero', 'rin', ...met], full: full.length ? ['hero', 'rin', ...full] : [], returned, oath, seen };
-                const n = linesWhen(lines, w).length;
-                if (n < 1 || n > cap) throw new Error(`${id} plays ${n} lines (cap ${cap}) for ${JSON.stringify(w)}`);
-              }
-            }
-          }
-        }
+/**
+ * Why a scene of `ids` plays more lines than its cap, or none (bond plan Task 7: counted at worst, `worstCount`, a choice and
+ * its longest reply), in any party: every subset of the companions met, their chains whole or not, every townsfolk piece
+ * back or not, Rin's choice made or not, each scene its lines wait on seen or not, every bond tier 0 or 4. One line a scene,
+ * at its worst count. A scene not in the script is skipped.
+ */
+function capBreaks(ids: readonly SceneId[]): string[] {
+  const subsets = Array.from({ length: 1 << COMPANIONS.length }, (_, mask) => COMPANIONS.filter((_, i) => mask & (1 << i)));
+  const returnedAll = TOWN_FRAGMENTS.map((f) => f.id);
+  const out: string[] = [];
+  for (const id of ids) {
+    if (!STORY.scenes[id]) continue;
+    const lines = STORY.scenes[id].lines;
+    const flat = flatLines(lines);
+    const cap = lineCap(id);
+    // every combination of the scenes its lines wait on (story depth Task 1): each seen or not
+    const waits = [...new Set(flat.flatMap((l) => [l.if?.seen, l.if?.notSeen].filter((x): x is SceneId => !!x)))];
+    const seens = Array.from({ length: 1 << waits.length }, (_, mask) => waits.filter((_, i) => mask & (1 << i)));
+    const tiers = flat.some((l) => l.if?.tier) ? [undefined, Object.fromEntries(CHARACTER_IDS.filter((c) => c !== 'hero').map((c) => [c, 4]))] : [undefined];
+    let worst = 0, least = Infinity;
+    for (const met of subsets) for (const full of [[], met]) for (const returned of [[], returnedAll]) {
+      for (const oath of AFTER_CHOICE.has(id) ? [true] : [false, true]) for (const seen of seens) for (const t of tiers) {
+        const w: LineWhen = { met: ['hero', 'rin', ...met], full: full.length ? ['hero', 'rin', ...full] : [], returned, oath, seen, ...(t ? { tiers: t } : {}) };
+        const n = worstCount(linesWhen(lines, w));
+        worst = Math.max(worst, n);
+        least = Math.min(least, n);
       }
     }
+    if (least < 1) out.push(`${id} plays no line`);
+    if (worst > cap) out.push(`${id} plays ${worst} lines (cap ${cap})`);
+  }
+  return out;
+}
+
+/** Story text over MAX_LINE_CHARS, and (bond plan Task 7) a choice over CHOICE_MAX_CHARS: each key with its length. */
+const lengthBreaks = (): string[] => storyTexts().flatMap(({ key, text }) => {
+  const max = /\.choices\.\d+\.text$/.test(key) ? CHOICE_MAX_CHARS : MAX_LINE_CHARS;
+  return [...text].length > max ? [`${key} ${[...text].length} > ${max}`] : [];
+});
+
+/**
+ * Where Rin says his name before her choice (style bible: 「你」 or 「喂」 until the reveal; lore ledger I-20). Bond plan
+ * Task 7: a bond scene of hers gated on her choice (`BOND_GATE` oath) comes after it.
+ */
+function rinNameBreaks(): string[] {
+  const chosen = (key: string, line?: ScriptLine) => line?.if?.oath === true || key.startsWith('scenes.rin-reveal.')
+    || key.startsWith('scenes.bellkeeper-arrives.')   // it plays only after her choice (continuity fix 4)
+    || (key.startsWith('scenes.') && AFTER_CHOICE.has(key.split('.')[1] as SceneId))   // story depth plan ruling 14
+    || key.startsWith('scenes.finale.') || (key.startsWith('scenes.chat:rin:') && CHAT_GATE[key.split('.')[1] as SceneId]?.oath === true)
+    || (key.startsWith('scenes.banter:') && BANTER_GATE[key.split('.')[1] as SceneId]?.oath === true)   // B1: a banter that waits for her choice
+    || (/^scenes\.bond:rin:\d+\./.test(key) && BOND_GATE.rin[Number(key.split('.')[1].split(':')[2]) as 1 | 2 | 3 | 4]?.oath === true);
+  return storyTexts().filter(({ key, text, line }) => text.includes('洛恩') && (key.startsWith('rinLines.') || (line?.who === 'rin' && !chosen(key, line)))).map((t) => t.key);
+}
+
+describe('the script gates', () => {
+  it('no scene plays more lines than its cap, in any party', () => {
+    expect(capBreaks(SCENE_IDS)).toEqual([]);
   });
 
   it("the depth design's line caps (story depth Task 2)", () => {
@@ -488,8 +598,8 @@ describe('the script gates', () => {
     expect(eve.title).toBe('下潛前的那一夜');
     expect(eve.lines).toHaveLength(1);
     expect(eve.lines[0].who).toBe('narrator');
-    expect(eve.lines[0].if).toBeUndefined();
-    expect(eve.lines[0].place).toEqual(NIGHT_PLACE);
+    expect(flatLines(eve.lines)[0].if).toBeUndefined();
+    expect(flatLines(eve.lines)[0].place).toEqual(NIGHT_PLACE);
     expect(eve.summary.length).toBeGreaterThan(0);
     expect(DEPARTURE_SCENES).toEqual(['finale-eve', 'hero-alone']);
   });
@@ -508,10 +618,10 @@ describe('the script gates', () => {
     expect(Math.max(...readings.map((r) => r.lines.length))).toBe(12);   // the worst case: Scarlet, Sylvie and Liz all met
     // Rin's party alone: six lines (coordinator ruling on Task 2: the 「沒有人動」 narration is a deliberate beat; design §8 sample 2's
     // 「五句」 leaves it out)
-    const alone = linesWhen(STORY.scenes['rin-confess'].lines, { met: ['hero', 'rin'], full: [], returned: [], oath: true, seen: [] });
+    const alone = linesWhen(flatLines(STORY.scenes['rin-confess'].lines), { met: ['hero', 'rin'], full: [], returned: [], oath: true, seen: [] });
     expect(alone.map((l) => l.who)).toEqual(['narrator', 'rin', 'narrator', 'hero', 'marta', 'narrator']);
     // the rooftop: Sylvie's line is the same, banter:rin-sylvie:1 heard or not (story L Task 15, spec §10), and names no roof
-    const sylvie = (seen: SceneId[]) => linesWhen(STORY.scenes['rin-confess'].lines, { met: [...CHARACTER_IDS], full: [], returned: [], oath: true, seen }).filter((l) => l.who === 'sylvie');
+    const sylvie = (seen: SceneId[]) => linesWhen(flatLines(STORY.scenes['rin-confess'].lines), { met: [...CHARACTER_IDS], full: [], returned: [], oath: true, seen }).filter((l) => l.who === 'sylvie');
     expect(sylvie(['banter:rin-sylvie:1'])).toEqual(sylvie([]));
     expect(sylvie([])[0].text).not.toContain('屋頂');
   });
@@ -533,9 +643,9 @@ describe('the script gates', () => {
     expect(MAX_LINE_CHARS).toBe(60);
     for (const { key, text } of storyTexts()) {
       expect(text.trim() !== '', `${key} is empty`).toBe(true);
-      expect([...text].length, key).toBeLessThanOrEqual(MAX_LINE_CHARS);
       expect(text, key).not.toMatch(/TODO|TBD|[\r\n]/);
     }
+    expect(lengthBreaks()).toEqual([]);   // bond plan Task 7: a choice at most CHOICE_MAX_CHARS
   });
 
   it('story text uses zh-TW typography', () => {
@@ -581,7 +691,7 @@ describe('the script gates', () => {
   it('the written scenes wear their faces', () => {
     // Task 7.5 retag pins, found by content.
     const face = (id: SceneId, who: string, has: string, oath?: boolean): StoryMood | undefined => {
-      const hits = STORY.scenes[id].lines.filter((l) => l.who === who && l.text.includes(has) && (oath === undefined || l.if?.oath === oath));
+      const hits = flatLines(STORY.scenes[id].lines).filter((l) => l.who === who && l.text.includes(has) && (oath === undefined || l.if?.oath === oath));
       expect(hits, `${id} ${who} ${has}`).toHaveLength(1);
       return hits[0].mood;
     };
@@ -599,6 +709,8 @@ describe('the script gates', () => {
       if (!(COMPANIONS as string[]).includes(who) || who === ownerOf(key) || banterTwo(key).includes(who)) continue;
       // story L Task 8: a night's beat is said only by one met (engine/story/nights.ts `nextBeat`, tested there)
       if (key.startsWith('nightBeats.')) continue;
+      // time and moon Task 8: the spring festival waits for Chizuru's homecoming (`nextSeasonScene`), so she is met
+      if (key.startsWith('scenes.season:') && who === 'chizuru') continue;
       // story L Tasks 9-11: a group scene waits for its cast (`GROUP_GATE`), so its one reading needs no `if.met`
       const [top, id] = key.split('.');
       if (top === 'scenes' && sceneKind(id as SceneId) === 'group' && (GROUP_GATE[id as GroupScene].met ?? []).includes(who as CharacterId)) continue;
@@ -745,7 +857,7 @@ describe('the script gates', () => {
 
   it("act 4 reads right before and after Rin's choice", () => {
     // Act 4 is the one act that may play before or after her reveal (U1): every line she speaks there knows which.
-    const rin = STORY.scenes.act4.lines.filter((l) => l.who === 'rin');
+    const rin = flatLines(STORY.scenes.act4.lines).filter((l) => l.who === 'rin');
     expect(rin.length).toBeGreaterThan(0);
     for (const l of rin) expect(typeof l.if?.oath, l.text).toBe('boolean');
     expect(rin.some((l) => l.if?.oath === true)).toBe(true);
@@ -753,7 +865,7 @@ describe('the script gates', () => {
     // and both readings play her
     for (const oath of [false, true]) {
       const w: LineWhen = { met: ['hero', 'rin'], full: [], returned: [], oath };
-      expect(linesWhen(STORY.scenes.act4.lines, w).some((l) => l.who === 'rin'), String(oath)).toBe(true);
+      expect(linesWhen(flatLines(STORY.scenes.act4.lines), w).some((l) => l.who === 'rin'), String(oath)).toBe(true);
     }
   });
 
@@ -762,24 +874,24 @@ describe('the script gates', () => {
     expect(CHAT_GATE['chat:hero:2']).toEqual({ stage: 'act2' });
     expect(CHAT_GATE['chat:hero:3']).toEqual({ stage: 'act3' });
     expect(CHAT_GATE['chat:hero:4']).toEqual({ stage: 'act4' });
-    const text = (id: SceneId) => STORY.scenes[id].lines.map((l) => l.text).join('');
+    const text = (id: SceneId) => flatLines(STORY.scenes[id].lines).map((l) => l.text).join('');
     expect(text('mem:hero:9')).toContain('守燈人');
     expect(text('mem:hero:10')).toContain('燈鑰');
     for (let n = 1; n <= 8; n++) {
       for (const word of ['守燈人', '燈鑰']) expect(text(memScene('hero', n)), `mem:hero:${n}`).not.toContain(word);
     }
     // His last chat may play before or after Rin's choice: each line of hers knows which, and both readings play her.
-    const rin = STORY.scenes['chat:hero:4'].lines.filter((l) => l.who === 'rin');
+    const rin = flatLines(STORY.scenes['chat:hero:4'].lines).filter((l) => l.who === 'rin');
     for (const l of rin) expect(typeof l.if?.oath, l.text).toBe('boolean');
     for (const oath of [false, true]) {
       const w: LineWhen = { met: ['hero', 'rin'], full: [], returned: [], oath };
-      expect(linesWhen(STORY.scenes['chat:hero:4'].lines, w).some((l) => l.who === 'rin'), String(oath)).toBe(true);
+      expect(linesWhen(flatLines(STORY.scenes['chat:hero:4'].lines), w).some((l) => l.who === 'rin'), String(oath)).toBe(true);
     }
   });
 
   it("Lorne's canon holds: the sword never leaves him, the bell rings before the blade, the first chat claims no memory", () => {
     // Task 6 fix round 1 (lore ledger I-45, I-49): every round he carries the sword; a distant bell rings days or a season before the blade.
-    const lines = (id: SceneId) => STORY.scenes[id].lines.map((l) => l.text);
+    const lines = (id: SceneId) => flatLines(STORY.scenes[id].lines).map((l) => l.text);
     for (let n = 1; n <= 10; n++) for (const t of lines(memScene('hero', n))) expect(t, `mem:hero:${n}`).not.toMatch(/兩手空空|空著手/);
     // continuity fix 6: a death leaves decades in the dark, so the registry's entries stay decades apart (I-33, I-45)
     expect(lines('mem:hero:9').join('')).toMatch(/躺了幾十年/);
@@ -802,7 +914,7 @@ describe('the script gates', () => {
     for (const id of ['chat:rin:2', 'chat:rin:3'] as SceneId[]) {
       for (const oath of [false, true]) {
         const w: LineWhen = { met: ['hero', 'rin'], full: [], returned: [], oath };
-        expect(linesWhen(STORY.scenes[id].lines, w).some((l) => l.who === 'rin'), `${id} ${oath}`).toBe(true);
+        expect(linesWhen(flatLines(STORY.scenes[id].lines), w).some((l) => l.who === 'rin'), `${id} ${oath}`).toBe(true);
       }
     }
   });
@@ -815,7 +927,7 @@ describe('the script gates', () => {
     for (const t of early) expect(t.text, t.key).not.toMatch(AVOID);
     expect(STORY.rinLines.act3!.some((x) => AVOID.test(x))).toBe(true);   // act 3 is where her town lines start looking away
     // Each chat is read as it plays (linesWhen), so a malformed condition cannot drop a line out of the check unseen.
-    const reading = (n: number, oath: boolean) => linesWhen(STORY.scenes[`chat:rin:${n}` as SceneId].lines, { met: ['hero', 'rin'], full: [], returned: [], oath });
+    const reading = (n: number, oath: boolean) => linesWhen(flatLines(STORY.scenes[`chat:rin:${n}` as SceneId].lines), { met: ['hero', 'rin'], full: [], returned: [], oath });
     // Before her choice, chat 3 (act 3) is where she looks away, in all three lines it plays.
     expect(reading(3, false).length).toBe(3);
     expect(reading(3, false).some((l) => l.who === 'narrator' && AVOID.test(l.text))).toBe(true);
@@ -830,16 +942,8 @@ describe('the script gates', () => {
 
   it("Rin never says his name before her choice, and the reveal keeps the finale's truths", () => {
     // Style bible: before rin-reveal she calls him 「你」 or 「喂」; the reveal is the first 「洛恩」 (lore ledger I-20).
-    const chosen = (key: string, line?: ScriptLine) => line?.if?.oath === true || key.startsWith('scenes.rin-reveal.')
-      || key.startsWith('scenes.bellkeeper-arrives.')   // it plays only after her choice (continuity fix 4)
-      || (key.startsWith('scenes.') && AFTER_CHOICE.has(key.split('.')[1] as SceneId))   // story depth plan ruling 14
-      || key.startsWith('scenes.finale.') || (key.startsWith('scenes.chat:rin:') && CHAT_GATE[key.split('.')[1] as SceneId]?.oath === true)
-      || (key.startsWith('scenes.banter:') && BANTER_GATE[key.split('.')[1] as SceneId]?.oath === true);   // B1: a banter that waits for her choice
-    for (const { key, text, line } of storyTexts()) {
-      if (key.startsWith('rinLines.')) expect(text, key).not.toContain('洛恩');
-      if (line?.who === 'rin' && !chosen(key, line)) expect(text, key).not.toContain('洛恩');
-    }
-    const reveal = STORY.scenes['rin-reveal'].lines;
+    expect(rinNameBreaks()).toEqual([]);
+    const reveal = flatLines(STORY.scenes['rin-reveal'].lines);
     expect(reveal.some((l) => l.who === 'rin' && l.text.includes('洛恩'))).toBe(true);
     expect(STORY.rinOath.some((t) => t.includes('洛恩'))).toBe(true);
     // The reveal plays before the hero's 9th piece as a rule (d22 against d25): it does not confirm he is the keeper,
@@ -851,7 +955,7 @@ describe('the script gates', () => {
 
   it('every line condition is well formed', () => {
     // Task 7 fix round 1: a condition object passed where a flag was meant made `if.oath` an object, and linesWhen dropped the line in every reading.
-    const KEYS = ['met', 'notMet', 'returned', 'notReturned', 'full', 'notFull', 'oath', 'seen', 'notSeen'];
+    const KEYS = ['met', 'notMet', 'returned', 'notReturned', 'full', 'notFull', 'oath', 'seen', 'notSeen', 'tier'];
     for (const { key, line } of storyTexts().filter((t) => t.line)) {
       const c = line!.if;
       if (c === undefined) continue;
@@ -860,13 +964,16 @@ describe('the script gates', () => {
       if ('oath' in c) expect(typeof c.oath, `${key}: if.oath`).toBe('boolean');
       for (const k of ['met', 'notMet', 'returned', 'notReturned', 'full', 'notFull', 'seen', 'notSeen'] as const) if (k in c) expect(typeof c[k], `${key}: if.${k}`).toBe('string');
       for (const k of ['seen', 'notSeen'] as const) if (k in c) expect(isSceneId(c[k]), `${key}: if.${k} names a scene`).toBe(true);   // story depth Task 2
+      // bond plan Task 20: a tier names a companion and a tier above 0 (an after-story's line at 信賴 and up)
+      if (c.tier) { expect((COMPANION_IDS as string[]).includes(c.tier.who), `${key}: if.tier.who`).toBe(true); expect([1, 2, 3, 4], `${key}: if.tier.min`).toContain(c.tier.min); }
     }
     // and every line of every scene plays in at least one reading (Task 10: with no fragment returned too, for `notReturned`;
     // story depth Task 2: with no scene seen and with every scene seen, for `notSeen` and `seen`)
     for (const id of SCENE_IDS) {
-      const lines = STORY.scenes[id].lines;
+      const lines = flatLines(STORY.scenes[id].lines);
       const everyone: LineWhen = { met: [...CHARACTER_IDS], full: [...CHARACTER_IDS], returned: TOWN_FRAGMENTS.map((f) => f.id), oath: false, seen: [] };
-      const readings: LineWhen[] = [everyone, { ...everyone, full: [] }].flatMap((w) => [w, { ...w, returned: [] }]).flatMap((w) => [w, { ...w, seen: [...SCENE_IDS] }]);
+      const readings: LineWhen[] = [everyone, { ...everyone, full: [] }].flatMap((w) => [w, { ...w, returned: [] }]).flatMap((w) => [w, { ...w, seen: [...SCENE_IDS] }])
+        .flatMap((w) => [w, { ...w, tiers: Object.fromEntries(COMPANION_IDS.map((x) => [x, 4])) }]);   // bond plan Task 20: and every bond at 心契
       const played = new Set([true, false].flatMap((oath) => readings.flatMap((w) => linesWhen(lines, { ...w, oath }))));
       for (const l of lines) if (!l.if?.notMet) expect(played.has(l), `${id}: ${l.text}`).toBe(true);
     }
@@ -940,7 +1047,7 @@ const REVEALED: { who: string; re: RegExp; piece: number; heard?: true }[] = [
 ];
 
 describe('Task 8: Selene, Chizuru and Safira', () => {
-  const linesOf = (id: SceneId) => STORY.scenes[id].lines;
+  const linesOf = (id: SceneId) => flatLines(STORY.scenes[id].lines);
   const textOf = (id: SceneId) => linesOf(id).map((l) => l.text).join('');
   /** Every line a companion speaks anywhere: her memories, chats and meeting. */
   const spokenBy = (c: string) => storyTexts().filter((t) => t.line?.who === c);
@@ -965,14 +1072,16 @@ describe('Task 8: Selene, Chizuru and Safira', () => {
     for (const t of storyTexts()) if (t.text.includes('我想看見')) expect(t.key, t.key).toMatch(/^scenes\.mem:selene:5\./);
     // She calls him 「洛恩先生」 until her memories are whole; her last piece is the first plain 「洛恩」 (style bible, I-22).
     for (const t of spokenBy('selene')) {
-      if (t.key.startsWith('scenes.mem:selene:5.') || t.line?.if?.full === 'selene') continue;
+      // bond plan Task 17: her 心契 opens only once she is whole (BOND_GATE.selene[4].full), so it says 「洛恩」
+      if (t.key.startsWith('scenes.mem:selene:5.') || bondWhole('selene', t.key) || t.line?.if?.full === 'selene') continue;
       for (const m of t.text.matchAll(/洛恩(.?)/g)) expect(m[1], t.key).toBe('先');
     }
     expect(linesOf('mem:selene:5').some((l) => l.who === 'selene' && /洛恩(?!先生)/.test(l.text))).toBe(true);
   });
 
   it("Chizuru calls him 「洛恩大人」, and only her fourth piece on knows the shrine is gone", () => {
-    for (const t of spokenBy('chizuru')) for (const m of t.text.matchAll(/洛恩(.?.?)/g)) expect(m[1], t.key).toBe('大人');
+    // bond plan Task 21 (I-209): her romance holds the one bare 「洛恩」 of the whole script (data/bond.test.ts counts it)
+    for (const t of spokenBy('chizuru')) for (const m of t.text.matchAll(/洛恩(.?.?)/g)) if (!t.key.startsWith('scenes.romance:chizuru.')) expect(m[1], t.key).toBe('大人');
     const GONE = /不在了|早就不在|已經不在/;
     for (const t of storyTexts()) {
       if (!GONE.test(t.text) || !/chizuru/.test(t.key)) continue;
@@ -1008,7 +1117,7 @@ describe('Task 8: Selene, Chizuru and Safira', () => {
            for (const met of [[...CHARACTER_IDS], ['hero', 'rin', c]] as CharacterId[][]) {
             const id = `chat:${c}:${n}` as SceneId;
             if (!full && CHAT_GATE[id]?.full === c) continue;   // story L Task 12: it waits for her told whole (chat:sylvie:2)
-            const played = linesWhen(STORY.scenes[id].lines, { met, full: full ? [c] : [], returned: [], oath });
+            const played = linesWhen(flatLines(STORY.scenes[id].lines), { met, full: full ? [c] : [], returned: [], oath });
             const said = played.filter((l) => l.who === c).map((l) => l.text).join('');
             const heard = played.filter((l) => l.who === c || l.who === 'narrator').map((l) => l.text).join('');
             const tag = `${id} full=${full} met=${met.length}`;
@@ -1025,7 +1134,7 @@ describe('Task 8: Selene, Chizuru and Safira', () => {
     // Story L Task 15 (spec §10): chat:selene:2 and chat:scarlet:2 wrote off the address that turned with her pieces, and read
     // one way (the test 'the script reads fewer ways' pins them)
     for (const [id, c] of [['chat:chizuru:2', 'chizuru'], ['chat:noel:2', 'noel'], ['chat:liz:2', 'liz']] as const) {
-      const lines = STORY.scenes[id].lines;
+      const lines = flatLines(STORY.scenes[id].lines);
       expect(lines.some((l) => l.if?.notFull === c), id).toBe(true);
       expect(lines.some((l) => l.if?.full === c), id).toBe(true);
       for (const full of [false, true]) {
@@ -1044,7 +1153,7 @@ describe('Task 8: Selene, Chizuru and Safira', () => {
 
   it("Rin's line in Safira's ungated chat wears no face reserved for after her oath", () => {
     // Ruling (fix round 1): post-oath `guarded` belongs to the bellkeeper; an ungated companion chat may play after her oath.
-    const rin = STORY.scenes['chat:safira:2'].lines.filter((l) => l.who === 'rin');
+    const rin = flatLines(STORY.scenes['chat:safira:2'].lines).filter((l) => l.who === 'rin');
     expect(rin.length).toBeGreaterThan(0);
     for (const x of rin) if (x.if?.oath !== false) expect(x.mood ?? 'normal', x.text).not.toMatch(/guarded|averted/);
   });
@@ -1061,7 +1170,7 @@ describe('Task 8: Selene, Chizuru and Safira', () => {
 });
 
 describe('Task 9: Sylvie, Noel and Bobby', () => {
-  const linesOf = (id: SceneId) => STORY.scenes[id].lines;
+  const linesOf = (id: SceneId) => flatLines(STORY.scenes[id].lines);
   const textOf = (id: SceneId) => linesOf(id).map((l) => l.text).join('');
   const spokenBy = (c: string) => storyTexts().filter((t) => t.line?.who === c);
   const THREE = ['sylvie', 'noel', 'bobby'] as const;
@@ -1097,7 +1206,8 @@ describe('Task 9: Sylvie, Noel and Bobby', () => {
   });
 
   it("Noel says 「喂，歸來者」 until her memories are whole, then 「洛恩」 with a blush; her teacher is the merchant in her last piece", () => {
-    const full = (key: string, line?: ScriptLine) => key.startsWith('scenes.mem:noel:5.') || line?.if?.full === 'noel';
+    // bond plan Task 18: her 心契 opens only once she is whole (BOND_GATE.noel[4].full)
+    const full = (key: string, line?: ScriptLine) => key.startsWith('scenes.mem:noel:5.') || bondWhole('noel', key) || line?.if?.full === 'noel';
     for (const t of spokenBy('noel')) {
       if (t.text.includes('洛恩')) expect(full(t.key, t.line), t.key).toBe(true);
       if (t.text.includes('歸來者')) expect(full(t.key, t.line), t.key).toBe(false);
@@ -1126,7 +1236,8 @@ describe('Task 9: Sylvie, Noel and Bobby', () => {
   });
 
   it("Bobby calls him 「洛恩哥」, and her last piece ends on the spec's line, said nowhere else", () => {
-    for (const t of spokenBy('bobby')) for (const m of t.text.matchAll(/洛恩(.?)/g)) expect(m[1], t.key).toBe('哥');
+    // bond plan Task 21 (I-207): her romance tries 「洛恩──」 once and goes back to 「洛恩哥」 (data/bond.test.ts pins it)
+    for (const t of spokenBy('bobby')) for (const m of t.text.matchAll(/洛恩(.?)/g)) if (!(t.key.startsWith('scenes.romance:bobby.') && m[1] === '─')) expect(m[1], t.key).toBe('哥');
     expect(spokenBy('bobby').some((t) => t.text.includes('洛恩哥'))).toBe(true);
     const QUOTE = '祖先造錯的東西，我來修好。';
     const last = linesOf('mem:bobby:5').slice(-1)[0];
@@ -1154,7 +1265,7 @@ describe('Task 9: Sylvie, Noel and Bobby', () => {
 });
 
 describe('Task 10: Liz, Scarlet and the survive line', () => {
-  const linesOf = (id: SceneId) => STORY.scenes[id].lines;
+  const linesOf = (id: SceneId) => flatLines(STORY.scenes[id].lines);
   const textOf = (id: SceneId) => linesOf(id).map((l) => l.text).join('');
   const spokenBy = (c: string) => storyTexts().filter((t) => t.line?.who === c);
   const TWO = ['liz', 'scarlet'] as const;
@@ -1237,7 +1348,8 @@ describe('Task 10: Liz, Scarlet and the survive line', () => {
 
   it("Scarlet says 「洛恩閣下」 until her memories are whole; the princess's words live in her last piece alone", () => {
     for (const t of spokenBy('scarlet')) {
-      if (t.key.startsWith('scenes.mem:scarlet:5.') || t.line?.if?.full === 'scarlet') continue;
+      // bond plan Task 19: her 心契 opens only once she is whole (BOND_GATE.scarlet[4].full)
+      if (t.key.startsWith('scenes.mem:scarlet:5.') || bondWhole('scarlet', t.key) || t.line?.if?.full === 'scarlet') continue;
       for (const m of t.text.matchAll(/洛恩(.?.?)/g)) expect(m[1], t.key).toBe('閣下');
     }
     expect(spokenBy('scarlet').some((t) => t.text.includes('洛恩閣下'))).toBe(true);
@@ -1274,7 +1386,7 @@ describe('Task 10: Liz, Scarlet and the survive line', () => {
 
 describe('Task 10b: why the two of them go down together', () => {
   const OPENING = ['prologue-inn', 'first-return'] as const;
-  const lines = (id: SceneId) => STORY.scenes[id].lines;
+  const lines = (id: SceneId) => flatLines(STORY.scenes[id].lines);
   const said = (id: SceneId, who: string) => lines(id).filter((l) => l.who === who).map((l) => l.text);
 
   it('the approved prologue keeps its twelve lines, from the dawn plaza to 「歸來者」, and its beats', () => {
@@ -1374,8 +1486,8 @@ describe('Task 10b: why the two of them go down together', () => {
 
   it('review fixes: the first-return scene never claims to be the first return, and leaves the window to the inn night', () => {
     const fr = STORY.scenes['first-return'];
-    for (const t of [fr.title, fr.summary, ...fr.lines.map((l) => l.text)]) expect(t).not.toMatch(/第一次|頭一次|初次/);
-    for (const l of fr.lines) expect(l.text).not.toMatch(/窗/);
+    for (const t of [fr.title, fr.summary, ...flatLines(fr.lines).map((l) => l.text)]) expect(t).not.toMatch(/第一次|頭一次|初次/);
+    for (const l of flatLines(fr.lines)) expect(l.text).not.toMatch(/窗/);
     expect(lines('prologue-inn').some((l) => /窗/.test(l.text))).toBe(true);
     // Rin's first chat builds on the bruise the inn night showed, instead of telling the drag as news.
     const chat = said('chat:rin:1', 'rin').join('');
@@ -1398,7 +1510,7 @@ describe('Task 10b: why the two of them go down together', () => {
 });
 
 describe('Task 11: the townsfolk, the merchant and the bellkeeper', () => {
-  const linesOf = (id: SceneId) => STORY.scenes[id].lines;
+  const linesOf = (id: SceneId) => flatLines(STORY.scenes[id].lines);
   const textOf = (lines: ScriptLine[]) => lines.map((l) => l.text).join('');
   const when = (w: Partial<LineWhen>): LineWhen => ({ met: ['hero', 'rin'], full: [], returned: [], oath: false, ...w });
   const isLiz = (l: ScriptLine) => l.who === 'liz' || l.text.includes('莉茲');
@@ -1512,7 +1624,7 @@ describe('Task 11: the townsfolk, the merchant and the bellkeeper', () => {
     expect(STORY.merchant.found).not.toMatch(/偷/);
     // fix round 1: a greeting plays on its own, so it answers no question nobody asked
     for (const t of [STORY.merchant.lost, STORY.merchant.found, ...STORY.bellkeeper.oath.map((l) => l.text), ...STORY.bellkeeper.after]) expect(t).not.toMatch(/^「?[^。！？]{0,6}？/);
-    const reunion = STORY.scenes['mem:noel:5'].lines.find((l) => l.who === 'merchant')!.text;
+    const reunion = flatLines(STORY.scenes['mem:noel:5'].lines).find((l) => l.who === 'merchant')!.text;
     expect(STORY.merchant.found).not.toBe(reunion);
   });
 });
@@ -1609,7 +1721,7 @@ describe("Task 13: strangers' memories", () => {
 });
 
 describe('Task 14: the finale', () => {
-  const lines = () => STORY.scenes.finale.lines;
+  const lines = () => flatLines(STORY.scenes.finale.lines);
   /**
    * Every reading the finale can play in: any companions met, none or all of them whole, any group scenes seen (only by a
    * party that met its cast, its gate), any fragments returned; always after her choice. Story L Task 14: the finale reads
@@ -1759,7 +1871,7 @@ describe('Task 14: the finale', () => {
 });
 
 describe('continuity fixes (plan 6c Task 15 Step 6)', () => {
-  const linesOf = (id: SceneId) => STORY.scenes[id].lines;
+  const linesOf = (id: SceneId) => flatLines(STORY.scenes[id].lines);
   const textOf = (lines: ScriptLine[]) => lines.map((l) => l.text).join('');
   const reading = (id: SceneId, w: Partial<LineWhen>) =>
     linesWhen(linesOf(id), { met: [...CHARACTER_IDS], full: [...CHARACTER_IDS], returned: [], oath: true, ...w });
@@ -1894,7 +2006,7 @@ describe('V1 voice pass: the two of them, livelier (style bible §2.2 to §2.5)'
   const dots = (t: string): number => (t.match(/……/g) ?? []).length;
   const opensOnDots = (t: string): boolean => /^「?……/.test(t);
   const readings = (id: SceneId): ScriptLine[][] => [false, true].map((oath) =>
-    linesWhen(STORY.scenes[id].lines, { met: [...CHARACTER_IDS], full: [], returned: [], oath }));
+    linesWhen(flatLines(STORY.scenes[id].lines), { met: [...CHARACTER_IDS], full: [], returned: [], oath }));
   /** What a light scene, as played, breaks: more than one 「……」 in the scene, or a line that opens on one (§2.3). */
   const lightBreaks = (played: ScriptLine[]): string[] => [
     ...(dots(played.map((l) => l.text).join('')) > 1 ? ['more than one 「……」'] : []),
@@ -1948,7 +2060,7 @@ describe('V1 voice pass: the two of them, livelier (style bible §2.2 to §2.5)'
   it("a chat line of Rin's that plays on both sides of her oath wears neither guarded nor averted", () => {
     for (const id of SCENE_IDS.filter((x) => /^chat:(hero|rin):/.test(x))) {
       if (CHAT_GATE[id]?.oath === true) continue;
-      for (const l of STORY.scenes[id].lines) {
+      for (const l of flatLines(STORY.scenes[id].lines)) {
         if (l.who === 'rin' && l.if?.oath === undefined) expect(l.mood ?? 'normal', `${id}: ${l.text}`).not.toMatch(/guarded|averted/);
       }
     }
@@ -1958,7 +2070,7 @@ describe('V1 voice pass: the two of them, livelier (style bible §2.2 to §2.5)'
     const PARTICLE = /[呢吧啦喔囉嘛耶]|！/;
     for (const t of Object.values(STORY.rinLines).flat()) expect(t, t).not.toMatch(PARTICLE);
     for (const id of ['prologue-inn', 'first-return', 'chat:rin:1', 'chat:hero:2'] as SceneId[]) {
-      const rin = linesWhen(STORY.scenes[id].lines, { met: [...CHARACTER_IDS], full: [], returned: [], oath: false }).filter((l) => l.who === 'rin');
+      const rin = linesWhen(flatLines(STORY.scenes[id].lines), { met: [...CHARACTER_IDS], full: [], returned: [], oath: false }).filter((l) => l.who === 'rin');
       expect(rin.length, id).toBeGreaterThan(0);
       for (const l of rin) expect(l.text, `${id}: ${l.text}`).not.toMatch(PARTICLE);
     }
@@ -1996,15 +2108,27 @@ describe('V2 voice pass: the companions sound like themselves (style bible §2.2
     const m = STORY.meet[c as keyof typeof STORY.meet];
     const scenes: { id: string; lines: ScriptLine[] }[] = [
       { id: `meet.${c}`, lines: [...m.before, ...m.after] },
-      ...[1, 2].map((n) => ({ id: `chat:${c}:${n}`, lines: STORY.scenes[`chat:${c}:${n}` as SceneId].lines })),
-      ...((HOME_OWNERS as string[]).includes(c) ? [{ id: `home:${c}`, lines: STORY.scenes[homeScene(c as typeof HOME_OWNERS[number])].lines }] : []),
+      ...[1, 2].map((n) => ({ id: `chat:${c}:${n}`, lines: flatLines(STORY.scenes[`chat:${c}:${n}` as SceneId].lines) })),
+      ...((HOME_OWNERS as string[]).includes(c) ? [{ id: `home:${c}`, lines: flatLines(STORY.scenes[homeScene(c as typeof HOME_OWNERS[number])].lines) }] : []),
     ];
     return scenes.flatMap((s) => readings(s.lines, c).map((played) => ({ id: s.id, c, played })));
   });
+  /**
+   * Review 5: the light bond scenes (1-3, as registered) as they are heard: each reading, one way per reply (bible §2.4
+   * counts a scene as it plays, so a reply's 「！」 adds to the lines around it).
+   */
+  const bondLight = (): { id: string; played: ScriptLine[] }[] => registeredBondScenes().filter((id) => sceneKind(id) === 'bond' && !heavyScene(id))
+    .flatMap((id) => sceneReadings(id).flatMap((r) => {
+      const at = r.played.findIndex(isChoice);
+      if (at < 0) return [{ id, played: r.played as ScriptLine[] }];
+      const before = r.played.slice(0, at) as ScriptLine[];
+      const after = r.played.slice(at + 1) as ScriptLine[];
+      return (r.played[at] as ChoiceLine).choices.map((x) => ({ id: `${id} (${x.tone})`, played: [...before, { who: 'hero' as const, text: x.text }, ...x.reply, ...after] }));
+    }));
   const chatLines = (): { id: SceneId; owner: string; line: ScriptLine }[] =>
     C.flatMap((c) => [1, 2].flatMap((n) => {
       const id = `chat:${c}:${n}` as SceneId;
-      return STORY.scenes[id].lines.map((line) => ({ id, owner: c as string, line }));
+      return flatLines(STORY.scenes[id].lines).map((line) => ({ id, owner: c as string, line }));
     }));
 
   it('a light scene spends one 「……」 at most, and no line opens on one (carry from V1: meet.selene, meet.bobby)', () => {
@@ -2015,7 +2139,7 @@ describe('V2 voice pass: the companions sound like themselves (style bible §2.2
   });
 
   it('exclamation marks: three a scene at most, and only the loud ones use them', () => {
-    for (const { id, played } of light()) {
+    for (const { id, played } of [...light(), ...bondLight()]) {
       // spoken lines only: the meeting's found line (`FOUND_LINE`) is narration and not anyone's voice
       const spoken = join(played.filter((l) => l.who !== 'narrator'));
       expect((spoken.match(/！/g) ?? []).length, `${id}: ${spoken}`).toBeLessThanOrEqual(3);
@@ -2038,7 +2162,7 @@ describe('V2 voice pass: the companions sound like themselves (style bible §2.2
     // and a guest line has a stand-in for the parties that have not met her, so no chat goes thin (V2 fix 1: each one played)
     for (const { id, owner, line } of guests) {
       if (waitsFor(id, line.who)) continue;
-      const lines = STORY.scenes[id].lines;
+      const lines = flatLines(STORY.scenes[id].lines);
       const g = line.who as CharacterId;
       for (const full of [[], [owner]] as CharacterId[][]) {
         for (const oath of [false, true]) {
@@ -2057,8 +2181,8 @@ describe('V2 voice pass: the companions sound like themselves (style bible §2.2
 
   it('Scarlet never swears and Sylvie never says 「林子」 in any chat line, hers or anyone\'s narration of her', () => {
     for (const n of [1, 2]) {
-      for (const l of STORY.scenes[`chat:scarlet:${n}` as SceneId].lines) if (l.if?.full !== 'scarlet') expect(l.text).not.toMatch(/起誓|誓言/);
-      for (const l of STORY.scenes[`chat:sylvie:${n}` as SceneId].lines) if (l.if?.full !== 'sylvie') expect(l.text).not.toMatch(/林子/);
+      for (const l of flatLines(STORY.scenes[`chat:scarlet:${n}` as SceneId].lines)) if (l.if?.full !== 'scarlet') expect(l.text).not.toMatch(/起誓|誓言/);
+      for (const l of flatLines(STORY.scenes[`chat:sylvie:${n}` as SceneId].lines)) if (l.if?.full !== 'sylvie') expect(l.text).not.toMatch(/林子/);
     }
     for (const { line } of chatLines()) if (line.who === 'scarlet') expect(line.text).not.toMatch(/起誓/);
     for (const { line } of chatLines()) if (line.who === 'sylvie') expect(line.text).not.toMatch(/林子/);
@@ -2362,7 +2486,7 @@ describe('B1: town banter, two companions on their own (voice-pass sample §6)',
   });
 
   it('every banter passes its gates in every reading: speakers met by the gate, Lorne once, the light budget, Rin before her choice, faces, registers', () => {
-    expect(banterIds().flatMap((id) => banterBreaks(id, STORY.scenes[id].lines, BANTER_GATE[id], STORY.scenes[id].summary))).toEqual([]);
+    expect(banterIds().flatMap((id) => banterBreaks(id, flatLines(STORY.scenes[id].lines), BANTER_GATE[id], STORY.scenes[id].summary))).toEqual([]);
   });
 
   it('the banter gate catches what it guards', () => {
@@ -2446,7 +2570,7 @@ describe('B1: town banter, two companions on their own (voice-pass sample §6)',
   it('nobody but the two speaks besides Lorne and the narrator, and no line waits on anyone else being met', () => {
     for (const id of banterIds()) {
       const [a, b] = id.split(':')[1].split('-');
-      for (const l of STORY.scenes[id].lines) {
+      for (const l of flatLines(STORY.scenes[id].lines)) {
         expect([a, b, 'hero', 'narrator'], `${id}: ${l.who}`).toContain(l.who);
         expect(l.if?.met === undefined || l.if.met === a || l.if.met === b, `${id}: ${l.text}`).toBe(true);
       }
@@ -2454,7 +2578,7 @@ describe('B1: town banter, two companions on their own (voice-pass sample §6)',
   });
 
   it('the three sample banters (§6), in the V2 voices', () => {
-    const lines = (id: SceneId) => STORY.scenes[id].lines;
+    const lines = (id: SceneId) => flatLines(STORY.scenes[id].lines);
     // Safira drags Sylvie onto the square: her 唷 / 呀 / ～ and her nickname 「小希」; Sylvie answers in a few words (story L
     // Task 12: a hunter's few words, the exits and the wind, twenty characters at most)
     const ss = lines('banter:safira-sylvie:1');
@@ -2502,19 +2626,19 @@ describe('B2: what they say to each other (the banter content)', () => {
 
   it('after her choice Rin teases Noel back: the second banter of the two waits for it, and she speaks like the Rin who chose', () => {
     expect(BANTER_GATE['banter:noel-rin:2']).toEqual({ oath: true });
-    const rin = STORY.scenes['banter:noel-rin:2'].lines.filter((l) => l.who === 'rin');
+    const rin = flatLines(STORY.scenes['banter:noel-rin:2'].lines).filter((l) => l.who === 'rin');
     expect(rin.length).toBeGreaterThan(0);
     expect(rin.some((l) => /吧|我們|洛恩/.test(l.text))).toBe(true);   // story polish ruling 5: 吧, never 呢
     // and every other Rin banter that waits for nothing keeps her from before (story.test B1 checks each reading)
     for (const id of ids().filter((x) => twoOf(x).includes('rin') && !BANTER_GATE[x]?.oath)) {
-      for (const l of STORY.scenes[id].lines.filter((x) => x.who === 'rin')) expect(l.text, id).not.toMatch(/洛恩|我們|[呢吧啦喔囉嘛耶]|！|……|還有/);
+      for (const l of flatLines(STORY.scenes[id].lines).filter((x) => x.who === 'rin')) expect(l.text, id).not.toMatch(/洛恩|我們|[呢吧啦喔囉嘛耶]|！|……|還有/);
     }
   });
 
   it('light text: Scarlet never swears, Sylvie never says 「林子」, in any banter line or the narration around them', () => {
     for (const id of ids()) {
       const two = twoOf(id);
-      for (const l of STORY.scenes[id].lines) {
+      for (const l of flatLines(STORY.scenes[id].lines)) {
         if (l.who === 'scarlet' || (two.includes('scarlet') && l.who === 'narrator')) expect(l.text, id).not.toMatch(/起誓|誓言/);
         if (l.who === 'sylvie' || (two.includes('sylvie') && l.who === 'narrator')) expect(l.text, id).not.toMatch(/林子/);
       }
@@ -2522,17 +2646,17 @@ describe('B2: what they say to each other (the banter content)', () => {
   });
 
   it('no line is said twice across the banters, and Lorne never counts (his counting joke is used up)', () => {
-    const all = ids().flatMap((id) => STORY.scenes[id].lines.map((l) => l.text));
+    const all = ids().flatMap((id) => flatLines(STORY.scenes[id].lines).map((l) => l.text));
     expect(new Set(all).size).toBe(all.length);
     const COUNT = /第[一二三四五六七八九十]+[支塊遍道次口個隻]|[一二三四五六七八九十]+遍了/;
-    for (const id of ids()) for (const l of STORY.scenes[id].lines.filter((x) => x.who === 'hero')) expect(l.text, id).not.toMatch(COUNT);
+    for (const id of ids()) for (const l of flatLines(STORY.scenes[id].lines).filter((x) => x.who === 'hero')) expect(l.text, id).not.toMatch(COUNT);
   });
 
   it('no one runs on one bit (B2 fix 1): Scarlet\'s report in two banters at most, 「一下下」 is Bobby\'s, and Safira\'s 「小嘉」 is not 「小蕾」', () => {
-    const said = (id: SceneId, who: string): string => STORY.scenes[id].lines.filter((l) => l.who === who).map((l) => l.text).join('');
+    const said = (id: SceneId, who: string): string => flatLines(STORY.scenes[id].lines).filter((l) => l.who === who).map((l) => l.text).join('');
     expect(ids().filter((id) => /回報/.test(said(id, 'scarlet'))).length).toBeLessThanOrEqual(2);
     for (const id of ids()) {
-      for (const l of STORY.scenes[id].lines) if (l.who !== 'bobby') expect(l.text, id).not.toContain('一下下');
+      for (const l of flatLines(STORY.scenes[id].lines)) if (l.who !== 'bobby') expect(l.text, id).not.toContain('一下下');
       expect(said(id, 'safira'), id).not.toContain('小蕾');   // 小蕾 reads as Selene (瑟蕾)
       expect(said(id, 'chizuru'), id).not.toContain('有靈附身');   // the bible's description, not her line
     }
@@ -2543,7 +2667,7 @@ describe('B2: what they say to each other (the banter content)', () => {
 
   it('each banter is two voices: both speak, and the last line is one of the two or the narration (a button, not Lorne)', () => {
     for (const id of ids()) {
-      const lines = linesWhen(STORY.scenes[id].lines, { met: [...CHARACTER_IDS], full: [...CHARACTER_IDS], returned: [], oath: true });
+      const lines = linesWhen(flatLines(STORY.scenes[id].lines), { met: [...CHARACTER_IDS], full: [...CHARACTER_IDS], returned: [], oath: true });
       expect(lines.at(-1)!.who, id).not.toBe('hero');
     }
   });
@@ -2582,7 +2706,7 @@ describe('story depth Task 4: banters, gates and the hero\'s fifth chat', () => 
     });
     expect(CHAT_COUNT.hero).toBe(5);
     expect(CHAT_GATE['chat:hero:5']).toEqual({ stage: 'act4' });
-    expect(STORY.scenes['chat:hero:5'].lines.map((l) => l.who)).toEqual(['anna', 'hero', 'anna']);
+    expect(flatLines(STORY.scenes['chat:hero:5'].lines).map((l) => l.who)).toEqual(['anna', 'hero', 'anna']);
   });
 
   it('gates agree with her choice', () => {
@@ -2634,7 +2758,7 @@ describe('story polish Task 2: the S1 lines', () => {
   const ALL: LineWhen = { met: [...CHARACTER_IDS], full: [], returned: [], oath: false };
   /** The line `who` says in `scene` that is exactly `text` (narration may hold it as one of its sentences). */
   const said = (scene: SceneId, who: ScriptLine['who'], text: string): ScriptLine[] =>
-    STORY.scenes[scene].lines.filter((l) => l.who === who && (who === 'narrator' ? l.text.includes(text) : l.text === text));
+    flatLines(STORY.scenes[scene].lines).filter((l) => l.who === who && (who === 'narrator' ? l.text.includes(text) : l.text === text));
 
   it('the S1 lines read whole (story polish Task 2)', () => {
     // Task 3 (ruling 11): each final pinned by its beat, a key noun or fact, not by its wording.
@@ -2657,7 +2781,7 @@ describe('story polish Task 2: the S1 lines', () => {
     const all = storyTexts().map((t) => t.text).join('｜');
     for (const old of ['只剩下面', '彈簧上太緊', '看過了。今晚，去睡床', '原來我一直，想回來', '我被派來殺你。我現在選擇不要', '像是不知道他在哪裡，就睡不著']) expect(all, old).not.toContain(old);
     // Each reading of Liz's fifth piece: four lines; with Orik back, his line speaks from now, not from the day she left.
-    const liz = STORY.scenes['mem:liz:5'].lines;
+    const liz = flatLines(STORY.scenes['mem:liz:5'].lines);
     const back = linesWhen(liz, { ...ALL, returned: ['orik'] });
     const notBack = linesWhen(liz, ALL);
     expect(back).toHaveLength(4);
@@ -2676,11 +2800,11 @@ describe('story depth Task 7: the reveal, the keeper in town, act 3, the truths 
   const beat = (id: SceneId, reading: Partial<LineWhen>, re: RegExp, who: ScriptLine['who']): void => {
     expect(() => pinBeat(id, reading, re), `${id} ${re}`).not.toThrow();
     const w: LineWhen = { met: [...CHARACTER_IDS], full: [], returned: [], oath: false, ...reading };
-    expect(linesWhen(STORY.scenes[id].lines, w).find((l) => re.test(l.text))!.who, `${id} ${re}`).toBe(who);
+    expect(linesWhen(flatLines(STORY.scenes[id].lines), w).find((l) => re.test(l.text))!.who, `${id} ${re}`).toBe(who);
   };
 
   it("the reveal: twelve lines in the design's order; she sheathes the knife herself, and he says why he never asked", () => {
-    const lines = STORY.scenes['rin-reveal'].lines;
+    const lines = flatLines(STORY.scenes['rin-reveal'].lines);
     expect(lines).toHaveLength(12);
     beat('rin-reveal', {}, /繃帶/, 'narrator');
     beat('rin-reveal', {}, /收刀的.*是我/, 'rin');   // the first night's 「身體自己動的」 answered (design §6, 2)
@@ -2701,7 +2825,7 @@ describe('story depth Task 7: the reveal, the keeper in town, act 3, the truths 
     beat('bellkeeper-arrives', after, /市集/, 'bellkeeper');
     beat('bellkeeper-arrives', after, /站在目標身後一步/, 'bellkeeper');
     beat('bellkeeper-arrives', after, /我叫洛恩/, 'hero');
-    const lines = STORY.scenes['bellkeeper-arrives'].lines;
+    const lines = flatLines(STORY.scenes['bellkeeper-arrives'].lines);
     const last = lines[lines.length - 1];
     expect(last.who).toBe('narrator');
     expect(last.text).toMatch(/沒有再看他一眼/);
@@ -2713,11 +2837,11 @@ describe('story depth Task 7: the reveal, the keeper in town, act 3, the truths 
 
   it('act 3: twelve lines; the registry runs every few decades, and Rin presses her bell at its last entry, either side of her choice', () => {
     for (const oath of [false, true]) {
-      expect(linesWhen(STORY.scenes.act3.lines, { met: [...CHARACTER_IDS], full: [], returned: [], oath })).toHaveLength(12);
+      expect(linesWhen(flatLines(STORY.scenes.act3.lines), { met: [...CHARACTER_IDS], full: [], returned: [], oath })).toHaveLength(12);
       beat('act3', { oath }, /按住了.*銅鐘/, 'narrator');
       beat('act3', { oath }, /每隔幾十年/, 'anna');
     }
-    const bell = STORY.scenes.act3.lines.find((l) => /按住了.*銅鐘/.test(l.text))!;
+    const bell = flatLines(STORY.scenes.act3.lines).find((l) => /按住了.*銅鐘/.test(l.text))!;
     expect(bell.if).toBeUndefined();
     expect(bell.text).not.toMatch(/視線|移開|避開|別開|不看|別看/);
   });
@@ -2726,7 +2850,7 @@ describe('story depth Task 7: the reveal, the keeper in town, act 3, the truths 
     expect(STORY.truths.after).toMatch(/十段/);
     expect(STORY.truths.after).toMatch(/筆記/);
     expect(STORY.truths.after).not.toContain('……');
-    const first = STORY.scenes['mem:rin:4'].lines[0];
+    const first = flatLines(STORY.scenes['mem:rin:4'].lines)[0];
     expect(first.who).toBe('narrator');
     expect(first.text).toMatch(/抄/);
     expect(first.text).toMatch(/最後一道/);
@@ -2737,7 +2861,7 @@ describe('story depth Task 8: Selene and Chizuru', () => {
   const reading = (oath: boolean): LineWhen => ({ met: [...CHARACTER_IDS], full: [], returned: [], oath });
 
   it("Selene's fifth piece: the back that falls before the exit; after Rin's choice she owns it, before it she keeps quiet (design §7.4)", () => {
-    const five = STORY.scenes['mem:selene:5'].lines;
+    const five = flatLines(STORY.scenes['mem:selene:5'].lines);
     for (const oath of [false, true]) {
       const lines = linesWhen(five, reading(oath));
       expect(lines, `oath ${oath}`).toHaveLength(4);
@@ -2762,10 +2886,10 @@ describe('story depth Task 8: Selene and Chizuru', () => {
 
 describe('story depth Task 9: Safira and Sylvie', () => {
   const ALL: LineWhen = { met: [...CHARACTER_IDS], full: [], returned: [], oath: false };
-  const who = (id: SceneId, re: RegExp) => linesWhen(STORY.scenes[id].lines, ALL).find((l) => re.test(l.text))!.who;
+  const who = (id: SceneId, re: RegExp) => linesWhen(flatLines(STORY.scenes[id].lines), ALL).find((l) => re.test(l.text))!.who;
 
   it("Sylvie's last piece turns on a choice now: she would hand him the seed, he will not take it, she plants it herself (design §7.6)", () => {
-    const lines = linesWhen(STORY.scenes['mem:sylvie:5'].lines, ALL);
+    const lines = linesWhen(flatLines(STORY.scenes['mem:sylvie:5'].lines), ALL);
     expect(lines).toHaveLength(4);
     expect(() => pinBeat('mem:sylvie:5', {}, /最後一顆種子/)).not.toThrow();   // the past: the last seed of the oldest tree
     expect(() => pinBeat('mem:sylvie:5', {}, /妳帶出來的/)).not.toThrow();
@@ -2774,11 +2898,11 @@ describe('story depth Task 9: Safira and Sylvie', () => {
     expect(who('mem:sylvie:5', /自己種/)).toBe('sylvie');
     expect(lines[lines.length - 1].who).toBe('sylvie');
     expect(lines.some((l) => /人，我都帶出去了/.test(l.text))).toBe(false);   // a whole sentence now
-    expect(linesWhen(STORY.scenes['home:sylvie'].lines, ALL).some((l) => /發芽/.test(l.text))).toBe(true);   // the sprout still answers it
+    expect(linesWhen(flatLines(STORY.scenes['home:sylvie'].lines), ALL).some((l) => /發芽/.test(l.text))).toBe(true);   // the sprout still answers it
   });
 
   it("Safira's last piece: she stops for the first time and thinks of them one by one, with no joke about the troupe (design §7.6)", () => {
-    const lines = linesWhen(STORY.scenes['mem:safira:5'].lines, ALL);
+    const lines = linesWhen(flatLines(STORY.scenes['mem:safira:5'].lines), ALL);
     expect(lines).toHaveLength(4);
     expect(() => pinBeat('mem:safira:5', {}, /停下腳步/)).not.toThrow();
     expect(who('mem:safira:5', /停下腳步/)).toBe('narrator');
@@ -2791,7 +2915,7 @@ describe('story depth Task 9: Safira and Sylvie', () => {
 
 describe('story depth Task 10: Noel and Bobby', () => {
   const ALL: LineWhen = { met: [...CHARACTER_IDS], full: [], returned: [], oath: false };
-  const lines = (id: SceneId, w: LineWhen = ALL) => linesWhen(STORY.scenes[id].lines, w);
+  const lines = (id: SceneId, w: LineWhen = ALL) => linesWhen(flatLines(STORY.scenes[id].lines), w);
   const who = (id: SceneId, re: RegExp) => lines(id).find((l) => re.test(l.text))!.who;
 
   it("Noel's fourth piece turns now: she owns why her teacher refused, tears out the page and means to hand it back (design §7.6)", () => {
@@ -2825,7 +2949,7 @@ describe('story depth Task 10: Noel and Bobby', () => {
 
 describe('story depth Task 11: Liz and Scarlet', () => {
   const ALL: LineWhen = { met: [...CHARACTER_IDS], full: [], returned: [], oath: false };
-  const lines = (id: SceneId) => linesWhen(STORY.scenes[id].lines, ALL);
+  const lines = (id: SceneId) => linesWhen(flatLines(STORY.scenes[id].lines), ALL);
 
   it("Scarlet's last piece turns now: the horns were the retreat, and she moves her shield to stand beside him (design §7.6)", () => {
     const five = lines('mem:scarlet:5');
@@ -2858,11 +2982,11 @@ describe('story depth Task 12: the light banters keep their setups', () => {
   const ALL: LineWhen = { met: [...CHARACTER_IDS], full: [], returned: [], oath: false };
   it('the half 「早安」, the spring lord and the 「吵」 stay where the later scenes call them back (design §6, 16, 17; sample one)', () => {
     expect(() => pinBeat('banter:chizuru-rin:1', {}, /另外半句/)).not.toThrow();
-    const rin = linesWhen(STORY.scenes['banter:chizuru-rin:1'].lines, ALL).filter((l) => l.who === 'rin');
+    const rin = linesWhen(flatLines(STORY.scenes['banter:chizuru-rin:1'].lines), ALL).filter((l) => l.who === 'rin');
     expect(rin.some((l) => /明天/.test(l.text))).toBe(true);   // the other half, tomorrow
     expect(() => pinBeat('banter:bobby-chizuru:1', {}, /彈簧大人/)).not.toThrow();
-    expect(linesWhen(STORY.scenes['banter:bobby-chizuru:1'].lines, ALL).find((l) => /彈簧大人/.test(l.text))!.who).toBe('chizuru');
-    const loud = linesWhen(STORY.scenes['banter:rin-scarlet:1'].lines, ALL);
+    expect(linesWhen(flatLines(STORY.scenes['banter:bobby-chizuru:1'].lines), ALL).find((l) => /彈簧大人/.test(l.text))!.who).toBe('chizuru');
+    const loud = linesWhen(flatLines(STORY.scenes['banter:rin-scarlet:1'].lines), ALL);
     expect(loud.filter((l) => l.who === 'rin' && /吵/.test(l.text)).length).toBeGreaterThan(0);
     expect(() => pinBeat('banter:rin-scarlet:1', {}, /鎧甲/)).not.toThrow();   // the armour that is loud
   });
@@ -2885,7 +3009,7 @@ describe('story depth Task 13: the friction banters', () => {
   it('each friction banter keeps its sting, and the sting is not the last line (design §4.3)', () => {
     for (const [id, re] of beats) {
       expect(() => pinBeat(id, {}, re), `${id} ${re}`).not.toThrow();
-      const lines = linesWhen(STORY.scenes[id].lines, ALL);
+      const lines = linesWhen(flatLines(STORY.scenes[id].lines), ALL);
       expect(re.test(lines[lines.length - 1].text), `${id}: the sting closes it`).toBe(false);
     }
     expect(beats).toHaveLength(9);
@@ -2894,14 +3018,14 @@ describe('story depth Task 13: the friction banters', () => {
     expect(() => pinBeat('banter:bobby-sylvie:2', {}, /背帶/)).not.toThrow();
   });
   it('rin-selene:1 does not name the knife yet (fix one), and no banter here preaches a choice', () => {
-    expect(linesWhen(STORY.scenes['banter:rin-selene:1'].lines, ALL).map((l) => l.text).join('')).not.toMatch(/刀|短刃/);
-    for (const [id] of beats) expect(STORY.scenes[id].lines.map((l) => l.text).join(''), id).not.toMatch(/選擇|我選/);
+    expect(linesWhen(flatLines(STORY.scenes['banter:rin-selene:1'].lines), ALL).map((l) => l.text).join('')).not.toMatch(/刀|短刃/);
+    for (const [id] of beats) expect(flatLines(STORY.scenes[id].lines).map((l) => l.text).join(''), id).not.toMatch(/選擇|我選/);
   });
 });
 
 describe('story depth Task 14: her confession and the lone morning', () => {
   const W = (o: Partial<LineWhen> = {}): LineWhen => ({ met: [...CHARACTER_IDS], full: [], returned: [], oath: true, seen: [], ...o });
-  const play = (id: SceneId, w: LineWhen) => linesWhen(STORY.scenes[id].lines, w);
+  const play = (id: SceneId, w: LineWhen) => linesWhen(flatLines(STORY.scenes[id].lines), w);
   const by = (id: SceneId, w: LineWhen, re: RegExp) => play(id, w).find((l) => re.test(l.text))!;
 
   it("the confession: each one's beat, at dinner, or at the bottom when it is owed there (ruling: full:'hero')", () => {
@@ -2948,13 +3072,13 @@ describe('story depth Task 14: her confession and the lone morning', () => {
       expect(quote.who).toBe('scarlet');
       expect(quote.text).toContain('『不必替我擋』');   // as he said it in chat:scarlet:2
     }
-    expect(STORY.scenes['chat:scarlet:2'].lines.some((l) => l.who === 'hero' && l.text.includes('不必替我擋'))).toBe(true);
+    expect(flatLines(STORY.scenes['chat:scarlet:2'].lines).some((l) => l.who === 'hero' && l.text.includes('不必替我擋'))).toBe(true);
   });
 });
 
 describe('story depth Task 15: the banters after her choice', () => {
   const W = (o: Partial<LineWhen> = {}): LineWhen => ({ met: [...CHARACTER_IDS], full: [], returned: [], oath: true, seen: [], ...o });
-  const play = (id: SceneId, w: LineWhen) => linesWhen(STORY.scenes[id].lines, w);
+  const play = (id: SceneId, w: LineWhen) => linesWhen(flatLines(STORY.scenes[id].lines), w);
   it("rin-selene:2 opens on what Rin can know in either reading of Selene's fifth piece, and closes on her own words (design §6, 7)", () => {
     const w = W({ full: ['selene'] });
     const lines = play('banter:rin-selene:2', w);
@@ -3015,7 +3139,7 @@ describe('story depth Task 16: the finale and the lantern festival', () => {
       n++;
     }
     expect(n).toBeGreaterThan(100);
-    expect(STORY.scenes.finale.lines.some((l) => l.who === 'narrator' && /鐘守/.test(l.text) && /一句話也沒說/.test(l.text))).toBe(true);
+    expect(flatLines(STORY.scenes.finale.lines).some((l) => l.who === 'narrator' && /鐘守/.test(l.text) && /一句話也沒說/.test(l.text))).toBe(true);
   });
 
   it("the valve's first light is his, as Bobby said it would be, in every way she is there or not (design §6, 27)", () => {
@@ -3023,11 +3147,11 @@ describe('story depth Task 16: the finale and the lantern festival', () => {
     const metOnly: LineWhen = { ...full, full: [] };
     const unmet: LineWhen = { ...full, met: CHARACTER_IDS.filter((c) => c !== 'bobby'), full: [] };
     for (const w of [full, metOnly, unmet]) {
-      const L = linesWhen(STORY.scenes.finale.lines, w);
+      const L = linesWhen(flatLines(STORY.scenes.finale.lines), w);
       expect(L.some((l) => /回不來的光|不歸之光/.test(l.text)), JSON.stringify(w.met.length)).toBe(true);
     }
-    expect(linesWhen(STORY.scenes.finale.lines, full).find((l) => l.who === 'bobby')!.text).toMatch(/我家的人/);
-    expect(STORY.scenes['mem:hero:10'].lines.filter((l) => /要回來/.test(l.text))).toHaveLength(1);
+    expect(linesWhen(flatLines(STORY.scenes.finale.lines), full).find((l) => l.who === 'bobby')!.text).toMatch(/我家的人/);
+    expect(flatLines(STORY.scenes['mem:hero:10'].lines).filter((l) => /要回來/.test(l.text))).toHaveLength(1);
   });
 
   it("the festival: Marta reads the diary, Anna's form, and Lorne's last word; townsfolk returns fold into their beats; no romance", () => {
@@ -3041,7 +3165,7 @@ describe('story depth Task 16: the finale and the lantern festival', () => {
       expect(L[L.length - 1].who, at).toBe('hero');
       expect(L.map((l) => l.text).join(''), at).not.toMatch(/喜歡|戀|心契|告白/);
     }
-    const lines = STORY.scenes.epilogue.lines;
+    const lines = flatLines(STORY.scenes.epilogue.lines);
     expect(lines.some((l) => l.if?.returned === 'marta')).toBe(true);
     expect(lines.some((l) => l.if?.returned === 'anna')).toBe(true);
     expect(sceneReadings('epilogue').every((r) => r.lines.length === 6)).toBe(true);   // folded in, not added (controller ruling)
@@ -3065,7 +3189,7 @@ describe('story depth Task 17: the town day to day', () => {
     const after = STORY.townLines.after!;
     one(after, /半個|一半/, 'after');
     expect(() => pinBeat('chat:hero:5', {}, /登記表/)).not.toThrow();
-    expect(linesWhen(STORY.scenes['chat:hero:5'].lines, { met: [...CHARACTER_IDS], full: [], returned: [], oath: false }).find((l) => /登記表/.test(l.text))!.who).toBe('anna');
+    expect(linesWhen(flatLines(STORY.scenes['chat:hero:5'].lines), { met: [...CHARACTER_IDS], full: [], returned: [], oath: false }).find((l) => /登記表/.test(l.text))!.who).toBe('anna');
   });
   it('the act 4 town pool hands 「一起回來」 back and favours no one, and stays mostly light (design §7.7, ruling 15)', () => {
     const act4 = STORY.townLines.act4!;
@@ -3078,7 +3202,7 @@ describe('story depth Task 17: the town day to day', () => {
 
 describe('story depth Task 18: the townsfolk returns and the bellkeeper', () => {
   const pin = (id: SceneId, reading: Partial<LineWhen>, re: RegExp) => expect(() => pinBeat(id, reading, re), `${id} ${re}`).not.toThrow();
-  const said = (id: SceneId, re: RegExp) => STORY.scenes[id].lines.find((l) => re.test(l.text));
+  const said = (id: SceneId, re: RegExp) => flatLines(STORY.scenes[id].lines).find((l) => re.test(l.text));
   const oath = () => STORY.bellkeeper.oath.map((l) => l.text);
   /** How many of a speaker's lines carry 「……」 over the whole script, and how many lines they have. */
   const share = (who: string) => {
@@ -3092,7 +3216,7 @@ describe('story depth Task 18: the townsfolk returns and the bellkeeper', () => 
       pin('town:glen', {}, re);
       expect(said('town:glen', re)!.who, String(re)).toBe('glen');
     }
-    const L = STORY.scenes['town:glen'].lines;
+    const L = flatLines(STORY.scenes['town:glen'].lines);
     expect(L[L.length - 1].text).toMatch(/這一次，我記住了/);   // the closing stays his
     const at = (re: RegExp) => L.findIndex((l) => re.test(l.text));
     expect(at(/想起來了/)).toBeLessThan(at(/穿長袍的年輕人/));
@@ -3112,7 +3236,7 @@ describe('story depth Task 18: the townsfolk returns and the bellkeeper', () => 
     expect(blink[0].if).toBeUndefined();
     for (const t of oath()) expect(t, t).not.toMatch(/原諒|和好|對不起|孩子笑/);
     // Rin says one word to him in his arrival and nothing after it
-    const arrives = STORY.scenes['bellkeeper-arrives'].lines;
+    const arrives = flatLines(STORY.scenes['bellkeeper-arrives'].lines);
     const rinAfter = arrives.slice(arrives.findIndex((l) => l.who === 'rin' && /師父/.test(l.text)) + 1).filter((l) => l.who === 'rin');
     expect(rinAfter).toEqual([]);
   });
@@ -3156,7 +3280,7 @@ describe('story depth: the final review', () => {
   const text = (lines: ScriptLine[]) => lines.map((l) => l.text).join('');
 
   it("the keeper's arrival read at floor 30 waits at the lamp, not in town; 「師父」 and her silence stay, nobody forgives", () => {
-    const L = STORY.scenes['bellkeeper-arrives'].lines;
+    const L = flatLines(STORY.scenes['bellkeeper-arrives'].lines);
     const town = linesWhen(L, all());
     const lamp = linesWhen(L, all({ full: ['hero'] }));   // owed at the finale, his tenth in hand (plan ruling 8)
     for (const [at, r] of [['town', town], ['lamp', lamp]] as const) {
@@ -3190,7 +3314,7 @@ describe('story depth: the final review', () => {
       expect(r.lines.indexOf(kept[0])).toBeGreaterThan(r.lines.findIndex((l) => l.who === 'hero' && /十段/.test(l.text)));
       expect(text(r.lines)).not.toMatch(/燈要的是記憶/);   // the lone morning says it; the finale says it its own way
     }
-    expect(text(STORY.scenes['hero-alone'].lines)).toMatch(/燈要的是記憶/);
+    expect(text(flatLines(STORY.scenes['hero-alone'].lines))).toMatch(/燈要的是記憶/);
   });
 
   it("Rin after her choice dares to look at him; none of her lines reads as a confession (romance neutral)", () => {
@@ -3202,7 +3326,7 @@ describe('story depth: the final review', () => {
 
   it('each says it her own way: Sylvie never backs anyone off three steps; one handbook page says 「現在她叫我洛恩」', () => {
     for (const t of storyTexts().filter((x) => speakerOf(x.key, x.line) === 'sylvie')) expect(t.text).not.toMatch(/退後三步/);
-    expect(text(STORY.scenes['rin-confess'].lines)).toMatch(/退後三步/);   // Scarlet's
+    expect(text(flatLines(STORY.scenes['rin-confess'].lines))).toMatch(/退後三步/);   // Scarlet's
     const pages = Object.values(STORY.people).flat().filter((t) => t.includes('現在她叫我洛恩'));
     expect(pages).toHaveLength(1);
     expect(STORY.people.rin.some((t) => t.includes('現在她叫我洛恩'))).toBe(true);
@@ -3223,28 +3347,28 @@ describe('memory lines: past and present (staging S5)', () => {
   it('every memory holds a remembered past line (or says why not) and ends in the present; it may open in either', () => {
     expect(memories).toHaveLength(57);
     for (const id of memories) {
-      const lines = STORY.scenes[id].lines;
+      const lines = flatLines(STORY.scenes[id].lines);
       expect(lines.some((l) => l.past), `${id} has a past line`).toBe(!NO_PAST[id]);
       expect(lines[lines.length - 1].past, `${id} ends in the present`).toBeUndefined();
     }
   });
 
   it('the tags are data: 122 past lines, all in memory scenes, all narration', () => {
-    const past = SCENE_IDS.flatMap((id) => STORY.scenes[id].lines.filter((l) => l.past).map((l) => ({ id, l })));
+    const past = SCENE_IDS.flatMap((id) => flatLines(STORY.scenes[id].lines).filter((l) => l.past).map((l) => ({ id, l })));
     expect(past).toHaveLength(122);
     expect(past.filter(({ id }) => sceneKind(id) !== 'memory')).toEqual([]);
     expect(past.filter(({ l }) => l.who !== 'narrator').map(({ id, l }) => `${id}: ${l.text}`)).toEqual([]);
-    for (const id of SCENE_IDS) for (const l of STORY.scenes[id].lines) expect(l.past === undefined || l.past === true, id).toBe(true);
+    for (const id of SCENE_IDS) for (const l of flatLines(STORY.scenes[id].lines)) expect(l.past === undefined || l.past === true, id).toBe(true);
   });
 
   it("Rin's answer is said now, the bell tower is remembered", () => {
-    const rin1 = STORY.scenes['mem:rin:1'].lines;
+    const rin1 = flatLines(STORY.scenes['mem:rin:1'].lines);
     expect(rin1.map((l) => !!l.past)).toEqual([true, true, false, false]);
     expect(rin1[2].who).toBe('rin');   // story polish M: no 「想起什麼了？」 prompt; she says it, then a present beat
     // the eighth line of Rin's seventh is the chase she remembers; from her line on she is here again
-    expect(STORY.scenes['mem:rin:7'].lines.map((l) => !!l.past)).toEqual([true, true, true, true, true, true, false, false, false, false, false, false]);
+    expect(flatLines(STORY.scenes['mem:rin:7'].lines).map((l) => !!l.past)).toEqual([true, true, true, true, true, true, false, false, false, false, false, false]);
     // Liz's father's arms are the evening she left; his words with Orik's fragment back are said now
-    const liz5 = STORY.scenes['mem:liz:5'].lines;
+    const liz5 = flatLines(STORY.scenes['mem:liz:5'].lines);
     expect(liz5.filter((l) => l.past).map((l) => l.who)).toEqual(['narrator', 'narrator']);
     expect(liz5.find((l) => l.who === 'orik')!.past).toBeUndefined();
   });
@@ -3252,7 +3376,7 @@ describe('memory lines: past and present (staging S5)', () => {
 
 // Story staging S6 (2026-10-23): where a scene happens, as a one-line card (no new art). Data, not script text.
 describe('scene places (staging S6)', () => {
-  const placed = SCENE_IDS.flatMap((id) => STORY.scenes[id].lines.flatMap((l, i) => (l.place ? [{ id, i, l, place: l.place }] : [])));
+  const placed = SCENE_IDS.flatMap((id) => flatLines(STORY.scenes[id].lines).flatMap((l, i) => (l.place ? [{ id, i, l, place: l.place }] : [])));
 
   it('a place card is one short line: a place, then its time after 「・」, with no sentence stop', () => {
     expect(placed.length).toBeGreaterThan(30);
@@ -3269,7 +3393,7 @@ describe('scene places (staging S6)', () => {
       'hero-alone': "Rin against the room's door as on first-return's inn night, the corridor, Marta on the stairs",
     };
     for (const { id, place } of placed) {
-      const said = STORY.scenes[id].lines.filter((n) => n.who === 'narrator').map((n) => n.text).join('');
+      const said = flatLines(STORY.scenes[id].lines).filter((n) => n.who === 'narrator').map((n) => n.text).join('');
       const where = place.text.split('・')[0].replace(/屋頂$/, '');
       expect(!!BY_CONTEXT[id] || said.includes(where) || said.includes(where.replace('月影旅館', '旅館')), `${id}: ${place.text}`).toBe(true);
     }
@@ -3280,7 +3404,8 @@ describe('scene places (staging S6)', () => {
   });
 
   it('the night scenes dim the town, and the reveal night ends at dawn', () => {
-    const at = (id: SceneId) => placed.filter((p) => p.id === id).map((p) => ({ i: p.i, ...p.place }));
+    // the card and its night (review of bond plan Task 22: a card's backdrop and hall are the bond scenes' staging, read apart)
+    const at = (id: SceneId) => placed.filter((p) => p.id === id).map((p) => ({ i: p.i, text: p.place.text, ...(p.place.night ? { night: true } : {}) }));
     expect(at('prologue-inn')).toEqual([{ i: 0, text: '月影旅館・深夜', night: true }]);
     expect(at('prologue')).toEqual([{ i: 0, text: '傳送門廣場・黎明前' }, { i: 3, text: '冒險者公會' }]);
     expect(at('act2')).toEqual([{ i: 0, text: '冒險者公會' }, { i: 8, text: '月影旅館' }]);
@@ -3321,7 +3446,7 @@ describe('story L: the group scenes (Task 7)', () => {
       if (!id) continue;
       expect(id).toBe(groupScene(node));
       expect(SCENE_IDS, id).toContain(id);
-      expect(groupShapeBreaks(id, STORY.scenes[id].lines), id).toEqual([]);
+      expect(groupShapeBreaks(id, flatLines(STORY.scenes[id].lines)), id).toEqual([]);
       expect(STORY.scenes[id].title).toBe(GROUP_TITLES[id]);
     }
     expect(Object.keys(GROUP_GATE).sort()).toEqual(ACT_NODES.map(groupScene).sort());
@@ -3335,8 +3460,8 @@ describe('story L: the group scenes (Task 7)', () => {
 
   /** The group scenes written so far (Tasks 9-11), with their lines. */
   const written = (): [GroupScene, ScriptLine[]][] =>
-    ACT_NODES.flatMap((n): [GroupScene, ScriptLine[]][] => { const id = REACTIONS[n]; return id ? [[id, STORY.scenes[id].lines]] : []; });
-  const said = (id: GroupScene, re: RegExp): ScriptLine | undefined => STORY.scenes[id].lines.find((l) => re.test(l.text));
+    ACT_NODES.flatMap((n): [GroupScene, ScriptLine[]][] => { const id = REACTIONS[n]; return id ? [[id, flatLines(STORY.scenes[id].lines)]] : []; });
+  const said = (id: GroupScene, re: RegExp): ScriptLine | undefined => flatLines(STORY.scenes[id].lines).find((l) => re.test(l.text));
 
   it("a group scene plays at any count of anyone's pieces told: no line turns with them, and Rin speaks as before her choice (Tasks 9-11)", () => {
     // its gate meets the cast and nothing more (`GROUP_GATE`), so each line must hold for a companion who has told nothing
@@ -3375,14 +3500,14 @@ describe('story L: the group scenes (Task 7)', () => {
     expect(said(id, /看到又不講/)?.who).toBe('noel');
     expect(said(id, /銅板/)?.who).toBe('narrator');   // the coin is hers, taken out before she speaks (cold read)
     expect(said(id, /問問月亮/)?.who).toBe('selene');
-    expect(STORY.scenes[id].lines.findIndex((l) => /銅板/.test(l.text))).toBeLessThan(STORY.scenes[id].lines.findIndex((l) => /問問月亮/.test(l.text)));
-    expect(STORY.scenes[id].lines.at(-1)!.text).toMatch(/凜.*包好.*袖/);   // Rin keeps to selling: her share wrapped, last
+    expect(flatLines(STORY.scenes[id].lines).findIndex((l) => /銅板/.test(l.text))).toBeLessThan(flatLines(STORY.scenes[id].lines).findIndex((l) => /問問月亮/.test(l.text)));
+    expect(flatLines(STORY.scenes[id].lines).at(-1)!.text).toMatch(/凜.*包好.*袖/);   // Rin keeps to selling: her share wrapped, last
     expect(said(id, /自己說/)?.who).toBe('hero');
     expect(said(id, /袖/)?.who).toBe('narrator');
     // review fix 16: the grey shard Lorne kept is cut; he takes none
-    for (const l of STORY.scenes[id].lines) if (l.who === 'hero') expect(l.text).not.toMatch(/留著|這一片我/);
+    for (const l of flatLines(STORY.scenes[id].lines)) if (l.who === 'hero') expect(l.text).not.toMatch(/留著|這一片我/);
     // the guild's debt was crossed off in act 1 (I-84, I-96): Rin sells so that nobody owes anybody
-    expect(STORY.scenes[id].lines.map((l) => l.text).join('')).not.toMatch(/欠(公會|著|的|錢|帳)/);
+    expect(flatLines(STORY.scenes[id].lines).map((l) => l.text).join('')).not.toMatch(/欠(公會|著|的|錢|帳)/);
   });
 
   it('group:act3 keeps its beats: Sylvie saw the collar, Lorne will not ask, forty-two steps, the door (Task 10)', () => {
@@ -3393,13 +3518,13 @@ describe('story L: the group scenes (Task 7)', () => {
     expect(said(id, /不問。/)?.who).toBe('hero');
     expect(said(id, /四十二/)?.who).toBe('rin');
     expect(said(id, /門邊/)?.who).toBe('narrator');
-    expect(STORY.scenes[id].lines.at(-1)!.text).toMatch(/凜和希爾薇並排坐在門邊/);
+    expect(flatLines(STORY.scenes[id].lines).at(-1)!.text).toMatch(/凜和希爾薇並排坐在門邊/);
     expect(said(id, /領口/)!.text).toMatch(/腳步聲.*回頭/);   // she reads as afraid of being followed: footsteps, not bells (cold read)
-    expect(STORY.scenes[id].lines[0].text).toMatch(/窗閂/);   // she checks the window before she goes down
+    expect(flatLines(STORY.scenes[id].lines)[0].text).toMatch(/窗閂/);   // she checks the window before she goes down
   });
 
   it('group:act3 never ties the bell to the society, nor says 殺 or 刺客: they take her for the hunted (Task 10, spec §6.2)', () => {
-    const all = [...STORY.scenes['group:act3'].lines.map((l) => l.text), STORY.scenes['group:act3'].summary].join('');
+    const all = [...flatLines(STORY.scenes['group:act3'].lines).map((l) => l.text), STORY.scenes['group:act3'].summary].join('');
     expect(all.includes('鐘') && all.includes('靜鐘會'), all).toBe(false);
     expect(all).not.toMatch(/殺|刺客|林子/);
     expect(all).toMatch(/被人追/);   // the misreading, said aloud: she is the one hunted
@@ -3415,10 +3540,10 @@ describe('story L: the group scenes (Task 7)', () => {
     expect(said(id, /那就我/)?.who).toBe('hero');
     expect(said(id, /難過/)?.who).toBe('safira');
     // she sits down first, and the purse is still on the table at dawn: the last line, an action
-    expect(STORY.scenes[id].lines.at(-1)!.text).toMatch(/坐.*天亮/);
-    expect(STORY.scenes[id].lines.some((l) => l.who === 'rin')).toBe(false);   // Rin is on the roof (spec §6.4)
+    expect(flatLines(STORY.scenes[id].lines).at(-1)!.text).toMatch(/坐.*天亮/);
+    expect(flatLines(STORY.scenes[id].lines).some((l) => l.who === 'rin')).toBe(false);   // Rin is on the roof (spec §6.4)
     // cold read: someone breaks after his lie, and Safira had picked up the bundle she puts down
-    const lines = STORY.scenes[id].lines;
+    const lines = flatLines(STORY.scenes[id].lines);
     const lie = lines.findIndex((l) => /那就我/.test(l.text));
     expect(['liz', 'safira']).toContain(lines[lie + 1].who);
     expect(lines.findIndex((l) => /拎起包袱/.test(l.text))).toBeLessThan(lie);
@@ -3426,7 +3551,7 @@ describe('story L: the group scenes (Task 7)', () => {
   });
 
   it('group:act4 never says he is the keeper, and the song only says what the stone says (Task 11, spec §6.3)', () => {
-    const all = [...STORY.scenes['group:act4'].lines.map((l) => l.text), STORY.scenes['group:act4'].summary].join('');
+    const all = [...flatLines(STORY.scenes['group:act4'].lines).map((l) => l.text), STORY.scenes['group:act4'].summary].join('');
     expect(all).not.toMatch(/是守燈人/);
     expect(all).not.toMatch(/舞團|團長/);   // Safira's troupe stays out of it (bible)
     const song = said('group:act4', /提燈的人/)!.text;
@@ -3444,8 +3569,9 @@ describe('story L: the night beats (Task 8)', () => {
   it('the night beats: six a companion, twelve narrations, light, no memory named, not dawn', () => {
     // cold read (2026-10-24): sized for the quiet-only nights; forty was the spec's first count (spec §4.4.1)
     const lines = NIGHT_BEATS.lines;
-    expect(lines).toHaveLength(60);
-    expect(lines.map((l) => l.who)).toEqual([...COMPANIONS.flatMap((c) => Array<string>(6).fill(c)), ...Array<string>(12).fill('narrator')]);
+    // time and moon Task 6: Selene has two more, one for the new moon and one for the full (ruling 10)
+    expect(lines).toHaveLength(62);
+    expect(lines.map((l) => l.who)).toEqual([...COMPANIONS.flatMap((c) => Array<string>(c === 'selene' ? 8 : 6).fill(c)), ...Array<string>(12).fill('narrator')]);
     const SECRETS = /守燈人|靜鐘會|艾斯特拉|燈芯|刺客|代號|信物|派來殺|要殺|鐘守|師父|名單/;
     const others = (who: string) => [...COMPANIONS.filter((c) => c !== who).map((c) => CHARACTERS[c].name), '凜'];
     for (const l of lines) {
@@ -3489,7 +3615,7 @@ describe('story L: the night beats (Task 8)', () => {
     expect(by('chizuru')).toMatch(/我們那時候|最近|去年|近來/);   // spec §7.2: the year she fell asleep in
     // cold read: no two share a role. Sylvie reads the night, Scarlet keeps a soldier's watch; Chizuru keeps her rites,
     // Liz counts and prices; only Liz pours a drink
-    expect(by('sylvie')).toMatch(/蟲/);
+    expect(by('sylvie')).toMatch(/貓頭鷹/);   // time and moon Task 6 cold read: an owl calls in any season, the insects did not
     expect(by('sylvie')).toMatch(/腳印/);
     expect(by('scarlet')).toMatch(/門閂/);
     expect(by('scarlet')).toMatch(/靴子/);
@@ -3510,12 +3636,60 @@ describe('story L: the night beats (Task 8)', () => {
     // the lines the cold read named: the soup ladle and the clapping are lively only
     expect(lines.find((l) => l.text.includes('湯勺'))!.tone).toBe('lively');
     expect(lines.some((l) => l.text.includes('掌聲'))).toBe(false);
-    expect(lines.filter((l) => l.tone === 'quiet')).toHaveLength(47);
+    expect(lines.filter((l) => l.tone === 'quiet')).toHaveLength(49);   // time and moon Task 6: Selene's two moon lines are quiet
+  });
+
+  it('every beat that speaks of the moon carries a moon (time and moon Task 6)', () => {
+    const moony = (t: string) => t.replace(/月影旅館/g, '').includes('月');
+    for (const l of NIGHT_BEATS.lines) {
+      const tag = `${l.who}: ${l.text}`;
+      if (moony(l.text)) expect(l.moon, tag).toBeDefined();
+      else expect(l.moon, tag).toBeUndefined();
+      // a line that sees the moon or its light never plays on a new-moon night; one that says it is away plays only then
+      if (/月光|月亮(?!請假)/.test(l.text) && !/請假/.test(l.text)) expect(l.moon, tag).not.toContain('new');
+    }
+    const only = (moon: string) => NIGHT_BEATS.lines.filter((l) => l.moon?.length === 1 && l.moon[0] === moon);
+    expect(only('waning').map((l) => l.text)).toEqual([expect.stringMatching(/缺了右邊一半/)]);   // the last quarter: half
+    const away = only('new');
+    expect(away).toHaveLength(1);
+    expect(away[0]).toMatchObject({ who: 'selene', tone: 'quiet' });
+    expect(away[0].text).toMatch(/請假/);
+    expect(away[0].text).not.toMatch(/新月/);   // I-158: her fifth piece's word, never hers to say
+    const full = only('full');
+    expect(full).toHaveLength(1);
+    expect(full[0]).toMatchObject({ who: 'selene', tone: 'quiet' });
+    expect(full[0].text).toMatch(/月/);
+    expect(full[0].text).not.toMatch(/銀盆|讀到|結局/);   // she does not read it: the silver basin is her memory's
+    // every night has a line of hers that fits, and the narration has one that is not about the moon
+    for (const moon of ['new', 'waxing', 'full', 'waning']) {
+      expect(NIGHT_BEATS.lines.some((l) => l.who === 'selene' && (!l.moon || l.moon.includes(moon as never))), moon).toBe(true);
+    }
+  });
+
+  it("no town scene says tonight's moon is up: the moon there is her habit, not the sky (time and moon Task 6)", () => {
+    const town = SCENE_IDS.filter((id) => ['chat', 'banter', 'home', 'group', 'town'].includes(sceneKind(id)) || ['prologue-inn', 'first-return', 'rin-reveal', 'rin-confess', 'bellkeeper-arrives', 'finale-eve', 'epilogue'].includes(id));
+    for (const id of town) {
+      for (const l of flatLines(STORY.scenes[id].lines).filter((x) => !x.past)) expect(l.text, `${id}: ${l.text}`).not.toMatch(/今晚的月亮|看月亮看得|月光照進/);
+    }
+    expect(() => pinBeat('chat:selene:1', {}, /夜空/)).not.toThrow();
+  });
+
+  it('no beat leans on a season: no insects, snow or fallen leaves (time and moon Task 6 cold read)', () => {
+    // second cold read: no leaves on the trees, no mild wind through an open window either
+    for (const l of NIGHT_BEATS.lines) expect(l.text, `${l.who}: ${l.text}`).not.toMatch(/蟲|蟬|蛙|螢|雪|落葉|楓|樹葉|風很溫和/);
+  });
+
+  it('the walnut line fits every season (time and moon Task 6, ruling 11)', () => {
+    const lines = flatLines(STORY.scenes['banter:bobby-sylvie:1'].lines);
+    expect(lines.at(-1)!.who).toBe('sylvie');
+    expect(lines.at(-1)!.text).not.toMatch(/春|夏|秋|冬|今年|熟得早/);
+    expect(() => pinBeat('banter:bobby-sylvie:1', {}, /撿了就忘.*忘掉的核桃.*樹/)).not.toThrow();
+    expect(() => pinBeat('banter:bobby-sylvie:1', {}, /入冬前的松鼠/)).not.toThrow();   // a likeness, any season: kept
   });
 });
 
 describe('story L Task 14: the eight give back a night they shared (spec §9)', () => {
-  const L = () => STORY.scenes.finale.lines;
+  const L = () => flatLines(STORY.scenes.finale.lines);
   const GROUPS: SceneId[] = ['group:act2', 'group:act3', 'group:act4'];
   /** The group scene each companion is in (spec §6.4): the night her finale line calls back. */
   const GROUP_OF: Record<string, GroupScene> = {
@@ -3587,15 +3761,23 @@ describe('story L Task 14: the eight give back a night they shared (spec §9)', 
 });
 
 describe('story L Task 15: the script reads fewer ways (spec §10)', () => {
-  const ifs = (id: SceneId) => STORY.scenes[id].lines.filter((l) => l.if).length;
+  const ifs = (id: SceneId) => flatLines(STORY.scenes[id].lines).filter((l) => l.if).length;
 
   it('where a gate or a plain wording does it, a scene reads one way: the conditional lines, scene by scene', () => {
-    const all = storyTexts().filter((t) => t.line?.if);
+    // bond plan Task 17: the bond scenes branch by design (ruling M1: their first three never expire, so they read either
+    // side of her last piece or of a friend met); this count is the main script's, the bond scenes' is pinned on its own
+    // below (review 5: only `bond:` is set apart; an after-story or a romance counts here)
+    const all = storyTexts().filter((t) => t.line?.if && !/^scenes\.bond:/.test(t.key));
+    // the bond scenes' own: Tasks 17-19, 24 (a friend met or not, Liz's father back or not, Chizuru's shrine known or not;
+    // review 5: Scarlet's second reads Liz's leaving as one line of narration, one fewer)
+    expect(storyTexts().filter((t) => t.line?.if && /^scenes\.bond:/.test(t.key)).length).toBe(24);
     // Story L began at 125 (spec §10 counted 123: chat:rin:2 and :3 read her choice through helpers, and town:orik was left
     // out). Tasks 12 and 13 took 12, Task 14 keeps the finale at 24, Task 15 takes 9 more.
     // Two rows read as the spec could not: chat:scarlet:2 splits on what her last piece undoes (the debt, the duty), not only
     // on 「閣下」, so it keeps 2; the finale keeps Bobby's whole chain (her family's sword), so 25.
-    expect(all.length).toBeLessThanOrEqual(107);
+    // bond plan Task 20: the after-stories, +18 (a tier line or two in each, ten; Liz's two readings, eight lines); Task 21:
+    // the romances, +22 (the friend in each, on her own `if.met`: arcs v7)
+    expect(all.length).toBeLessThanOrEqual(149);   // time and moon Task 8: the spring festival's two readings (review fix 10), +2
     const AFTER: [SceneId, number][] = [
       ['finale', 25], ['chat:noel:2', 9], ['chat:chizuru:2', 2], ['chat:sylvie:1', 0], ['chat:sylvie:2', 0],
       ['chat:selene:2', 0], ['chat:scarlet:2', 2], ['hero-alone', 3], ['rin-confess', 14],
@@ -3603,11 +3785,11 @@ describe('story L Task 15: the script reads fewer ways (spec §10)', () => {
     for (const [id, n] of AFTER) expect(ifs(id), id).toBe(n);
     // review fix 8: chat:noel:2 keeps its no-Liz reading; a gate on Liz would lose the chat for good
     expect(CHAT_GATE['chat:noel:2']).toBeUndefined();
-    expect(STORY.scenes['chat:noel:2'].lines.some((l) => l.if?.notMet === 'liz')).toBe(true);
+    expect(flatLines(STORY.scenes['chat:noel:2'].lines).some((l) => l.if?.notMet === 'liz')).toBe(true);
   });
 
   it('chat:selene:2 says nothing that turns with her pieces', () => {
-    for (const l of STORY.scenes['chat:selene:2'].lines) expect(l.text).not.toMatch(/您|你|洛恩先生|洛恩/);
+    for (const l of flatLines(STORY.scenes['chat:selene:2'].lines)) expect(l.text).not.toMatch(/您|你|洛恩先生|洛恩/);
     expect(sceneReadings('chat:selene:2')).toHaveLength(1);
     // the beats stay: anything but breakfast, everyone back tomorrow; and chat:scarlet:2's debt, before her last piece
     expect(() => pinBeat('chat:selene:2', {}, /早餐除外/)).not.toThrow();
@@ -3620,13 +3802,161 @@ describe('story L Task 15: the script reads fewer ways (spec §10)', () => {
     const W = (o: Partial<LineWhen> = {}): LineWhen => ({ met: [...CHARACTER_IDS], full: [], returned: [], oath: true, seen: [], ...o });
     for (const full of [[], ['scarlet']] as CharacterId[][]) {
       for (const seen of [[], ['chat:scarlet:2']] as SceneId[][]) {
-        const scarlet = linesWhen(STORY.scenes['hero-alone'].lines, W({ full, seen })).filter((l) => l.who === 'scarlet');
+        const scarlet = linesWhen(flatLines(STORY.scenes['hero-alone'].lines), W({ full, seen })).filter((l) => l.who === 'scarlet');
         expect(scarlet).toHaveLength(1);
         expect(scarlet[0].text).not.toMatch(/閣下|洛恩/);
       }
     }
-    const sylvie = STORY.scenes['rin-confess'].lines.filter((l) => l.who === 'sylvie');
+    const sylvie = flatLines(STORY.scenes['rin-confess'].lines).filter((l) => l.who === 'sylvie');
     expect(sylvie).toHaveLength(1);
     expect(sylvie[0].if).toEqual({ met: 'sylvie' });
+  });
+});
+
+// Time and moon Task 8 (ruling 7): the spring festival at Chizuru's shrine, after the finale. Two readings: with the act 4
+// group scene seen (she stopped the song there) and without it (the finale did not set up the changed line).
+describe('time and moon: the spring festival (Task 8)', () => {
+  const id: SceneId = 'season:spring';
+  const reading = (seen: boolean) => linesWhen(flatLines(STORY.scenes[id].lines), { met: [...CHARACTER_IDS], full: [], returned: [], oath: true, seen: seen ? ['group:act4'] : [] });
+  const at = (lines: ScriptLine[], re: RegExp) => lines.findIndex((l) => re.test(l.text));
+
+  it('it is registered and written, Chizuru\'s, at night by her shrine', () => {
+    expect(SEASON_SCENES.spring).toBe(id);
+    expect(SCENE_IDS).toContain(id);
+    expect(STORY.scenes[id].title).toBe(`${CHARACTERS.chizuru.name}・${SEASON_TITLES.spring}`);
+    expect(flatLines(STORY.scenes[id].lines)[0].place).toEqual({ text: '鎮邊小祠・春祭之夜', night: true });
+    expect(STORY.scenes[id].summary.length).toBeGreaterThan(0);
+  });
+
+  it('the spring festival sings the changed line to its end', () => {
+    for (const seen of [true, false]) {
+      const w: Partial<LineWhen> = { oath: true, seen: seen ? ['group:act4'] : [] };
+      expect(() => pinBeat(id, w, /堆成一座小山.*白蘿蔔/), String(seen)).not.toThrow();
+      expect(() => pinBeat(id, w, /春祭的燈/), String(seen)).not.toThrow();
+      expect(() => pinBeat(id, w, /『提燈的人，回來了。』/), String(seen)).not.toThrow();
+      const lines = reading(seen);
+      expect(lines.at(-1)!.who, String(seen)).toBe('narrator');
+      expect(lines.at(-1)!.text, String(seen)).toMatch(/鈴響/);
+      expect(at(lines, /春祭的燈/), String(seen)).toBeLessThan(at(lines, /『提燈的人，回來了。』/));
+      expect(lines.length, String(seen)).toBeLessThanOrEqual(lineCap(id));
+    }
+  });
+
+  it('it reads both ways: with group:act4 seen she stops a beat, without it she sets up the changed line first', () => {
+    const seen = reading(true);
+    const not = reading(false);
+    expect(at(seen, /停了一拍/)).toBeGreaterThan(at(seen, /春祭的燈/));
+    expect(at(seen, /停了一拍/)).toBeLessThan(at(seen, /『提燈的人，回來了。』/));
+    expect(at(seen, /原本的後半/)).toBe(-1);
+    // review fix 10: the old second half (the lamp-bearer did not come back) and this year's change, both before the new line
+    const setUp = at(not, /原本的後半.*沒有回來/);
+    expect(setUp).toBeGreaterThanOrEqual(0);
+    expect(not[setUp].text).toMatch(/改了/);
+    expect(setUp).toBeLessThan(at(not, /『提燈的人，回來了。』/));
+    expect(at(not, /停了一拍/)).toBe(-1);
+  });
+
+  it('every speaker but Chizuru and Lorne is met first; a light scene', () => {
+    for (const l of flatLines(STORY.scenes[id].lines)) {
+      if (l.who === 'narrator' || l.who === 'chizuru' || l.who === 'hero' || !(CHARACTER_IDS as string[]).includes(l.who)) continue;
+      expect(l.if?.met, `${l.who}: ${l.text}`).toBe(l.who);
+    }
+    for (const seen of [true, false]) {
+      const lines = reading(seen);
+      expect(lines.filter((l) => dots(l.text) > 0).length, String(seen)).toBeLessThanOrEqual(1);
+      expect(lines.filter((l) => l.who === 'hero').length, String(seen)).toBe(1);   // Lorne: one short line, no lecture
+    }
+  });
+});
+
+describe('the bond script format, and the gates that read it (bond plan Task 7)', () => {
+  const choice: ChoiceLine = {
+    who: 'hero', choices: [
+      { tone: 'ask', text: '「後來呢？」', reply: [{ who: 'selene', text: '「一」' }] },
+      { tone: 'stay', text: '（在她旁邊坐下。）', reply: [{ who: 'selene', text: '「二」' }, { who: 'narrator', text: '三。' }] },
+    ],
+  };
+  /** `f` with scene `id` put into STORY.scenes, taken out after (none of the bond ids is written yet). */
+  const withScene = <T,>(id: SceneId, lines: SceneLine[], f: () => T): T => {
+    const had = Object.prototype.hasOwnProperty.call(STORY.scenes, id) ? STORY.scenes[id] : undefined;
+    STORY.scenes[id] = { title: 't', lines, summary: '概要。' };
+    try { return f(); } finally { if (had) STORY.scenes[id] = had; else delete (STORY.scenes as Partial<typeof STORY.scenes>)[id]; }
+  };
+
+  it('worstCount counts the longest reply', () => {
+    const a: ScriptLine = { who: 'narrator', text: '甲。' };
+    expect(worstCount([a, a])).toBe(2);
+    expect(worstCount([a, choice, a])).toBe(1 + 1 + 2 + 1);   // the choice, then its longest reply
+    expect(isChoice(choice)).toBe(true);
+    expect(isChoice(a)).toBe(false);
+    expect(CHOICE_MAX_CHARS).toBe(20);
+  });
+
+  it('flatLines opens every choice', () => {
+    const a: ScriptLine = { who: 'narrator', text: '甲。' };
+    expect(flatLines([a, choice, a])).toEqual([
+      a,
+      { who: 'hero', text: '「後來呢？」' }, { who: 'selene', text: '「一」' },
+      { who: 'hero', text: '（在她旁邊坐下。）' }, { who: 'selene', text: '「二」' }, { who: 'narrator', text: '三。' },
+      a,
+    ]);
+    const plain: ScriptLine[] = [a];
+    expect(flatLines(plain)).toEqual(plain);
+  });
+
+  it('position of bond, ending and romance scenes', () => {
+    for (const c of COMPANIONS) for (let n = 1; n <= 4; n++) expect(position(`scenes.bond:${c}:${n}.lines.0.text`), `${c} ${n}`).toBe(metStage(c));
+    expect(position('scenes.bond:rin:1.lines.0.text')).toBe(piecesStage('rin', 2));
+    expect(position('scenes.bond:rin:2.lines.0.text')).toBe(piecesStage('rin', 4));
+    expect(position('scenes.bond:rin:3.lines.0.text')).toBe(rinSeventh());
+    expect(position('scenes.bond:rin:4.lines.0.text')).toBe(rinSeventh());
+    for (const k of ['scenes.ending:liz.lines.0.text', 'scenes.romance:rin.lines.0.text', 'scenes.together.lines.0.text', 'scenes.ending:liz.summary']) expect(position(k), k).toBe('after');
+    expect(ownerOf('scenes.bond:selene:1.lines.0.text')).toBe('selene');
+    expect(ownerOf('scenes.ending:liz.lines.0.text')).toBe('liz');
+    expect(ownerOf('scenes.romance:rin.lines.0.text')).toBe('rin');
+    expect(ownerOf('scenes.together.lines.0.text')).toBeUndefined();
+  });
+
+  it('places are one table', () => {
+    expect(NIGHT_PLACE).toBe(PL.innNight);
+    expect(DAWN_PLACE).toBe(PL.innDawn);
+    const tables = new Set<object>(Object.values(PL));
+    for (const id of SCENE_IDS) for (const l of flatLines(STORY.scenes[id].lines)) if (l.place) expect(tables.has(l.place), `${id}: ${l.place.text}`).toBe(true);
+  });
+
+  it('the gates see the new format: a long reply, a long choice, Rin naming him before her choice', () => {
+    expect(capBreaks(['bond:selene:1'])).toEqual([]);   // not written: no scene, nothing to break
+    const five: SceneLine[] = Array.from({ length: 4 }, (): ScriptLine => ({ who: 'narrator', text: '甲。' }));
+    // four lines, the choice and its two-line reply: seven, over bond:c:1's six
+    withScene('bond:selene:1', [...five, choice], () => expect(capBreaks(['bond:selene:1'])).toEqual(['bond:selene:1 plays 7 lines (cap 6)']));
+    withScene('bond:selene:1', [five[0], choice], () => expect(capBreaks(['bond:selene:1'])).toEqual([]));
+    const long: ChoiceLine = { who: 'hero', choices: [{ ...choice.choices[0], text: `「${'好'.repeat(19)}」` }, choice.choices[1]] };
+    withScene('bond:selene:1', [long], () => expect(lengthBreaks().some((b) => b.startsWith('scenes.bond:selene:1.lines.0.choices.0.text'))).toBe(true));
+    withScene('bond:selene:1', [choice], () => expect(lengthBreaks()).toEqual([]));
+    const named: ChoiceLine = { who: 'hero', choices: [{ ...choice.choices[0], reply: [{ who: 'rin', text: '「洛恩。」' }] }, choice.choices[1]] };
+    withScene('bond:rin:1', [named], () => expect(rinNameBreaks()).toEqual(['scenes.bond:rin:1.lines.0.choices.0.reply.0.text']));
+    withScene('bond:rin:3', [named], () => expect(rinNameBreaks()).toEqual([]));   // after her choice (BOND_GATE oath)
+  });
+});
+
+describe('registered bond scenes (bond plan Task 8)', () => {
+  it('registered bond scenes join STORY.scenes', () => {
+    // what is registered joins, in order (bond plan Tasks 17-19 the bond scenes, Task 20 the after-stories and the walk together)
+    expect(bondSceneEntries().map(([id]) => id)).toEqual(registeredBondScenes());
+    expect(registeredBondScenes().slice(0, BONDS_WRITTEN.length * 4)).toEqual(BONDS_WRITTEN.flatMap((c) => [1, 2, 3, 4].map((n) => bondScene(c, n))));
+    const s = (t: string) => ({ lines: [{ who: 'narrator' as const, text: t }], summary: '概要。' });
+    const texts: Partial<Record<SceneId, { lines: SceneLine[]; summary: string }>> = {
+      'bond:selene:1': s('一'), 'bond:selene:2': s('二'), 'bond:selene:3': s('三'), 'bond:selene:4': s('四'),
+      'ending:liz': s('五'), 'romance:rin': s('六'), together: s('七'),
+    };
+    const got = Object.fromEntries(bondSceneEntries({ bonds: ['selene'], endings: ['liz'], romances: ['rin'], together: true }, texts));
+    expect(Object.keys(got)).toEqual(['bond:selene:1', 'bond:selene:2', 'bond:selene:3', 'bond:selene:4', 'ending:liz', 'romance:rin', 'together']);
+    expect(got['bond:selene:2'].title).toBe('瑟蕾・羈絆二');
+    expect(got['ending:liz'].title).toBe('莉茲・後日談');
+    expect(got['romance:rin'].title).toBe('凜・夜路');
+    expect(got.together.title).toBe('夜路・和大家一起');
+    expect(got['ending:liz'].lines).toBe(texts['ending:liz']!.lines);
+    // a registered scene with no script is a bug, not a draft
+    expect(() => bondSceneEntries({ bonds: [], endings: ['noel'], romances: [], together: false }, texts)).toThrow(/ending:noel/);
   });
 });

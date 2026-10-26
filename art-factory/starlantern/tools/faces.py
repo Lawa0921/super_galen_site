@@ -1,8 +1,11 @@
 """faces.py: talking-face candidates for the eight companions (plan 5e; spec 2026-10-18 affinity-expressions section 10).
 
+  (every command takes --wave=2 for the wave-2 jobs: Lorne, both Rin sets, and the four redos;
+   --wave=3 for Safira's serious, Noel's pout and Selene's third wistful, each capped by its job's `max_attempts`;
+   --wave=4 for the style sample of plan Task A: Noel's and Safira's blush, Rin's oath-look averted, Bobby's excited)
   gen  [--only=prefix,...] [--n=N] [--model=M] [--backend=codex|gemini] generate codex attempts one at a time until each id has N raw attempts
   cand [--only=prefix,...]                  postprocess every raw attempt into work/<id>/cand/a<N>/ (scratch registry) + match QA
-  pick --id ID --attempt N                  postprocess the chosen attempt into the real registry (qa_passed / qa_failed)
+  pick --id ID --attempt N [--wave=2]       postprocess the chosen attempt into the real registry (qa_passed / qa_failed)
   note --id ID --attempt N --reason R       record why an attempt was not chosen (registry `rejected_attempts`)
 
 Same chain as party.py's mood portraits: each face <- the character's published normal portrait (raw, first image) and
@@ -45,7 +48,136 @@ WAVE1 = {
     'scarlet': ['serious', 'sad', 'vow', 'shaken'], 'chizuru': ['serious', 'sad', 'solemn'], 'sylvie': ['serious', 'sad'],
     'selene': ['sad', 'wistful'], 'safira': ['sad'], 'bobby': ['serious', 'sad'], 'liz': ['serious', 'sad', 'hushed'], 'noel': ['sad'],
 }
-SIZE_TOL = 6          # art pixels the face's canvas may differ from the base portrait's on either axis
+# Wave 2 (user 2026-10-24): the grave faces Lorne and Rin use (story.ts: hero serious 15, distant 18; rin serious 16,
+# guarded 7). Rin's two looks (`rin`, `rin-oath`: cracked vs flattened collar bell) each get their own, from their own
+# normal portrait (spec 10.5). Lorne's normal smiles faintly, so his serious face says outright that the smile is gone.
+WAVE2 = {'hero': ['serious', 'distant'], 'rin': ['serious', 'guarded'], 'rin-oath': ['serious', 'guarded']}
+WAVE2_FACES = {
+    ('hero', 'serious'): ('a serious, focused look with no smile at all: brows level and lowered a little, steady alert eyes looking straight ahead, '
+                          f'lips pressed into a flat straight line, the face of someone about to act; {READ}'),
+    ('hero', 'distant'): ('a distant look, as if hearing a faraway voice: eyes unfocused and soft, gazing slightly past the viewer into the distance, '
+                          f'brows relaxed and raised a little, lips slightly parted, no smile; {READ}'),
+    ('rin', 'serious'): ('dead serious and direct: brows lowered and drawn a little together, cool eyes fixed straight on the viewer without blinking, '
+                         f'lips pressed thin, face turned more toward the viewer than in the first image; {READ}'),
+    ('rin', 'guarded'): ('guarded and wary: eyes half-lidded and watchful, glancing sideways at the viewer, chin lowered, lips closed in a flat line, '
+                         f'one hand risen to her chest gripping the hilt of a short dagger held close against her chest, below the collar bell; {READ}'),
+}
+WAVE2_FACES.update({('rin-oath', m): f for (c, m), f in WAVE2_FACES.items() if c == 'rin'})
+WHO = {'hero': dict(who='young man', pron='him', extra=' He carries no sword in this portrait.')}
+BELL = {'rin': ' Keep the small cracked bronze bell at her collar exactly as in the first image.',
+        'rin-oath': ' Keep the bronze bell at her collar exactly as in the first image: hammered flattened into a smooth dented disc, with no crack.'}
+# Redos of wave-1 faces that read weakly at game size (wave-1 notes; user 2026-10-24): one more attempt each.
+SAD_HARD = ('clearly sad, close to tears: the inner ends of the eyebrows steeply raised and knitted together, eyes lowered and glistening with a '
+            'visible tear running down one cheek, the corners of the mouth clearly turned down in a small frown, head bowed a little, '
+            'no trace of a smile; exaggerate the brows, the tear and the mouth so the sadness reads at a glance when the portrait is shown at small size')
+REDO = {
+    'char-scarlet-portrait-vow': ('swearing a knight\'s oath: her right gauntleted hand pressed flat over her heart, the armoured hand large and clearly visible '
+                                  'across the middle of her chest, chin raised, eyes wide open, bright and steady, brows firm but not frowning, '
+                                  f'lips closed in a calm resolute line, solemn pride rather than anger; {READ}'),
+    'char-selene-portrait-wistful': ('wistful and nostalgic: a soft, distant half-smile with one corner of the mouth gently raised, eyes half-lidded and '
+                                     'gazing off to the side into the distance as if remembering something long ago, brows relaxed, no tears, '
+                                     f'a quiet fondness tinged with longing, clearly different from a sad face and from a bright smile; {READ}'),
+    'char-noel-portrait-sad': SAD_HARD,
+    'char-bobby-portrait-sad': SAD_HARD,
+}
+# Appended from attempt 2 on, after looking at a1 (runs/2026-10-24-faces-wave2/notes.md), like party.NOTES.
+WAVE2_NOTES = {
+    'char-hero-portrait-distant': (' Revision: his eyes stay open and level, looking off past the viewer into the far distance (not downward), '
+                                   'the pupils small and unfocused, brows raised a little, lips slightly parted, as if listening to a voice only he can hear; '
+                                   'it must look clearly different from a sad face.'),
+    'char-rin-oath-portrait-serious': (' Revision: make it unmistakably different from the calm first image: brows clearly lowered and angled down toward '
+                                       'the nose, eyes narrowed a little and locked straight on the viewer, mouth a tight short line; readable at small size.'),
+}
+REDO_ATTEMPTS = 2    # a redo id ends at a2: its wave-1 a1 plus this one
+# Wave 3 (2026-10-24; runs/2026-10-24-faces-wave3/notes.md): the five heavy lines that still showed no portrait, Safira's
+# memory line (surprised, which a heavy scene maps to serious) and Noel's four pout lines (pout -> serious). Safira gets
+# serious, the face a heavy scene falls back to; Noel gets her own pout, which the four lines (and her three light pout
+# lines) ask for by name, sulky rather than cute so it holds in a grave scene.
+WAVE3 = {'safira': ['serious'], 'noel': ['pout']}
+WAVE3_FACES = {
+    ('safira', 'serious'): ('a serious, grave look with no smile at all: brows level and lowered a little, steady eyes looking straight ahead, '
+                            f'lips pressed into a flat straight line, the warmth of the first image gone from her face; {READ}'),
+    ('noel', 'pout'): ('a sulky, stubborn pout with no smile: lips pushed out into a small pout with the corners turned down, cheeks puffed a little, '
+                       'brows drawn together and lowered, eyes glancing sideways away from the viewer, no blush, proud and a little hurt; '
+                       f'{READ}'),
+}
+# Selene's wistful, a third attempt (user 2026-10-24: one extra, after wave 2's a2 still read as sad): the cues that survive
+# the downscale, a smile you can see and eyes that look down.
+WAVE3_REDO = {
+    'char-selene-portrait-wistful': ('wistful: a soft, gentle smile that is clearly visible, the corners of the mouth turned up in a small closed-mouth curve, '
+                                     'eyelids lowered so the eyes are half closed and looking down and off to the side, brows relaxed and smooth, '
+                                     'head tilted slightly down, no tears, a quiet fond memory; clearly different from the first image (open eyes looking '
+                                     f'at the viewer) and from a sad face (no frown, no raised inner brows); {READ}'),
+}
+WAVE3_NOTES = {}      # revision sentences for a2, written after looking at a1 (as WAVE2_NOTES)
+WAVE3_MAX = 2         # a new wave-3 face: a1, and a2 only if a1 is weak
+WAVE3_REDO_MAX = 3    # Selene's wistful ends at a3
+# Wave 4 (affinity plan Task A; spec 2026-10-18 section 0 D18): the warm and heart-pact faces the bond scenes and the romance
+# ask for. Today these lines borrow a published face (WARM_MOODS -> the smiling normal), so none is hidden; the wave is optional
+# and needs the user's eye on the style. Rin's blush is her oath look's: her heart pact and romance come after her choice.
+WAVE4_ALL = {
+    'rin': ['averted'], 'rin-oath': ['blush', 'averted'], 'selene': ['blush'], 'chizuru': ['blush'], 'safira': ['blush'],
+    'sylvie': ['blush', 'unguarded'], 'noel': ['blush', 'smug'], 'bobby': ['blush', 'excited'], 'liz': ['blush'], 'scarlet': ['blush'],
+}
+# The style sample (runs/2026-10-24-faces-wave4-sample) was approved by the user on 2026-10-24 ("可以，照這風格"; Rin's oath-look
+# averted: a2, head turned away); the attempt each sample id publishes. The other ten follow with the same sentences.
+WAVE4_SAMPLE = {'char-noel-portrait-blush': 1, 'char-safira-portrait-blush': 1, 'char-rin-oath-portrait-averted': 2,
+                'char-bobby-portrait-excited': 1}
+WAVE4 = WAVE4_ALL
+BLUSH = ('a shy, flustered look: a short row of hard-edged pink pixels across both cheeks (no soft gradient), eyes glancing aside, '
+         'a small embarrassed smile')
+WAVE4_FACES = {
+    ('noel', 'blush'): (f'{BLUSH}, brows raised a little and tilted up in the middle, flustered rather than sulky: no pout, no frown, '
+                        f'the mouth a small wobbly smile; {READ}'),
+    ('safira', 'blush'): (f'{BLUSH}; on her darker skin the blush is a clearly visible warm rose-pink band of hard-edged pixels across both '
+                          f'cheeks and the bridge of the nose, brighter than her skin so it reads at a glance, eyes half-lowered and glancing aside, '
+                          f'a soft bashful smile with closed lips; {READ}'),
+    ('rin-oath', 'averted'): ('averting her gaze, shy rather than sad: face turned a little away to the side, eyes looking off to the side away '
+                              'from the viewer, brows relaxed and raised a little, lips closed in a small uncertain line, no smile, no blush, '
+                              f'no tears, a quiet self-conscious awkwardness, as if hiding that she is pleased; {READ}'),
+    ('bobby', 'excited'): ('excited and thrilled: eyes sparkling wide open with two hard-edged highlights in each eye, brows raised high, '
+                           'leaning forward toward the viewer, an open delighted grin showing teeth, the goggles on her head kept exactly as in '
+                           f'the first image; {READ}'),
+    # The ten after the sample (2026-10-24). Rin before her choice: avoidance and guilt, not shyness (spec 10.2), the cracked bell.
+    ('rin', 'averted'): ('averting her eyes out of guilt: turn her whole head clearly away toward the side (about a quarter turn, the face in '
+                         'three-quarter view away from the viewer), chin lowered, eyes looking down and off to that side, brows drawn a little '
+                         f'together, lips pressed in a tight flat line, no smile, no blush, no tears, guilty and evasive, hiding something; {READ}'),
+    ('rin-oath', 'blush'): (f'{BLUSH}, a reserved, quiet person caught off guard: the pink row on both cheeks clearly visible on her pale skin, '
+                            f'eyes glancing aside and a little down, the faintest closed-mouth smile she is trying to hide; {READ}'),
+    ('selene', 'blush'): (f'{BLUSH}, a gentle dreamy girl caught off guard: the pink row clearly visible on both cheeks, eyes lowered and glancing '
+                          f'aside, a soft closed-mouth smile; {READ}'),
+    ('chizuru', 'blush'): (f'{BLUSH}, a proper shrine maiden losing her composure for a moment: the pink row clearly visible on both cheeks, eyes '
+                           f'lowered and glancing aside, a small shy closed-mouth smile, brows raised a little; {READ}'),
+    ('sylvie', 'blush'): (f'{BLUSH}, a quiet huntress caught off guard: the pink row clearly visible on both cheeks under the hood, eyes glancing '
+                          f'aside, a small awkward closed-mouth smile; {READ}'),
+    ('bobby', 'blush'): (f'{BLUSH}; against her pink hair the blush is a deeper rose-red row of hard-edged pixels across both cheeks and the bridge '
+                         f'of the nose, clearly separate from the hair colour, eyes glancing aside, a sheepish grin, the goggles on her head kept '
+                         f'exactly as in the first image; {READ}'),
+    ('liz', 'blush'): (f'{BLUSH}, a cheeky girl for once lost for words: the pink row clearly visible on both cheeks, eyes glancing aside, '
+                       f'a small embarrassed closed-mouth smile; {READ}'),
+    ('scarlet', 'blush'): (f'{BLUSH}, a stern knight caught off guard: against her red hair the blush is a clear rose-pink row of hard-edged pixels '
+                           f'on both cheeks, distinct from the hair, eyes glancing aside, a small flustered smile, brows raised a little; {READ}'),
+    ('sylvie', 'unguarded'): ('unguarded and relaxed, a rare peaceful look: eyes softened and half-lowered, brows relaxed and smooth, a small warm '
+                              'closed-mouth smile, shoulders at ease, as if resting by a window with nothing to watch for; calmer and softer, '
+                              f'clearly different from the first image (alert eyes looking at the viewer); {READ}'),
+    ('noel', 'smug'): ('smug and self-satisfied: chin raised, eyes half-closed looking down her nose at the viewer, brows raised confidently, '
+                       f'a lopsided smirk with one corner of the mouth pulled up, no blush, proud and showing off; {READ}'),
+}
+# Revision sentences for a2, written after looking at a1 (as WAVE2_NOTES; runs/2026-10-24-faces-wave4-sample/notes.md).
+WAVE4_NOTES = {
+    'char-rin-oath-portrait-averted': (' Revision: a1 only moved the pupils; turn her whole head clearly away toward the side (about a quarter turn, '
+                                       'the face in three-quarter view away from the viewer, chin slightly lowered), her eyes looking down and off to '
+                                       'that side, so the avoidance reads at a glance at small size.'),
+    # a1 read too close to her smiling normal at native size (runs/2026-10-24-faces-wave4/notes.md)
+    'char-sylvie-portrait-unguarded': (' Revision: a1 looked almost like the first image; make the ease unmistakable: her eyes gently closed in two soft '
+                                       'downward curves, head tilted a little to one side, brows high and smooth, a contented closed-mouth smile, as '
+                                       'if dozing peacefully by a warm window.'),
+    # a1 was one art pixel wider than her normal (a hair tip further out); the canvas must match exactly
+    'char-bobby-portrait-blush': (' Revision: keep exactly the same framing, pose and silhouette as the first image: the hair and pigtails must not '
+                                  'reach further out to the sides than in the first image; change only the face.'),
+}
+WAVE4_MAX = 2
+SIZE_TOL = 6        # art pixels the face's canvas may differ from the base portrait's on either axis
 PALETTE_DIST = 24     # RGB distance under which a colour counts as one of the base portrait's
 PALETTE_SHARE = 0.8   # below this share of base-palette pixels the face is flagged for the reviewer (warning only)
 
@@ -54,20 +186,40 @@ def _registry():
     return json.loads((AF / 'registry.json').read_text(encoding='utf-8'))['assets']
 
 
-def jobs(reg=None, cids=COMPANIONS):
+def _job(reg, c, m, face):
+    pid, sid = f'char-{c}-portrait', f'char-{c}-standee'
+    w = WHO.get(c, dict(who='girl', pron='her', extra=''))
+    return dict(id=f'{pid}-{m}', cid=c, mood=m, base=pid, deps=[pid, sid], batch=f'faces-{c}',
+                images=[Path(reg[pid]['raw']), Path(reg[sid]['raw'])], block=reg[pid]['qa']['block'], prompt=(
+        f'Square bust portrait in pixel art of exactly the same {w["who"]} as the first attached portrait, same framing, head size, palette, hair and outfit '
+        f'(the second attached image is the same character in full body, for reference only), but {face}. '
+        f'Keep the face recognisably the same person.{w["extra"]}{BELL.get(c, "")} 16-bit JRPG dialogue portrait style, {P.PIX}. '
+        f'Perfectly flat solid pure magenta #FF00FF background around {w["pron"]} with empty margin at the top and sides; the body is cut off by the bottom edge. No frame, no text.'))
+
+
+def jobs(reg=None, cids=None, wave=1):
+    """wave 1: the companions' 18 faces (FACES). wave 2: Lorne's and both Rin sets' grave faces, then the REDO prompts of
+    four wave-1 ids (same ids, so a new attempt lands beside the approved a1)."""
     reg = _registry() if reg is None else reg
-    out = []
-    for c in cids:
-        pid, sid = f'char-{c}-portrait', f'char-{c}-standee'
-        if not (reg.get(pid, {}).get('raw') and reg.get(sid, {}).get('raw')): continue
-        for m in WAVE1[c]:
-            face = FACES[m]
-            out.append(dict(id=f'{pid}-{m}', cid=c, mood=m, base=pid, deps=[pid, sid], batch=f'faces-{c}',
-                            images=[Path(reg[pid]['raw']), Path(reg[sid]['raw'])], block=reg[pid]['qa']['block'], prompt=(
-                f'Square bust portrait in pixel art of exactly the same girl as the first attached portrait, same framing, head size, palette, hair and outfit '
-                f'(the second attached image is the same character in full body, for reference only), but {face}. '
-                f'Keep the face recognisably the same person. 16-bit JRPG dialogue portrait style, {P.PIX}. '
-                'Perfectly flat solid pure magenta #FF00FF background around her with empty margin at the top and sides; the body is cut off by the bottom edge. No frame, no text.')))
+    has = lambda c: reg.get(f'char-{c}-portrait', {}).get('raw') and reg.get(f'char-{c}-standee', {}).get('raw')
+    if wave == 1:
+        return [_job(reg, c, m, FACES[m]) for c in (cids or COMPANIONS) if has(c) for m in WAVE1[c]]
+    if wave == 3:
+        out = [dict(_job(reg, c, m, WAVE3_FACES[(c, m)]), max_attempts=WAVE3_MAX) for c in WAVE3 if has(c) and (not cids or c in cids) for m in WAVE3[c]]
+        for aid, face in WAVE3_REDO.items():
+            c, m = aid[5:].rsplit('-portrait-', 1)
+            if has(c) and (not cids or c in cids): out.append(dict(_job(reg, c, m, face), max_attempts=WAVE3_REDO_MAX))
+        for j in out: j['prompt'] += WAVE3_NOTES.get(j['id'], '')
+        return out
+    if wave == 4:
+        out = [dict(_job(reg, c, m, WAVE4_FACES[(c, m)]), max_attempts=WAVE4_MAX) for c in WAVE4 if has(c) and (not cids or c in cids) for m in WAVE4[c]]
+        for j in out: j['prompt'] += WAVE4_NOTES.get(j['id'], '')
+        return out
+    out =[_job(reg, c, m, WAVE2_FACES[(c, m)]) for c in WAVE2 if has(c) and (not cids or c in cids) for m in WAVE2[c]]
+    for j in out: j['prompt'] += WAVE2_NOTES.get(j['id'], '')
+    for aid, face in REDO.items():
+        c, m = aid[5:].rsplit('-portrait-', 1)
+        if has(c) and (not cids or c in cids): out.append(_job(reg, c, m, face))
     return out
 
 
@@ -156,7 +308,8 @@ def generator_of(raw):
 
 def selected(argv):
     only = next((a.split('=', 1)[1].split(',') for a in argv if a.startswith('--only=')), None)
-    return [j for j in jobs() if not only or any(j['id'].startswith(o) for o in only)]
+    wave = int(next((a.split('=', 1)[1] for a in argv if a.startswith('--wave=')), 1))
+    return [j for j in jobs(wave=wave) if not only or any(j['id'].startswith(o) for o in only)]
 
 
 def _model(argv):
@@ -167,14 +320,19 @@ def _backend(argv):
     return next((a.split('=', 1)[1] for a in argv if a.startswith('--backend=')), 'codex')
 
 
+def target(job, n):
+    """How many raw attempts an id may have: --n, but never past the job's own cap (wave 3)."""
+    return min(n, job.get('max_attempts', n))
+
+
 def gen(argv):
     """Strictly one codex call at a time (codex_still must not run in parallel). --model=NAME overrides the codex config
     model for these calls only (2026-10-23: the config default was refused by the account, see runs/ notes)."""
     model, backend = _model(argv), _backend(argv)
     n = int(next((a.split('=', 1)[1] for a in argv if a.startswith('--n=')), 2))
     for job in selected(argv):
-        tries = 0
-        while len(attempts(job['id'])) < n and tries < n:   # never more calls than asked for, even when some fail
+        tries, want = 0, target(job, n)
+        while len(attempts(job['id'])) < want and tries < want:   # never more calls than asked for, even when some fail
             tries += 1
             k = next_attempt(job['id'])
             wd, name = attempt_dir(job['id'], k), f'{job["id"]}-a{k}.png'
@@ -217,7 +375,7 @@ def cand(argv):
 
 def pick(argv):
     aid, k = P._arg(argv, '--id'), P._arg(argv, '--attempt')
-    job = next(j for j in jobs() if j['id'] == aid)
+    job = next(j for j in selected(argv) if j['id'] == aid)
     reg = A.Registry(AF / 'registry.json')
     reg.set(aid, kind='sprite')
     raw = RAW / aid / f'a{k}' / f'{aid}-a{k}.png'

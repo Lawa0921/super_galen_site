@@ -112,3 +112,57 @@ describe('UpstashStore 請求路徑', () => {
     expect(paths).toEqual(['del/sig%3AR%3Aoffer']);
   });
 });
+
+describe('mget：一次讀多個 key', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('MemoryStore.mget 依順序回值，缺的回 null', async () => {
+    const s = new MemoryStore();
+    await s.set('a', '1', 60);
+    await s.set('c', '3', 60);
+    expect(await s.mget(['a', 'b', 'c'])).toEqual(['1', null, '3']);
+  });
+
+  it('MemoryStore.mget 尊重 TTL', async () => {
+    vi.useFakeTimers();
+    try {
+      const s = new MemoryStore();
+      await s.set('short', 's', 1);
+      await s.set('long', 'l', 60);
+      vi.advanceTimersByTime(1500);
+      expect(await s.mget(['short', 'long'])).toEqual([null, 'l']);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('MemoryStore.mget 空陣列 → 空陣列', async () => {
+    expect(await new MemoryStore().mget([])).toEqual([]);
+  });
+
+  it('UpstashStore.mget 只打一個 MGET 指令（key 有 URL 編碼）並對應結果', async () => {
+    const { UpstashStore } = await import('./signalStore');
+    const paths: string[] = [];
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+      paths.push(url.replace('https://x.upstash.io/', ''));
+      return new Response(JSON.stringify({ result: ['v1', null, 42] }), { status: 200 });
+    }));
+    const got = await new UpstashStore('https://x.upstash.io', 'tok').mget(['sig:R:a', 'sig:R:b', 'sig:R:c']);
+    expect(paths).toEqual(['mget/sig%3AR%3Aa/sig%3AR%3Ab/sig%3AR%3Ac']);
+    expect(got).toEqual(['v1', null, '42']);
+  });
+
+  it('UpstashStore.mget 空陣列 → 不打網路', async () => {
+    const { UpstashStore } = await import('./signalStore');
+    const spy = vi.fn();
+    vi.stubGlobal('fetch', spy);
+    expect(await new UpstashStore('https://x.upstash.io', 'tok').mget([])).toEqual([]);
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('UpstashStore.mget 非 2xx → 拋錯', async () => {
+    const { UpstashStore } = await import('./signalStore');
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('x', { status: 500 })));
+    await expect(new UpstashStore('https://x.upstash.io', 'tok').mget(['k'])).rejects.toThrow(/500/);
+  });
+});
