@@ -98,6 +98,32 @@ def test_icon_sheets_are_5_by_4_with_their_parts():
     for p in parts: assert R.round_of(f'icon-{p}') == R.ROUND_OF[mats[p]]
 
 
+def test_each_later_round_has_two_icon_sheets_and_two_unique_sheets_as_the_plan_numbers_them():
+    """Plan E2-E4: R2 sheet-icons-roster-2, -3 and sheet-gear-roster-2, -3; R3 -4, -5; R4 -6, -7 (two sheets a round, not
+    sheets of two). R0's sheets (which hold R1's parts) are unchanged."""
+    icons, gear = R.icon_sheets(), R.gear_sheets()
+    assert list(icons) == [f'sheet-icons-roster-{k}' for k in range(1, 8)] and list(gear) == [f'sheet-gear-roster-{k}' for k in range(1, 8)]
+    for k, r in zip(range(2, 8), ('r2', 'r2', 'r3', 'r3', 'r4', 'r4')):
+        assert icons[f'sheet-icons-roster-{k}'][0] == r and gear[f'sheet-gear-roster-{k}'][0] == r
+    for r in ('r2', 'r3', 'r4'):
+        mats = [R.MAT_OF[o] for o in R.ROUNDS[r] if o in R.MAT_OF]; uns = [R.UNIQUE_OF[o] for o in R.ROUNDS[r] if o in R.UNIQUE_OF]
+        drawn = [[p for p in ps if p] for rr, ps in icons.values() if rr == r]
+        assert [p for ps in drawn for p in ps] == mats and max(map(len, drawn)) - min(map(len, drawn)) <= 1, r
+        drawn = [[p for p in ps if p] for rr, ps in gear.values() if rr == r]
+        assert [p for ps in drawn for p in ps] == uns and max(map(len, drawn)) - min(map(len, drawn)) <= 1, r
+    assert icons['sheet-icons-roster-1'] == ('r0', [R.MAT_OF[o] for o in R.ROUNDS['r0'] + R.ROUNDS['r1']] + [None, None])
+    assert gear['sheet-gear-roster-1'] == ('r0', ['moonless-mirror', 'fog-halberd', 'silent-chime', 'borrowed-blade', 'unrung-clapper', None])
+
+
+def test_only_selects_exact_job_ids_never_by_prefix():
+    """`--only=sheet-icons-roster-1` once matched -10 and up by prefix (E1, 2026-10-26): ids are exact, comma separated."""
+    assert [j['id'] for j in R.selected(['--only=sheet-icons-roster-1'])] == ['sheet-icons-roster-1']
+    assert [j['id'] for j in R.selected(['--only=enemy-silent-bell,enemy-bell-warden'])] == ['enemy-silent-bell', 'enemy-bell-warden']
+    for bad in ('enemy-', 'enemy-silent', 'sheet-icons-roster-1,sheet-icons'):   # a prefix or a typo selects nothing: it stops
+        with pytest.raises(ValueError, match='unknown job id'):
+            R.selected([f'--only={bad}'])
+
+
 def test_gear_sheets_reuse_gear_art_layout_and_the_5d_anchor():
     import gear_art as G
     sheets = [j for j in R.jobs() if j['kind'] == 'gear-sheet']
@@ -348,6 +374,19 @@ def test_battle_scene_follows_the_game_layout():
     assert abs(kw - (490 / 4) * 0.9 / 300) < 1e-9
     out = V.battle_scene(Image.new('RGB', (480, 270), (10, 20, 30)), [sprite, sprite, sprite], [False] * 3)
     assert out.size == (640, 360)
+
+
+def test_contact_sheet_of_a_round_without_sheets_shows_its_own_icons_and_uniques(factory, review, monkeypatch):
+    """R1's icons and uniques are drawn on R0's sheets but approved with R1, so R1's contact sheet shows them (and R0's
+    still shows everything its sheets drew, R1's parts included)."""
+    _legacy_and_bg(factory, monkeypatch, review)
+    _fill(factory, 'r0'); reg = _fill(factory, 'r1')
+    r1_items = {a for a in R.batch_assets('r1') if not a.startswith('enemy-')}
+    assert r1_items and set(review.drawn_assets(reg, 'r1')) == r1_items
+    assert r1_items < set(review.drawn_assets(reg, 'r0'))
+    out = factory / 'r1-contact.png'
+    review.main('r1', contact=str(out))
+    assert out.is_file() and Image.open(out).height > 360 * 3
 
 
 # --- D4: publish --------------------------------------------------------------------------------------------------------------

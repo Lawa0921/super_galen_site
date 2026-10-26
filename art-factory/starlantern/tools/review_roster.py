@@ -322,14 +322,19 @@ def contact_sheet(reg, rnd, path, foes, finals, names, bgs):
     cmp_scenes = [_scene(reg, bgs[min(bgs)], g) for g in mix] + ([_scene(reg, bgs[min(bgs)], [boss])] if boss else [])
     if cmp_scenes:
         rows.append(_label(_hcat(cmp_scenes), '對照：既有核准的怪物（' + '、'.join(names.get(e, e) for g in mix for e in g) + '）與新怪同場；右邊是新頭目'))
-    # every icon and unique drawn in this round's sheets (R0 draws R1's too), so the whole style is seen at once
-    drawn = {a: f for j in R.jobs() if j['batch'] == rnd and j['kind'] != 'sprite' for p in j['parts'] for a in R.assets_of(j, p)
-             if (f := _final(reg, a))}
+    drawn = drawn_assets(reg, rnd)
     rows.append(_label(_icons(drawn, names), f'圖示（本輪表上畫的全部 {sum(a.startswith("icon-") and a != R.FORGET_ASSET for a in drawn)} 個素材圖示、遺忘異常圖示與 '
                        f'{sum(a.startswith("gear-") and not a.endswith("-large") for a in drawn)} 件專屬獨特）：第一排遊戲內實際大小'
                        '（清單 16px／背包 26px＋獨特外框／異常 14px），第二排 ×3，第三排原始像素 ×2（素材圖示與 64px 大圖）'))
     stack(rows, gap=16).save(path)
     return path
+
+
+def drawn_assets(reg, rnd):
+    """{asset: final} of every icon and unique the contact sheet shows: all drawn on this round's own sheets (R0 draws R1's
+    too, so the whole style is seen at once) and every one of this round's own, wherever drawn (R1's are on R0's sheets)."""
+    return {a: f for j in R.jobs() if j['kind'] != 'sprite' for p in j['parts'] for a in R.assets_of(j, p)
+            if (j['batch'] == rnd or R.round_of(a) == rnd) and (f := _final(reg, a))}
 
 
 def _hcat(images, gap=12):

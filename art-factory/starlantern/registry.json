@@ -39325,5 +39325,26 @@
     "bell-watcher": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-bell-watcher\\enemy-bell-watcher-a1.png",
     "false-moon": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-false-moon\\enemy-false-moon-a2.png",
     "fog-warden": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-fog-warden\\enemy-fog-warden-a1.png"
-  }
+  },
+  "quarantined_attempts": [
+    {
+      "date": "2026-10-26",
+      "jobs": {
+        "sheet-icons-roster-10": [
+          "a1",
+          "a2"
+        ],
+        "sheet-icons-roster-11": [
+          "a1",
+          "a2"
+        ],
+        "sheet-icons-roster-12": [
+          "a1",
+          "a2 (killed mid-call, no image)"
+        ]
+      },
+      "moved_to": "C:/Users/bag57/art-refs/starlantern/quarantine/stray-2026-10-26/",
+      "reason": "invalid attempts, not counted toward any cap: an E1 run of gen --only=sheet-icons-roster-1 (the R1 silent-bronze redraw) matched these ids by prefix and drew them with the R1 correction text appended; the run was stopped and the ids came from the old icon_sheets() chunking (2 icons a sheet), which no longer exists"
+    }
+  ]
 }

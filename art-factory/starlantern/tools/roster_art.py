@@ -1,7 +1,7 @@
 """roster_art.py: the monster roster's art (roster plan PR D; spec §13): 100 foes, 98 material icons, 39 own uniques, the
 forget chip. Structure as gear_art.py (plan 5d).
 
-  gen  [--batch=r0..r4] [--only=prefix,...] [--n=N] [--extra=TEXT]
+  gen  [--batch=r0..r4] [--only=id,...] [--n=N] [--extra=TEXT]
                                          codex attempts, one at a time, until each job has N raws (R0 foes 2, else 1; cap 3)
   cand [--batch=..] [--only=..]          postprocess every raw attempt into work/<job>/cand/a<N>/ (scratch registry)
   pick --id JOB --attempt N [--part P] [--reopen]
@@ -490,8 +490,11 @@ def _ref(eid):
 
 
 def _chunks(seq, n):
-    k = (len(seq) + n - 1) // n; half = (len(seq) + k - 1) // k
-    return [seq[i:i + half] for i in range(0, len(seq), half)]
+    """`seq` in n chunks as even as possible, in order (the first ones one longer): two sheets a round, not sheets of two."""
+    q, extra = divmod(len(seq), n); out = []; i = 0
+    for c in range(n):
+        size = q + (c < extra); out.append(seq[i:i + size]); i += size
+    return [c for c in out if c]
 
 
 def icon_sheets():
@@ -603,9 +606,14 @@ def attempts(sid):
 
 
 def selected(argv):
+    """The jobs a command works on: --only lists exact job ids (never prefixes: `sheet-icons-roster-1` once matched -10 and
+    up), --batch a round; an unknown id stops before anything runs."""
     only = G._opt(argv, 'only'); batch = G._opt(argv, 'batch')
     if batch: label(batch)
-    return [j for j in jobs() if (not only or any(j['id'].startswith(o) for o in only.split(','))) and (not batch or j['batch'] == batch)]
+    ids = [o for o in only.split(',') if o] if only else None
+    known = {j['id'] for j in jobs()}
+    if ids is not None and (bad := [o for o in ids if o not in known]): raise ValueError(f'unknown job id {bad} (--only takes exact ids)')
+    return [j for j in jobs() if (ids is None or j['id'] in ids) and (not batch or j['batch'] == batch)]
 
 
 QUOTA_WORDS = ('usage limit', 'rate limit', 'quota', 'out of credits', 'insufficient credits', 'purchase more credits')
