@@ -538,3 +538,47 @@ describe('roster tables, bosses and wardens (roster plan Task A4, spec §3.4, §
     expect(used).not.toContain(WARDEN_SALT);
   });
 });
+
+/**
+ * Roster plan Task A5 (spec §4.1, §4.2, ruling 20): a name is seen at any depth, so no roster name may carry a word the
+ * story has not told yet. Copied from the lore ledger's 揭露表 (docs/superpowers/story/starlantern-lore-ledger.md §3, :98-114)
+ * and data/story/story.test.ts (a test file is not imported); when the ledger changes, this list changes with it.
+ */
+const SECRET_WORDS: { word: string; from: string }[] = [
+  { word: '靜鐘會', from: 'ledger :100, story.test.ts :462 (act3)' },
+  { word: '守燈人', from: 'ledger :101-102, story.test.ts :457 (act4, mem:hero:9)' },
+  { word: '燈鑰', from: 'ledger :102-103 (mem:hero:10)' },
+  { word: '代號', from: 'ledger :104, story.test.ts :428 RIN_SECRET_TERMS (mem:rin:6)' },
+  { word: '信物', from: 'ledger :104, RIN_SECRET_TERMS' },
+  { word: '刺客', from: 'ledger :104, RIN_SECRET_TERMS' },
+  { word: '派來殺', from: 'ledger :104, RIN_SECRET_TERMS' },
+  { word: '派去殺', from: 'ledger :104, RIN_SECRET_TERMS' },
+  { word: '去殺', from: 'ledger :104, RIN_SECRET_TERMS' },
+  { word: '要殺的人', from: 'ledger :104, RIN_SECRET_TERMS' },
+  { word: '艾斯特拉', from: 'ledger :101 (act4)' },
+  { word: '燈喰之母', from: 'STORY.finaleBossName (finale); lantern-mother itself excepted' },
+  { word: '撤退', from: 'story.test.ts :1046 REVEALED scarlet 5' },
+  { word: '歐里克', from: 'ledger :109, story.test.ts :1039 REVEALED liz 5' },
+  { word: '道具店', from: 'ledger :109 (T10)' },
+  { word: '露米亞', from: 'ledger :109 (T10)' },
+  { word: '債', from: 'story.test.ts :1036 REVEALED liz 2' },
+  { word: '新月', from: 'story.test.ts :1011 REVEALED selene 5 (I-201)' },
+  { word: '滿月', from: 'ruling 20: false-moon names neither phase (mem:selene:2)' },
+  { word: '公主', from: 'story.test.ts :1045 REVEALED scarlet 4, I-211' },
+  { word: '祖先', from: 'story.test.ts :1028 REVEALED bobby 1' },
+];
+
+describe('roster names keep every secret (roster plan Task A5)', () => {
+  it('no name gives a secret away', () => {
+    const names: [string, string][] = [
+      ...rosterIds().map((id): [string, string] => [id, ENEMIES[id].name]),
+      ...rosterMats().map((m): [string, string] => [m.id, m.name]),
+      ...ownUniques().map((s): [string, string] => [s.id, s.name]),
+    ];
+    expect(names).toHaveLength(100 + 98 + 39);
+    for (const [id, name] of names) for (const { word, from } of SECRET_WORDS) {
+      if (id === 'lantern-mother' && word === '燈喰之母') continue;
+      expect(name.includes(word), `${id} 「${name}」 holds 「${word}」 (${from})`).toBe(false);
+    }
+  });
+});
