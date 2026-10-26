@@ -1920,3 +1920,24 @@ describe('BattleScene +N on touch, review follow-ups', () => {
     after.remove(); root.remove();
   });
 });
+
+describe('BattleScene with a member inside a foe (roster plan B10, M28)', () => {
+  it('she picks the foe that holds her and no other; the bar says she is inside', async () => {
+    const { s, root, game } = setup((g) => {
+      const b = g.battle!;
+      if (b.enemies.length < 2) b.enemies.push({ ...structuredClone(b.enemies[0]), key: 'e1', name: '第二隻' });
+      const foe = b.enemies[1];
+      b.party[0].engulfed = foe.key;
+      foe.gulp = { key: b.party[0].key, until: 9, taken: 0 };
+    });
+    expect(root.textContent).toContain(T.battle.foe.word.engulfed);
+    const submit = vi.spyOn(game, 'submitRound');
+    s.onAction('confirm');                                                                              // 攻擊: one foe to pick, so no list
+    expect(root.querySelector('.slx-btarget')).toBeNull();
+    for (let i = 0; i < 4; i++) { s.onAction('down'); s.onAction('down'); s.onAction('confirm'); }   // 防禦 ×4
+    await flush();
+    expect(submit).toHaveBeenCalledTimes(1);
+    expect(submit.mock.calls[0][0][game.battle!.party[0].key]).toEqual({ kind: 'attack', target: 'e1' });
+    s.exit?.();
+  });
+});

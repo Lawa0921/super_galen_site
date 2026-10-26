@@ -4,7 +4,7 @@ import type { FxKey } from '../../render/artPaths';
 import { ITEMS } from '../../data/items';
 import { T } from '../../data/text.zh-TW';
 import { LIMIT_MAX, foeDef, intentLabel, runeView, skillFor, type Action, type BattleState } from '../../engine/battle';
-import { foeNotes } from '../../engine/foes';
+import { choosable, foeNotes } from '../../engine/foes';
 import { autoActions } from '../../engine/builds';
 import type { Combatant } from '../../engine/combatant';
 import { ailmentChips, type AilmentChip } from '../../engine/ailments';
@@ -426,14 +426,17 @@ export class BattleScene implements Scene {
   }
 
   private withTarget(target: Target | null, p: Pending): void {
+    // Whom she may pick (roster plan B10, M28): from inside a foe, that foe and herself; no one picks a member inside a
+    // foe but by an item. With no one inside, every living one as ever.
+    const actor = this.actors()[this.index];
     if (target === 'enemy') {
-      const living = this.state.enemies.filter((e) => e.alive);
+      const living = actor ? choosable(this.state, actor, 'foe') : this.state.enemies.filter((e) => e.alive);
       if (living.length === 1) { this.finish(p, living[0].key); return; }
       this.subList(living.map((e) => { const note = this.targetNote(e); return { id: e.key, label: e.name, ...(note ? { note } : {}) }; }), (it) => this.finish(p, it.id), 'slx-bsub slx-btarget');
       return;
     }
     if (target === 'ally' || target === 'deadAlly') {
-      const pool = this.state.party.filter((c) => (target === 'ally' ? c.alive : !c.alive));
+      const pool = target === 'ally' && actor ? choosable(this.state, actor, 'ally', p.kind === 'item') : this.state.party.filter((c) => (target === 'ally' ? c.alive : !c.alive));
       if (!pool.length) { this.ctx.sfx.error(); return; }
       this.subList(pool.map((c) => ({ id: c.key, label: c.name, right: `${c.hp}/${c.max.hp}` })), (it) => this.finish(p, it.id), 'slx-bsub slx-btarget');
       return;

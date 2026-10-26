@@ -190,6 +190,8 @@ export const T = {
       disguise: '寶箱？',
       /** M19: a decoy's name beside its foe's. */
       decoy: (name: string) => `${name}的幻影`,
+      /** Roster plan B10 (M23): the intent of a foe still in ice. */
+      encased: '冰封中',
       /** Roster plan B6: after a guard's (M2) or a hunt's (M24) skill name in its intent. */
       guardTag: '（守護）',
       huntTag: '（宣告）',
@@ -203,6 +205,8 @@ export const T = {
         cut: '減傷',
         /** Roster plan B9 (M17): the TP a thief has drained this fight. */
         drained: (n: number) => `吸走${n}TP`,
+        /** Roster plan B10: a foe in ice (M23), a banner's bearer (M26), a foe holding a member and the member inside (M28). */
+        encased: '冰封', rally: '鼓舞', holding: '吞著人', engulfed: '被吞入',
       },
     },
     /** The part of the gold a felled thief gave back (roster plan B3, M13), already counted in the gold line. */
@@ -294,6 +298,11 @@ export const T = {
       /** Roster plan B9: a TP thief's take (M17); a buff thief's (M15). */
       drain: (who: string, other: string, n: number) => `${who}吸走了${other}的 ${n} TP！`,
       dispel: (who: string, other: string) => `${who}把${other}身上的增益搶走了！`,
+      /** Roster plan B10: a mend shorted (M21), ice melted (M23), a member swallowed and let out (M28). */
+      short: (who: string) => `${who}短路了，這回合沒能修復！`,
+      thaw: (who: string) => `${who}身上的冰化開了！`,
+      engulf: (who: string, other: string) => `${who}把${other}吞了下去！`,
+      spit: (who: string, other: string) => `${who}把${other}吐了出來！`,
     },
     heal: (who: string, n: number) => `${who} 回復 ${n} HP`,
     tp: (who: string, n: number) => `${who} 回復 ${n} TP`,

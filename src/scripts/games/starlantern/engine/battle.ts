@@ -17,7 +17,7 @@ import { SECONDARY_KEYS } from './stats';
 import { applyEffect, patchSkill, pctOf, type EffectContext } from './skills';
 import { afterAction, afterFoe, castCost, castDef, extraAction, initMechs, mechBeforeTicks, mechRoundEnd, payMech, watchAction, type CastDef } from './mechanics/index';
 import { AILMENT, ageAilments, shockTick, tickAilments } from './ailments';
-import { BOSS_GROUP_CAP, ROW_MAX, canSummon, decoysLeave, foeGuard, foeTraits, foesRoundEnd, foesRoundStart, foesStage, guardTargets, huntedIn, linkShares, mimicStats, openWith, returnedGold, settleThieves, spentKey, syncDecoys, syncParts, usableNow, wakeUp } from './foes';
+import { BOSS_GROUP_CAP, ROW_MAX, canSummon, choosable, decoysLeave, foeGuard, foeTraits, foesRoundEnd, foesRoundStart, foesStage, guardTargets, huntedIn, linkShares, mimicStats, openWith, returnedGold, settleGulps, settleThieves, spentKey, syncDecoys, syncParts, syncRallies, usableNow, wakeUp } from './foes';
 import { countCast, credit, lossOf, type Ledger } from './ledger';
 import { AIM, barrierPower, type Barrier } from './mech';
 import type { MoonPhase } from './mechanics/moon';
@@ -267,6 +267,7 @@ export function createBattle(o: {
   linkShares(s, (c) => enemyDef(s, c));
   foesStage(s, 1, (c) => enemyDef(s, c));   // a turning weakness or a stage as the fight opens (roster plan B7)
   syncParts(s, (c) => enemyDef(s, c));   // a body behind its parts (roster plan B8, M7)
+  syncRallies(s, (c) => enemyDef(s, c));   // banners and throngs (roster plan B10, M26)
   const enemies = s.enemies;
   if (o.survive) {
     s.survive = o.survive;
@@ -360,36 +361,41 @@ function pickTarget(list: Combatant[], key: string | undefined, rng: Rng): Comba
  * member (Rin's veil) is passed over unless everyone in reach is veiled.
  */
 function foePool(s: BattleState, actor: Combatant, melee: boolean, forced?: Combatant): Combatant[] {
-  if (actor.side !== 'enemy') return s.enemies;
-  const reach = reachable(s.party, melee);
+  // A member inside a foe reaches that foe alone (roster plan B10, M28).
+  if (actor.side !== 'enemy') return actor.engulfed ? s.enemies.filter((c) => c.key === actor.engulfed) : s.enemies;
+  // No foe reaches a member inside another, and the formation closes up around her (M28).
+  const outside = s.party.filter((c) => !c.engulfed);
+  const reach = reachable(outside, melee);
   const seen = reach.filter((c) => !c.veil);
   const pool = seen.length ? seen : reach;
-  const taunter = living(s.party).find((c) => c.taunt > 0);
+  const taunter = living(outside).find((c) => c.taunt > 0);
   const withTaunter = taunter && !pool.includes(taunter) ? [...pool, taunter] : pool;
-  return forced && forced.alive && !withTaunter.includes(forced) ? [...withTaunter, forced] : withTaunter;
+  return forced && forced.alive && !forced.engulfed && !withTaunter.includes(forced) ? [...withTaunter, forced] : withTaunter;
 }
 
-function resolveTargets(s: BattleState, actor: Combatant, target: Target | null, chosen: string | undefined, rng: Rng, melee = false, forced?: Combatant): Combatant[] {
+function resolveTargets(s: BattleState, actor: Combatant, target: Target | null, chosen: string | undefined, rng: Rng, melee = false, forced?: Combatant, item = false): Combatant[] {
   const allies = actor.side === 'party' ? s.party : s.enemies;
   const foes = actor.side === 'party' ? s.enemies : s.party;
   switch (target) {
     case 'enemy': {
       // A foe that another foe guards sends the party's single blow to its guard (roster plan B2, M2); draws nothing.
+      // From inside a foe (roster plan B10, M28) the blow lands on that foe, whatever guards it.
       const t = pickTarget(foePool(s, actor, melee, forced), chosen, rng);
-      return t ? [actor.side === 'party' ? foeGuard(s, t) : t] : [];
+      return t ? [actor.side === 'party' && !actor.engulfed ? foeGuard(s, t) : t] : [];
     }
     case 'row': case 'column': case 'cross': {
-      if (actor.side === 'party') return living(foes);   // enemies stand in one line: a shape covers them all
+      if (actor.side === 'party') return choosable(s, actor, 'foe');   // enemies stand in one line: a shape covers them all
       const t = pickTarget(foePool(s, actor, melee), chosen, rng);
-      return t ? shapeTargets(foes, t, target) : [];
+      return t ? shapeTargets(foes, t, target).filter((c) => !c.engulfed) : [];
     }
-    case 'enemies': return living(foes);
+    // M28: an area reaches no one inside a foe, and from inside only that foe; an ally's cast never reaches her (an item does).
+    case 'enemies': return choosable(s, actor, 'foe');
     case 'ally': {
-      const t = allies.find((c) => c.key === chosen && c.alive)
-        ?? living(allies).sort((a, b) => a.hp / a.max.hp - b.hp / b.max.hp)[0];
+      const pool = choosable(s, actor, 'ally', item);
+      const t = pool.find((c) => c.key === chosen) ?? [...pool].sort((a, b) => a.hp / a.max.hp - b.hp / b.max.hp)[0];
       return t ? [t] : [];
     }
-    case 'allies': return living(allies);
+    case 'allies': return choosable(s, actor, 'ally', item);
     case 'self': return [actor];
     case 'deadAlly': {
       // A foe that left the fight is not a fallen ally (roster plan B1); nor is a decoy, or a foe raised once (B4).
@@ -489,6 +495,7 @@ function chooseEnemyActions(s: BattleState, rng: Rng, round: number): Map<string
   foesStage(s, round, (c) => enemyDef(s, c));   // the round's weakness and stage, before the draw (roster plan B7)
   for (const e of living(s.enemies)) {
     if (e.decoyOf) continue;   // a decoy never acts, and draws nothing (roster plan B4, M19)
+    if (e.encased) continue;   // nor does a foe in ice: it plans once it thaws (roster plan B10, M23)
     const skills = skillsOf(s, e);
     // A foe winding up draws no skill: the one it wound up comes now, drawn for its target only (roster plan B2, M1).
     // A skill that cannot be used now (M22: a revive with no one fallen) is passed over after its draw, as if it failed.
@@ -496,7 +503,10 @@ function chooseEnemyActions(s: BattleState, rng: Rng, round: number): Map<string
     const index = charged ? e.winding! : skills.findIndex((sk) => rng() < sk.chance && usableNow(s, e, sk));
     const windup = !charged && index >= 0 && !!skills[index].windup;
     const melee = index >= 0 ? skillIsMelee(skills[index].effects) : e.melee;
-    const target = pickTarget(foePool(s, e, melee), undefined, rng)?.key;
+    // A stall passes over the member it delayed last, while there is another (roster plan B10, M27).
+    const pool = foePool(s, e, melee);
+    const fresh = index >= 0 && skills[index].effects.some((x) => x.kind === 'delay') ? pool.filter((c) => c.delayedBy !== e.key) : pool;
+    const target = pickTarget(fresh.some((c) => c.alive) ? fresh : pool, undefined, rng)?.key;
     const act: EnemyAction = index >= 0
       ? { kind: 'enemy-skill', index, target, ...(windup ? { windup: true as const } : {}), ...(charged ? { charged: true as const } : {}) }
       : { kind: 'attack', target };
@@ -527,17 +537,18 @@ export function forcedTarget(s: BattleState, enemy: Combatant, act: EnemyAction,
   const melee = act.kind === 'attack' ? enemy.melee : skillIsMelee(sk?.effects ?? []);
   // A veiled member is passed over by single blows, so she is in no pool of what they would have done (plan 8c final).
   const others = (who: Combatant) => reachable(s.party, melee).filter((c) => c !== who && !c.veil);
-  const taunter = living(s.party).find((c) => c.taunt > 0);
+  // No one inside a foe (roster plan B10, M28) draws a blow, calls one out or stands in for anyone.
+  const taunter = living(s.party).find((c) => c.taunt > 0 && !c.engulfed);
   if (taunter) return { to: taunter, pool: others(taunter) };
   const ch = enemy.challenged;
-  const by = ch && ch.round === round ? s.party.find((c) => c.key === ch.by && c.alive) : undefined;
+  const by = ch && ch.round === round ? s.party.find((c) => c.key === ch.by && c.alive && !c.engulfed) : undefined;
   if (by) return { to: by, pool: others(by) };
   // A hunt (roster plan B2, M24): the member a foe called out for this round takes the single blows, wherever she stands;
   // a cover over her still stands in for her.
   const hunted = huntedIn(s, round);
   const meant = hunted ?? s.party.find((c) => c.key === act.target && c.alive);
   // A frozen or sleeping Scarlet stands in for no one (designer ruling, plan 8c final).
-  const cover = meant ? living(s.party).find((c) => c !== meant && covers(c, meant.key) && !c.frozen && c.sleep === 0) : undefined;
+  const cover = meant ? living(s.party).find((c) => c !== meant && covers(c, meant.key) && !c.frozen && c.sleep === 0 && !c.engulfed) : undefined;
   if (meant && cover) return { to: cover, pool: [meant], cover: true };
   if (hunted && hunted.key !== act.target) return { to: hunted, pool: others(hunted) };
   return null;
@@ -595,7 +606,7 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
     // went to with what the others in `pool` would have lost (plan 8c rulings 8, 19). An area attack follows a taunt only,
     // centred on the taunter. Reading the grid draws nothing.
     const forced = forcedTarget(s, actor, act as EnemyAction);
-    const taunter = living(s.party).find((c) => c.taunt > 0);
+    const taunter = living(s.party).find((c) => c.taunt > 0 && !c.engulfed);
     if (forced) {
       if (ctx.ledger) ctx.redirect = forced.cover ? { pool: forced.pool, cover: true } : { pool: forced.pool };
       if (forced.cover) ctx.coverBlow = forced.to.key;
@@ -608,7 +619,7 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
   switch (act.kind) {
     case 'attack': {
       const drawn = pickTarget(foePool(s, actor, actor.melee, sentTo), act.target, rng);
-      const t = drawn && actor.side === 'party' ? foeGuard(s, drawn) : drawn;
+      const t = drawn && actor.side === 'party' && !actor.engulfed ? foeGuard(s, drawn) : drawn;
       if (!t) return null;
       s.log.push({ type: 'act', actor: actor.key, label: '攻擊' });
       physical(t);
@@ -661,7 +672,7 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
         first = resolveTargets(s, actor, def.target, act.target, rng);
         castOn(actor, first, def, ctx);
         // 彈射 (plan 8e): after the first foe has had every effect, the damage goes on down the line, if a hit landed.
-        if (def.runeRules?.bounce && first.length === 1 && ctx.struck === first[0].key) bounceCast(s, actor, def, first[0], ctx);
+        if (def.runeRules?.bounce && first.length === 1 && ctx.struck === first[0].key && !actor.engulfed) bounceCast(s, actor, def, first[0], ctx);
       }
       // 雙重詠唱 (plan 8e): the whole skill once more, paid already; one action for the mechanics.
       if (def.runeRules?.twice) twinCast(s, actor, def, raw, first, scatter, ctx, rng);
@@ -673,7 +684,8 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
       if (!def || !def.battle || (s.inventory[act.item] ?? 0) <= 0) return null;
       s.inventory[act.item] -= 1;
       s.log.push({ type: 'act', actor: actor.key, label: def.name });
-      for (const t of resolveTargets(s, actor, def.target, act.target, rng)) for (const eff of def.effects) applyEffect(actor, t, eff, ctx);
+      // An item reaches a member inside a foe (roster plan B10, M28).
+      for (const t of resolveTargets(s, actor, def.target, act.target, rng, false, undefined, true)) for (const eff of def.effects) applyEffect(actor, t, eff, ctx);
       return null;
     }
     case 'defend':
@@ -789,8 +801,8 @@ function twinCast(s: BattleState, actor: Combatant, cast: SkillDef, raw: SkillDe
   }
   const def = cast;
   const one = (t: Combatant | undefined): Combatant[] => (t ? [t] : []);
-  const targets = def.target === 'enemy' ? one(first[0]?.alive ? first[0] : living(foes)[0])
-    : def.target === 'ally' ? one(first[0]?.alive ? first[0] : living(allies).sort((a, b) => a.hp / a.max.hp - b.hp / b.max.hp)[0])
+  const targets = def.target === 'enemy' ? one(first[0]?.alive ? first[0] : choosable(s, actor, 'foe')[0])
+    : def.target === 'ally' ? one(first[0]?.alive ? first[0] : choosable(s, actor, 'ally').sort((a, b) => a.hp / a.max.hp - b.hp / b.max.hp)[0])
       : def.target === 'deadAlly' ? one(allies.find((c) => !c.alive))
         : resolveTargets(s, actor, def.target, undefined, rng);
   if (!targets.length) return;
@@ -823,7 +835,7 @@ function scatterCast(s: BattleState, actor: Combatant, def: SkillDef, chosen: st
   for (const eff of def.effects) {
     if (eff.kind === 'damage' && eff.scatter) {
       for (let i = 0; i < (eff.hits ?? 1); i++) {
-        const foes = living(actor.side === 'party' ? s.enemies : s.party);
+        const foes = choosable(s, actor, 'foe');   // from inside a foe, that foe alone (roster plan B10, M28)
         if (!foes.length) break;
         const { scatter: _drop, ...one } = eff;
         applyEffect(actor, pick(rng, foes), { ...one, hits: 1 }, ctx);
@@ -906,6 +918,7 @@ function summon(s: BattleState, actor: Combatant, id: string): void {
   s.log.push({ type: 'foe', actor: actor.key, cue: 'summon', target: c.key });
   linkShares(s, (x) => enemyDef(s, x));
   syncParts(s, (x) => enemyDef(s, x));
+  syncRallies(s, (x) => enemyDef(s, x));
 }
 
 /**
@@ -947,6 +960,8 @@ function settleFalls(s: BattleState): void {
   settleThieves(s, (c) => enemyDef(s, c));
   syncDecoys(s);
   syncParts(s, (c) => enemyDef(s, c));   // a body's cut goes with its last part (roster plan B8, M7)
+  syncRallies(s, (c) => enemyDef(s, c));   // a banner goes with its bearer (roster plan B10, M26)
+  settleGulps(s);   // a member is out of a foe that fell (roster plan B10, M28)
 }
 
 /**
@@ -958,7 +973,7 @@ function ringBell(s: BattleState, heroWasUp: boolean, ctx: EffectContext): void 
   if (!heroWasUp || s.party.find((c) => c.key === 'hero')?.alive !== false) return;
   const rin = s.party.find((c) => c.key === 'rin');
   if (!rin?.alive || !rin.keystones.includes('unrung-bell')) return;
-  const foe = living(s.enemies)[0];
+  const foe = choosable(s, rin, 'foe')[0];   // from inside a foe, that foe (roster plan B10, M28)
   if (!foe) return;
   addBuff(rin, { stat: 'atk', pct: MEMORY_KEYSTONE_VALUES.bellAtkPct, turns: MEMORY_KEYSTONE_VALUES.bellTurns, src: rin.key });
   s.log.push({ type: 'buff', target: rin.key, stat: 'atk', pct: MEMORY_KEYSTONE_VALUES.bellAtkPct });
@@ -1009,6 +1024,7 @@ export function resolveRound(prev: BattleState, actions: Record<string, Action>,
     // A frozen turn is lost before sleep is looked at (sleep keeps its rounds); it thaws and is guarded for a while.
     // A lost turn breaks a foe's charge (roster plan B2, M1).
     if (actor.decoyOf) continue;   // a decoy never acts (roster plan B4, M19)
+    if (actor.encased) continue;   // nor does a foe in ice (roster plan B10, M23)
     // A forget lasts its holder one turn, whatever that turn brings (roster plan B9, M9).
     const forgot = !!actor.forget;
     delete actor.forget;
@@ -1075,9 +1091,10 @@ export function planEnemies(s: BattleState, rng: Rng): void {
 
 /** "攻擊 → 千鶴" or a skill's name with its target, for the battle screen. */
 export function intentLabel(s: BattleState, key: string): string {
+  const e = s.enemies.find((x) => x.key === key);
+  if (e?.encased && e.alive) return T.battle.foe.encased;   // in ice, it plans nothing (roster plan B10, M23)
   const a = s.intents?.[key];
   if (!a) return '';
-  const e = s.enemies.find((x) => x.key === key);
   if (e?.frozen) return '凍結中';   // it will lose this turn (its plan is still drawn, so the sequence holds)
   const def = e ? enemyDef(s, e) : undefined;
   const skills = e ? skillsOf(s, e) : def?.skills ?? [];

@@ -3,8 +3,8 @@
  * decision here is made without a draw (spec §6.1); a combatant without these fields walks every path it walked before.
  */
 import type { BattleState } from './battle';
-import { addBuff, type BattleEvent, type Combatant } from './combatant';
-import type { Element, EnemyDef, EnemySkill } from './types';
+import { addBuff, dealDamage, type BattleEvent, type Buff, type Combatant } from './combatant';
+import type { BuffStat, Element, EnemyDef, EnemySkill } from './types';
 import { T } from '../data/text.zh-TW';
 import { ENEMIES } from '../data/enemies';
 import { listedEnemy } from '../data/monsters';
@@ -45,6 +45,9 @@ export function openWith(c: Combatant, d: EnemyDef): void {
     case 'ambush':
       c.ambush = true;
       return;
+    case 'encased':
+      c.encased = true;   // M23: in ice until fire or round two's end
+      return;
     case 'disguise': {
       // Its letter stays with the disguise (「寶箱？ A」, B1 review item 13).
       const letter = / [A-Z]$/.exec(c.name)?.[0] ?? '';
@@ -55,6 +58,13 @@ export function openWith(c: Combatant, d: EnemyDef): void {
       return;
     }
   }
+}
+
+/** M23: a foe in ice comes out of it (a fire hit, or round two's end). */
+export function thaw(s: { log: BattleEvent[] }, c: Combatant): void {
+  if (!c.encased) return;
+  delete c.encased;
+  s.log.push({ type: 'foe', actor: c.key, cue: 'thaw' });
 }
 
 /** M14: a dozing foe at its first turn awake (woken by a hit or by its rounds) wakes angry. Draws nothing. */
@@ -167,6 +177,7 @@ export function foeTraits(c: Combatant, d: EnemyDef): void {
   if (d.prism) c.prism = true;
   if (d.adapt) c.adapt = d.adapt;
   if ([...d.skills, ...(d.stages ?? []).flatMap((st) => st.skills)].some((k) => k.effects.some((e) => e.kind === 'mirror'))) c.mirrors = true;
+  if (d.mend) c.mend = { ...d.mend };
 }
 
 /**
@@ -296,8 +307,70 @@ export function guardTargets(s: BattleState, actor: Combatant, sk: EnemySkill): 
 
 /** M24 hunt: the living member called out for `round` (a hunt lands on one at a time), or undefined. */
 export function huntedIn(s: BattleState, round: number): Combatant | undefined {
-  // A veil beats a hunt (B1 review item 11): a veiled member is never the one called out.
-  return s.party.find((c) => c.alive && c.hunted === round && !c.defending && !c.veil);
+  // A veil beats a hunt (B1 review item 11): a veiled member is never the one called out; nor is one inside a foe (M28).
+  return s.party.find((c) => c.alive && c.hunted === round && !c.defending && !c.veil && !c.engulfed);
+}
+
+/**
+ * M26, drawing nothing: each foe's auras from the banners standing (every other foe's `rally`) and from its own throng (its
+ * `throng` percents once for each foe of that id standing). A fight with no banner or throng is not touched at all.
+ */
+export function syncRallies(s: BattleState, defOf: (c: Combatant) => EnemyDef | undefined): void {
+  if (!s.enemies.some((c) => { const d = defOf(c); return !!d?.rally || !!d?.throng; })) return;
+  const up = s.enemies.filter((c) => c.alive && !c.decoyOf);
+  for (const e of s.enemies) {
+    const auras: Buff[] = [];
+    if (e.alive) {
+      for (const b of up) {
+        const rally = b !== e ? defOf(b)?.rally : undefined;
+        for (const [stat, pct] of Object.entries(rally ?? {}) as [BuffStat, number][]) auras.push({ stat, pct, turns: 0, src: b.key });
+      }
+      const throng = defOf(e)?.throng;
+      const n = throng ? up.filter((c) => c.defId === throng.id).length : 0;
+      for (const [stat, pct] of Object.entries(n ? throng!.per : {}) as [BuffStat, number][]) auras.push({ stat, pct: pct * n, turns: 0, src: e.key });
+    }
+    if (auras.length) e.auras = auras; else delete e.auras;
+  }
+}
+
+/** M28: the share of its max HP an engulfer must lose to let its member out. */
+export const ENGULF = { releasePct: 15, tickPct: 10 } as const;
+
+/** M28: lets the member `foe` holds out, at once. */
+export function spit(s: BattleState, foe: Combatant): void {
+  const g = foe.gulp;
+  if (!g) return;
+  delete foe.gulp;
+  const m = s.party.find((c) => c.key === g.key);
+  if (m?.engulfed === foe.key) delete m.engulfed;
+  s.log.push({ type: 'foe', actor: foe.key, cue: 'spit', target: g.key });
+}
+
+/** M28, after each action: a member whose engulfer is down (or gone) is out; a foe whose member fell holds no one. */
+export function settleGulps(s: BattleState): void {
+  for (const m of s.party) {
+    if (!m.engulfed) continue;
+    const foe = s.enemies.find((e) => e.key === m.engulfed);
+    if (foe?.alive && foe.gulp?.key === m.key) continue;
+    delete m.engulfed;
+    if (foe) s.log.push({ type: 'foe', actor: foe.key, cue: 'spit', target: m.key });
+  }
+  for (const e of s.enemies) if (e.gulp && !s.party.some((c) => c.key === e.gulp!.key && c.alive && c.engulfed === e.key)) delete e.gulp;
+}
+
+/**
+ * M28: whom `actor` may pick on one side (`foe`, the other side; `ally`, its own living): a member inside a foe picks that
+ * foe alone, and of her allies herself; no one else picks her, from either side, but an item reaches her (`item`).
+ */
+export function choosable(s: BattleState, actor: Combatant, side: 'foe' | 'ally', item = false): Combatant[] {
+  const foes = actor.side === 'party' ? s.enemies : s.party;
+  const allies = actor.side === 'party' ? s.party : s.enemies;
+  if (side === 'foe') {
+    if (actor.engulfed) return foes.filter((c) => c.key === actor.engulfed && c.alive);
+    return foes.filter((c) => c.alive && !c.engulfed);
+  }
+  if (actor.engulfed && !item) return [actor];
+  return allies.filter((c) => c.alive && (item || !c.engulfed || c === actor));
 }
 
 /** At a round's start, once the party's defending is known: a member who defends lifts the hunt on her (M24). */
@@ -310,6 +383,26 @@ export function foesRoundStart(s: BattleState): void {
  * nothing); a foe's guard counts down its rounds (M2); a hunt for this round is over (M24).
  */
 export function foesRoundEnd(s: BattleState, defOf: (c: Combatant) => EnemyDef | undefined = () => undefined): void {
+  // M21: a mend that a hit of its element did not short this round.
+  for (const e of s.enemies) {
+    if (!e.alive || !e.mend) continue;
+    if (e.shorted === s.round) { s.log.push({ type: 'foe', actor: e.key, cue: 'short' }); continue; }
+    const amount = Math.min(e.max.hp - e.hp, Math.floor((e.max.hp * e.mend.pct) / 100));
+    if (amount <= 0) continue;
+    e.hp += amount;
+    s.log.push({ type: 'heal', target: e.key, amount });
+  }
+  // M23: ice that no fire broke melts as round two ends.
+  for (const e of s.enemies) if (e.alive && e.encased && s.round >= 2) thaw(s, e);
+  // M28: a round inside poisons; a hold whose round is over lets its member out.
+  for (const m of s.party) {
+    if (!m.alive || !m.engulfed) continue;
+    const amount = dealDamage(m, Math.max(1, Math.floor((m.max.hp * ENGULF.tickPct) / 100)), { dot: true, log: s.log });
+    s.log.push({ type: 'poison-tick', target: m.key, amount });
+    if (!m.alive) s.log.push({ type: 'ko', target: m.key });
+  }
+  for (const e of s.enemies) if (e.gulp && e.gulp.until <= s.round) spit(s, e);
+  settleGulps(s);
   for (const e of s.enemies) {
     const after = defOf(e)?.fleeAfter;
     if (!e.alive || after === undefined || s.round < after) continue;

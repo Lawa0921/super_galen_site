@@ -42,7 +42,8 @@ export type Effect =
       tpDrain?: number; vsPoisoned?: number }
   /** `overflowPct`: what the heal spills past max HP becomes a shield, up to this percent of max HP (the hero's 滿溢, plan 8d). */
   | { kind: 'heal'; power: number; overflowPct?: number; lift?: Lift }
-  | { kind: 'restore'; hp?: number; tp?: number }
+  /** `hpPct` (roster plan B10): HP back as that percent of the target's max HP (歸途之光's farewell). */
+  | { kind: 'restore'; hp?: number; tp?: number; hpPct?: number }
   | { kind: 'revive'; hpPct: number }
   | { kind: 'cure' }
   /** `turns`: a sleep's rounds when a variant sets them (Selene's 深眠, plan 8d); absent, the ailment's own. */
@@ -120,7 +121,13 @@ export type Effect =
    */
   | { kind: 'mirror'; cap: number }
   /** Roster plan B9 (M15): the foe takes every buff off the target (never a debuff, an aura or a ward) and wears it itself. */
-  | { kind: 'dispel' };
+  | { kind: 'dispel' }
+  /**
+   * Roster plan B10 (M28, ruling 9): the foe swallows the target member for a round. She still acts, on it alone (half again
+   * as hard); no foe and no ally's cast reaches her; she is poisoned a tick each round end; out after a round, or once it
+   * has taken 15% of its max HP, or as it falls. Never the last member standing, and one at a time.
+   */
+  | { kind: 'engulf' };
 /**
  * A skill's part in its owner's mechanic: `release` spends Chizuru's barrier for power; `coin-power` and `coin-hits` spend
  * Liz's coins for power or for hits; `consume-aim` spends Sylvie's aim for power; `ember-power` spends Scarlet's embers
@@ -289,6 +296,12 @@ export interface EnemyDef {
   parts?: { cutPct: number; by?: string[] };
   /** Roster plan B8 (M18): as it is met it takes this percent of the strongest member's atk and mag (by atk), then every multiplier but growth. */
   mimic?: number;
+  /** Roster plan B10 (M21): at each round's end it mends `pct`% of its max HP, unless a hit of `stopBy` landed on it that round. */
+  mend?: { pct: number; stopBy?: Element };
+  /** Roster plan B10 (M26): while it stands, every other foe has these percents as auras; they go as it falls. */
+  rally?: Partial<Record<BuffStat, number>>;
+  /** Roster plan B10 (M26): it has these percents as auras once for each foe of `id` standing (the shadow parade). */
+  throng?: { id: string; per: Partial<Record<BuffStat, number>> };
 }
 export interface ItemDef {
   id: string; name: string; price: number; target: Target | null; effects: Effect[]; battle: boolean; returnToTown?: boolean; desc: string;

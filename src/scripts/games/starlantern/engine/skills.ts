@@ -16,7 +16,7 @@ import { T } from '../data/text.zh-TW';
 import { overclock, placeDevice, tuneUp } from './mechanics/devices';
 import { raiseBarrier } from './mechanics/barrier';
 import { addEmbers } from './mechanics/embers';
-import { adaptTo } from './foes';
+import { ENGULF, adaptTo, spit, thaw } from './foes';
 
 /**
  * `ledger`: the sim's contribution ledger (absent in the game); it reads the fight and never draws. `redirect`: set only
@@ -326,6 +326,19 @@ function shareWound(actor: Combatant, twin: Combatant, n: number, element: Eleme
   if (!twin.alive) ctx.log.push({ type: 'ko', target: twin.key });
 }
 
+/**
+ * Roster plan B10, on a landed hit: a mend stopped by its element is shorted for the round (M21); fire breaks ice (M23); an
+ * engulfer that has lost ENGULF.releasePct of its max HP since it swallowed lets its member out (M28). No draw.
+ */
+function foeStruck(t: Combatant, el: Element, lost: number, ctx: EffectContext): void {
+  if (t.mend?.stopBy === el) t.shorted = ctx.battle?.round ?? 0;
+  if (t.encased && el === 'fire') thaw(ctx, t);
+  if (t.gulp && ctx.battle) {
+    t.gulp = { ...t.gulp, taken: t.gulp.taken + lost };
+    if (t.alive && t.gulp.taken * 100 >= t.max.hp * ENGULF.releasePct) spit(ctx.battle, t);
+  }
+}
+
 /** Roster plan B9 (M17): a landed hit takes up to `n` TP from the target, never below 0; the foe keeps count. No draw. */
 function drainTp(actor: Combatant, target: Combatant, n: number, ctx: EffectContext): void {
   const took = Math.min(target.tp, n);
@@ -377,6 +390,7 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
         if (twin) shareWound(actor, twin, full - amount, eff.element, ctx);
         adaptTo(target, eff.element, ctx.log);   // the first element to land on a foe that adapts (roster plan B7, M16)
         if (eff.tpDrain) drainTp(actor, target, eff.tpDrain, ctx);   // a TP thief (roster plan B9, M17)
+        foeStruck(target, eff.element, lost, ctx);   // a mend shorted, ice broken, a hold loosened (roster plan B10)
         onLandedHit(actor, target, ctx);
         // Her runes on this hit (plan 8e): absent fields do nothing and draw nothing.
         runeHit(actor, target, eff, crit, hpBefore - target.hp, ctx);
@@ -414,7 +428,13 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
     }
     case 'restore': {
       if (!target.alive) return;
-      const k = ctx.itemBoost ? 2 : 1;
+      // The party's item boost is an item's; a foe's restore (roster plan B10) is what it says.
+      const k = ctx.itemBoost && actor.side === 'party' ? 2 : 1;
+      if (eff.hpPct) {
+        const amount = gainHp(target, Math.floor((target.max.hp * eff.hpPct) / 100));
+        if (actor.side === 'party' && target.side === 'party') credit(ctx.ledger, actor.key, 'healing', amount);
+        ctx.log.push({ type: 'heal', target: target.key, amount });
+      }
       if (eff.hp) {
         const amount = gainHp(target, eff.hp * k);
         if (actor.side === 'party' && target.side === 'party') credit(ctx.ledger, actor.key, 'healing', amount);
@@ -530,7 +550,23 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
     }
     case 'delay': {
       if (!target.alive) return;
+      if (actor.side === 'enemy') {
+        // A foe's stall (roster plan B10, M27): never the member it delayed last; she still acts, last.
+        if (target.delayedBy === actor.key) return;
+        for (const c of ctx.battle?.party ?? []) if (c.delayedBy === actor.key) delete c.delayedBy;
+        target.delayedBy = actor.key;
+      }
       target.delay = (ctx.battle?.round ?? 0) + 1;
+      return;
+    }
+    case 'engulf': {
+      // Roster plan B10 (M28): one member at a time, never the last one standing outside; no draw.
+      const s = ctx.battle;
+      if (!s || actor.side !== 'enemy' || target.side !== 'party' || !target.alive || !actor.alive || actor.gulp || target.engulfed) return;
+      if (s.party.filter((c) => c.alive && !c.engulfed).length < 2) return;
+      target.engulfed = actor.key;
+      actor.gulp = { key: target.key, until: s.round + 1, taken: 0 };
+      ctx.log.push({ type: 'foe', actor: actor.key, cue: 'engulf', target: target.key });
       return;
     }
     case 'aim-add': {
