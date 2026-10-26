@@ -29,7 +29,8 @@ const BODY_MAX = 18;
 const TOP_MIN = CROWN + 4;
 const NOISE_SPAN = 0x7fffffff;
 
-// 錨點（家鄉）：一律放（繩梯 4 個候選欄都接不到地面時仍放、沒有繩梯）
+// 錨點（家鄉）：一律放、一定有繩梯（Task 21）：4 個候選繩梯欄在可用範圍內任何位置都接不到地面時，改在島下任一接得到地面的欄（ropeFallback）掛繩梯；
+// 整個可用範圍都沒有這種欄 → RangeError（anchors.homeAnchors 只挑可用範圍裡有這種欄的天空槽——它的 ropeable 與這裡同一個判定，所以不會發生）
 export function buildSkyIslandBp(c: BpCtx): Blueprint {
   return skyIsland(c, true)!;
 }
@@ -40,6 +41,15 @@ export function rollSkyIslandBp(c: BpCtx): Blueprint | null {
 
 // 繩梯的 4 個候選欄（drawSkyIsland 的順序）
 const ropeCols = (x0: number, iw: number): number[] => [x0 + iw - 5, x0 + 4, x0 + iw - 8, x0 + 7];
+// 錨點的後備繩梯（Task 21）：可用範圍 [lo, hi) 裡、寬 iw 的島（外框 x 依離 mid 由近到遠、平手取 x 小的）下方 [x0 + 4, x0 + iw − 4) 第一個 ok 的欄
+// → { x0, rx }；都沒有 = null。可用範圍 [lo + 4 + SLOT_PAD, hi − 4 − SLOT_PAD) 有 ok 的欄就一定找得到（x0 = rx − 4 或 rx − iw + 5 放得下）
+export function ropeFallback(lo: number, hi: number, iw: number, mid: number, ok: (x: number) => boolean): { x0: number; rx: number } | null {
+  const xs: number[] = [];
+  for (let x = lo + SLOT_PAD; x + iw <= hi - SLOT_PAD; x++) xs.push(x);
+  xs.sort((a, b) => Math.abs(a - mid) - Math.abs(b - mid) || a - b);
+  for (const x0 of xs) for (let rx = x0 + 4; rx < x0 + iw - 4; rx++) if (ok(rx)) return { x0, rx };
+  return null;
+}
 
 function skyIsland(c: BpCtx, force: boolean): Blueprint | null {
   // ctx.ver 0 的規則
@@ -54,19 +64,36 @@ function skyIsland(c: BpCtx, force: boolean): Blueprint | null {
   if (x0 === null) return null;
   // 錨點（force）：placeX 的 3 個候選都接不到地面（Task 14：家鄉 anc-10 出現過沒有繩梯的空島）→ 可用範圍內離中央近的放得下的 x 依序找第一個接得到的；
   // 都沒有才照舊（沒有繩梯）
+  // 都沒有（Task 21）：ropeFallback 在島下任一欄掛繩梯；整個可用範圍都沒有接得到地面的欄 → RangeError（錨點一定有繩梯）
+  let extra: number | null = null;
   if (force && !ropeOk(x0)) {
     const mid = (c.slotX0 + c.slotX1 - iw) >> 1, xs: number[] = [];
     for (let x = c.slotX0 + SLOT_PAD; x + iw <= c.slotX1 - SLOT_PAD; x++) xs.push(x);
-    x0 = xs.sort((a, b) => Math.abs(a - mid) - Math.abs(b - mid) || a - b).find(ropeOk) ?? x0;
+    const hit = xs.sort((a, b) => Math.abs(a - mid) - Math.abs(b - mid) || a - b).find(ropeOk);
+    if (hit !== undefined) x0 = hit;
+    else {
+      const f = ropeFallback(c.slotX0, c.slotX1, iw, mid, (x) => ground(x) >= 0);
+      if (!f) throw new RangeError(`gen2: sky_island ${c.id} has no rope column in [${c.slotX0}, ${c.slotX1})`);
+      x0 = f.x0; extra = f.rx;
+    }
   }
   let minTop = p.height;
   for (let x = x0 - NEAR; x < x0 + iw + NEAR; x++) minTop = Math.min(minTop, p.surfaceAt(x));
   const top = Math.max(TOP_MIN, minTop - AIR_GAP - thick - lift);
-  // 外框下緣：島身、與 4 個候選繩梯欄的地面那一列
+  // 外框下緣：島身、與 4 個候選繩梯欄（與後備繩梯欄）的地面那一列
   let low = top + BODY_MAX;
-  for (const rx of ropeCols(x0, iw)) low = Math.max(low, c.groundAt(rx));
+  for (const rx of extra === null ? ropeCols(x0, iw) : [...ropeCols(x0, iw), extra]) low = Math.max(low, c.groundAt(rx));
   const y = top - CROWN, cv = new BpCanvas({ x: x0, y, w: iw, h: low + 1 - y }, p);
-  drawSkyIsland(cv, { x0, iw, top, thick, noiseSeed }, rng, ground);
+  const drawn = drawSkyIsland(cv, { x0, iw, top, thick, noiseSeed }, rng, ground);
+  // 錨點的繩梯沒畫成（後備欄、或 4 欄都離地 < 8 格）：在第一個接得到地面的欄（後備欄優先、再照 4 欄的順序）從島底垂到地面上 3 格（至少 1 格）
+  if (force && !drawn.rope) {
+    const rx = [...(extra === null ? [] : [extra]), ...ropeCols(x0, iw)].find((x) => ground(x) >= 0);
+    if (rx === undefined) throw new RangeError(`gen2: sky_island ${c.id} has no rope column`);
+    let by = top;
+    while (cv.inBounds(rx, by + 1) && cv.isSolid(rx, by + 1)) by++;
+    const end = Math.max(by + 1, ground(rx) - 3);
+    for (let yy = by + 1; yy <= end; yy++) cv.setFg(rx, yy, T.ROPE);
+  }
   const landmarks = statue(cv, x0, iw, top);
   // floors（Task 14，給石碑）：島面上站得住的格（同石像的條件；空中的天然格就是空氣，畫布的回退讀取在這裡是準的）
   const floors: { x: number; y: number }[] = [];

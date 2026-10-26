@@ -105,6 +105,27 @@ function anchorCtx(seed: string, a: Anchor, span?: { x0: number; x1: number }): 
     region: a.region, profile: src.profile, ver: m.ver, groundAt: (x) => src.surfaceAt(x), rank: 0, spawnX: SPAWN_X };
 }
 
+// 用 bp 取代真的地廳 real 填欄，從豎井口上方的地表（sx, top − 1）走（4 鄰、不擋身體的格）到大廳地板；繩梯從 top 垂到地板上 2 格
+function walkToHall(seed: string, real: Blueprint, bp: Blueprint, sx: number, top: number): boolean {
+  const src = srcOf(seed), h = (bp.site as Hall).info;
+  const stub = { overlapping: (x0: number, x1: number, l?: readonly Layer[]) => src.blueprints.overlapping(x0, x1, l).map((b) => (b.id === real.id ? bp : b)).filter((b) => b.x < x1 && b.x + b.w > x0) } as unknown as BlueprintIndex;
+  const filler = new Filler2(seed, src.layout, src.profile, stub);
+  const w = worldOf({ version: 0, fill: (c, x0, x1) => filler.fill(c, x0, x1), surfaceAt: (x) => src.surfaceAt(x), biomeAt: (x) => src.biomeAt(x), layersAt: (x) => src.layersAt(x) });
+  loadColumns(w, bp.x, bp.x + bp.w);
+  for (let y = top; y <= h.floorY - 2; y++) expect(w.getFg(sx, y), `rope ${y}`).toBe(T.ROPE);
+  const goal = { x: (h.x0 + h.x1) >> 1, y: h.floorY - 1 }, seen = new Set<number>(), st = [sx, top - 1];
+  while (st.length) {
+    const y = st.pop()!, x = st.pop()!;
+    if (x === goal.x && y === goal.y) return true;
+    for (const [nx, ny] of [[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]]) {
+      const k = ny * 100_000 + nx;
+      if (nx < bp.x || nx >= bp.x + bp.w || ny < bp.y - 1 || ny > h.floorY || seen.has(k) || isSolidTile(w.getFg(nx, ny))) continue;
+      seen.add(k); st.push(nx, ny);
+    }
+  }
+  return false;
+}
+
 describe('gen2 家鄉的村莊與矮人地廳', () => {
   it('跨層優先序（Q10）：錨點 > 保證 > 機率；同級丟較深的；SKY / MINOR 同級讓位；不相交不丟', { timeout: 10_000 }, () => {
     const S_ = box(BP_SURFACE, 0, 300, 100, 40), U = box(BP_UNDER, 10, 320, 60, 40), K = box(BP_SKY, 0, 250, 40, 20), far = box(BP_DEEP, 500, 320, 40, 40);
@@ -251,25 +272,27 @@ describe('gen2 家鄉的村莊與矮人地廳', () => {
     // 兩側 36 格、外框上緣 = 地表上一格、整個外框是 solid
     for (const t of h.tunnels) expect(t.x1 - t.x0 + 1).toBe(36);
     expect(bp.y).toBe(top - 1); expect(bp.y + bp.h).toBe(h.floorY + 3); expect(bp.solid).toEqual({ x: bp.x, y: bp.y, w: bp.w, h: bp.h });
-    // 用這份藍圖取代真的地廳來填欄
-    const stub = { overlapping: (x0: number, x1: number, l?: readonly Layer[]) => src.blueprints.overlapping(x0, x1, l).map((b) => (b.id === real.id ? bp : b)).filter((b) => b.x < x1 && b.x + b.w > x0) } as unknown as BlueprintIndex;
-    const filler = new Filler2(seed, src.layout, src.profile, stub);
-    const w = worldOf({ version: 0, fill: (c, x0, x1) => filler.fill(c, x0, x1), surfaceAt: (x) => src.surfaceAt(x), biomeAt: (x) => src.biomeAt(x), layersAt: (x) => src.layersAt(x) });
-    loadColumns(w, bp.x, bp.x + bp.w);
-    for (let y = top; y <= h.floorY - 2; y++) expect(w.getFg(sx, y), `rope ${y}`).toBe(T.ROPE);
-    // 從豎井口上方的地表走（4 鄰、不擋身體的格）到大廳地板
-    const goal = { x: (h.x0 + h.x1) >> 1, y: h.floorY - 1 }, seen = new Set<number>(), st = [sx, top - 1];
-    let found = false;
-    while (st.length && !found) {
-      const y = st.pop()!, x = st.pop()!;
-      if (x === goal.x && y === goal.y) found = true;
-      for (const [nx, ny] of [[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]]) {
-        const k = ny * 100_000 + nx;
-        if (nx < bp.x || nx >= bp.x + bp.w || ny < bp.y - 1 || ny > h.floorY || seen.has(k) || isSolidTile(w.getFg(nx, ny))) continue;
-        seen.add(k); st.push(nx, ny);
-      }
-    }
-    expect(found).toBe(true);
+    expect(walkToHall(seed, real, bp, sx, top)).toBe(true);
+  }, 60_000);
+
+  // Task 21（Task 9 審查 Minor）：家鄉地廳的後備豎井原本固定在大廳中央、外框整片從地表起——上方有村莊錨點時兩個錨點跨層相交 → 開機 RangeError
+  it('後備豎井避開上方的表層錨點（surfaceBan）：豎井移到不碰村莊的欄、地廳帶部件，與村莊不相交（不丟 RangeError），繩梯照樣從地表通到大廳', () => {
+    const seed = SEEDS20[0], src = srcOf(seed), m = homeOf(src), a = src.blueprints.anchorsOf(m).find((q) => q.kind === 'hall')!;
+    const real = src.blueprints.anchorBlueprint(m, a)!, sp = anchorSpan(seed, a), c = (sp.x0 + sp.x1) >> 1;
+    // 蓋住大廳中央的假村莊（最寬的 91 欄、天空到地表下 10 格）
+    const village: Blueprint = { ...box(BP_SURFACE, c - 45, 0, 91, src.profile.surfaceAt(c) + 10), kind: 'village' };
+    const bp = buildHallBp({ ...anchorCtx(seed, a), surfaceBan: [{ x: village.x, y: village.y, w: village.w, h: village.h }] }, { caveOpen: () => false });
+    expect(bp.parts).toHaveLength(2);
+    const shaft = bp.parts![1];
+    expect(shaft.x + shaft.w <= village.x || shaft.x >= village.x + village.w, `shaft ${shaft.x}`).toBe(true);
+    // 部件判定：與村莊不相交 → 跨層規則不丟錯（兩份都是錨點，相交就是 RangeError）；沒有部件（整片外框，舊做法）會相交
+    expect(crossYields(bp, 2, village, 2)).toBe(false); expect(crossYields(village, 2, bp, 2)).toBe(false);
+    expect(crossYields({ ...bp, parts: undefined }, 2, village, 2)).toBe(true);
+    const top = Math.min(src.profile.surfaceAt(shaft.x), src.profile.surfaceAt(shaft.x + 1));
+    expect(shaft.y).toBe(top - 1);
+    expect(walkToHall(seed, real, bp, shaft.x, top)).toBe(true);
+    // 整段（大廳 + 兩側隧道）上方都被擋住 → 丟 RangeError（不默默少一條路）
+    expect(() => buildHallBp({ ...anchorCtx(seed, a), surfaceBan: [{ x: bp.x - 10, y: 0, w: bp.w + 20, h: 2000 }] }, { caveOpen: () => false })).toThrow(RangeError);
   }, 60_000);
 
   it('回歸：rch-2 的 x0 = 895 地廳（floorY 範圍 390 列，只試 160 列時兩側都不通）現在接得出去', () => {

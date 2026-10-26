@@ -75,22 +75,33 @@ export function naturalOpen(c: BpCtx, o: MiniOptions): (x: number, y: number) =>
 
 // 從 starts 出發走 4 鄰：外框 box 內走 air(x, y) 為真的格（藍圖畫的空氣；KEEP 的格看 open），外框外走天然洞穴；
 // 範圍 x ∈ [span.x0, span.x1) ∩ 外框左右 REACH_X 欄、y ∈ [box.y − REACH_UP, box.y + box.h + REACH_DOWN)。外框外走到 ≥ CAVE_BIG 格 = 接上
+// 走過的格（Task 21 效能：原本是 Set<number>，家鄉 homePlans 的長尾——hp-1006 的蘑菇林錨點走直豎井備案，718 次洪水填充佔 166 ms）：
+// 範圍內的格用共用的 Uint32Array 記「第幾次呼叫走過」（epoch），走法、順序與結果都和 Set 版相同；範圍外的起點不記（範圍外的格不會被推進堆疊）
+let walked = new Uint32Array(0), epoch = 0;
 export function linksToCave(box: { x: number; y: number; w: number; h: number }, span: Span, starts: readonly (readonly [number, number])[],
   inside: (x: number, y: number) => boolean, open: (x: number, y: number) => boolean): boolean {
   const y0 = box.y - REACH_UP, y1 = box.y + box.h + REACH_DOWN, xl = Math.max(span.x0, box.x - REACH_X), xr = Math.min(span.x1, box.x + box.w + REACH_X);
   const inBox = (x: number, y: number): boolean => x >= box.x && x < box.x + box.w && y >= box.y && y < box.y + box.h;
-  const seen = new Set<number>(), st: number[] = [];
-  for (const [x, y] of starts) { const k = x * 4096 + y; if (!seen.has(k)) { seen.add(k); st.push(x, y); } }
+  const W = Math.max(0, xr - xl), size = W * Math.max(0, y1 - y0);
+  if (walked.length < size) { walked = new Uint32Array(size); epoch = 0; }
+  if (++epoch === 0x100000000) { walked.fill(0); epoch = 1; }
+  const e = epoch, mark = walked, inRange = (x: number, y: number): boolean => x >= xl && x < xr && y >= y0 && y < y1;
+  const st: number[] = [], startSeen = new Set<number>();
+  for (const [x, y] of starts) {
+    if (inRange(x, y)) { const i = (y - y0) * W + x - xl; if (mark[i] !== e) { mark[i] = e; st.push(x, y); } }
+    else { const k = x * 4096 + y; if (!startSeen.has(k)) { startSeen.add(k); st.push(x, y); } }
+  }
   let out = 0;
   while (st.length) {
     const cy = st.pop()!, cx = st.pop()!;
     for (let d = 0; d < 8; d += 2) {
       const nx = cx + DIRS[d], ny = cy + DIRS[d + 1];
-      const k = nx * 4096 + ny;
-      if (seen.has(k) || nx < xl || nx >= xr || ny < y0 || ny >= y1) continue;
+      if (nx < xl || nx >= xr || ny < y0 || ny >= y1) continue;
+      const i = (ny - y0) * W + nx - xl;
+      if (mark[i] === e) continue;
       const b = inBox(nx, ny);
       if (b ? !inside(nx, ny) : !open(nx, ny)) continue;
-      seen.add(k);
+      mark[i] = e;
       if (!b && ++out >= CAVE_BIG) return true;
       st.push(nx, ny);
     }

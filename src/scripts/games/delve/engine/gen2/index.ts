@@ -41,7 +41,7 @@ export class Gen2Source implements ColumnSource {
   private readonly filler: Filler2;
   private readonly recordLocks: boolean;
 
-  constructor(private readonly seed: string, opts: Gen2Options = {}) {
+  constructor(readonly seed: string, opts: Gen2Options = {}) {
     this.locks = opts.locks ?? new LockTable();
     this.recordLocks = opts.recordLocks ?? true;
     this.layout = new Layout(seed, opts.origin ?? newWorldOrigin(SEA_Y, NEW_SHORE), this.locks, opts.latestVer ?? GEN2_VERSION);

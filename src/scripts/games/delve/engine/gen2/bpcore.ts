@@ -7,6 +7,7 @@ import type { RegionInfo } from '../regionInfo';
 import type { GenSite } from '../genTypes';
 import { seedInt } from '../noise';
 import { T, SOLID_LUT } from '../tiles';
+import { BIOME } from '../world';
 import type { Profile2 } from './profile';
 import { shaftX, SHAFT_REACH } from './caves';
 import { decodeStructureId } from './structId';
@@ -31,11 +32,24 @@ export const SLOT_PAD = 8;
 // 地下 / 深層 / 小點位的槽寬（表層 / 天空照 LAND_SLOT_W）；每個陸地地區各層各自切槽、各自有 slot 序號（最後一槽吃餘數）
 export const SUB_SLOT_W = 170;
 export function slotWidth(layer: Layer): number { return layer === BP_SURFACE || layer === BP_SKY ? LAND_SLOT_W : SUB_SLOT_W; }
-// 地區在 layer 層的陸地槽數（至少 1；最後一槽吃餘數）與第 q 槽（blueprint.ts 與 anchors.ts 共用）
-export const landSlotCount = (r: RegionInfo, layer: Layer): number => Math.max(1, Math.floor((r.x1 - r.x0) / slotWidth(layer)));
+// 地區在 layer 層的陸地槽數（至少 1；最後一槽吃餘數）與第 q 槽（blueprint.ts 與 anchors.ts 共用）。
+// 小點位層（M2a Task 21）四捨五入：最後一槽寬在 [85, 255)（其他層無條件捨去，最後一槽可到 339）——小點位每槽一個、放在槽中段，
+// 寬的最後一槽會在地區邊上留下 > 340 的空隙（驚喜密度，density.test）；所以小點位與地下層只有最後一槽的槽界可能不同
+export const landSlotCount = (r: RegionInfo, layer: Layer): number => {
+  const w = r.x1 - r.x0, sw = slotWidth(layer);
+  return Math.max(1, Math.floor((layer === BP_MINOR ? w + (sw >> 1) : w) / sw));
+};
 export function landSlot(r: RegionInfo, q: number, layer: Layer): { x0: number; x1: number } {
   const sw = slotWidth(layer), x0 = r.x0 + q * sw;
   return { x0, x1: q < landSlotCount(r, layer) - 1 ? x0 + sw : r.x1 };
+}
+// 整平過的地面鋪什麼（M2a Task 21；村莊 / 隱士小屋的整平帶，structures/village.ts、hermitHut.ts）：top = 地面那格、fill = 地面以下補土。
+// 與 fill.ts 陸地欄地表那格同一種（landCell：森林草 / 叢林草、沙漠沙、雪原雪），補土 = 那個生態地表下面的材質（泥土 / 泥巴 / 沙 / 雪）
+export function biomeGround(biome: number): { top: number; fill: number } {
+  if (biome === BIOME.DESERT) return { top: T.SAND, fill: T.SAND };
+  if (biome === BIOME.SNOW) return { top: T.SNOW, fill: T.SNOW };
+  if (biome === BIOME.JUNGLE) return { top: T.JUNGLE_GRASS, fill: T.MUD };
+  return { top: T.GRASS, fill: T.DIRT };
 }
 // 家鄉含出生點 ± SPAWN_CLEAR 的槽全空（所有層，含 MINOR，Q16）：槽 [x0, x1) 與 [sp − 80, sp + 80] 相交
 export const SPAWN_CLEAR = 80;

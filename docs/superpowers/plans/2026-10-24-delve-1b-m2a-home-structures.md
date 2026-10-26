@@ -57,9 +57,15 @@
 
 ## 基準紀錄（執行時填）
 
-- 舊生成器礦物密度（Task 13 量測，`engine/gen2/oreBaseline.ts`）：_待填_
-- 舊生成器家鄉 tile 集合（Task 17 量測，`engine/gen2/legacyTiles.ts`）：_待填_
-- 大藍圖建構時間、`homePlans()` 開局時間（目標 ≤ 300 ms，Q9）、gen2 開局時間、每欄 fill 中位數比值（Task 21）：_待填_
+- 舊生成器礦物密度（Task 13 量測，`engine/gen2/oreBaseline.ts`，千分比，種子 alpha / beta / gamma 平均）：銅 dirt 13.397 / rock 11.47 / deep 0.001；鐵 dirt 0.012 / rock 5.937 / deep 1.988；銀 rock 0.802 / deep 1.954；金 deep 2.445 / molten 0.514；其餘 0。
+  gen2（Task 21 時，`DELVE_MEASURE=1` 的 ores.test）：金 molten 平均 0.489（0.95×）；單一種子的家鄉 alpha 0.98× / beta 1.08× / gamma 0.79×，單片荒野大陸（東 / 西第一片）0.87 / 0.78、1.41 / 0.76、0.99 / 0.64×（Task 13 延後事項：只記錄，不改規則）。
+- 舊生成器家鄉 tile 集合（Task 17 量測，`engine/gen2/legacyTiles.ts`）：`LEGACY_HOME_TILES`（alpha / beta / gamma 整個舊世界 fg 的聯集，97 種）；gen2 刻意不做 `NOT_PORTED` = 泉水、熔岩泉、滲水石。
+- 大藍圖建構時間、`homePlans()` 開局時間（目標 ≤ 300 ms，Q9）、gen2 開局時間、每欄 fill 中位數比值（Task 21，2026-10-26，**機器沒有閒置**：兩個 Android 模擬器等常駐，量測時 CPU 負載 88–94%）：
+  - `gen2.perf.test` 三次（P5）：median ratio 1.75 / 2.02 / 2.29，**中位數 2.02 > 2.00（不達標，負載下量的）**；同一時段 HEAD（0da73087c）與本 Task 交錯各跑 3 次：HEAD 1.68 / 1.41 / 0.98、本 Task 1.54 / 1.84 / 1.66（v1 中位數本身在 2.3–5.5 ms 之間跳，負載雜訊大於差異）。p95 8.4 / 9.7 / 9.5 ms（≤ 40）。
+  - `[gen2 budget]` 三次（perf-a / perf-b，單次最大值，ms）：地城建構器 17.0 / 24.4 / 20.0（≤ 80）、小地城 9.6 / 15.5 / 14.6（≤ 30）、其他 5.4 / 8.6 / 7.9（≤ 10；水晶洞 / 蘑菇林）、`homePlans` 78.4 / 80.9 / 75.4（≤ 300）、homePlans 之後第一次碰地城欄 11.5 / 9.0 / 11.1（≤ 120）、全新 source 第一次碰東側第一片大陸小地城欄 16.9 / 23.2 / 20.4（≤ 120）。
+  - `homePlans()` 長尾（2000 個家鄉 hp-0..1999，同負載）：改前中位數 74.5 / p99 155.8 / 最差 339.2 ms（hp-1006：蘑菇林錨點走直豎井備案，linksToCave 718 次洪水填充 166 ms）；
+    linksToCave 與礦坑接洞的走過表改 typed array（輸出逐位元相同）後中位數 73.5 / p99 122.2 / 最差 254.5 ms；加上 homeContent 最差 256.1 ms。
+  - gen2 `DelveGame` 開局 ≤ 1,500 ms：game.gen2.test / lore.test 的自動門檻照綠。
 
 ---
 

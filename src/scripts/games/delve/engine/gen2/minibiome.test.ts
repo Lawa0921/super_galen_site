@@ -279,10 +279,11 @@ describe('gen2 小生態與蜂巢', () => {
     src.fill(parts, cx * 32, b.x + 1); src.fill(parts, b.x + 1, cx * 32 + 32); expect(bytes(parts), k).toEqual(bytes(fillCol(src, cx)));
   } }, 60_000);
 
-  it('錨點一定走得進去（修正第 1 輪）：2500 個家鄉（bx-0..2499）的蘑菇林 / 水晶洞 / 蜂巢錨點，從地標走得到外框外 ≥ 300 格或地表（藍圖的格 + 天然洞穴探針）', () => {
+  // Task 21：切成兩段各自逾時（同樣 2500 個家鄉、同樣的斷言；單段 2500 個在負載下要 190 s 以上，逼近 300 s 逾時——每個家鄉都要建完整的 homePlans）
+  for (const [a, z] of [[0, 1250], [1250, 2500]] as const) it(`錨點一定走得進去（修正第 1 輪）：2500 個家鄉之 bx-${a}..${z - 1} 的蘑菇林 / 水晶洞 / 蜂巢錨點，從地標走得到外框外 ≥ 300 格或地表（藍圖的格 + 天然洞穴探針）`, () => {
     const sealed: string[] = [];
     let n = 0;
-    for (let k = 0; k < 2500; k++) {
+    for (let k = a; k < z; k++) {
       const seed = `bx-${k}`, g = new Gen2Source(seed), m = homeOf(g);
       const open = naturalOpen({ seed, profile: g.profile } as BpCtx, {});
       try {
@@ -295,7 +296,7 @@ describe('gen2 小生態與蜂巢', () => {
       } catch (e) { if (!(e instanceof RangeError)) throw e; sealed.push(`${seed} ${e.message}`); }
     }
     expect(sealed).toEqual([]);
-    expect(n).toBe(2500 * 3);
+    expect(n).toBe((z - a) * 3);
   }, 300_000);
 
   // 由上往下試時（修正前）只有 1.2% 貼著蜂蜜面（RED：0.012）；由下往上後，接得上的最低一列優先，過半貼著蜂蜜面（其餘是蜂蜜面那幾列接不到洞穴）

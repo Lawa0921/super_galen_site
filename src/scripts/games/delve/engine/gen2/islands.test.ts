@@ -278,7 +278,7 @@ describe('gen2 島的種類、珊瑚礁、海底遺跡（Task 20）', () => {
     expect(h).toBe(SHIPWRECK_HASH);
   }, 60_000);
 
-  it('荒野大陸的隱士小屋與隱士島共用畫法後不變（Task 18 的 hermit_hut 逐格相同，雜湊在改動前錄）', () => {
+  it('荒野大陸的隱士小屋與隱士島共用畫法後不變（Task 18 的 hermit_hut 逐格相同，雜湊在改動前錄；Task 21 依生態鋪地表後重錄）', () => {
     let h = 0x811c9dc5, n = 0;
     for (const seed of SEEDS5) { const src = srcOf(seed);
       for (const side of [1, -1] as const) for (const i of [2, 4]) { const m = src.layout.landmass(side, i);
@@ -474,4 +474,6 @@ const SHIPWRECK_HASH = 2625913742;
 // 修正回合 1 抽出 hullPlan 前（253a71ee3）錄下的沉船島雜湊
 const WRECK_ISLE_HASH = 2107307070;
 const CHEST_HASH = 2991537935;
-const HUT_HASH = 951269948;
+// Task 21 重錄（原 951269948，Task 20 前錄）：隱士小屋的整平依生態鋪地表（雪原鋪雪、沙漠鋪沙、叢林鋪叢林草；原本一律鋪草），
+// 大陸大東西的退讓 / 欠債規則也讓部分小屋換了槽；共用畫法（drawHermitHut / levelSite）沒有改——島上的小屋（森林）照舊草 / 泥土
+const HUT_HASH = 2919849084;

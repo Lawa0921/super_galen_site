@@ -8,7 +8,9 @@ import { LIQ_MAX } from '../liquidKind';
 import type { RegionInfo } from '../regionInfo';
 import type { DungeonInfo } from '../genTypes';
 import { Gen2Source } from './index';
-import { partsMeet, type Blueprint } from './bpcore';
+import { partsMeet, BP_SURFACE, BP_UNDER, BP_DEEP, BP_SKY, BP_MINOR, KEEP, type Blueprint } from './bpcore';
+import { hasShaft, shaftX } from './caves';
+import { seedInt } from '../noise';
 import { ORES4, BANDS4, type OreKind, type OreBand } from './oreBaseline';
 
 // 第 cx 欄整欄（32 格）由 src 填
@@ -312,5 +314,59 @@ export function oreDensity(t: OreTally): Record<OreKind, Record<OreBand, number>
 export function meanDensity(ms: readonly Record<OreKind, Record<OreBand, number>>[]): Record<OreKind, Record<OreBand, number>> {
   const out = { copper: bandZero(), iron: bandZero(), silver: bandZero(), gold: bandZero() };
   for (const ore of ORES4) for (const band of BANDS4) { let s = 0; for (const m of ms) s += m[ore][band]; out[ore][band] = s / ms.length; }
+  return out;
+}
+
+// ── 驚喜密度（M2a Task 21，spec §4.4「任意連續 340 格內至少一個值得停下的東西、任意 1,800 格內至少一個大東西」）──
+// 小（值得停下的東西）= [x0, x1) 內 SURFACE / SKY / MINOR 層的藍圖外框、島（含 plain）、每個海點的藍圖（表層，已含在前者）、主坑道入口 [shaftX − 1, shaftX + 3)、
+// 礦坑在地表的入口（礦坑藍圖在 profile 地表那一格寫了非實心的欄：斜坡口 / 通地表的豎井口；Task 19 裁決 1 同主坑道入口算值得停下的東西）；
+// 大 = 村莊、小地城（keep）/ 家鄉地城（dungeon）、地廳（hall，DEEP 層）、有建物的島（kind 'island'）。區間 [a, b)，依 a 排序
+export type Span1 = [number, number];
+const BIG_POI: ReadonlySet<string> = new Set(['village', 'keep', 'dungeon', 'hall', 'island']);
+export function pois(src: Gen2Source, x0: number, x1: number): { small: Span1[]; big: Span1[] } {
+  const small: Span1[] = [], big: Span1[] = [], ss = seedInt(src.seed, 'g2-shaft');
+  for (let x = x0; x < x1;) {
+    const m = src.layout.landmassAt(x);
+    if (!m) break;
+    const a = Math.max(x0, m.x0), z = Math.min(x1, m.x1);
+    // 逐地塊查（外圍的藍圖快取是 LRU，整段 ±50,000 一次查會一直淘汰重建）；外框跨到鄰地塊的藍圖會在兩邊都出現，排序後重複不影響空隙
+    for (const b of src.blueprints.overlapping(a, z, [BP_SURFACE, BP_UNDER, BP_DEEP, BP_SKY, BP_MINOR])) {
+      if (b.kind === 'mineshaft') { small.push(...mineOpenings(src, b)); continue; }
+      if (b.layer === BP_UNDER) continue;
+      const s: Span1 = [b.x, b.x + b.w];
+      if (b.layer !== BP_DEEP) small.push(s);
+      if (BIG_POI.has(b.kind)) big.push(s);
+    }
+    for (const d of m.islands) if (d.x1 > a && d.x0 < z) small.push([d.x0, d.x1]);
+    if (m.kind !== 'sea') for (const r of m.regions) {
+      if (!hasShaft(r)) continue;
+      const sx = shaftX(ss, r);
+      if (Number.isFinite(sx) && sx + 3 > a && sx - 1 < z) small.push([sx - 1, sx + 3]);
+    }
+    x = m.x1;
+  }
+  const by = (p: Span1, q: Span1): number => p[0] - q[0] || p[1] - q[1];
+  return { small: small.sort(by), big: big.sort(by) };
+}
+// 礦坑 b 在地表的入口欄（藍圖在 profile 地表那一格寫了非實心 fg 的欄；每欄一個 [x, x + 1)）
+function mineOpenings(src: Gen2Source, b: Blueprint): Span1[] {
+  const xs = new Set<number>();
+  for (let k = 0; k < b.cells.length; k += 5) {
+    const x = b.cells[k], f = b.cells[k + 2];
+    if (f !== KEEP && !isSolidTile(f) && b.cells[k + 1] === src.profile.surfaceAt(x)) xs.add(x);
+  }
+  return [...xs].map((x): Span1 => [x, x + 1]);
+}
+// 依 a 排序的區間之間最大的空隙（下一個.a − 目前為止最大的 b）；給了 x0 / x1 就也算範圍兩端到第一個 / 最後一個的空隙。沒有區間 = 整段（或 Infinity）
+export function maxGap(sp: readonly Span1[], x0?: number, x1?: number): number {
+  return gapsOf(sp, x0, x1).reduce((g, q) => Math.max(g, q.w), sp.length ? 0 : x0 !== undefined && x1 !== undefined ? x1 - x0 : Infinity);
+}
+// 每個空隙（起點 at、寬 w），測試失敗時印位置用
+export function gapsOf(sp: readonly Span1[], x0?: number, x1?: number): { at: number; w: number }[] {
+  const out: { at: number; w: number }[] = [];
+  if (!sp.length) return out;
+  let end = x0 ?? sp[0][0];
+  for (const [a, b] of sp) { if (a > end) out.push({ at: end, w: a - end }); end = Math.max(end, b); }
+  if (x1 !== undefined && x1 > end) out.push({ at: end, w: x1 - end });
   return out;
 }

@@ -5,6 +5,7 @@
 //     家鄉（c.spawnX）裡中心離出生點 ≤ VILLAGE_MIN 時往外移（bpcore.centerAway；anchors.ts 用同一個出生點、只選移得開的槽）；
 //     外圍（spawnX undefined）只置中。
 //   · ground = 外框各欄 profile 地表的中位數；style = 雜湊 % 3；整平後每欄 setSurface → ground 覆寫長度 = vw + 18（Q4：只讀 c.profile）。
+//     整平的地面依該欄生態鋪（bpcore.biomeGround，Task 21：外圍雪原 / 沙漠 / 叢林的村子不再一律鋪草；家鄉的村莊只在森林，照舊草 / 泥土）。
 //   · BpCanvas 的回退讀取假設天然格是實心、沒有洞穴：drawVillage 補低時「讀到實心就不填」的格（每欄 [地面, max(地面 + 6, 原地表 + 3))）
 //     必須在成品裡真的是實心 → 外框整片併進 solid（fill.ts 在箱內不挖噪聲洞穴、地表不當入口；礦照常換）。
 //   · floors = 委託板 + 廣場上的空氣格；site = { kind: 'village', key: 's' + id, rot, info }：
@@ -15,7 +16,7 @@ import { seedInt } from '../../noise';
 import { HRng } from '../hrng';
 import { BpCanvas } from '../draw/bpCanvas';
 import { drawVillage } from '../draw/village';
-import { BP_SURFACE, VILLAGE_MIN, centerAway, type Blueprint, type BpCtx } from '../bpcore';
+import { BP_SURFACE, VILLAGE_MIN, biomeGround, centerAway, type Blueprint, type BpCtx } from '../bpcore';
 
 // 兩側緩坡的欄數（draw/village.ts）；村子寬 vw 的範圍 [lo, hi)（rng.int；anchors.ts 用它算村莊外框可能的 x 範圍）
 export const SLOPE = 9, VILLAGE_VW: readonly [number, number] = [58, 74];
@@ -45,7 +46,7 @@ export function buildVillageBp(c: BpCtx): Blueprint {
     y1 = Math.max(y1, Math.max(top + FILL_DOWN, s0 + FILL_BELOW_SURFACE));
   }
   const cv = new BpCanvas({ x: bx, y: y0, w: W, h: y1 - y0 }, p);
-  const info = drawVillage(cv, { x0, vw, ground, style }, rng);
+  const info = drawVillage(cv, { x0, vw, ground, style, skin: (x) => biomeGround(p.biomeAt(x)) }, rng);
   // 免挖洞箱 = 整個外框（BpBox 是外接矩形，兩個角就夠）
   cv.fillNatural(bx, y0); cv.fillNatural(bx + W - 1, y1 - 1);
   const floors = [{ ...info.board }];

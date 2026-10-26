@@ -77,7 +77,22 @@ const hab = (o: Partial<Habitat>): Habitat => ({ zone: 'surface', biome: BIOME.F
 describe('gen2 礦物密度（M2a Task 13）', () => {
   it('§4.4：每種礦在舊生成器密度 ≥ 0.2‰ 的帶裡，gen2 密度落在 ±30%；舊的 < 0.2‰ 的帶 gen2 也 < 0.5‰', () => {
     const g2 = densityOf(['alpha', 'beta', 'gamma']);
-    if (process.env.DELVE_MEASURE === '1') console.info('[gen2 ore density]', JSON.stringify(g2));
+    if (process.env.DELVE_MEASURE === '1') {
+      console.info('[gen2 ore density]', JSON.stringify(g2));
+      // Task 21 延後事項 4（Task 13 審查）：熔岩帶金對舊生成器的比例——單一種子的家鄉、單片荒野大陸（東 / 西第一片）各自算（只記錄，不改規則）
+      const ratio = (src: Gen2Source, x0: number, x1: number): string => {
+        const t = newOreTally();
+        for (let cx = x0 >> 5; cx <= (x1 - 1) >> 5; cx++) {
+          const col = fillCol(src, cx);
+          for (let x = Math.max(x0, cx * 32); x < Math.min(x1, cx * 32 + 32); x++) tallyColumn(t, (y) => col.fg[li(x, y)], src.profile.info(x), WORLD_H);
+        }
+        return (oreDensity(t).gold.molten / LEGACY_ORE_DENSITY.gold.molten).toFixed(2);
+      };
+      for (const seed of SEEDS) {
+        const h = homeOf(seed), conts = ([1, -1] as const).map((side) => h.src.layout.landmass(side, 2));
+        console.info('[gen2 molten gold ×legacy]', seed, 'home', ratio(h.src, ORE_X0, ORE_X1), ...conts.map((m) => `continent ${m.side}:${m.i} ${ratio(h.src, m.x0, m.x1)}`));
+      }
+    }
     for (const ore of ORES4) for (const band of BANDS4) {
       const old = LEGACY_ORE_DENSITY[ore][band], now = g2[ore][band];
       if (old >= 0.2) { expect(now, `${ore}/${band}`).toBeGreaterThanOrEqual(old * 0.7); expect(now, `${ore}/${band}`).toBeLessThanOrEqual(old * 1.3); }

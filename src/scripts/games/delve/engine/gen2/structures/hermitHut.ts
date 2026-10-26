@@ -6,7 +6,8 @@
 //     max(地面 + FILL_DOWN, 原地表 + 3)（只補「讀到不是實心」的格——BpCanvas 的回退讀取把天然格當實心，所以建構器要用 solid 蓋住整個外框）。
 //     回傳隱士站的格 at = 屋內中央、地板上一格。
 //   · buildHermitHutBp：站在 c.profile 地表（SURFACE 層不讀 groundAt，Q4）；屋子的 x = 可用範圍裡屋子連兩側緩坡起伏最小的位置（平手取離中點近的、再取 x 小的），
-//     地面 = 屋子各欄地表的中位數；外框 = 屋子 ± SIDE 欄 × 清空的頂到補土的底，整個外框併進 solid（不挖洞穴、不當地表入口）、ground 覆寫外框各欄。
+//     地面 = 屋子各欄地表的中位數；外框 = 屋子 ± SIDE 欄 × 清空的頂到補土的底，整個外框併進 solid（不挖洞穴、不當地表入口）、ground 覆寫外框各欄；
+//     整平的地面依該欄生態鋪（bpcore.biomeGround，Task 21：雪原鋪雪、沙漠鋪沙、叢林鋪叢林草，不再一律鋪草）。
 //     site = { kind: 'hermit', key: 's' + id, rot: 0, at }（folk.ts 放 1 位 `${key}:hermit`）；小屋不算「大東西」。
 // 本資料夾的非測試檔不得出現連續兩個星號、亂數與超越函數（測試會 grep），註解一律用 //。
 import { T, W } from '../../tiles';
@@ -15,7 +16,9 @@ import { BpCanvas } from '../draw/bpCanvas';
 import { buildHouse } from '../draw/village';
 import type { Canvas, RandomLike } from '../draw/canvas';
 import type { Profile2 } from '../profile';
-import { BP_SURFACE, SLOT_PAD, type Blueprint, type BpCtx } from '../bpcore';
+import { BP_SURFACE, SLOT_PAD, biomeGround, type Blueprint, type BpCtx } from '../bpcore';
+
+const GRASS_SKIN = (): { top: number; fill: number } => ({ top: T.GRASS, fill: T.DIRT });
 
 // 屋寬 [lo, hi)（rng.int）；屋子兩側整平的欄數；地面往上清幾列（室內 5 + 屋頂最多 7 列）、往下至少補幾列
 export const HUT_W: readonly [number, number] = [9, 12];
@@ -32,14 +35,16 @@ const topAt = (s0: number, x: number, x0: number, x1: number, floorY: number): n
   return k ? slopeTop(floorY, s0, k) : floorY;
 };
 
-// 整平：建物欄 [x0, x1]（含）= floorY，兩側各 SIDE 欄緩坡接回原地表；往上清 CLEAR_UP 列、往下補土、地面那格鋪草、記進地面覆寫
-export function levelSite(cv: Canvas, x0: number, x1: number, floorY: number): void {
+// 整平：建物欄 [x0, x1]（含）= floorY，兩側各 SIDE 欄緩坡接回原地表；往上清 CLEAR_UP 列、往下補土、地面那格鋪地表、記進地面覆寫。
+// skin(x) = 第 x 欄的地表 / 補土（Task 21：隱士小屋依生態，bpcore.biomeGround；沒給 = 草 / 泥土——島都是森林）
+export function levelSite(cv: Canvas, x0: number, x1: number, floorY: number, skin: (x: number) => { top: number; fill: number } = GRASS_SKIN): void {
   for (let x = x0 - SIDE; x <= x1 + SIDE; x++) {
     if (!cv.inBounds(x, floorY)) continue;
     const s0 = cv.surfaceAt(x), top = topAt(s0, x, x0, x1, floorY);
     for (let y = Math.max(1, Math.min(floorY, top) - CLEAR_UP); y < top; y++) { cv.setFg(x, y, T.AIR); cv.setWall(x, y, W.NONE); cv.clearLiquid(x, y); }
-    for (let y = top; y < Math.max(top + FILL_DOWN, s0 + FILL_BELOW_SURFACE); y++) if (!cv.isSolid(x, y)) cv.setFg(x, y, T.DIRT);
-    cv.setFg(x, top, T.GRASS);
+    const k = skin(x);
+    for (let y = top; y < Math.max(top + FILL_DOWN, s0 + FILL_BELOW_SURFACE); y++) if (!cv.isSolid(x, y)) cv.setFg(x, y, k.fill);
+    cv.setFg(x, top, k.top);
     cv.setSurface(x, top);
   }
 }
@@ -71,11 +76,11 @@ export function levelRows(p: Profile2, bx: number, Wd: number, x0: number, w: nu
   return { y0, y1 };
 }
 
-export function drawHermitHut(cv: Canvas, o: { x0: number; w: number; floorY: number }, rng: RandomLike): { at: { x: number; y: number } } {
+export function drawHermitHut(cv: Canvas, o: { x0: number; w: number; floorY: number; skin?: (x: number) => { top: number; fill: number } }, rng: RandomLike): { at: { x: number; y: number } } {
   const { x0, w, floorY } = o, x1 = x0 + w - 1;
   const door = rng.chance(2) ? x0 : x1;
   // 整平：屋子各欄 = floorY，兩側緩坡接回原地表
-  levelSite(cv, x0, x1, floorY);
+  levelSite(cv, x0, x1, floorY, o.skin);
   buildHouse(cv, x0, x1, floorY, door, 'home', rng);
   return { at: { x: x0 + (w >> 1), y: floorY - 1 } };
 }
@@ -89,7 +94,7 @@ export function buildHermitHutBp(c: BpCtx): Blueprint {
   const bx = flattestX(p, lo, hi, W_, mid), x0 = bx + SIDE, floorY = medianFloor(p, x0, w);
   const { y0, y1 } = levelRows(p, bx, W_, x0, w, floorY);
   const cv = new BpCanvas({ x: bx, y: y0, w: W_, h: y1 - y0 }, p);
-  const { at } = drawHermitHut(cv, { x0, w, floorY }, rng);
+  const { at } = drawHermitHut(cv, { x0, w, floorY, skin: (x) => biomeGround(p.biomeAt(x)) }, rng);
   // 免挖洞箱 = 整個外框（BpBox 是外接矩形，兩個角就夠）
   cv.fillNatural(bx, y0); cv.fillNatural(bx + W_ - 1, y1 - 1);
   return cv.toBlueprint(c.id, 'hermit_hut', BP_SURFACE, { floors: [{ ...at }], site: { kind: 'hermit', key: 's' + c.id, rot: 0, at } });

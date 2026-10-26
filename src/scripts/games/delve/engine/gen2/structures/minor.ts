@@ -1,5 +1,6 @@
-// minor.ts — gen2 的小點位（MINOR 層，M2a Task 19；spec「任意連續 340 格內至少一個值得停下的東西」）：每個有槽的陸地地區（沙灘、地城區除外）每 170 格一槽，
-// 槽內（讓位後）沒有表層 / 天空藍圖、也不在排除範圍（家鄉含出生點 ± 80 的槽、含主坑道的槽；BlueprintIndex 判）就放一個小點位。種類（雜湊）：
+// minor.ts — gen2 的小點位（MINOR 層，M2a Task 19；spec「任意連續 340 格內至少一個值得停下的東西」）：每個有槽的陸地地區（沙灘、地城區除外）每 170 格一槽
+// （四捨五入，最後一槽 85–254 寬，bpcore.landSlotCount），槽的偏好區（minorZone：中段 / 家鄉緊鄰出生點清空區的槽 = 靠出生點那一半）沒有主坑道入口、
+// 沒有（讓位後的）表層 / 天空藍圖、也不在排除範圍（家鄉含出生點 ± 80 的槽；BlueprintIndex 判）就放一個小點位（Task 21 調整，驚喜密度 density.test）。種類（雜湊）：
 //   · cairn 45%：石堆（兩塊石頭夾著地標 T.CAIRN、一塊石頭上一顆小石子）+ 紅布旗（4 格旗桿、桿頂旁 2 格村旗布），寬 5；
 //   · camp 30%：木板帳篷（A 字形、一側開口、室內木板牆）+ 帳篷裡的地標 T.RELIC_PACK + 帳篷外一支火把，寬 6；
 //   · stones 25%：3–5 根石柱（兩端 3 格高、中間 2–3 格）排成一圈 + 第一 / 最後一道縫裡各一個陶罐，寬 2n − 1（5–9）。
@@ -10,7 +11,7 @@
 // 對齊（修正回合 1）：相連的格對齊同一個基準欄的地面——石堆三欄對齊地標那欄、旗布對齊旗桿那欄、帳篷各格對齊屋脊（中央）那欄；
 // 其他格（火把、石柱、陶罐）對齊自己那欄。對齊後每格都要在自己那欄的地面以上（否則這個位置不成立）；石堆 / 帳篷各欄比基準欄低的部分
 // 從基準地面往下補到該欄地面（石堆補石頭、帳篷補木板 + 木板牆），所以沒有懸空；旗布本來就掛在旗桿旁。
-// 位置：槽內 [slotX0 + SLOT_PAD, slotX1 − SLOT_PAD) 的每個外框 x，依離雜湊偏好點（槽中央 ± 槽寬 / 4）由近到遠、平手取 x 小的，
+// 位置：槽內 [slotX0 + SLOT_PAD, slotX1 − SLOT_PAD) 的每個外框 x，依離雜湊偏好點（槽中央 ± 槽寬 / 4；家鄉緊鄰出生點清空區的槽 = 靠出生點那一端，Task 21）由近到遠、平手取 x 小的，
 // 依序試三種地面起伏容許（全平 → 各欄比中央欄低至多 1、高至多 1 → 高至多 2），取第一個成立的：外框各欄是陸地欄、沒有水、不是地表入口欄
 // （入口欄的地表那格可能被洞穴挖掉）、各欄地面比中央欄低至多 1（所以每格都 ≤ 中央欄的地面）、對齊後每格在自己那欄地面以上、
 // 不碰主坑道避讓帶（bpcore.shaftBand，同 M1 的觸及範圍規則）、外框（往下到最低那欄的地面）不碰 c.surfaceBan（BlueprintIndex.minorBan：
@@ -23,7 +24,7 @@ import { entranceHit } from '../../genPrims';
 import { HRng } from '../hrng';
 import { shaftX } from '../caves';
 import { COL_LAND } from '../profile';
-import { BpGrid, emptyObjects, boxHits, shaftBand, BP_MINOR, KEEP, SLOT_PAD, type Blueprint, type BpCtx, type BpLandmark, type MinorSub } from '../bpcore';
+import { BpGrid, emptyObjects, boxHits, shaftBand, BP_MINOR, KEEP, SLOT_PAD, SPAWN_CLEAR, SUB_SLOT_W, type Blueprint, type BpCtx, type BpLandmark, type MinorSub } from '../bpcore';
 
 export const MINOR_MAX_W = 12;
 // 種類的機率（依序累加）
@@ -70,6 +71,17 @@ function stones(rng: HRng): Shape {
   return { w: 2 * n - 1, cells, level: [], mark: null };
 }
 
+// 小點位槽的偏好區（Task 21；BlueprintIndex.minorPoint 判「槽裡已經有值得停下的東西」與 buildMinorBp 的偏好點共用）：
+// 一般的槽 = 中段 [x0 + 寬 / 4, x1 − 寬 / 4)（toSpawn 0）；家鄉緊鄰出生點清空區的槽（槽離清空區 < 一個槽寬）= 靠出生點的那一半
+// （toSpawn +1 = 出生點在槽的東邊、−1 = 在西邊；偏好點 = 槽靠出生點的那一端）——清空區 160 格加上兩側的槽，小點位放在槽中段時
+// 出生點兩側的東西相距可到 340 以上（驚喜密度，density.test）
+export function minorZone(x0: number, x1: number, spawnX?: number): { z0: number; z1: number; toSpawn: -1 | 0 | 1 } {
+  const sw = x1 - x0, q4 = sw >> 2, half = sw >> 1;
+  if (spawnX !== undefined && x1 <= spawnX && x1 > spawnX - SPAWN_CLEAR - SUB_SLOT_W) return { z0: x1 - half, z1: x1, toSpawn: 1 };
+  if (spawnX !== undefined && x0 > spawnX && x0 <= spawnX + SPAWN_CLEAR + SUB_SLOT_W) return { z0: x0, z1: x0 + half, toSpawn: -1 };
+  return { z0: x0 + q4, z1: x1 - q4, toSpawn: 0 };
+}
+
 export function buildMinorBp(c: BpCtx): Blueprint | null {
   // ctx.ver 0 的規則
   const p = c.profile, rng = new HRng(c.s, c.id), ban = c.surfaceBan ?? [], sEnt = seedInt(c.seed, 'g2-entrance');
@@ -79,6 +91,7 @@ export function buildMinorBp(c: BpCtx): Blueprint | null {
   let shape = sub === 'cairn' ? cairn() : sub === 'camp' ? camp() : stones(rng);
   const mirror = rng.chance(2), sw = c.slotX1 - c.slotX0, q4 = Math.floor(sw / 4), off = rng.int(-q4, q4 + 1);
   const lo = c.slotX0 + SLOT_PAD, end = c.slotX1 - SLOT_PAD;
+  const { toSpawn } = minorZone(c.slotX0, c.slotX1, c.spawnX);
   if (end - lo < MINOR_MAX_W) return null;
   // 槽內各欄 [lo, end)：地面、能不能放（陸地欄、沒有水、不是地表入口欄）
   const g: number[] = [], colOk: boolean[] = [];
@@ -90,7 +103,7 @@ export function buildMinorBp(c: BpCtx): Blueprint | null {
   const rowOf = (x: number, w: number, e: { dx: number; up: number; base?: number }): number => gAt(colOf(x, w, e.base ?? e.dx)) - e.up;
   // 形狀 sh：離偏好點由近到遠、三種起伏容許依序試的第一個成立的外框 → { x, y, h }（底 = 中央欄的地面）
   const place = (sh: Shape): { x: number; y: number; h: number } | null => {
-    const w = sh.w, pref = c.slotX0 + (sw >> 1) - (w >> 1) + off, xs: number[] = [];
+    const w = sh.w, pref = toSpawn === 0 ? c.slotX0 + (sw >> 1) - (w >> 1) + off : toSpawn > 0 ? end - w : lo, xs: number[] = [];
     for (let x = lo; x <= end - w; x++) if (!Number.isFinite(sx) || x + w <= band.l || x >= band.r) xs.push(x);
     xs.sort((a, b) => Math.abs(a - pref) - Math.abs(b - pref) || a - b);
     const fit = (x: number, upT: number, downT: number): { y: number; h: number } | null => {

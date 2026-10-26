@@ -3,7 +3,7 @@
 // 錨點（M2a Task 7）：wholeRegion 外框任何相交的查詢都找得到、groundAt 重入丟錯（Q4）。
 import { describe, it, expect } from 'vitest';
 import { Gen2Source } from './index';
-import { BlueprintIndex, slotOf, structureId, slotWidth, emptyObjects, placeX, landSlot, BP_DEEP, BP_SURFACE, BP_UNDER, LAND_SLOT_W, type Blueprint, type BpCtx } from './blueprint';
+import { BlueprintIndex, slotOf, structureId, slotWidth, emptyObjects, placeX, landSlot, BP_DEEP, BP_SURFACE, BP_UNDER, BP_MINOR, LAND_SLOT_W, type Blueprint, type BpCtx } from './blueprint';
 import { registerAnchorBuild, type AnchorBuild } from './anchors';
 import { decodeStructureId } from './structId';
 import { HRng } from './hrng';
@@ -92,7 +92,8 @@ describe('gen2 blueprints / slot grid', { timeout: 30_000 }, () => {
     const lands = new Set([hm, ...all.map((q) => src.layout.landmassAt(q.x)!).filter((m) => m.kind === 'continent')]);
     for (const m of lands) for (const a of idx.anchorsOf(m)) anchored.add(structureId(m.side, m.i, a.region.index, a.slot, a.layer));
     const homeMine = (q: { kind: string; x: number }): boolean => q.kind === 'mineshaft' && q.x >= hm.x0 && q.x < hm.x1;
-    for (const b of all.filter((q) => q.layer !== BP_DEEP && !anchored.has(q.id) && !homeMine(q))) {
+    // 小點位也可以（M2a Task 21：主坑道入口不在槽中段時照放，外框避開坑道帶——下面的觸及範圍檢查與 minor.test 的 Q16 排除範圍照驗）
+    for (const b of all.filter((q) => q.layer !== BP_DEEP && q.layer !== BP_MINOR && !anchored.has(q.id) && !homeMine(q))) {
       const r = slotOf(b.id, src.layout); const sx = shaftX(s, r.region);
       if (Number.isFinite(sx)) expect(sx >= r.x0 && sx < r.x1).toBe(false);
     }

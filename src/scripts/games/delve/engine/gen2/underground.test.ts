@@ -11,7 +11,9 @@ import { ANCHOR_MAX_W, anchorSpan, type Anchor } from './anchors';
 import { SPAWN_X, type Landmass } from './layout';
 import { shaftX, SHAFT_REACH } from './caves';
 import { buildMineshaftBp } from './structures/mineshaft';
-import { buildSkyIslandBp } from './structures/skyIsland';
+import { buildSkyIslandBp, ropeFallback } from './structures/skyIsland';
+import { COL_LAND } from './profile';
+import { entranceHit } from '../genPrims';
 import { buildHallBp } from './structures/hall';
 import { BpCanvas } from './draw/bpCanvas';
 import { drawMineshaft, drawRamp, drawSecretRoom, rampSteps, secretRoomLayout } from './draw/mineshaft';
@@ -138,10 +140,41 @@ describe('gen2 礦坑、密室、空島', () => {
       n++;
     };
     for (const seed of [...SEEDS5, ...SEEDS50.slice(0, 35)]) { const w = worldOf(srcOf(seed)); for (const b of homeBlueprints(seed).filter((q) => q.kind === 'sky_island')) check(seed, b, w); }
+    // 外圍：SEEDS5 + SEEDS50 的前 3 個（Task 21：大陸錨點的種類換了之後，SEEDS5 外圍只剩 5 座機率空島——空島讓位給表層藍圖，加種子保持 > 5 座）
     let outer = 0;
-    for (const seed of SEEDS5) { const w = worldOf(srcOf(seed)); for (const b of outerOf(seed, 'sky_island', [BP_SKY])) { check(seed, b, w); outer++; } }
+    for (const seed of [...SEEDS5, ...SEEDS50.slice(0, 3)]) { const w = worldOf(srcOf(seed)); for (const b of outerOf(seed, 'sky_island', [BP_SKY])) { check(seed, b, w); outer++; } }
     expect(n).toBe(80 + outer); expect(outer).toBeGreaterThan(5);
   }, 240_000);
+
+  // Task 21 延後事項 6：家鄉空島錨點的繩梯要有構造保證（原本 4 個候選繩梯欄在可用範圍內處處接不到地面時，force 照放、沒有繩梯）
+  it('空島錨點一定有繩梯（Task 21）：ropeFallback 在島下任一欄找得到就用；整個可用範圍都接不到地面（海上）→ RangeError；家鄉選的天空槽都有掛得了繩梯的欄', () => {
+    // 只有第 130 欄接得到地面：4 個候選欄（x0 + iw − 5 / + 4 / + iw − 8 / + 7）碰不到它的位置也找得到
+    const one = (x: number): boolean => x === 130;
+    const f = ropeFallback(100, 200, 40, 130, one)!;
+    expect(f.rx).toBe(130); expect(f.x0).toBeGreaterThanOrEqual(108); expect(f.x0 + 40).toBeLessThanOrEqual(192);
+    expect(f.rx).toBeGreaterThanOrEqual(f.x0 + 4); expect(f.rx).toBeLessThan(f.x0 + 40 - 4);
+    // 可用範圍 [lo + 12, hi − 12) 的每一欄都找得到；範圍外的找不到
+    for (let x = 112; x < 188; x++) expect(ropeFallback(100, 200, 48, 150, (q) => q === x)?.rx, `col ${x}`).toBe(x);
+    expect(ropeFallback(100, 200, 40, 130, (q) => q < 112 || q >= 188)).toBeNull();
+    // 海上（每欄都是海）的錨點：丟 RangeError，不默默放一座沒有繩梯的空島
+    const src = srcOf(SEEDS5[0]), sea = src.layout.landmass(1, 1), sl = sea.slots[0];
+    const c: BpCtx = { seed: SEEDS5[0], s: seedInt(SEEDS5[0], 'g2-bp'), id: structureId(1, 1, 0, 0, BP_SKY), slotX0: sl.x0, slotX1: sl.x1, region: sea.regions[0], profile: src.profile, ver: 0, groundAt: (x) => src.surfaceAt(x) };
+    expect(() => buildSkyIslandBp(c)).toThrow(RangeError);
+    // 家鄉：每座空島錨點的可用範圍 [x0 + 12, x1 − 12) 都有陸地、非地表入口的欄（anchors 的 ropeable，ropeFallback 一定找得到），藍圖都有繩梯
+    let n = 0;
+    for (const seed of [...SEEDS5, ...SEEDS50.slice(0, 35)]) {
+      const g = srcOf(seed), m = homeOf(g), sEnt = seedInt(seed, 'g2-entrance');
+      for (const a of g.blueprints.anchorsOf(m).filter((q) => q.kind === 'sky_island')) {
+        const sp = anchorSpan(seed, a);
+        let ok = false;
+        for (let x = sp.x0 + 12; x < sp.x1 - 12 && !ok; x++) ok = g.profile.info(x).kind === COL_LAND && !entranceHit(x, sEnt);
+        expect(ok, `${seed} sky ${sp.x0}`).toBe(true);
+        expect(ropeOf(g.blueprints.anchorBlueprint(m, a)!), `${seed} sky ${sp.x0}`).not.toBeNull();
+        n++;
+      }
+    }
+    expect(n).toBe(80);
+  }, 120_000);
 
   it('分段填 = 整欄填（礦坑、空島各一份跨欄的）', () => { for (const k of ['mineshaft', 'sky_island']) { const { src, b } = firstCrossing(k), cx = b.x >> 5;
     const parts = new Column(cx, 1200); src.fill(parts, cx * 32, b.x + 1); src.fill(parts, b.x + 1, cx * 32 + 32); expect(bytes(parts)).toEqual(bytes(fillCol(src, cx))); } }, 60_000);

@@ -6,6 +6,7 @@ import { Gen2Source } from './index';
 import { DelveGame } from '../game';
 import { FIXED_DT, TILE_SIZE } from '../constants';
 import { T, isSolidTile } from '../tiles';
+import { BIOME } from '../world';
 import type { World } from '../world';
 import type { DungeonInfo, GenSite } from '../genTypes';
 import { seedInt } from '../noise';
@@ -113,6 +114,26 @@ describe('gen2 荒野大陸的大東西與隱士小屋（Task 18）', () => {
       expect(big.length, `${seed} ${side}:${i}`).toBeGreaterThanOrEqual(2);
       expect(big[0][0], `${seed} ${side}:${i}`).toBeLessThan(m.x0 + 500); expect(big.at(-1)![1], `${seed} ${side}:${i}`).toBeGreaterThan(m.x1 - 500);
       for (let k = 1; k < big.length; k++) expect(big[k][0] - big[k - 1][1], `${seed} ${side}:${i} #${k}`).toBeLessThan(1700); } } }, 300_000);
+
+  // Task 21 延後事項 8：Task 18 實際比例 村 30 / 城 39 / 廳 30 偏離雜湊設定（tier 1 50 / 30 / 20、tier ≥ 2 35 / 45 / 20）——退讓多半落到槽較密的地廳。
+  // 改成退讓依序取第一個 ≤ KIND_NEAR 的種類、小地城的退讓先村莊，並「欠債」：放不下的種類記下來，之後的目標放得下就先還（anchors.continentAnchors）。
+  // 40 個種子 × 每側 i = 2..12 的大陸：改前 tier 1 村 35.9 / 城 31.1 / 廳 32.9、tier ≥ 2 27.0 / 42.5 / 30.5；改後 41.9 / 36.2 / 21.9、30.5 / 47.0 / 22.6。
+  // tier 1 的村莊仍少約 8 個百分點：HIGH 地區不放村莊（Task 18：太陡），tier 1 的大陸只有 3–6 個目標，欠下的村莊還不完
+  it('大東西的種類比例接近雜湊設定（Task 21）：tier ≥ 2 各在設定 ± 6 個百分點內；tier 1 地廳 ≤ 25%、村莊 ≥ 38%', () => {
+    const n: Record<string, Record<string, number>> = { t1: {}, t2: {} };
+    for (let s = 0; s < 40; s++) {
+      const g = new Gen2Source(`ratio-${s}`);
+      for (const side of [1, -1] as const) for (let i = 2; i <= 12; i += 2) {
+        const m = g.layout.landmass(side, i), t = m.tier <= 1 ? 't1' : 't2';
+        for (const a of g.blueprints.anchorsOf(m)) if (BIG_KINDS.has(a.kind)) n[t][a.kind] = (n[t][a.kind] ?? 0) + 1;
+      }
+    }
+    const pct = (t: string, k: string): number => { const tot = Object.values(n[t]).reduce((a, c) => a + c, 0); return (100 * (n[t][k] ?? 0)) / tot; };
+    const tag = JSON.stringify(n);
+    expect(Math.abs(pct('t2', 'village') - 35), tag).toBeLessThanOrEqual(6); expect(Math.abs(pct('t2', 'keep') - 45), tag).toBeLessThanOrEqual(6);
+    expect(Math.abs(pct('t2', 'hall') - 20), tag).toBeLessThanOrEqual(6);
+    expect(pct('t1', 'hall'), tag).toBeLessThanOrEqual(25); expect(pct('t1', 'village'), tag).toBeGreaterThanOrEqual(38);
+  }, 120_000);
 
   it('小地城：≥ 8 房、房間圖可解、有上鎖寶箱；外圍村莊有居民（欄載入後 elder 存在）', () => { const { keep, village } = firstOuter('outer-k');
     expect(keep.info.rooms.length).toBeGreaterThanOrEqual(8); expect(solvable(keep.info)).toEqual({ ok: true });
@@ -267,6 +288,56 @@ describe('gen2 荒野大陸的大東西與隱士小屋（Task 18）', () => {
     expect(h).toContain(`「${name}」`);
     expect(h).toMatch(/矮人/);
   }, 120_000);
+
+  // Task 21 延後事項 5：外圍（荒野大陸）的機率礦坑一定走得進去——從礦車那一格走得到地表（同上面的 reachesSurface：載入世界、液體不可走、欄走到時才載入）
+  it('外圍礦坑可進入（Task 21）：≥ 200 座外圍礦坑的礦車都從地表走得到（載入世界、液體不可走）', () => {
+    const bad: string[] = [];
+    let n = 0;
+    for (let s = 0; n < 200 && s < 60; s++) {
+      const seed = `mine-${s}`, g = new Gen2Source(seed);
+      for (const [side, i] of CONTS) {
+        const w = worldOf(g);
+        for (const b of bpsIn(g, g.layout.landmass(side, i))) {
+          if (b.kind !== 'mineshaft') continue;
+          n++;
+          const c = b.landmarks[0];
+          if (!c || !reachesSurface(w, g, b, c.x, c.y)) bad.push(`${seed} ${side}:${i} mineshaft@${b.x},${b.y}`);
+        }
+      }
+    }
+    expect(n).toBeGreaterThanOrEqual(200);
+    expect(bad.slice(0, 5)).toEqual([]);
+  }, 300_000);
+
+  // Task 21 延後事項 9（Task 18 審查 Minor 9）：整平的地面依生態鋪（村莊 / 隱士小屋原本一律鋪草）；載入世界看整平過的每一欄的地面那格
+  it('地表依生態（Task 21）：外圍村莊 / 隱士小屋整平的地面——森林鋪草、叢林鋪叢林草、雪原鋪雪、沙漠鋪沙；雪原 / 沙漠的藍圖不寫草；家鄉村莊（森林）照舊鋪草', () => {
+    const TOP: Readonly<Record<number, number>> = { [BIOME.FOREST]: T.GRASS, [BIOME.JUNGLE]: T.JUNGLE_GRASS, [BIOME.SNOW]: T.SNOW, [BIOME.DESERT]: T.SAND };
+    const GROUND: ReadonlySet<number> = new Set([T.GRASS, T.JUNGLE_GRASS, T.SNOW, T.SAND, T.DIRT, T.MUD]);
+    const seen = new Map<string, number>(), bad: string[] = [];
+    const check = (g: Gen2Source, w: World, b: Blueprint, tag: string): void => {
+      const gr = b.ground!;
+      let ok = 0;
+      loadColumns(w, gr.x0, gr.x0 + gr.tops.length);
+      for (let k = 0; k < gr.tops.length; k++) {
+        // 房子的地板（木板）蓋在地面那一列：只看地面材質的格（草 / 叢林草 / 雪 / 沙 / 泥土 / 泥巴）
+        const x = gr.x0 + k, y = gr.tops[k], bi = g.profile.biomeAt(x), t = w.getFg(x, y);
+        if (!GROUND.has(t)) continue;
+        if (t === TOP[bi]) ok++; else bad.push(`${tag} ${b.kind}@${x},${y} biome ${bi} tile ${t}`);
+      }
+      if (ok < gr.tops.length >> 2) bad.push(`${tag} ${b.kind}@${b.x}: only ${ok} / ${gr.tops.length} columns of ${TOP[g.profile.biomeAt(b.x)]}`);
+      const bi = g.profile.biomeAt(b.x + (b.w >> 1)), key = `${b.kind}:${bi}`;
+      seen.set(key, (seen.get(key) ?? 0) + 1);
+      if (bi === BIOME.SNOW || bi === BIOME.DESERT) for (let k = 0; k < b.cells.length; k += 5) if (b.cells[k + 2] === T.GRASS) { bad.push(`${tag} ${b.kind}@${b.x} grass`); break; }
+    };
+    for (const seed of SEEDS20.slice(0, 10)) {
+      const g = new Gen2Source(seed), w = worldOf(g);
+      for (const [side, i] of CONTS) for (const b of bpsIn(g, g.layout.landmass(side, i))) if (b.kind === 'village' || b.kind === 'hermit_hut') check(g, w, b, `${seed} ${side}:${i}`);
+      for (const b of g.blueprints.homePlans().filter((q) => q.kind === 'village')) check(g, w, b, `${seed} home`);
+    }
+    expect(bad.slice(0, 5)).toEqual([]);
+    // 不是空測：四種生態的村莊與隱士小屋都有
+    for (const bi of [BIOME.FOREST, BIOME.JUNGLE, BIOME.SNOW, BIOME.DESERT]) for (const k of ['village', 'hermit_hut']) expect(seen.get(`${k}:${bi}`) ?? 0, `${k} biome ${bi}`).toBeGreaterThan(0);
+  }, 300_000);
 
   it('效能（裁決 8）：小地城藍圖單次建構 ≤ 80 ms（3 次中位數；直接呼叫建構器）', () => {
     const { src, keepBp } = firstOuter('outer-k'), d = decodeStructureId(keepBp.id), m = src.layout.landmass(d.side as 1 | -1, d.i);

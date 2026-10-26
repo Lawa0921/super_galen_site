@@ -13,6 +13,7 @@
 //   · 沒有斜坡的礦坑一定走得進去（控制者裁決，Task 10 修正 1；同地廳隧道的做法，探測只讀噪聲與 profile、不讀已生成的區塊）：
 //     ① 橫向：開口端（沒有密室的那一端）往外延長坑道到接上天然洞穴；② 往下：坑道裡挖 2 格寬、掛繩梯的豎井到下方的洞穴；
 //     ③ 擲出的深度接不到就換深度再試（共 DEPTH_TRIES 個）；④ 都不行才往上挖到地表。200 個家鄉實測：橫向 40%、往下 54%、往上 0。
+//     外圍（荒野大陸，Task 21）沒有斜坡的礦坑一律直接 ④（從地表走得到；比照外圍地廳的繩梯豎井，Task 18 裁決 2）。
 //     ④ 的豎井欄從開口端往內找第一個不碰 surfaceBan（家鄉表層錨點的部件，Task 11 修正 2）的，坑道裡都碰到就把開口端往外延長到不碰的欄；
 //     有豎井（往上 / 往下）時藍圖帶部件 = 主體 + 豎井那兩欄（跨層判定用部件；fill 的 solid 也只算部件內，豎井旁的洞穴不再被抹掉）
 //     往下優先於往上的理由：家鄉的密室礦坑多半在村莊底下（1000 個種子 46% 避不開），往上通地表會壓到村莊錨點（RangeError）。
@@ -92,16 +93,24 @@ function mineshaft(c: BpCtx, anchor: boolean, force: boolean, o: MineshaftOption
     };
     // (x, y) 起的天然洞穴（4 鄰、不進外框 [bx0, bx1) × [by0, by1)、只在外框附近：左右 REACH_X 欄且不出自己的槽（鄰槽藍圖的 solid 會切斷洞穴）、
     // 上 REACH_UP 列、下 REACH_DOWN 列）至少 CAVE_BIG 格才算接到洞穴（小氣泡不算；只讀噪聲，與 fill 的挖洞同一份判定）
+    // 走過的格用 Uint8Array 記（Task 21 效能：原本是 Set<number>；走法、順序與結果相同。起點不在範圍內時 Set 版仍把它算 1 格，這裡照算）
     const big = (x: number, y: number, bx0: number, bx1: number, by0: number, by1: number): boolean => {
       if (!open(x, y)) return false;
-      const xl = Math.max(c.slotX0, bx0 - REACH_X), xr = Math.min(c.slotX1, bx1 + REACH_X), seen = new Set<number>([x * 4096 + y]), st = [x, y];
+      const xl = Math.max(c.slotX0, bx0 - REACH_X), xr = Math.min(c.slotX1, bx1 + REACH_X), ry0 = by0 - REACH_UP, ry1 = by1 + REACH_DOWN;
+      const W = Math.max(0, xr - xl), seen = new Uint8Array(W * Math.max(0, ry1 - ry0)), st = [x, y];
+      const inR = (px: number, py: number): boolean => px >= xl && px < xr && py >= ry0 && py < ry1;
+      // 起點在範圍內 → 記；不在 → 範圍內的鄰格不會再推它（Set 版的 seen 只擋重複，範圍外的格本來就不會被推）
+      if (inR(x, y)) seen[(y - ry0) * W + x - xl] = 1;
+      let n = 1;
       while (st.length) {
         const cy = st.pop()!, cx = st.pop()!;
-        for (const [nx, ny] of [[cx - 1, cy], [cx + 1, cy], [cx, cy - 1], [cx, cy + 1]]) {
-          const k = nx * 4096 + ny;
-          if (seen.has(k) || nx < xl || nx >= xr || ny < by0 - REACH_UP || ny >= by1 + REACH_DOWN || (nx >= bx0 && nx < bx1 && ny >= by0 && ny < by1) || !open(nx, ny)) continue;
-          seen.add(k);
-          if (seen.size >= CAVE_BIG) return true;
+        for (let d = 0; d < 4; d++) {
+          const nx = d === 0 ? cx - 1 : d === 1 ? cx + 1 : cx, ny = d === 2 ? cy - 1 : d === 3 ? cy + 1 : cy;
+          if (!inR(nx, ny)) continue;
+          const i = (ny - ry0) * W + nx - xl;
+          if (seen[i] || (nx >= bx0 && nx < bx1 && ny >= by0 && ny < by1) || !open(nx, ny)) continue;
+          seen[i] = 1;
+          if (++n >= CAVE_BIG) return true;
           st.push(nx, ny);
         }
       }
@@ -141,9 +150,11 @@ function mineshaft(c: BpCtx, anchor: boolean, force: boolean, o: MineshaftOption
       }
       return Number.isFinite(hole) ? { yTop: yt, x0: L, len: len0b, hole, up: Infinity, col } : null;
     };
-    // 先試擲出的深度，接不到再試另外 DEPTH_TRIES − 1 個深度（在 [28, 129] 裡依 DEPTH_STEP 繞）
+    // 先試擲出的深度，接不到再試另外 DEPTH_TRIES − 1 個深度（在 [28, 129] 裡依 DEPTH_STEP 繞）。
+    // 外圍（荒野大陸，Task 21）不接洞穴、一律走 ③ 往上挖到地表：洞穴網不保證連到地表（外圍礦坑實測只有約 1/3 從地表走得到——幾乎都是有斜坡的），
+    // 比照外圍地廳一律有通地表的繩梯豎井（Task 18 裁決 2）
     let found: Plan | null = null;
-    for (let t = 0; t < DEPTH_TRIES && !found; t++) found = connect(surfC + DY_MIN + ((dy - DY_MIN + t * DEPTH_STEP) % (DY_MAX - DY_MIN + 1)));
+    if (c.region.kind === 'home') for (let t = 0; t < DEPTH_TRIES && !found; t++) found = connect(surfC + DY_MIN + ((dy - DY_MIN + t * DEPTH_STEP) % (DY_MAX - DY_MIN + 1)));
     // ③ 都接不到：擲出的深度往上挖到地表。豎井欄從開口端（右端優先）往內找第一個豎井部件 [col, col + 2) × [地表上一列, 坑道頂)
     //    不碰 surfaceBan（家鄉表層錨點，Task 11 修正 2）的；坑道裡都碰到 → 開口端往外延長坑道（同 ① 的延長法，寬 ≤ cap、不出 room）
     //    到第一個不碰的欄；都不行 → 放不下（回 null；錨點丟 RangeError）

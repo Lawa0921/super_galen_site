@@ -6,7 +6,7 @@ import { shaftX, shaftOffset } from './caves';
 import { COL_SEA, COL_BEACH, COL_LAND, COL_ISLAND, LAVA_Y } from './profile';
 import { SPAWN_X, VARIANT } from './layout';
 import { Filler2 } from './fill';
-import { BP_SURFACE, partsOf } from './blueprint';
+import { BP_SURFACE, BP_MINOR, partsOf } from './blueprint';
 import { fillCol, bytes, worldOf, loadColumns, sampleRegions, bfsReachesDepth, liquidInvariant, range, SEEDS5, srcOf } from './testUtil';
 import { Column, li, type ColumnLayers } from '../column';
 import { seedInt } from '../noise';
@@ -198,8 +198,9 @@ describe('gen2 fill / Gen2Source', { timeout: 30_000 }, () => {
         // 入口欄與主坑道附近會挖到地表
         if (I.kind !== COL_LAND || src.isEntrance(x) || Math.abs(x - sx) <= 20) continue;
         sampled++;
-        // 藍圖（湖 / 遺跡…）外框蓋到表層的欄由結構決定材質；有部件的藍圖（外圍地廳的通地表豎井，Task 18）只看蓋到這一欄的部件
-        if (src.blueprints.overlapping(x, x + 1).some((b) => partsOf(b).some((p) => p.x <= x && x < p.x + p.w && p.y < S + n && p.y + p.h > S))) continue;
+        // 藍圖（湖 / 遺跡…）外框蓋到表層的欄由結構決定材質；有部件的藍圖（外圍地廳的通地表豎井，Task 18）只看蓋到這一欄的部件。
+        // 小點位不算（Task 21：小點位只畫地表以上、不改地形——minor.ts；Task 21 起小點位變多，只跳過的話取樣欄會掉到 80% 以下）
+        if (src.blueprints.overlapping(x, x + 1).some((b) => b.layer !== BP_MINOR && partsOf(b).some((p) => p.x <= x && x < p.x + p.w && p.y < S + n && p.y + p.h > S))) continue;
         const col = colAt(x >> 5), at = (d: number): number => col.fg[li(x, S + d)];
         // 地表 + 4 起的泥 / 雪 / 泥巴 / 砂岩可以是銅礦（逐帶宿主表，M2a Task 13）
         const ore = (d: number, t: number): boolean => d >= 4 && t === T.COPPER_ORE;

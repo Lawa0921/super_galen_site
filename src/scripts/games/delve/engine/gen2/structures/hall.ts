@@ -22,7 +22,7 @@ import { HRng } from '../hrng';
 import { CaveProbe } from '../caves';
 import { BpCanvas } from '../draw/bpCanvas';
 import { drawHall, HALL_IH } from '../draw/hall';
-import { BP_DEEP, type Blueprint, type BpCtx } from '../bpcore';
+import { BP_DEEP, boxHits, type Blueprint, type BpCtx } from '../bpcore';
 
 export const TUNNEL_MIN = 20, TUNNEL_MAX = 36;
 // 外殼在內部兩側各 2 欄、上 3 列、下 2 列（draw/hall.ts）；隧道從內部外 3 欄起
@@ -73,14 +73,27 @@ export function buildHallBp(c: BpCtx, o: HallOptions = {}): Blueprint {
   }
   const { floorY, l, r } = pick ?? { floorY: top + start, l: TUNNEL_MAX, r: TUNNEL_MAX };
 
-  // 後備豎井（外圍地廳一律挖）：大廳中央 [sx, sx + 2)、從兩欄地表較高者的上一格往下
-  const outer = c.region.kind !== 'home', shaft = !pick || outer;
-  const sx = (x0 + x1) >> 1, top0 = shaft ? Math.min(p.surfaceAt(sx), p.surfaceAt(sx + 1)) - 1 : Infinity;
-  const bx = x0 - MOUTH - l + 1, bw = x1 + MOUTH + r - bx, hy = floorY - HALL_IH - SHELL_UP, by = Math.min(hy, top0), bh = floorY + SHELL_DOWN + 1 - by;
+  // 後備豎井（外圍地廳一律挖）：2 欄寬 [sx, sx + 2)、從兩欄地表較高者的上一格往下挖到大廳 / 隧道的空氣。sx = 大廳中央；
+  // 家鄉（Task 21，Task 9 審查 Minor）：豎井要避開 c.surfaceBan（家鄉表層 / 地下層錨點的部件）——原本的豎井在大廳中央、外框整片從地表起，
+  // 上方有村莊錨點就是錨點跨層相交 → 開機 RangeError。改成在大廳內部與兩側隧道的欄裡、離中央由近到遠找第一個豎井不碰 surfaceBan 的欄，
+  // 而且有豎井的地廳一律帶部件（本體 + 豎井那兩欄），跨層判定只看部件；整段都碰到 → RangeError（地廳一定走得到，不默默少一條路）
+  const outer = c.region.kind !== 'home', shaft = !pick || outer, hy = floorY - HALL_IH - SHELL_UP, ban = outer ? [] : c.surfaceBan ?? [];
+  const bx = x0 - MOUTH - l + 1, bw = x1 + MOUTH + r - bx;
+  const topOf = (x: number): number => Math.min(p.surfaceAt(x), p.surfaceAt(x + 1)) - 1;
+  let sx = (x0 + x1) >> 1;
+  if (shaft && ban.length) {
+    const xs: number[] = [];
+    for (let x = bx; x + SHAFT_W <= bx + bw; x++) xs.push(x);
+    const c0 = sx, ok = xs.sort((a, b) => Math.abs(a - c0) - Math.abs(b - c0) || a - b).find((x) => !boxHits({ x, y: topOf(x), w: SHAFT_W, h: hy - topOf(x) }, ban));
+    if (ok === undefined) throw new RangeError(`gen2: hall ${c.id} fallback shaft has no column clear of the surface anchors in [${bx}, ${bx + bw})`);
+    sx = ok;
+  }
+  const top0 = shaft ? topOf(sx) : Infinity, by = Math.min(hy, top0), bh = floorY + SHELL_DOWN + 1 - by;
   const cv = new BpCanvas({ x: bx, y: by, w: bw, h: bh }, p);
   const info = drawHall(cv, { x0, hw, floorY }, rng, (dir) => (dir < 0 ? l : r));
   if (shaft) {
-    for (let y = top0; y < info.y0; y++) for (let x = sx; x < sx + SHAFT_W; x++) { cv.setFg(x, y, T.AIR); cv.clearLiquid(x, y); }
+    // 每欄挖到大廳 / 隧道畫的空氣為止（大廳中央就是 info.y0；拱頂兩側與隧道更低）
+    for (let x = sx; x < sx + SHAFT_W; x++) for (let y = top0; y < floorY && !(y >= hy && cv.fg(x, y) === T.AIR); y++) { cv.setFg(x, y, T.AIR); cv.clearLiquid(x, y); }
     for (let y = top0 + 1; y <= floorY - 2; y++) cv.setFg(sx, y, T.ROPE);
   }
   cv.fillNatural(bx, by); cv.fillNatural(bx + bw - 1, by + bh - 1);
@@ -88,7 +101,7 @@ export function buildHallBp(c: BpCtx, o: HallOptions = {}): Blueprint {
     landmarks: [{ x: info.cart.x, y: info.cart.y, tile: T.ORE_CART, site: 'dwarf_hall' }],
     site: { kind: 'hall', key: 's' + c.id, rot: c.rank ?? 0, info },
   });
-  // 外圍：部件 = 本體（部件 0，discovery 的地區用它）+ 豎井在本體以上的兩欄
-  if (outer) bp.parts = [{ x: bx, y: hy, w: bw, h: by + bh - hy }, { x: sx, y: top0, w: SHAFT_W, h: hy - top0 }];
+  // 有豎井（外圍一律、家鄉的後備）：部件 = 本體（部件 0，discovery 的地區用它）+ 豎井在本體以上的兩欄
+  if (shaft) bp.parts = [{ x: bx, y: hy, w: bw, h: by + bh - hy }, { x: sx, y: top0, w: SHAFT_W, h: hy - top0 }];
   return bp;
 }

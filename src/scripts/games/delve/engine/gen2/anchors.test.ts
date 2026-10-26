@@ -3,7 +3,7 @@
 import { describe, it, expect } from 'vitest';
 import { Gen2Source } from './index';
 import { BlueprintIndex, landSlot, landSlotCount, slotOf, BP_SURFACE, BP_UNDER, BP_DEEP, BP_SKY, BP_MINOR, SUB_SLOT_W, slotWidth, type Layer } from './blueprint';
-import { ANCHOR_MAX_W, LAKE_MIN_W, anchorSpan, continentAnchors, homeAnchors, villageFits, type Anchor, type AnchorKind } from './anchors';
+import { ANCHOR_MAX_W, LAKE_MIN_W, anchorSpan, continentAnchors, homeAnchors, homeBigCover, villageFits, type Anchor, type AnchorKind } from './anchors';
 import { homeDungeonRegion, SPAWN_X, VARIANT, type Landmass } from './layout';
 import { shaftOf, shaftX, SHAFT_REACH } from './caves';
 import { hash2, seedInt } from '../noise';
@@ -243,7 +243,7 @@ describe('gen2 anchors', () => {
   // 修正第 1 輪（Task 11 審查）：rg-74 / rg-10181 等種子村莊擲到 4 座吃光天空合格槽，兩座空島放不下 → 開機 RangeError；
   // 森林的地下層槽被吃光時蘑菇林也放不下。30,000 個種子 homeAnchors 0 個 RangeError；原有保證不變（地城 1、村莊 2–4、礦坑密室 3、空島 2）
   for (const part of [0, 1, 2]) {
-    it(`30,000 個種子（rg-${part * 10_000}..${part * 10_000 + 9999}）homeAnchors 0 個 RangeError；地城 1、村莊 2–4、礦坑密室 3、空島 2、三種小生態各 1`, () => {
+    it(`30,000 個種子（rg-${part * 10_000}..${part * 10_000 + 9999}）homeAnchors 0 個 RangeError；地城 1、村莊 2–4、礦坑密室 3、空島 2、三種小生態各 1；大東西沒有 ≥ 1,800 的空隙（Task 21）`, () => {
       const errors: string[] = [];
       for (let k = part * 10_000; k < (part + 1) * 10_000; k++) {
         const seed = `rg-${k}`, g = new Gen2Source(seed);
@@ -251,6 +251,10 @@ describe('gen2 anchors', () => {
           const a = homeAnchors(seed, g.layout.landmassAt(SPAWN_X)!, g.profile), n = (kind: AnchorKind): number => a.filter((q) => q.kind === kind).length;
           const v = n('village');
           if (n('dungeon') !== 1 || v < 2 || v > 4 || n('mineshaft_secret') !== 3 || n('sky_island') !== 2 || n('mushroom_biome') !== 1 || n('crystal_cave') !== 1 || n('hive') !== 1) errors.push(`${seed}: counts`);
+          // Task 21（spec §4.4 驚喜密度）：家鄉的大東西（地城區、村莊、地廳）外框一定涵蓋的範圍之間沒有 ≥ 1,800 的空隙（補空隙的地廳）
+          let end = -Infinity, gap = 0;
+          for (const c of homeBigCover(seed, a, SPAWN_X)) { if (end > -Infinity) gap = Math.max(gap, c.x0 - end); end = Math.max(end, c.x1); }
+          if (gap >= 1800) errors.push(`${seed}: big gap ${gap}`);
         } catch (e) { if (!(e instanceof RangeError)) throw e; errors.push(`${seed}: ${e.message}`); }
       }
       expect(errors.slice(0, 5)).toEqual([]);

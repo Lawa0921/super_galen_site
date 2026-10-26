@@ -103,6 +103,37 @@ export function surfaceAnchorRanges(seed: string, a: Anchor, sp: number): Span[]
   return [mid - q, mid, mid + q].map((m) => ({ x0: m - half, x1: m + half }));
 }
 
+// 家鄉大東西之間的空隙上限（保守估計；Task 21 驚喜密度 1,800 留 100 的餘裕）
+const HOME_BIG_GAP = 1700;
+// 家鄉大東西（地城區、村莊、地廳錨點）的外框一定涵蓋的 x 範圍（Task 21）：地城 = 地區 ± SLOT_PAD 內；村莊 = 每個寬度 W（structures/village.ts：
+// vw + 2 × SLOPE，centerAway 置中 / 避開出生點）的外框的交集；地廳 = 可用範圍中點 ± HALL_MIN_W / 2（大廳置中、兩側隧道至少 TUNNEL_MIN）
+export function homeBigCover(seed: string, list: readonly Anchor[], sp: number): Span[] {
+  const out: Span[] = [];
+  for (const a of list) {
+    if (a.kind === 'dungeon') out.push({ x0: a.region.x0 + SLOT_PAD, x1: a.region.x1 - SLOT_PAD });
+    else if (a.kind === 'hall') { const s = anchorSpan(seed, a), c = (s.x0 + s.x1) >> 1; out.push({ x0: c - (HALL_MIN_W >> 1), x1: c + (HALL_MIN_W >> 1) }); }
+    else if (a.kind === 'village') {
+      const s = anchorSpan(seed, a);
+      let x0 = -Infinity, x1 = Infinity;
+      for (let vw = VILLAGE_VW[0]; vw < VILLAGE_VW[1]; vw++) {
+        const W = vw + 2 * SLOPE, x = centerAway(s.x0, s.x1, W, sp, VILLAGE_MIN);
+        if (x !== null) { x0 = Math.max(x0, x); x1 = Math.min(x1, x + W); }
+      }
+      if (x0 < x1) out.push({ x0, x1 });
+    }
+  }
+  return out.sort((p, q) => p.x0 - q.x0);
+}
+// 依 x0 排序的範圍之間最寬的空隙（沒有空隙 = null）
+function widestGap(list: readonly Span[]): Span | null {
+  let best: Span | null = null, end = -Infinity;
+  for (const s of list) {
+    if (end > -Infinity && s.x0 > end && (!best || s.x0 - end > best.x1 - best.x0)) best = { x0: end, x1: s.x0 };
+    end = Math.max(end, s.x1);
+  }
+  return best;
+}
+
 // 依 x 序的槽裡，彼此中點相距 ≥ gap 最多能挑幾個（由左往右貪心，一維上是最佳解）
 function spacedCount(list: readonly Slot[], gap: number): number {
   let n = 0, last = -Infinity;
@@ -112,7 +143,16 @@ function spacedCount(list: readonly Slot[], gap: number): number {
 
 // 家鄉錨點（規則見 task 7；作者決定，凍結前可調，測試釘不變量）。每條規則先在不含主坑道的槽裡找，找不到才用含坑道的槽
 // （可用範圍 = anchorSpan 的較大一側）；兩種都要放得下該種的 ANCHOR_MAX_W + 兩側 SLOT_PAD。整個家鄉都找不到 → RangeError（不默默少放）
+// 補空隙的地廳（Task 21，見下）佔掉的深層槽偶爾讓後面的錨點放不下（rg-11358：蜂巢）→ 整組重選、不補（那些家鄉的大東西空隙照舊）；
+// 不補也放不下才丟 RangeError
 export function homeAnchors(seed: string, home: Landmass, profile: Profile2): Anchor[] {
+  try { return homeAnchorsWith(seed, home, profile, true); } catch (e) {
+    if (!(e instanceof RangeError)) throw e;
+    return homeAnchorsWith(seed, home, profile, false);
+  }
+}
+
+function homeAnchorsWith(seed: string, home: Landmass, profile: Profile2, fillGaps: boolean): Anchor[] {
   const dz = homeDungeonRegion(home);
   const sA = seedInt(seed, 'g2-anchor'), sShaft = seedInt(seed, 'g2-shaft'), sEnt = seedInt(seed, 'g2-entrance');
   const sp = home.x0 + SPAWN_X - HOME_X0, dWest = dz.x1 <= sp;
@@ -222,6 +262,19 @@ export function homeAnchors(seed: string, home: Landmass, profile: Profile2): An
   if (u(3, 0) < 2 / 3) {
     halls.push(add('hall', nearest(free('hall', BP_DEEP, (s) => (dWest ? s.mid < sp : s.mid > sp) && Math.abs(s.mid - h1.mid) >= HALL_GAP), dWest ? sp - HALL_AIM : sp + HALL_AIM)));
   }
+  // 驚喜密度（Task 21，spec §4.4「任意 1,800 格內至少一個大東西」）：家鄉的大東西（地城區、村莊、地廳）外框一定涵蓋的範圍（homeBigCover）之間
+  // 最大的空隙 ≥ HOME_BIG_GAP → 再放一座地廳在槽中點最接近空隙中點的深層槽（槽中點在空隙裡；不套 HALL_GAP——空隙兩端的大東西也可能是地廳，
+  // 套了會讓出生地區兩側的槽都不合格（rg-16606 / rg-27737）；中點最接近空隙中點，離兩端各約空隙的一半 ≥ 850。先挑不是叢林的——蜂巢錨點只放叢林、
+  // 不放在地廳上方，叢林的地下層槽很少，rg-11358 被補的地廳佔走後蜂巢無處可放），至多 2 座；找不到槽就不放
+  // （不丟錯；家鄉的密度由 density.test 的掃描把關）。理由：1000 個家鄉約 8% 的村莊全在地城的另一側、又沒擲到第 2 座地廳，空隙 1,800–2,500
+  for (let k = 0; fillGaps && k < 2; k++) {
+    const gap = widestGap(homeBigCover(seed, out, sp));
+    if (!gap || gap.x1 - gap.x0 < HOME_BIG_GAP) break;
+    const fits = (q: Slot): boolean => q.mid > gap.x0 && q.mid < gap.x1, mid = (gap.x0 + gap.x1) / 2;
+    const s = nearest(free('hall', BP_DEEP, (q) => fits(q) && q.r.biome !== BIOME.JUNGLE), mid) ?? nearest(free('hall', BP_DEEP, fits), mid);
+    if (!s) break;
+    halls.push(add('hall', s));
+  }
   // 地廳的後備豎井（structures/hall.ts）讓地廳外框從地表一路到地廳：礦坑密室與空島不放在地廳的槽上方（Task 10；理由：後備豎井一出現，上方的錨點就跨層相交 → RangeError；礦坑密室湊不滿時才退讓，見下）
   const offHalls = (s: Slot): boolean => halls.every((h) => !overX(s, h));
   // shaft_cache = 家鄉主坑道最深（shaft.bottom 最大）的地區、坑道所在那一槽（深層不受「坑道槽不放藍圖」限制；不看寬度）；
@@ -324,9 +377,10 @@ export function homeAnchors(seed: string, home: Landmass, profile: Profile2): An
       // 豎井只在自己外框的欄裡，所以避開那個 170 格槽就碰不到
       // Task 14：小屋與石室錨點的直豎井也會通地表（它們的 surfaceBan 有空島的可用範圍，空島蓋住整槽時豎井無處可挖）：整條退讓鏈先連它們的槽一起避開，
       // 找不到才用只避開上面那幾種的同一條鏈（只用前者時 30,000 個種子約 0.05% 放不下空島）
-      // rope = 可用範圍裡要有掛得了繩梯的欄（陸地欄、不是地表入口欄、離可用範圍兩端 ≥ SLOT_PAD + 4：空島的建構器會在整個可用範圍找接得到地面的繩梯欄；
-      // 家鄉 anc-10 的可用範圍 68 欄有 58 欄是入口 → 沒有繩梯）；先挑有的，都沒有才不管
-      const chain = (list: readonly Slot[], k: number, rope: boolean): { s: Slot | undefined; av: Avoid } => {
+      // ropeable = 可用範圍裡要有掛得了繩梯的欄（陸地欄、不是地表入口欄、離可用範圍兩端 ≥ SLOT_PAD + 4：空島的建構器會在整個可用範圍找接得到地面的繩梯欄，
+      // 4 個候選欄都不行時用 skyIsland.ropeFallback 在島下任一欄掛——它找得到的欄正好是這裡的範圍；家鄉 anc-10 的可用範圍 68 欄有 58 欄是入口 → 沒有繩梯）。
+      // Task 21：只挑有的（原本「都沒有才不管」的最後一步拿掉：60,000 個家鄉 0 次用到；沒有 = RangeError，外層照舊重選），所以家鄉的空島一定有繩梯
+      const chain = (list: readonly Slot[], k: number): { s: Slot | undefined; av: Avoid } => {
         const skyAvoid: Avoid = (s) => list.filter((b) => overX(s, b)).map((b) => ({ x0: b.x0, x1: b.x1 }));
         const skyAvoid2: Avoid = (s) => [...skyAvoid(s), ...surfaceAvoid(s)];
         const ropeable = (s: Slot, av: Avoid): boolean => {
@@ -334,7 +388,7 @@ export function homeAnchors(seed: string, home: Landmass, profile: Profile2): An
           for (let x = sp.x0 + SLOT_PAD + 4; x < sp.x1 - SLOT_PAD - 4; x++) if (profile.info(x).kind === COL_LAND && !entranceHit(x, sEnt)) return true;
           return false;
         };
-        const pick = (keep: (s: Slot) => boolean, av: Avoid): Slot | undefined => hashed(free('sky_island', BP_SKY, (q) => keep(q) && (!rope || ropeable(q, av)), av), 14 + k);
+        const pick = (keep: (s: Slot) => boolean, av: Avoid): Slot | undefined => hashed(free('sky_island', BP_SKY, (q) => keep(q) && ropeable(q, av), av), 14 + k);
         let av = skyAvoid, s = pick((q) => far(q, SKY_MIN) && !surfTaken(q), skyAvoid) ?? pick((q) => !surfTaken(q), skyAvoid);
         if (!s) { av = skyAvoid2; s = pick((q) => !surfTaken(q) || surfKind(q) === 'village', av) ?? pick((q) => !surfTaken(q) || surfKind(q) === 'village' || surfKind(q) === 'ruin', av); }
         return { s, av };
@@ -348,9 +402,8 @@ export function homeAnchors(seed: string, home: Landmass, profile: Profile2): An
       for (const lakeFirst of [false, true]) {
         if (lakeFirst) { out.length = markSky; taken.clear(); for (const q of takenSky) taken.add(q); add('lake', pickLake()); }
         for (let k = 0; k < 2; k++) {
-          let { s, av } = chain([...below, ...cabins, ...alcoves], k, true);
-          if (!s) ({ s, av } = chain(below, k, true));
-          if (!s) ({ s, av } = chain(below, k, false));
+          let { s, av } = chain([...below, ...cabins, ...alcoves], k);
+          if (!s) ({ s, av } = chain(below, k));
           add('sky_island', s, av);
         }
         if (lakeFirst) break;
@@ -378,8 +431,10 @@ export function homeAnchors(seed: string, home: Landmass, profile: Profile2): An
 //     表層槽序號 = 深層槽序號 / 2、夾到最後一槽）沒有被用掉；選了之後那個表層槽也標成已用——外圍地廳一律有通地表的繩梯豎井（structures/hall.ts），
 //     豎井穿過那個表層槽，上面不能有別的錨點（錨點跨層相交 = RangeError）；同理村莊 / 小地城 / 隱士小屋不放在地廳的表層槽上。
 //     小地城的外框到地表下約 280 列、地廳的外框頂 ≥ deep + 23，兩者可能相交——靠同一條「表層槽已用」規則不讓地廳在小地城底下。
-//   · 選定的種類的槽離目標 ≤ KIND_NEAR（一個表層槽寬）就用它；否則（沒有合格槽、或最近的也太遠——例如大陸一端只剩含坑道的窄槽，小地城放不下）
-//     改取三種裡槽離目標最近的（平手依退讓順序 village → keep → hall；keep → hall → village；hall → keep → village），都沒有就跳過這個目標。
+//   · 依退讓順序（village → keep → hall；keep → village → hall；hall → keep → village）取第一個槽離目標 ≤ KIND_NEAR（一個表層槽寬）的種類；
+//     都太遠（沒有合格槽、或最近的也太遠——例如大陸一端只剩含坑道的窄槽，小地城放不下）改取三種裡槽離目標最近的（平手依退讓順序），都沒有就跳過這個目標。
+//     Task 21：改放別種時把擲到的種類記成「欠下的」，之後的目標若欠下的種類 ≤ KIND_NEAR 放得下就先還（見 place 裡的 owed），實際比例接近雜湊設定
+//     （Task 18 只有擲到的種類看 KIND_NEAR、其餘取最近，退讓多半落到槽較密的地廳：實際 村 30 / 城 39 / 廳 30）。
 // 隱士小屋（Q20b）：大東西選完之後，槽中心最接近 (x0 + x1) / 2、還沒用掉、放得下 ANCHOR_MAX_W.hermit_hut 的 SURFACE 槽，恰 1 座（沒有 = RangeError，
 // 大陸 ≥ 2400 寬至少 7 個表層槽、大東西至多 6 個目標）。
 // 保證小屋 / 遺跡（P11，BlueprintIndex.guard）在這些錨點之後挑（Q15：錨點優先，剔除錨點槽與會碰到錨點部件的槽後重找）。
@@ -395,7 +450,7 @@ const BIG_EDGE = 200, BIG_GAP = 1100, VILLAGE_NEAR = 550, KIND_NEAR = 340, END_K
 // 地廳 HALL_MIN_W / 2 = 52（內部 + 外殼 + 兩側最短隧道，大廳置中於可用範圍）
 const BIG_HALF: Readonly<Partial<Record<AnchorKind, number>>> = { village: (VILLAGE_VW[0] + 2 * SLOPE) >> 1, keep: LEVEL_HALF, hall: HALL_MIN_W >> 1 };
 type BigKind = 'village' | 'keep' | 'hall';
-const BIG_FALLBACK: Readonly<Record<BigKind, readonly BigKind[]>> = { village: ['village', 'keep', 'hall'], keep: ['keep', 'hall', 'village'], hall: ['hall', 'keep', 'village'] };
+const BIG_FALLBACK: Readonly<Record<BigKind, readonly BigKind[]>> = { village: ['village', 'keep', 'hall'], keep: ['keep', 'village', 'hall'], hall: ['hall', 'keep', 'village'] };
 // 第 k 個目標的種類（u ∈ [0, 1)）
 export function bigKind(tier: number, u: number): BigKind {
   return tier <= 1 ? (u < 0.5 ? 'village' : u < 0.8 ? 'keep' : 'hall') : (u < 0.35 ? 'village' : u < 0.8 ? 'keep' : 'hall');
@@ -451,14 +506,23 @@ export function continentAnchors(seed: string, m: Landmass, _profile: Profile2):
       if (s.layer === BP_DEEP) taken.add(key(s.r, BP_SURFACE, surfOf(s.r, s.q)));
       out.push({ kind, region: s.r, layer: s.layer, slot: s.q });
     };
+    // 欠下的種類（Task 21）：目標的種類放不下、改放別種時記一筆；之後的目標若這種放得下（≤ KIND_NEAR）就先還（放欠的那種、不再記這個目標的種類），
+    // 實際比例才會接近雜湊設定（不還的話：村莊在 HIGH 地區、小地城在含坑道的窄槽放不下，退讓多半落到槽較密的地廳；改前 / 改後的比例見 outer.test 的比例測試）
+    const owed: BigKind[] = [];
+    const near = (kind: BigKind, t: number): Slot | undefined => { const s = pick(kind, t); return s && Math.abs(s.mid - t) <= KIND_NEAR ? s : undefined; };
     for (let k = 0; k < n; k++) {
-      const t = targets[k], order = BIG_FALLBACK[bigKind(m.tier, hash2(mk, k, sA))];
+      const t = targets[k], want = bigKind(m.tier, hash2(mk, k, sA));
       let best: { kind: BigKind; s: Slot } | null = null;
-      for (const kind of order) {
-        const s = pick(kind, t);
-        if (!s) continue;
-        if (kind === order[0] && Math.abs(s.mid - t) <= KIND_NEAR) { best = { kind, s }; break; }
-        if (!best || Math.abs(s.mid - t) < Math.abs(best.s.mid - t)) best = { kind, s };
+      const j = owed.findIndex((o) => o !== want && near(o, t) !== undefined);
+      if (j >= 0) { best = { kind: owed[j], s: near(owed[j], t)! }; owed.splice(j, 1); }
+      else {
+        for (const kind of BIG_FALLBACK[want]) {
+          const s = pick(kind, t);
+          if (!s) continue;
+          if (Math.abs(s.mid - t) <= KIND_NEAR) { best = { kind, s }; break; }
+          if (!best || Math.abs(s.mid - t) < Math.abs(best.s.mid - t)) best = { kind, s };
+        }
+        if (best && best.kind !== want) owed.push(want);
       }
       if (best) add(best.kind, best.s);
     }

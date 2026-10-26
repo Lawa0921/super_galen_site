@@ -7,16 +7,19 @@ import { T, W } from '../../tiles';
 import type { VillageHouse, VillageInfo } from '../../genTypes';
 import type { Canvas, RandomLike } from './canvas';
 
-// x0 = 村子左端欄、vw = 寬（x1 = x0 + vw − 1）、ground = 整平後的地面列、style = 旗色
-export function drawVillage(cv: Canvas, o: { x0: number; vw: number; ground: number; style: number }, rng: RandomLike): VillageInfo {
-  const { x0, vw, ground, style } = o, x1 = x0 + vw - 1;
+const GRASS_SKIN = (): { top: number; fill: number } => ({ top: T.GRASS, fill: T.DIRT });
+// x0 = 村子左端欄、vw = 寬（x1 = x0 + vw − 1）、ground = 整平後的地面列、style = 旗色；
+// skin(x) = 第 x 欄整平後的地面那格 / 補土鋪什麼（gen2 依生態，M2a Task 21；沒給 = 草 / 泥土，舊生成器照舊）
+export function drawVillage(cv: Canvas, o: { x0: number; vw: number; ground: number; style: number; skin?: (x: number) => { top: number; fill: number } }, rng: RandomLike): VillageInfo {
+  const { x0, vw, ground, style } = o, x1 = x0 + vw - 1, skin = o.skin ?? GRASS_SKIN;
   // ── 整平（含兩側 9 欄的緩坡） ──
   const shape = (x: number, top: number): void => {
     const s0 = cv.surfaceAt(x);
     for (let y = Math.max(1, Math.min(ground, top) - 28); y < top; y++) { cv.setFg(x, y, T.AIR); cv.setWall(x, y, W.NONE); cv.clearLiquid(x, y); }
     // 補低：一路填到原本的地表下面（窪地整平後底下不會是空的）
-    for (let y = top; y < Math.max(top + 6, s0 + 3); y++) if (!cv.isSolid(x, y)) cv.setFg(x, y, T.DIRT);
-    cv.setFg(x, top, T.GRASS);
+    const k = skin(x);
+    for (let y = top; y < Math.max(top + 6, s0 + 3); y++) if (!cv.isSolid(x, y)) cv.setFg(x, y, k.fill);
+    cv.setFg(x, top, k.top);
     cv.setSurface(x, top);
   };
   for (let x = x0; x <= x1; x++) shape(x, ground);
