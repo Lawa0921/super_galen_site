@@ -36809,32 +36809,28 @@
     },
     "icon-silent-bronze": {
       "final": "art-factory/starlantern/work/sheet-icons-roster-1/icon-silent-bronze.png",
-      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-1\\sheet-icons-roster-1-a1.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-1\\sheet-icons-roster-1-a2.png",
       "qa": {
-        "pass": false,
-        "reasons": [
-          "interior erased"
-        ],
-        "warnings": [
-          "enclosed holes"
-        ],
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
         "residue": 0,
         "semi": 0,
         "edge": 0,
-        "holes": 38,
+        "holes": 0,
         "magenta_spill": 0,
         "key_tint_inside": 0,
-        "block": 8,
+        "block": 7,
         "size": [
-          28,
-          32
+          31,
+          36
         ],
-        "erased": 38,
+        "erased": 0,
         "spec": "roster-icon:bbdd3c548030"
       },
-      "status": "qa_failed",
+      "status": "qa_passed",
       "kind": "roster-icon",
-      "chosen_attempt": "a1",
+      "chosen_attempt": "a2",
       "source_id": "sheet-icons-roster-1",
       "batch": "roster-r1"
     },
@@ -37461,6 +37457,538 @@
         "a1": "a1 的鏡子、兩個墜飾和劍的小圖示太細，未達 5d 的份量下限",
         "a2": "a2 鐘上的符文太接近洋紅被判殘色；只採用它的鏡子（月亮比 a3 清楚）"
       }
+    },
+    "enemy-lamp-wight": {
+      "final": "art-factory/starlantern/work/enemy-lamp-wight/enemy-lamp-wight.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-lamp-wight\\enemy-lamp-wight-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 5,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 15,
+        "size": [
+          59,
+          65
+        ],
+        "height": 63,
+        "width": 57,
+        "colours": 1586,
+        "lum": [
+          0.063,
+          0.955,
+          0.582
+        ],
+        "erased": 0,
+        "palette_over": true,
+        "spec": "roster-sprite:eb659ec2b82c"
+      },
+      "status": "qa_passed",
+      "kind": "roster-sprite",
+      "roster_class": "normal",
+      "mainline": true,
+      "chosen_attempt": "a1",
+      "source_id": "enemy-lamp-wight",
+      "batch": "roster-r1"
+    },
+    "enemy-tin-soldier": {
+      "final": "art-factory/starlantern/work/enemy-tin-soldier/enemy-tin-soldier.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-tin-soldier\\enemy-tin-soldier-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 1,
+        "block": 15,
+        "size": [
+          62,
+          76
+        ],
+        "height": 74,
+        "width": 60,
+        "colours": 2106,
+        "lum": [
+          0.053,
+          0.932,
+          0.558
+        ],
+        "erased": 0,
+        "palette_over": true,
+        "spec": "roster-sprite:eb659ec2b82c"
+      },
+      "status": "qa_passed",
+      "kind": "roster-sprite",
+      "roster_class": "heavy",
+      "mainline": true,
+      "chosen_attempt": "a1",
+      "source_id": "enemy-tin-soldier",
+      "batch": "roster-r1"
+    },
+    "enemy-dust-mimic": {
+      "final": "art-factory/starlantern/work/enemy-dust-mimic/enemy-dust-mimic.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-dust-mimic\\enemy-dust-mimic-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 13,
+        "size": [
+          69,
+          65
+        ],
+        "height": 63,
+        "width": 67,
+        "colours": 2987,
+        "lum": [
+          0.085,
+          0.941,
+          0.487
+        ],
+        "erased": 0,
+        "palette_over": true,
+        "spec": "roster-sprite:eb659ec2b82c"
+      },
+      "status": "qa_passed",
+      "kind": "roster-sprite",
+      "roster_class": "normal",
+      "mainline": true,
+      "chosen_attempt": "a1",
+      "source_id": "enemy-dust-mimic",
+      "batch": "roster-r1"
+    },
+    "enemy-market-ghost": {
+      "final": "art-factory/starlantern/work/enemy-market-ghost/enemy-market-ghost.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-market-ghost\\enemy-market-ghost-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 15,
+        "size": [
+          61,
+          66
+        ],
+        "height": 64,
+        "width": 59,
+        "colours": 1329,
+        "lum": [
+          0.052,
+          0.967,
+          0.67
+        ],
+        "erased": 0,
+        "palette_over": true,
+        "spec": "roster-sprite:eb659ec2b82c"
+      },
+      "status": "qa_passed",
+      "kind": "roster-sprite",
+      "roster_class": "normal",
+      "mainline": true,
+      "chosen_attempt": "a1",
+      "source_id": "enemy-market-ghost",
+      "batch": "roster-r1"
+    },
+    "enemy-tongueless-bell": {
+      "final": "art-factory/starlantern/work/enemy-tongueless-bell/enemy-tongueless-bell.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-tongueless-bell\\enemy-tongueless-bell-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          65,
+          66
+        ],
+        "height": 64,
+        "width": 63,
+        "colours": 1626,
+        "lum": [
+          0.093,
+          0.961,
+          0.508
+        ],
+        "erased": 0,
+        "palette_over": true,
+        "spec": "roster-sprite:eb659ec2b82c"
+      },
+      "status": "qa_passed",
+      "kind": "roster-sprite",
+      "roster_class": "normal",
+      "mainline": true,
+      "chosen_attempt": "a1",
+      "source_id": "enemy-tongueless-bell",
+      "batch": "roster-r1"
+    },
+    "enemy-hollow-hunter": {
+      "final": "art-factory/starlantern/work/enemy-hollow-hunter/enemy-hollow-hunter.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-hollow-hunter\\enemy-hollow-hunter-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 17,
+        "size": [
+          44,
+          66
+        ],
+        "height": 64,
+        "width": 42,
+        "colours": 1117,
+        "lum": [
+          0.072,
+          0.957,
+          0.418
+        ],
+        "erased": 0,
+        "palette_over": true,
+        "spec": "roster-sprite:eb659ec2b82c"
+      },
+      "status": "qa_passed",
+      "kind": "roster-sprite",
+      "roster_class": "normal",
+      "mainline": true,
+      "chosen_attempt": "a1",
+      "source_id": "enemy-hollow-hunter",
+      "batch": "roster-r1"
+    },
+    "enemy-mist-twin": {
+      "final": "art-factory/starlantern/work/enemy-mist-twin/enemy-mist-twin.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-mist-twin\\enemy-mist-twin-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 14,
+        "size": [
+          51,
+          55
+        ],
+        "height": 53,
+        "width": 49,
+        "colours": 1161,
+        "lum": [
+          0.185,
+          0.957,
+          0.749
+        ],
+        "erased": 1,
+        "palette_over": true,
+        "spec": "roster-sprite:eb659ec2b82c"
+      },
+      "status": "qa_passed",
+      "kind": "roster-sprite",
+      "roster_class": "swarm",
+      "mainline": true,
+      "chosen_attempt": "a1",
+      "source_id": "enemy-mist-twin",
+      "batch": "roster-r1"
+    },
+    "enemy-moon-crow": {
+      "final": "art-factory/starlantern/work/enemy-moon-crow/enemy-moon-crow.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-moon-crow\\enemy-moon-crow-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 14,
+        "size": [
+          94,
+          67
+        ],
+        "height": 64,
+        "width": 92,
+        "colours": 2947,
+        "lum": [
+          0.084,
+          0.974,
+          0.493
+        ],
+        "erased": 0,
+        "palette_over": true,
+        "spec": "roster-sprite:eb659ec2b82c"
+      },
+      "status": "qa_passed",
+      "kind": "roster-sprite",
+      "roster_class": "normal",
+      "mainline": true,
+      "chosen_attempt": "a1",
+      "source_id": "enemy-moon-crow",
+      "batch": "roster-r1"
+    },
+    "enemy-sleepwalker": {
+      "final": "art-factory/starlantern/work/enemy-sleepwalker/enemy-sleepwalker.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-sleepwalker\\enemy-sleepwalker-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 14,
+        "size": [
+          76,
+          78
+        ],
+        "height": 76,
+        "width": 74,
+        "colours": 2955,
+        "lum": [
+          0.075,
+          0.96,
+          0.651
+        ],
+        "erased": 0,
+        "palette_over": true,
+        "spec": "roster-sprite:eb659ec2b82c"
+      },
+      "status": "qa_passed",
+      "kind": "roster-sprite",
+      "roster_class": "heavy",
+      "mainline": true,
+      "chosen_attempt": "a1",
+      "source_id": "enemy-sleepwalker",
+      "batch": "roster-r1"
+    },
+    "enemy-hoarder": {
+      "final": "art-factory/starlantern/work/enemy-hoarder/enemy-hoarder.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-hoarder\\enemy-hoarder-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          74,
+          64
+        ],
+        "height": 62,
+        "width": 72,
+        "colours": 2727,
+        "lum": [
+          0.072,
+          0.947,
+          0.526
+        ],
+        "erased": 1,
+        "palette_over": true,
+        "spec": "roster-sprite:eb659ec2b82c"
+      },
+      "status": "qa_passed",
+      "kind": "roster-sprite",
+      "roster_class": "normal",
+      "mainline": true,
+      "chosen_attempt": "a1",
+      "source_id": "enemy-hoarder",
+      "batch": "roster-r1"
+    },
+    "enemy-bell-warden": {
+      "final": "art-factory/starlantern/work/enemy-bell-warden/enemy-bell-warden.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-bell-warden\\enemy-bell-warden-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 5,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          67,
+          101
+        ],
+        "height": 99,
+        "width": 65,
+        "colours": 4148,
+        "lum": [
+          0.111,
+          0.942,
+          0.551
+        ],
+        "erased": 3,
+        "palette_over": true,
+        "spec": "roster-sprite:eb659ec2b82c"
+      },
+      "status": "qa_passed",
+      "kind": "roster-sprite",
+      "roster_class": "warden",
+      "mainline": true,
+      "chosen_attempt": "a1",
+      "source_id": "enemy-bell-warden",
+      "batch": "roster-r1"
+    },
+    "sheet-icons-roster-1": {
+      "rejected_attempts": {
+        "a1": "a1: silent-bronze's violet runes were cut out as key (interior erased, erased 38); its other icons are used"
+      },
+      "plain_reasons": {
+        "a1": "a1 的靜默青銅紫色符文被當成洋紅去掉；其他圖示採用 a1"
+      }
+    },
+    "enemy-silent-bell": {
+      "rejected_attempts": {
+        "a1": "a1: violet runes cut out as key (interior erased, erased 327; magenta residue)",
+        "a2": "a2: the top chain runs off the canvas (subject cut by the canvas edge); key blends in the chain links (interior erased, erased 14)"
+      },
+      "plain_reasons": {
+        "a1": "紫色符文被當成洋紅去掉",
+        "a2": "上方鎖鍊超出畫布、鍊環內有洋紅混色"
+      },
+      "final": "art-factory/starlantern/work/enemy-silent-bell/enemy-silent-bell.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-silent-bell\\enemy-silent-bell-a3.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 4,
+        "magenta_spill": 0,
+        "key_tint_inside": 1,
+        "block": 7,
+        "size": [
+          159,
+          154
+        ],
+        "height": 152,
+        "width": 157,
+        "colours": 10690,
+        "lum": [
+          0.042,
+          0.949,
+          0.431
+        ],
+        "erased": 4,
+        "palette_over": true,
+        "spec": "roster-sprite:eb659ec2b82c"
+      },
+      "status": "qa_passed",
+      "kind": "roster-sprite",
+      "roster_class": "boss",
+      "mainline": true,
+      "chosen_attempt": "a3",
+      "source_id": "enemy-silent-bell",
+      "batch": "roster-r1"
+    },
+    "enemy-hollow-champion": {
+      "rejected_attempts": {
+        "a1": "a1: key blends between the sword blades (interior erased, erased 18)",
+        "a2": "a2: pinholes of key blend in the mist and between the swords (interior erased, erased 12); a visor face instead of mist"
+      },
+      "plain_reasons": {
+        "a1": "劍刃之間的洋紅混色被擦掉",
+        "a2": "霧與劍之間的小洞；臉是頭盔面甲而不是霧"
+      },
+      "final": "art-factory/starlantern/work/enemy-hollow-champion/enemy-hollow-champion.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-hollow-champion\\enemy-hollow-champion-a3.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 3,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 8,
+        "size": [
+          152,
+          156
+        ],
+        "height": 153,
+        "width": 150,
+        "colours": 12175,
+        "lum": [
+          0.025,
+          0.943,
+          0.492
+        ],
+        "erased": 1,
+        "palette_over": true,
+        "spec": "roster-sprite:eb659ec2b82c"
+      },
+      "status": "qa_passed",
+      "kind": "roster-sprite",
+      "roster_class": "boss",
+      "mainline": true,
+      "chosen_attempt": "a3",
+      "source_id": "enemy-hollow-champion",
+      "batch": "roster-r1"
     }
   },
   "requa_log": [

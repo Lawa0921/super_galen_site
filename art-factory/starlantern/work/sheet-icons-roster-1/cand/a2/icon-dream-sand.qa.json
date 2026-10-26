@@ -1,0 +1,20 @@
+{
+  "pass": true,
+  "reasons": [],
+  "warnings": [
+    "enclosed holes"
+  ],
+  "residue": 0,
+  "semi": 0,
+  "edge": 0,
+  "holes": 1,
+  "magenta_spill": 0,
+  "key_tint_inside": 0,
+  "block": 7,
+  "size": [
+    33,
+    29
+  ],
+  "erased": 1,
+  "spec": "roster-icon:bbdd3c548030"
+}

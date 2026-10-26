@@ -1,0 +1,32 @@
+{
+  "pass": false,
+  "reasons": [
+    "subject cut by the canvas edge",
+    "interior erased"
+  ],
+  "warnings": [
+    "enclosed holes"
+  ],
+  "residue": 0,
+  "semi": 0,
+  "edge": 0,
+  "holes": 17,
+  "magenta_spill": 0,
+  "key_tint_inside": 1,
+  "block": 8,
+  "size": [
+    151,
+    145
+  ],
+  "height": 143,
+  "width": 149,
+  "colours": 11039,
+  "lum": [
+    0.016,
+    0.905,
+    0.405
+  ],
+  "erased": 14,
+  "palette_over": true,
+  "spec": "roster-sprite:eb659ec2b82c"
+}

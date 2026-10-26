@@ -1,0 +1,41 @@
+{
+  "assets": {
+    "enemy-hollow-hunter": {
+      "final": "art-factory/starlantern/work/enemy-hollow-hunter/cand/a1/enemy-hollow-hunter.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-hollow-hunter\\enemy-hollow-hunter-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 17,
+        "size": [
+          44,
+          66
+        ],
+        "height": 64,
+        "width": 42,
+        "colours": 1117,
+        "lum": [
+          0.072,
+          0.957,
+          0.418
+        ],
+        "erased": 0,
+        "palette_over": true,
+        "spec": "roster-sprite:eb659ec2b82c"
+      },
+      "status": "qa_passed",
+      "kind": "roster-sprite",
+      "roster_class": "normal",
+      "mainline": true
+    }
+  }
+}

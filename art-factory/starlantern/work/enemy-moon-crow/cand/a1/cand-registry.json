@@ -1,0 +1,39 @@
+{
+  "assets": {
+    "enemy-moon-crow": {
+      "final": "art-factory/starlantern/work/enemy-moon-crow/cand/a1/enemy-moon-crow.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-moon-crow\\enemy-moon-crow-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 14,
+        "size": [
+          94,
+          67
+        ],
+        "height": 64,
+        "width": 92,
+        "colours": 2947,
+        "lum": [
+          0.084,
+          0.974,
+          0.493
+        ],
+        "erased": 0,
+        "palette_over": true,
+        "spec": "roster-sprite:eb659ec2b82c"
+      },
+      "status": "qa_passed",
+      "kind": "roster-sprite",
+      "roster_class": "normal",
+      "mainline": true
+    }
+  }
+}
