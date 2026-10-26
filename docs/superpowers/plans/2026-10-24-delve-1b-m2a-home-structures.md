@@ -1039,7 +1039,7 @@ it('外圍村莊：客人在房主之後才載入那段 → NPC key / id 與房�
 **Files:**
 - Create: `engine/gen2/structures/minor.ts`
 - Modify: `engine/gen2/blueprint.ts`（MINOR 層：每個有槽的陸地地區（不含沙灘、不含地城區）切 170 格槽；槽內沒有其他表層 / 天空藍圖的外框相交、且不在下面的排除範圍，就放一個小點位）、`engine/gen2/bpcore.ts`（`BpKind` 加 `'minor'`——M2b Task 9 依賴這個名字）、`engine/gen2/layout.ts:150-160`（海槽的島 / 沉船偏移 ± `min(20, floor(槽寬 / 10))`）、`engine/gen2/structures/shipwreck.ts`（同）
-- Test: `engine/gen2/minor.test.ts`、`engine/gen2/layout.test.ts`、`engine/gen2/sea.test.ts`；必須保持綠、**不改斷言**（Q16）：`engine/gen2/blueprint.test.ts`——`:72-79`（出生點 ± 80 內沒有藍圖、含 ± 80 的槽整槽全空，所有層含 MINOR）、`:80-93`（含 shaftX 的槽不放非 DEEP 藍圖、非 DEEP 外框離 sx 在 SHAFT_REACH 範圍外）、`:100-111`（家鄉兩端沙灘沒有藍圖）；`engine/gen2/settlements.test.ts`（家鄉零重疊，Q10）
+- Test: `engine/gen2/minor.test.ts`、`engine/gen2/layout.test.ts`、`engine/gen2/sea.test.ts`；必須保持綠、**不改斷言**（Q16）：`engine/gen2/blueprint.test.ts`——`:72-79`（出生點 ± 80 內沒有藍圖、含 ± 80 的槽整槽全空，所有層含 MINOR）、`:80-93`（含 shaftX 的槽不放非 DEEP 藍圖〔2026-10-26 Q16 修訂（T21-12）：小點位層除外〕、非 DEEP 外框離 sx 在 SHAFT_REACH 範圍外）、`:100-111`（家鄉兩端沙灘沒有藍圖）；`engine/gen2/settlements.test.ts`（家鄉零重疊，Q10）
 
 **Interfaces:**
 - Produces（`minor.ts`）：`buildMinorBp(c: BpCtx): Blueprint`（kind `'minor'`、`sub: 'cairn' | 'camp' | 'stones'` 記在藍圖上）——種類（雜湊）：`cairn`（石堆 + 紅布旗，地標 `T.CAIRN`）45%、`camp`（木板帳篷 + 火把 + 地標 `T.RELIC_PACK`）30%、`stones`（3–5 根石柱圍一圈 + 2 個陶罐）25%；寬 ≤ 12、站在 `c.groundAt(x)` 上（Q4：只看 profile + SURFACE 層的地面覆寫；**小點位自己沒有 `ground`**；只畫地表以上與地表那一格）。`spawn_tablet` 錨點佔用它所在的 MINOR 槽（Task 7：在 ± 80 之外）。
