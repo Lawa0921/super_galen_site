@@ -42,7 +42,7 @@ describe('roster switches (roster plan Task A1, spec §11.1)', () => {
     const fresh = Object.keys(ENEMIES).filter((id) => !LEGACY_ENEMY_IDS.includes(id));
     for (const id of fresh) {
       expect(listedEnemy(id), id).toBe(false);
-      expect(artEnemy(id), id).toBe(false);
+      expect(artEnemy(id), id).toBe(ROSTER_ART.has(id)); // drawn once its art round is published (R0 since PR D), never listed
     }
     expect(listedEnemy('no-such-foe')).toBe(false);
   });
@@ -362,8 +362,8 @@ describe('roster materials and own uniques (roster plan Task A3, spec §7)', () 
   });
 
   it('art waits on the owner (ruling 3)', () => {
-    for (const m of Object.values(MATERIALS)) expect(artMaterial(m.id), m.id).toBe(!m.owner);
-    for (const s of Object.values(SPECIALS)) expect(artSpecial(s.id), s.id).toBe(!s.owner);
+    for (const m of Object.values(MATERIALS)) expect(artMaterial(m.id), m.id).toBe(!m.owner || ROSTER_ART.has(m.owner));
+    for (const s of Object.values(SPECIALS)) expect(artSpecial(s.id), s.id).toBe(!s.owner || ROSTER_ART.has(s.owner));
   });
 });
 

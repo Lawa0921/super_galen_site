@@ -1,8 +1,6 @@
 {
-  "pass": false,
-  "reasons": [
-    "too many colours"
-  ],
+  "pass": true,
+  "reasons": [],
   "warnings": [],
   "residue": 0,
   "semi": 0,
@@ -24,5 +22,6 @@
     0.622
   ],
   "erased": 0,
-  "spec": "roster-sprite:d5d24a1a03ef"
+  "palette_over": true,
+  "spec": "roster-sprite:4015756b3b93"
 }

@@ -36196,10 +36196,8 @@
       "final": "art-factory/starlantern/work/enemy-root-hound/enemy-root-hound.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-root-hound\\enemy-root-hound-a2.png",
       "qa": {
-        "pass": false,
-        "reasons": [
-          "too many colours"
-        ],
+        "pass": true,
+        "reasons": [],
         "warnings": [
           "enclosed holes"
         ],
@@ -36223,9 +36221,10 @@
           0.5
         ],
         "erased": 0,
-        "spec": "roster-sprite:d5d24a1a03ef"
+        "palette_over": true,
+        "spec": "roster-sprite:4015756b3b93"
       },
-      "status": "qa_failed",
+      "status": "published",
       "kind": "roster-sprite",
       "roster_class": "normal",
       "mainline": true,
@@ -36237,16 +36236,16 @@
       },
       "plain_reasons": {
         "a1": "a1 的根比較細亂，原尺寸下不太像獵犬"
-      }
+      },
+      "approved_by": "使用者 2026-10-26：核可，照這個畫風做下去",
+      "runtime": "/assets/games/starlantern/enemy/root-hound.png"
     },
     "enemy-bell-watcher": {
       "final": "art-factory/starlantern/work/enemy-bell-watcher/enemy-bell-watcher.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-bell-watcher\\enemy-bell-watcher-a1.png",
       "qa": {
-        "pass": false,
-        "reasons": [
-          "too many colours"
-        ],
+        "pass": true,
+        "reasons": [],
         "warnings": [
           "enclosed holes"
         ],
@@ -36270,9 +36269,10 @@
           0.513
         ],
         "erased": 0,
-        "spec": "roster-sprite:d5d24a1a03ef"
+        "palette_over": true,
+        "spec": "roster-sprite:4015756b3b93"
       },
-      "status": "qa_failed",
+      "status": "published",
       "kind": "roster-sprite",
       "roster_class": "normal",
       "mainline": true,
@@ -36284,16 +36284,16 @@
       },
       "plain_reasons": {
         "a2": "a2 兜帽下的光是一團糊，a1 比較好認"
-      }
+      },
+      "approved_by": "使用者 2026-10-26：核可，照這個畫風做下去",
+      "runtime": "/assets/games/starlantern/enemy/bell-watcher.png"
     },
     "enemy-false-moon": {
       "final": "art-factory/starlantern/work/enemy-false-moon/enemy-false-moon.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-false-moon\\enemy-false-moon-a2.png",
       "qa": {
-        "pass": false,
-        "reasons": [
-          "too many colours"
-        ],
+        "pass": true,
+        "reasons": [],
         "warnings": [],
         "residue": 0,
         "semi": 0,
@@ -36315,9 +36315,10 @@
           0.622
         ],
         "erased": 0,
-        "spec": "roster-sprite:d5d24a1a03ef"
+        "palette_over": true,
+        "spec": "roster-sprite:4015756b3b93"
       },
-      "status": "qa_failed",
+      "status": "published",
       "kind": "roster-sprite",
       "roster_class": "warden",
       "mainline": true,
@@ -36329,16 +36330,16 @@
       },
       "plain_reasons": {
         "a1": "a1 圓盤太滿、陰影偏暗；a2 一眼看得出明與蝕兩半"
-      }
+      },
+      "approved_by": "使用者 2026-10-26：核可，照這個畫風做下去",
+      "runtime": "/assets/games/starlantern/enemy/false-moon.png"
     },
     "enemy-fog-warden": {
       "final": "art-factory/starlantern/work/enemy-fog-warden/enemy-fog-warden.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-fog-warden\\enemy-fog-warden-a1.png",
       "qa": {
-        "pass": false,
-        "reasons": [
-          "too many colours"
-        ],
+        "pass": true,
+        "reasons": [],
         "warnings": [
           "enclosed holes"
         ],
@@ -36362,9 +36363,10 @@
           0.471
         ],
         "erased": 0,
-        "spec": "roster-sprite:d5d24a1a03ef"
+        "palette_over": true,
+        "spec": "roster-sprite:4015756b3b93"
       },
-      "status": "qa_failed",
+      "status": "published",
       "kind": "roster-sprite",
       "roster_class": "boss",
       "mainline": true,
@@ -36376,7 +36378,9 @@
       },
       "plain_reasons": {
         "a2": "a2 城門鎧片蓋掉了霧的身體；a1 比較像霧門守衛"
-      }
+      },
+      "approved_by": "使用者 2026-10-26：核可，照這個畫風做下去",
+      "runtime": "/assets/games/starlantern/enemy/fog-warden.png"
     },
     "icon-faded-letter": {
       "final": "art-factory/starlantern/work/sheet-icons-roster-1/icon-faded-letter.png",
@@ -36398,11 +36402,13 @@
         ],
         "spec": "roster-icon:a233355facd3"
       },
-      "status": "qa_passed",
+      "status": "published",
       "kind": "roster-icon",
       "chosen_attempt": "a1",
       "source_id": "sheet-icons-roster-1",
-      "batch": "roster-r0"
+      "batch": "roster-r0",
+      "approved_by": "使用者 2026-10-26：核可，照這個畫風做下去",
+      "runtime": "/assets/games/starlantern/icon/faded-letter.png"
     },
     "icon-mist-root": {
       "final": "art-factory/starlantern/work/sheet-icons-roster-1/icon-mist-root.png",
@@ -36426,11 +36432,13 @@
         ],
         "spec": "roster-icon:a233355facd3"
       },
-      "status": "qa_passed",
+      "status": "published",
       "kind": "roster-icon",
       "chosen_attempt": "a1",
       "source_id": "sheet-icons-roster-1",
-      "batch": "roster-r0"
+      "batch": "roster-r0",
+      "approved_by": "使用者 2026-10-26：核可，照這個畫風做下去",
+      "runtime": "/assets/games/starlantern/icon/mist-root.png"
     },
     "icon-grey-cord": {
       "final": "art-factory/starlantern/work/sheet-icons-roster-1/icon-grey-cord.png",
@@ -36452,11 +36460,13 @@
         ],
         "spec": "roster-icon:a233355facd3"
       },
-      "status": "qa_passed",
+      "status": "published",
       "kind": "roster-icon",
       "chosen_attempt": "a1",
       "source_id": "sheet-icons-roster-1",
-      "batch": "roster-r0"
+      "batch": "roster-r0",
+      "approved_by": "使用者 2026-10-26：核可，照這個畫風做下去",
+      "runtime": "/assets/games/starlantern/icon/grey-cord.png"
     },
     "icon-moon-silver": {
       "final": "art-factory/starlantern/work/sheet-icons-roster-1/icon-moon-silver.png",
@@ -36478,11 +36488,13 @@
         ],
         "spec": "roster-icon:a233355facd3"
       },
-      "status": "qa_passed",
+      "status": "published",
       "kind": "roster-icon",
       "chosen_attempt": "a1",
       "source_id": "sheet-icons-roster-1",
-      "batch": "roster-r0"
+      "batch": "roster-r0",
+      "approved_by": "使用者 2026-10-26：核可，照這個畫風做下去",
+      "runtime": "/assets/games/starlantern/icon/moon-silver.png"
     },
     "icon-fog-gate-plate": {
       "final": "art-factory/starlantern/work/sheet-icons-roster-1/icon-fog-gate-plate.png",
@@ -36506,11 +36518,13 @@
         ],
         "spec": "roster-icon:a233355facd3"
       },
-      "status": "qa_passed",
+      "status": "published",
       "kind": "roster-icon",
       "chosen_attempt": "a1",
       "source_id": "sheet-icons-roster-1",
-      "batch": "roster-r0"
+      "batch": "roster-r0",
+      "approved_by": "使用者 2026-10-26：核可，照這個畫風做下去",
+      "runtime": "/assets/games/starlantern/icon/fog-gate-plate.png"
     },
     "icon-wight-wick": {
       "final": "art-factory/starlantern/work/sheet-icons-roster-1/icon-wight-wick.png",
@@ -36900,7 +36914,7 @@
       },
       "chosen_attempt": "a1",
       "source_id": "sheet-ail-roster-1",
-      "batch": "roster-r0"
+      "batch": "roster-forget"
     },
     "gear-moonless-mirror-large": {
       "final": "art-factory/starlantern/work/sheet-gear-roster-1/gear-moonless-mirror-large.png",
@@ -36935,7 +36949,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-1\\sheet-gear-roster-1-a2.png",
@@ -36944,7 +36958,9 @@
       "slot": "offhand",
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-roster-1",
-      "batch": "roster-r0"
+      "batch": "roster-r0",
+      "approved_by": "使用者 2026-10-26：核可，照這個畫風做下去",
+      "runtime": "/assets/games/starlantern/gear/moonless-mirror-large.png"
     },
     "gear-moonless-mirror": {
       "final": "art-factory/starlantern/work/sheet-gear-roster-1/gear-moonless-mirror.png",
@@ -36979,7 +36995,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-1\\sheet-gear-roster-1-a2.png",
@@ -36988,7 +37004,9 @@
       "slot": "offhand",
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-roster-1",
-      "batch": "roster-r0"
+      "batch": "roster-r0",
+      "approved_by": "使用者 2026-10-26：核可，照這個畫風做下去",
+      "runtime": "/assets/games/starlantern/gear/moonless-mirror.png"
     },
     "gear-fog-halberd-large": {
       "final": "art-factory/starlantern/work/sheet-gear-roster-1/gear-fog-halberd-large.png",
@@ -37025,7 +37043,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-1\\sheet-gear-roster-1-a3.png",
@@ -37035,7 +37053,9 @@
       "weapon_kind": "spear",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-roster-1",
-      "batch": "roster-r0"
+      "batch": "roster-r0",
+      "approved_by": "使用者 2026-10-26：核可，照這個畫風做下去",
+      "runtime": "/assets/games/starlantern/gear/fog-halberd-large.png"
     },
     "gear-fog-halberd": {
       "final": "art-factory/starlantern/work/sheet-gear-roster-1/gear-fog-halberd.png",
@@ -37072,7 +37092,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-1\\sheet-gear-roster-1-a3.png",
@@ -37082,7 +37102,9 @@
       "weapon_kind": "spear",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-roster-1",
-      "batch": "roster-r0"
+      "batch": "roster-r0",
+      "approved_by": "使用者 2026-10-26：核可，照這個畫風做下去",
+      "runtime": "/assets/games/starlantern/gear/fog-halberd.png"
     },
     "gear-silent-chime-large": {
       "final": "art-factory/starlantern/work/sheet-gear-roster-1/gear-silent-chime-large.png",
@@ -37356,10 +37378,8 @@
       "final": "art-factory/starlantern/work/enemy-paper-moth/enemy-paper-moth.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-paper-moth\\enemy-paper-moth-a3.png",
       "qa": {
-        "pass": false,
-        "reasons": [
-          "too many colours"
-        ],
+        "pass": true,
+        "reasons": [],
         "warnings": [],
         "residue": 0,
         "semi": 0,
@@ -37381,9 +37401,10 @@
           0.607
         ],
         "erased": 0,
-        "spec": "roster-sprite:d5d24a1a03ef"
+        "palette_over": true,
+        "spec": "roster-sprite:4015756b3b93"
       },
-      "status": "qa_failed",
+      "status": "published",
       "kind": "roster-sprite",
       "roster_class": "swarm",
       "mainline": true,
@@ -37397,7 +37418,9 @@
       "plain_reasons": {
         "a1": "a1 翅膀張太開，三隻排不下",
         "a2": "a2 也太寬"
-      }
+      },
+      "approved_by": "使用者 2026-10-26：核可，照這個畫風做下去",
+      "runtime": "/assets/games/starlantern/enemy/paper-moth.png"
     },
     "sheet-gear-roster-1": {
       "rejected_attempts": {
@@ -39192,6 +39215,27 @@
         "icon-barrier-16": "4e939a230c4c8dab9bc7773d9e85f87f2d6f64143bd5edcd6f7343cef87888a8",
         "icon-barrier-14": "7a1e2843c209e4f6c5ced65d8310ac03003e28380b35a1c9e6041e53b277d592"
       }
+    },
+    "roster-r0": {
+      "date": "2026-10-26",
+      "record": "C:\\Users\\bag57\\.codex\\worktrees\\faces\\super_galen_site\\art-factory\\starlantern\\work\\review\\roster-r0-shown.json",
+      "shown": {
+        "enemy-paper-moth": "dd237b664b4d4ecd66eb640324c0115d0eb4027089b298a211ec9336d836c9ce",
+        "enemy-root-hound": "9f7a57b258db173b7747d81adc14bbb9a63e44ea35b073e654e458cc9ac295bc",
+        "enemy-bell-watcher": "3d79262286c359e17df0f9e46ee64b47237db731985b44c1de134d99ac1905b6",
+        "enemy-false-moon": "bd2c9e27f22c5dd8ed91184745051f4131f88eae8b7d40ea18bf032ed1742643",
+        "enemy-fog-warden": "e509aced22687f782de962d5f2f4d08080ca84d748b5d024edf51791ae2dfcfb",
+        "icon-faded-letter": "a21d17d27161e6d7fb4727d5ce863117e573537b76c92761a0e95bdb5cf7f2e2",
+        "icon-mist-root": "46ef8e0cdaa41efc64f91952e2b88d4e87b83a7f96a975e24942c45e1e9d0ed8",
+        "icon-grey-cord": "0069900346ebd64d5b0933c7bf59f9c5727d4edc74ed79882df228a7b4bd96ee",
+        "icon-moon-silver": "c12eb3384e439606baee485026aaeacf052fb01ec260f787a24d87be60122465",
+        "icon-fog-gate-plate": "26c1a99749f0b89037dd3ac474e43f62ced21d463f8ab2e203cf8f6414c9cc24",
+        "gear-moonless-mirror-large": "e9cf63ab8e123d4a2c9125c2687f2a0630b743e482f94ee8f22739f65d0e1fae",
+        "gear-moonless-mirror": "ddf587d6df77fb72e3f076386205b6674743101299cc7d5b241601a363590496",
+        "gear-fog-halberd-large": "74f9927b4560fe9c9a21b0baabcc3aba5dd08f78c8be0f4169b0505875b5bb98",
+        "gear-fog-halberd": "e5e2264a308bf95a1a9f3651727699bed2f644f1228c15842f9ed02a8b7233bd"
+      },
+      "by": "使用者 2026-10-26：核可，照這個畫風做下去"
     }
   },
   "style_anchor": {
@@ -39199,5 +39243,13 @@
     "attempt": "a9",
     "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a9.png"
   },
-  "style_approved": "2026-10-20"
+  "style_approved": "2026-10-20",
+  "roster_style_approved": "2026-10-26",
+  "roster_style_anchor": {
+    "paper-moth": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-paper-moth\\enemy-paper-moth-a3.png",
+    "root-hound": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-root-hound\\enemy-root-hound-a2.png",
+    "bell-watcher": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-bell-watcher\\enemy-bell-watcher-a1.png",
+    "false-moon": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-false-moon\\enemy-false-moon-a2.png",
+    "fog-warden": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-fog-warden\\enemy-fog-warden-a1.png"
+  }
 }

@@ -17,7 +17,9 @@ const LEGACY = new Set(LEGACY_ENEMY_IDS);
  * Roster ids whose art is published (the enemy art, its signature material's or trophy's icon, and its own unique's gear
  * art). Only an art batch's publish commit adds to it.
  */
-export const ROSTER_ART: ReadonlySet<string> = new Set<string>([]);
+export const ROSTER_ART: ReadonlySet<string> = new Set<string>([
+  'paper-moth', 'root-hound', 'bell-watcher', 'false-moon', 'fog-warden',
+]);
 /**
  * Roster ids met in the encounter tables, the boss table, warden rooms and the bestiary. Only a go-live commit adds to it,
  * and it must stay inside ROSTER_ART.

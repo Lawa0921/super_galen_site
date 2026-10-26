@@ -250,6 +250,8 @@
 | r0 風格樣本 | `paper-moth`（群）、`root-hound`（一般）、`bell-watcher`（故事人形）、`false-moon`（守關者）、`fog-warden`（頭目） | `sheet-icons-roster-1`（R0＋R1 的 18 個素材圖示＋2 格空石板）、`sheet-gear-roster-1`（R0＋R1 的 5 件專屬獨特＋1 格空石板）、`sheet-ail-roster-1`（遺忘的異常小圖示） |
 | r1–r4 | 13、27、28、27 隻（`roster-plan.json` 的 `rounds`） | r2–r4 各兩張 5×4 圖示表、兩張 3×2 專屬獨特表 |
 
+- **R0 已核准並發布**：使用者 2026-10-26「核可，照這個畫風做下去」（看的是 R0 對照表與審核頁）。`approve --batch r0` 寫入 `roster_style_approved`、`roster_style_anchor`（五隻的採用原圖：paper-moth a3、root-hound a2、bell-watcher a1、false-moon a2、fog-warden a1）；`publish --batch r0` 發布 14 件（5 隻敵人、5 個素材圖示、2 件專屬獨特 ×2），`ROSTER_ART` 加這 5 個 id，`allArtUrls` 722 → 736；`ROSTER_LIVE` 仍是空的。遺忘圖示照裁定 27 留在工廠（`qa_passed`），等 E1c。R1 的 13 個圖示與 3 件專屬獨特已畫在 R0 的表上、QA 已過，跟 R1 一起審核與發布。
+
 - 每件素材屬於它主人的那一輪（R1 敵人的圖示畫在 R0 的表上，但跟 R1 一起核准、發布），所以發布過的一輪，每隻敵人的立繪、它的素材圖示與專屬獨特一定同時在；登錄表 `batch` 是 `roster-<rN>`。
 
 | 類別 | `--height` | prompt 高度 | QA 高度帶 |
