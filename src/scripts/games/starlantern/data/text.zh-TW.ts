@@ -20,8 +20,9 @@ const STAT: Record<StatKey, string> = { hp: 'HP', tp: 'TP', atk: '攻擊', def: 
 /** The battle log's line when an ailment takes hold (a boss's freeze reads as the chill it became). */
 const STATUS_LINE: Record<AilmentShown, string> = {
   poison: '中毒了', sleep: '睡著了', burn: '燒起來了', freeze: '被凍住了', chill: '的動作變慢了', shock: '觸電了', bleed: '開始流血了',
+  forget: '一時想不起招式了',
 };
-const AILMENT_NAME: Record<AilmentShown, string> = { poison: '中毒', sleep: '睡眠', burn: '灼燒', freeze: '凍結', chill: '冰緩', shock: '感電', bleed: '流血' };
+const AILMENT_NAME: Record<AilmentShown, string> = { poison: '中毒', sleep: '睡眠', burn: '灼燒', freeze: '凍結', chill: '冰緩', shock: '感電', bleed: '流血', forget: '遺忘' };
 /** A rune refused or greyed for one already on the skill: the same one, or one of its group (T.rune.why and T.rune.fail). */
 const RUNE_SAME = (name: string) => `同一招不能裝兩個${name}`;
 const RUNE_GROUP = (name: string) => `已有同類符文：${name}`;
@@ -200,6 +201,8 @@ export const T = {
         weak: (el: string) => `弱${el}`, adapted: (el: string) => `抗${el}`,
         /** Roster plan B8 (M7): a body its parts shield. */
         cut: '減傷',
+        /** Roster plan B9 (M17): the TP a thief has drained this fight. */
+        drained: (n: number) => `吸走${n}TP`,
       },
     },
     /** The part of the gold a felled thief gave back (roster plan B3, M13), already counted in the gold line. */
@@ -288,6 +291,9 @@ export const T = {
       /** Roster plan B7: a foe enters its next stage (M8); a foe adapts to what struck it (M16). */
       stage: (who: string) => `${who}的樣子變了！`,
       adapt: (who: string) => `${who}適應了這一擊的屬性！`,
+      /** Roster plan B9: a TP thief's take (M17); a buff thief's (M15). */
+      drain: (who: string, other: string, n: number) => `${who}吸走了${other}的 ${n} TP！`,
+      dispel: (who: string, other: string) => `${who}把${other}身上的增益搶走了！`,
     },
     heal: (who: string, n: number) => `${who} 回復 ${n} HP`,
     tp: (who: string, n: number) => `${who} 回復 ${n} TP`,

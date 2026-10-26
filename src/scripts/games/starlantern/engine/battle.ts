@@ -872,6 +872,17 @@ function endOfRound(s: BattleState, ctx: EffectContext, rng: Rng): void {
 }
 
 
+/**
+ * Roster plan B9 (M9): what a turn under forget does instead: a skill (or the hero's echo of one) is a plain attack, on its
+ * foe when it named one; a foe's skill is a plain attack too, and a charge it was winding is lost. Items, ultimates and
+ * defending are as chosen.
+ */
+function forgotten(actor: Combatant, act: Action | EnemyAction): Action | EnemyAction {
+  if (act.kind === 'skill' || act.kind === 'echo') return { kind: 'attack', target: act.target ?? '' };
+  if (act.kind === 'enemy-skill') { delete actor.winding; return { kind: 'attack', target: act.target }; }
+  return act;
+}
+
 /** Roster plan B8 (M6): the member who landed the party's last blow, while she stands. */
 const lender = (s: BattleState): Combatant | undefined => {
   const rec = s.lastPartyHit;
@@ -998,10 +1009,14 @@ export function resolveRound(prev: BattleState, actions: Record<string, Action>,
     // A frozen turn is lost before sleep is looked at (sleep keeps its rounds); it thaws and is guarded for a while.
     // A lost turn breaks a foe's charge (roster plan B2, M1).
     if (actor.decoyOf) continue;   // a decoy never acts (roster plan B4, M19)
+    // A forget lasts its holder one turn, whatever that turn brings (roster plan B9, M9).
+    const forgot = !!actor.forget;
+    delete actor.forget;
     if (actor.frozen) { delete actor.frozen; delete actor.winding; actor.freezeGuard = AILMENT.freezeGuard; s.log.push({ type: 'frozen', actor: actor.key }); continue; }
     if (actor.sleep > 0) { actor.sleep -= 1; delete actor.winding; s.log.push({ type: 'asleep', actor: actor.key }); continue; }
     if (actor.dozing) wakeUp(s, actor);   // a foe that opened asleep wakes angry (roster plan B3, M14)
-    const act = actor.side === 'party' ? actions[actor.key] : enemyActs.get(actor.key);
+    const chosen = actor.side === 'party' ? actions[actor.key] : enemyActs.get(actor.key);
+    const act = forgot && chosen ? forgotten(actor, chosen) : chosen;
     const heroUp = s.party.some((c) => c.key === 'hero' && c.alive);
     if (act) {
       // What the mechanics need to see before the action (Rin's living marks: a felled foe leaves them at once).

@@ -152,10 +152,14 @@ export interface Combatant {
   mirrors?: true;
   /** Roster plan B8 (M7): the percent a hit on it lands at while a part or a guard of its stands (syncParts). */
   cut?: number;
+  /** Roster plan B9 (M9): its next turn takes a skill as a plain attack (engine/ailments.ts); gone with that turn. */
+  forget?: true;
+  /** Roster plan B9 (M17): the TP this foe has drained from the party this fight. */
+  drained?: number;
 }
 
 /** Roster plan B3–B4: a foe mechanic's moment in the log (battleLines words it). */
-export type FoeCue = 'flee' | 'steal' | 'wake' | 'reveal' | 'summon' | 'rise' | 'return' | 'vanish' | 'stage' | 'adapt';
+export type FoeCue = 'flee' | 'steal' | 'wake' | 'reveal' | 'summon' | 'rise' | 'return' | 'vanish' | 'stage' | 'adapt' | 'drain' | 'dispel';
 
 /** The aim stacks `a` holds on `t` (Sylvie; 0 for anyone else or any other foe). */
 const aimOn = (a: Combatant, t: Combatant): number => (a.mech?.kind === 'aim' && a.mech.target === t.key ? a.mech.stacks : 0);
@@ -256,6 +260,8 @@ export interface DamageSpec {
   aimPct?: number;
   /** 破甲 (plan 8e): the target's armor and block count for nothing, and no block is rolled. */
   armorBreak?: true;
+  /** Roster plan B9 (M25): percent: damage times 1 + vsPoisoned / 100 against a poisoned target. */
+  vsPoisoned?: number;
 }
 
 /** Enemies crit for a flat 50% more, whatever critDmg they carry. */
@@ -312,6 +318,7 @@ export function hitAmount(a: Combatant, t: Combatant, spec: DamageSpec, r: HitRo
   if (t.boss || t.tint === 'elite') mult *= 1 + ax('eliteDmg') / 100;
   if (spec.execute) mult *= 1 + (spec.execute / 100) * (1 - t.hp / t.max.hp);
   if (spec.wounded && t.hp < t.max.hp) mult *= 1 + spec.wounded / 100;
+  if (spec.vsPoisoned && t.poison) mult *= 1 + spec.vsPoisoned / 100;
   // A crit on Rin's marked foe carries MARK.critSharePct of her crit damage (8d Task 3 ruling 1).
   const marked = a.mech?.kind === 'mark' && a.mech.marks.includes(t.key);
   if (r.crit) mult *= 1 + (a.side === 'enemy' ? ENEMY_CRIT_DMG : (ax('critDmg') * (marked ? MARK.critSharePct : 100)) / 100) / 100;

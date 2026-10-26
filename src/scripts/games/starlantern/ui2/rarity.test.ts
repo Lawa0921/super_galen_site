@@ -186,9 +186,9 @@ describe('ailment colours and words (plan 8b)', () => {
   const entries = [...ailmentMap.matchAll(/([a-z]+): #([0-9a-f]{6})/g)].map((m) => [m[1], m[2]] as const);
   const rgb = (h: string) => [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16));
 
-  it('the stylesheet and the Pixi labels share seven colours, all apart and readable on the window', () => {
+  it('the stylesheet and the Pixi labels share eight colours, all apart and readable on the window', () => {
     expect(entries.map(([k]) => k).sort()).toEqual(Object.keys(AILMENT_FILL).sort());
-    expect(entries).toHaveLength(7);
+    expect(entries).toHaveLength(8);   // roster plan B9 adds 遺忘
     for (const [k, h] of entries) expect(parseInt(h, 16), k).toBe(AILMENT_FILL[k as AilmentShown]);
     const win = scssRgb('slx-win');
     expect(win).toEqual([10, 14, 34]);
@@ -199,7 +199,8 @@ describe('ailment colours and words (plan 8b)', () => {
   });
 
   it('each ailment is a short word with its turns; bleed counts its stacks; poison and freeze have no number', () => {
-    expect(T.ailment).toEqual({ poison: '中毒', sleep: '睡眠', burn: '灼燒', freeze: '凍結', chill: '冰緩', shock: '感電', bleed: '流血' });
+    expect(T.ailment).toEqual({ poison: '中毒', sleep: '睡眠', burn: '灼燒', freeze: '凍結', chill: '冰緩', shock: '感電', bleed: '流血', forget: '遺忘' });
+    expect(T.ailmentChip({ id: 'forget' })).toBe('遺忘');
     expect(T.ailmentChip({ id: 'burn', turns: 3 })).toBe('灼燒3');
     expect(T.ailmentChip({ id: 'sleep', turns: 2 })).toBe('睡眠2');
     expect(T.ailmentChip({ id: 'bleed', stacks: 2, turns: 3 })).toBe('流血×2');
@@ -278,7 +279,7 @@ describe('mechanic colours (plan 8c)', () => {
     }
     // One chip palette: every ailment word and every mechanic word stand apart from each other, across the two maps too.
     const ail = [...(/\$slx-ailment:\s*\(([^)]*)\)/.exec(scss)?.[1] ?? '').matchAll(/([a-z]+): #([0-9a-f]{6})/g)].map((m) => [`ailment ${m[1]}`, m[2]] as const);
-    expect(ail.length).toBe(7);
+    expect(ail.length).toBe(8);   // roster plan B9 adds 遺忘
     const chips = [...entries.map(([k, h]) => [`mech ${k}`, h] as const), ...ail];
     for (const [a, ha] of chips) for (const [b, hb] of chips) {
       if (a < b) expect(deltaE2000(ha, hb), `${a} ${b}`).toBeGreaterThanOrEqual(CHIP_DE);
@@ -294,7 +295,7 @@ describe('mechanic colours (plan 8c)', () => {
     const hex = AFFIX_FILL.toString(16).padStart(6, '0');
     expect(contrast(rgb(hex), scssRgb('slx-win'))).toBeGreaterThanOrEqual(4.5);
     const ail = [...(/\$slx-ailment:\s*\(([^)]*)\)/.exec(scss)?.[1] ?? '').matchAll(/([a-z]+): #([0-9a-f]{6})/g)].map((m) => [`ailment ${m[1]}`, m[2]] as const);
-    expect(ail).toHaveLength(7);
+    expect(ail).toHaveLength(8);   // roster plan B9 adds 遺忘
     for (const [k, h] of [...entries.map(([k, h]) => [`mech ${k}`, h] as const), ...ail]) expect(deltaE2000(hex, h), k).toBeGreaterThanOrEqual(CHIP_DE);
   });
 

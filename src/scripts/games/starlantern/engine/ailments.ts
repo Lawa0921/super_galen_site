@@ -10,7 +10,8 @@ import { credit, lossOf } from './ledger';
 import type { EffectContext } from './skills';
 import type { SecondaryKey, SkillDef } from './types';
 
-export type AilmentId = 'poison' | 'sleep' | 'burn' | 'freeze' | 'shock' | 'bleed';
+/** Roster plan B9 (M9): `forget`, the member's next turn takes a skill as a plain attack (items, ultimates and defending stand). */
+export type AilmentId = 'poison' | 'sleep' | 'burn' | 'freeze' | 'shock' | 'bleed' | 'forget';
 /** What the log and the screen show: a boss's or a party member's freeze is shown as the chill it became. */
 export type AilmentShown = AilmentId | 'chill';
 
@@ -25,7 +26,7 @@ export const AILMENT = {
 export interface Dot { tick: number; turns: number; src: string }
 
 const RES: Partial<Record<AilmentId, SecondaryKey>> = {
-  poison: 'poisonRes', sleep: 'sleepRes', burn: 'fireRes', freeze: 'iceRes', shock: 'thunderRes',
+  poison: 'poisonRes', sleep: 'sleepRes', burn: 'fireRes', freeze: 'iceRes', shock: 'thunderRes', forget: 'sleepRes',
 };
 
 /**
@@ -96,6 +97,8 @@ export function inflictAilment(actor: Combatant, t: Combatant, status: AilmentId
     case 'burn': addBurn(t, { tick: tickOf(hit, AILMENT.burnPct), turns: AILMENT.burnTurns, src: actor.key }); break;
     case 'bleed': addBleed(t, { tick: tickOf(hit, AILMENT.bleedPct), turns: AILMENT.bleedTurns, src: actor.key }); break;
     case 'shock': t.shock = Math.max(t.shock ?? 0, AILMENT.shockTurns); break;
+    // Roster plan B9 (M9): until its next turn; it also breaks a foe's charge, as sleep does.
+    case 'forget': t.forget = true; delete t.winding; break;
     case 'freeze':
       if (t.boss || t.side === 'party') { t.chill = Math.max(t.chill ?? 0, AILMENT.chillTurns); shown = 'chill'; } else {
         t.frozen = true;
@@ -142,12 +145,15 @@ export function ageAilments(c: Combatant): void {
 
 /** Takes off the new ailments: a fall takes everything; a cure keeps the freeze guard (`keepGuard`). Poison and sleep are the caller's. */
 export function clearAilments(c: Combatant, opts: { keepGuard?: boolean } = {}): void {
-  delete c.burn; delete c.bleed; delete c.shock; delete c.frozen; delete c.chill;
+  delete c.burn; delete c.bleed; delete c.shock; delete c.frozen; delete c.chill; delete c.forget;
   if (!opts.keepGuard) delete c.freezeGuard;
 }
 
-/** Every ailment, in the order the words list them (Bobby's 急救 cures the first of them by rank). */
-export const AILMENT_IDS: readonly AilmentId[] = ['poison', 'burn', 'bleed', 'shock', 'freeze', 'sleep'];
+/**
+ * Every ailment, in the order the words list them (Bobby's 急救 cures the first of them by rank). Roster plan B9: `forget`
+ * comes last, so every list cut from the front is what it was.
+ */
+export const AILMENT_IDS: readonly AilmentId[] = ['poison', 'burn', 'bleed', 'shock', 'freeze', 'sleep', 'forget'];
 
 /**
  * Takes off the listed ailments only (Bobby's 急救, plan 8d): a freeze takes its chill with it and leaves the freeze guard,
@@ -162,6 +168,7 @@ export function cureAilments(c: Combatant, ids: readonly AilmentId[]): void {
       case 'bleed': delete c.bleed; break;
       case 'shock': delete c.shock; break;
       case 'freeze': delete c.frozen; delete c.chill; break;
+      case 'forget': delete c.forget; break;
     }
   }
 }
@@ -182,7 +189,7 @@ export function curable(def: SkillDef, c: Combatant): AilmentShown[] {
 /** One ailment as the screen shows it: its rounds left (none for poison and freeze), the bleed's stack count. */
 export interface AilmentChip { id: AilmentShown; turns?: number; stacks?: number }
 
-/** The ailments a combatant holds, in a fixed order: poison, sleep, burn, bleed, shock, freeze, chill. */
+/** The ailments a combatant holds, in a fixed order: poison, sleep, burn, bleed, shock, freeze, chill, forget. */
 export function ailmentChips(c: Combatant): AilmentChip[] {
   const out: AilmentChip[] = [];
   if (c.poison) out.push({ id: 'poison' });
@@ -192,5 +199,6 @@ export function ailmentChips(c: Combatant): AilmentChip[] {
   if (c.shock) out.push({ id: 'shock', turns: c.shock });
   if (c.frozen) out.push({ id: 'freeze' });
   if (c.chill) out.push({ id: 'chill', turns: c.chill });
+  if (c.forget) out.push({ id: 'forget' });
   return out;
 }

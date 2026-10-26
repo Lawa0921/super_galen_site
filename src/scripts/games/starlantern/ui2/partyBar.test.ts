@@ -228,6 +228,18 @@ describe('PartyBar after the oath', () => {
 describe('PartyBar chip icons (art step 9, G4)', () => {
   const loaded = (...urls: string[]) => ({ has: (u: string) => urls.includes(u) });
 
+  it('an ailment without an icon shows its name (roster plan B9: 遺忘 before E1c)', () => {
+    const asked: string[] = [];
+    const bar = new PartyBar({ has: (u: string) => { asked.push(u); return true; } });
+    bar.update([m('noel', 30, { ailments: [{ id: 'forget' }, { id: 'burn', turns: 2 }] })]);
+    const row = bar.el.querySelector<HTMLElement>('[data-key=noel] .slx-pm-ail')!;
+    const word = row.querySelector('.slx-ail-forget')!;
+    expect(word.textContent).toBe(T.ailment.forget);
+    expect(word.querySelector('img')).toBeNull();
+    expect(row.querySelector('.slx-ail-burn img')!.getAttribute('src')).toBe(art.ailmentIcon('burn'));
+    expect(asked).not.toContain(art.ailmentIcon('forget'));
+  });
+
   it("each word whose 14px icon is loaded shows it first, decorative; the word's text is unchanged", () => {
     const bar = new PartyBar(loaded(art.ailmentIcon('burn'), art.mechIcon('heat')));
     bar.update([m('noel', 30, { mech: [{ tone: 'heat', text: '熱度3' }], ailments: [{ id: 'burn', turns: 2 }] }), m('rin', 30, { ailments: [{ id: 'poison' }] })]);

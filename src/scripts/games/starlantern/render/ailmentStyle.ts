@@ -10,6 +10,8 @@ import { T } from '../data/text.zh-TW';
  */
 export const AILMENT_FILL: Record<AilmentShown, number> = {
   poison: 0xb889fe, sleep: 0xc1c5d6, burn: 0xfe8a57, freeze: 0x92ebfd, chill: 0x8ea8fe, shock: 0xffe845, bleed: 0xff5c74,
+  // Roster plan B9: the art-tools PR's colour for 遺忘 (its icon publishes with E1c).
+  forget: 0x8fd9b6,
 };
 
 /** The ink colour of a row's 「+N」 (the folded ailments are not one colour). */
@@ -22,11 +24,12 @@ export const AILMENT_MORE_FILL = 0xf1ead8;
 export const AFFIX_FILL = 0xffccbb;
 
 /**
- * The order a row shows ailments in, most severe first (plan 8b follow-up): what costs a turn (freeze, sleep), then
- * damage every round (bleed, which stacks; burn; poison), then what only shifts numbers (shock, chill). Fixed, so the
- * same ailments always read the same way, and a full row folds the mildest into 「+N」.
+ * The order a row shows ailments in, most severe first (plan 8b follow-up): what costs a turn (freeze, sleep), what costs
+ * the skills of one (forget, roster plan B9), then damage every round (bleed, which stacks; burn; poison), then what only
+ * shifts numbers (shock, chill). Fixed, so the same ailments always read the same way, and a full row folds the mildest
+ * into 「+N」.
  */
-export const AILMENT_SEVERITY: readonly AilmentShown[] = ['freeze', 'sleep', 'bleed', 'burn', 'poison', 'shock', 'chill'];
+export const AILMENT_SEVERITY: readonly AilmentShown[] = ['freeze', 'sleep', 'forget', 'bleed', 'burn', 'poison', 'shock', 'chill'];
 
 export const bySeverity = (chips: readonly AilmentChip[]): AilmentChip[] =>
   [...chips].sort((a, b) => AILMENT_SEVERITY.indexOf(a.id) - AILMENT_SEVERITY.indexOf(b.id));

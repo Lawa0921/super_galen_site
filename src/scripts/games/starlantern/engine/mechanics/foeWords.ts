@@ -22,6 +22,7 @@ export const foeMarks: MechModule = {
     if (e.prism) for (const el of e.weak) out.push(plain(W.weak(T.element[el])));
     if (e.adapted && e.adapted.turns > 0) out.push(plain(W.adapted(T.element[e.adapted.el])));
     if (e.cut !== undefined) out.push(plain(W.cut));   // a body behind its parts (roster plan B8, M7)
+    if (e.drained) out.push(plain(W.drained(e.drained)));   // what a TP thief took (roster plan B9, M17)
     if (e.cover) out.push(plain(W.guarding));
     if (foeGuard(s, e) !== e) out.push(plain(W.guarded));
     if (e.stolen) out.push(plain(W.stolen(e.stolen)));

@@ -61,6 +61,10 @@ const call = (name: string, id: string, max: number | undefined, chance = 0.25):
 /** Plan B4 (M22): it folds a fallen ally back up at 30% HP, once a fight for the whole flock (B1 review item 6). */
 const refold = (name: string, chance: number): EnemySkill => ({ ...sk(name, chance, 'deadAlly', { kind: 'revive', hpPct: 0.3 }), when: 'deadAlly', oncePerFight: true });
 const poison = (chance: number): Effect => ({ kind: 'inflict', status: 'poison', chance });
+/** Plan B9 (M9): the target's next turn takes a skill as a plain attack. */
+const forget = (chance: number): Effect => ({ kind: 'inflict', status: 'forget', chance });
+/** Plan B9 (M17): a hit that drains `n` TP as it lands. */
+const drain = (e: Effect, n: number): Effect => ({ ...e, tpDrain: n } as Effect);
 /** Plan B8 (M6): it strikes back at whoever landed the party's last blow, in that element, at up to `cap` power. */
 const mirror = (name: string, cap: number, chance = 0.3): EnemySkill => sk(name, chance, 'enemy', { kind: 'mirror', cap });
 
@@ -152,7 +156,7 @@ const MAINLINE: [string, Spec][] = [
     skills: [sk('順手牽羊', 0.35, 'enemy', hit(90), steal(5))] }],
   // C 10–15: bells, wardens, hollow ones and paired shadows
   ['tongueless-bell', { name: '無舌鐘', arch: 'caster', mul: { spd: DOWN }, weak: ['ice'], resist: ['thunder'], band: 'C', inscribe: 'tpCost',
-    skills: [sk('無聲的鐘鳴', 0.35, 'row', hit(80, 'thunder'))] }],
+    skills: [sk('無聲的鐘鳴', 0.35, 'row', hit(60, 'thunder'), forget(0.5)), sk('鐘身撞擊', 0.25, 'enemy', hit(110, 'thunder'))] }],
   ['hollow-hunter', { name: '空殼獵人', arch: 'std', weak: ['thunder'], band: 'C', inscribe: 'critDmg', remnant: true,
     skills: [mirror('借來的招式', 150, 0.35), sk('空殼之刃', 0.25, 'enemy', hit(130))] }],
   ['mist-twin', { name: '霧雙子', arch: 'swarm', weak: ['fire'], resist: ['ice'], band: 'C', inscribe: 'multi',
@@ -176,7 +180,7 @@ const MAINLINE: [string, Spec][] = [
   ['ancestor-automaton', { name: '古代機兵', arch: 'heavy', weak: ['thunder'], resist: ['ice'], band: 'D', inscribe: 'meleeDR', lore: 'bobby',
     skills: [sk('齒輪重拳', 0.3, 'enemy', hit(150))] }],
   ['ash-archivist', { name: '灰燼書記', arch: 'caster', weak: ['ice'], band: 'D', inscribe: 'mag',
-    skills: [sk('灰燼之頁', 0.4, 'enemy', hit(130, 'fire'))] }],
+    skills: [sk('抹去', 0.3, 'enemy', { kind: 'dispel' }), sk('灰燼之頁', 0.4, 'enemy', hit(130, 'fire'))] }],
   // E 25–30: wicks, the lantern-bearers, the brood under the lamp
   ['wick-shade', { name: '燭芯之影', arch: 'swarm', weak: ['ice'], resist: ['fire'], band: 'E', inscribe: 'fireRes',
     onFall: { name: '燭爆', target: 'enemies', effects: [hit(40, 'fire')] },
@@ -188,7 +192,7 @@ const MAINLINE: [string, Spec][] = [
   ['sorrow-crystal', { name: '悲傷結晶', arch: 'std', weak: ['phys'], band: 'E', inscribe: 'iceRes', adapt: 3,
     skills: [sk('碎晶', 0.3, 'enemy', hit(120, 'ice', { scale: 'atk' }))] }],
   ['deep-tendril', { name: '燈底之鬚', arch: 'std', weak: ['fire'], resist: ['ice'], band: 'E', inscribe: 'tp',
-    skills: [sk('汲取', 0.35, 'enemy', hit(110))] }],
+    skills: [sk('汲取', 0.35, 'enemy', drain(hit(110), 15))] }],
   // F 31+: lost things, a little brighter
   ['music-box', { name: '走音的音樂盒', arch: 'support', weak: ['phys'], resist: ['thunder'], band: 'F', inscribe: 'wil',
     skills: [sk('搖籃曲', 0.25, 'row', sleep(0.3)), sk('演奏', 0.3, 'allies', heal(30))] }],
@@ -213,7 +217,8 @@ const NATIVE: [string, Spec][] = [
   ['mirage-dancer', { name: '蜃樓舞者', arch: 'std', home: 'blaze', inscribe: 'evasion', lore: 'safira', remnant: true, opener: 'decoy',
     skills: [sk('幻舞', 0.3, 'enemy', hit(120))] }],
   ['sand-scorpion', { name: '沙海蠍', arch: 'std', home: 'blaze', inscribe: 'poisonRes', lore: 'safira',
-    skills: [sk('毒針', 0.35, 'enemy', hit(100), poison(0.5))] }],
+    // M25: the sting bites half again as hard into a member already poisoned.
+    skills: [sk('毒針', 0.35, 'enemy', { ...hit(100), vsPoisoned: 50 } as Effect, poison(0.5))] }],
   // 霜凍之地
   ['frost-doll', { name: '霜人偶', arch: 'heavy', home: 'frost', inscribe: 'iceRes', skills: [sk('冰之守', 0.25, 'ally', guard(2))] }],
   ['glacier-tortoise', { name: '冰河龜', arch: 'heavy', home: 'frost', inscribe: 'def',
@@ -230,7 +235,7 @@ const NATIVE: [string, Spec][] = [
   ['storm-totem', { name: '避雷石柱', arch: 'support', home: 'storm', inscribe: 'thunderRes',
     skills: [sk('引雷', 0.4, 'allies', buff('spd', 30, 3)), sk('雷鳴鼓舞', 0.3, 'allies', buff('atk', 20, 3))] }],
   ['charge-jelly', { name: '蓄電水母', arch: 'caster', home: 'storm', inscribe: 'thunderDmg', skills: [windup(sk('放電', 0.25, 'enemies', hit(90, 'thunder')), '蓄電')] }],
-  ['star-ember', { name: '星屑火', arch: 'caster', home: 'storm', inscribe: 'tpRegen', lore: 'noel', skills: [sk('星火', 0.4, 'enemy', hit(120, 'fire'))] }],
+  ['star-ember', { name: '星屑火', arch: 'caster', home: 'storm', inscribe: 'tpRegen', lore: 'noel', skills: [sk('星火', 0.4, 'enemy', drain(hit(120, 'fire'), 15))] }],
   ['stolen-tome', { name: '飛舞的魔法書', arch: 'caster', home: 'storm', inscribe: 'mag', lore: 'noel',
     skills: [sk('火之頁', 0.25, 'enemy', hit(120, 'fire')), sk('冰之頁', 0.25, 'enemy', hit(120, 'ice')), sk('雷之頁', 0.25, 'enemy', hit(120, 'thunder'))] }],
   // 腐毒沼澤
@@ -245,7 +250,7 @@ const NATIVE: [string, Spec][] = [
   ['mirror-thief', { name: '鏡中竊影', arch: 'std', home: 'shade', inscribe: 'crit', skills: [mirror('鏡擊', 130, 0.35)] }],
   ['veil-stalker', { name: '帷幕潛行者', arch: 'std', home: 'shade', inscribe: 'critDmg', skills: [sk('背刺', 0.3, 'enemy', hit(120, 'phys', { crit: 'always' }))] }],
   ['hush-acolyte', { name: '靜默侍者', arch: 'caster', home: 'shade', inscribe: 'tpCost', lore: 'rin', remnant: true,
-    skills: [sk('靜默', 0.3, 'cross', hit(80, 'ice'))] }],
+    skills: [sk('靜默', 0.3, 'cross', hit(60, 'ice'), forget(0.4)), sk('鈴聲', 0.3, 'enemy', hit(110, 'ice'))] }],
   ['vault-mimic', { name: '餓肚子的寶庫', arch: 'heavy', home: 'shade', inscribe: 'goldFind', lore: 'liz', opener: 'disguise',
     skills: [sk('吞金', 0.3, 'enemy', hit(150), steal(5))] }],
   ['debt-collector', { name: '敲門的影子', arch: 'std', home: 'shade', inscribe: 'vuln', lore: 'liz', remnant: true,
@@ -281,7 +286,7 @@ const WARDENS: [string, Spec][] = [
     skills: [call('喚醒狛犬', 'ice-komainu', 2), sk('寒光', 0.3, 'column', hit(100, 'ice'))] }],
   ['burning-page', { name: '燃燒的那一頁', arch: 'std', rank: 'warden', home: 'storm', lore: 'noel',
     onFall: { name: '最後一頁', target: 'enemies', effects: [{ kind: 'restore', tp: 20 }] },
-    skills: [sk('燃頁', 0.35, 'enemy', hit(120, 'fire', { scale: 'atk' }))] }],
+    skills: [sk('燃頁', 0.35, 'enemy', drain(hit(120, 'fire', { scale: 'atk' }), 15)), sk('灰燼之字', 0.25, 'row', forget(0.4))] }],
   ['grey-elder', { name: '灰化的老樹', arch: 'heavy', rank: 'warden', home: 'mire', lore: 'sylvie',
     skills: [call('長出孢子', 'spore-moth', 2), sk('纏根', 0.3, 'row', buff('spd', -40, 2)), sk('枯枝', 0.3, 'enemy', hit(140))] }],
   ['locked-vault', { name: '鎖著的金庫', arch: 'heavy', rank: 'warden', mul: { def: UPUP }, home: 'shade', lore: 'liz',
@@ -330,7 +335,8 @@ const BOSSES: [string, Spec][] = [
     skills: [windup(sk('天雷俯衝', 0.2, 'enemies', hit(130, 'thunder', { scale: 'atk', melee: true })), '盤旋'), sk('雙爪', 0.3, 'enemy', hit(80, 'phys', { hits: 2 }))] }],
   ['storm-conductor', { name: '雷霆指揮者', arch: 'boss', home: 'storm',
     skills: [sk('指名', 0.25, 'enemy', hunt), sk('連鎖雷', 0.35, 'cross', hit(120, 'thunder')), sk('雷杖', 0.3, 'enemy', hit(160))] }],
-  ['starfire-colossus', { name: '星火巨像', arch: 'boss', home: 'storm', lore: 'noel', skills: pair('星火', 'fire', '巨拳') }],
+  ['starfire-colossus', { name: '星火巨像', arch: 'boss', home: 'storm', lore: 'noel',
+    skills: [sk('星火', 0.35, 'enemies', hit(110, 'fire')), sk('汲星', 0.3, 'enemy', drain(hit(140), 15))] }],
   // 腐毒沼澤
   ['mire-hydra', { name: '腐沼多頭蛇', arch: 'boss', mul: { hp: UP }, home: 'mire',
     skills: [sk('毒霧', 0.35, 'cross', poison(0.6)), sk('多頭撕咬', 0.3, 'enemy', hit(80, 'phys', { hits: 2 }))] }],

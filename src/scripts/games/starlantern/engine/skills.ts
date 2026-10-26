@@ -326,6 +326,15 @@ function shareWound(actor: Combatant, twin: Combatant, n: number, element: Eleme
   if (!twin.alive) ctx.log.push({ type: 'ko', target: twin.key });
 }
 
+/** Roster plan B9 (M17): a landed hit takes up to `n` TP from the target, never below 0; the foe keeps count. No draw. */
+function drainTp(actor: Combatant, target: Combatant, n: number, ctx: EffectContext): void {
+  const took = Math.min(target.tp, n);
+  if (took <= 0) return;
+  target.tp -= took;
+  actor.drained = (actor.drained ?? 0) + took;
+  ctx.log.push({ type: 'foe', actor: actor.key, cue: 'drain', target: target.key, amount: took });
+}
+
 /** A landed hit unmasks a foe in disguise (roster plan B3, M14): its own name comes back. */
 function unmask(t: Combatant, ctx: EffectContext): void {
   if (t.disguised === undefined) return;
@@ -367,6 +376,7 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
         if (!target.alive) ctx.log.push({ type: 'ko', target: target.key });
         if (twin) shareWound(actor, twin, full - amount, eff.element, ctx);
         adaptTo(target, eff.element, ctx.log);   // the first element to land on a foe that adapts (roster plan B7, M16)
+        if (eff.tpDrain) drainTp(actor, target, eff.tpDrain, ctx);   // a TP thief (roster plan B9, M17)
         onLandedHit(actor, target, ctx);
         // Her runes on this hit (plan 8e): absent fields do nothing and draw nothing.
         runeHit(actor, target, eff, crit, hpBefore - target.hp, ctx);
@@ -579,6 +589,15 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
       purse.gold -= n;
       actor.stolen = (actor.stolen ?? 0) + n;
       ctx.log.push({ type: 'foe', actor: actor.key, cue: 'steal', target: target.key, amount: n });
+      return;
+    }
+    case 'dispel': {
+      // Roster plan B9 (M15): every buff moves to the foe, for the rounds it had left; debuffs, auras and wards stay. No draw.
+      const taken = target.alive ? target.buffs.filter((b) => b.pct > 0) : [];
+      if (!taken.length) return;
+      target.buffs = target.buffs.filter((b) => b.pct <= 0);
+      for (const b of taken) addBuff(actor, { stat: b.stat, pct: b.pct, turns: b.turns, src: actor.key });
+      ctx.log.push({ type: 'foe', actor: actor.key, cue: 'dispel', target: target.key });
       return;
     }
     case 'hunt': {

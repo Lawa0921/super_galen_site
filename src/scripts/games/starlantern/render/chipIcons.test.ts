@@ -1,18 +1,21 @@
 import { describe, expect, it } from 'vitest';
 import { T } from '../data/text.zh-TW';
 import { SKILLS } from '../data/skills';
-import { ART_BASE, allArtUrls, art } from './artPaths';
+import { AILMENT_ICON_IDS, ART_BASE, allArtUrls, art } from './artPaths';
 import { AILMENT_FILL } from './ailmentStyle';
-import { CHIP_ICON_PX, MECH_ICON_KEYS, ailmentIconUrl, mechIconUrls } from './chipIcons';
+import { CHIP_ICON_PX, MECH_ICON_KEYS, ailmentIconUrl, ailmentIconUrls, mechIconUrls } from './chipIcons';
 
 describe('chip icons (art step 9, G4)', () => {
-  it('every ailment shown has its 14px icon, and every icon url is in allArtUrls', () => {
+  it('every ailment shown has its 14px icon, and every published icon url is in allArtUrls', () => {
     expect(CHIP_ICON_PX).toBe(14);
     const urls = new Set(allArtUrls());
     for (const id of Object.keys(AILMENT_FILL) as (keyof typeof AILMENT_FILL)[]) {
       expect(ailmentIconUrl(id)).toBe(`${ART_BASE}/icon/ail-${id}-14.png`);
-      expect(urls.has(ailmentIconUrl(id)), id).toBe(true);
+      expect(urls.has(ailmentIconUrl(id)), id).toBe(AILMENT_ICON_IDS.includes(id));
+      expect(ailmentIconUrls(id), id).toEqual(AILMENT_ICON_IDS.includes(id) ? [ailmentIconUrl(id)] : []);
     }
+    // Roster plan B9 (ruling 22): only 遺忘's icon waits, for E1c; until then its word asks for no picture.
+    expect(Object.keys(AILMENT_FILL).filter((id) => !AILMENT_ICON_IDS.includes(id as keyof typeof AILMENT_FILL))).toEqual(['forget']);
     for (const k of MECH_ICON_KEYS) expect(urls.has(art.mechIcon(k)), k).toBe(true);
   });
 

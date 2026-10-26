@@ -15,7 +15,7 @@ import { MECH_FILL } from './mechStyle';
 import type { MechCue, MechTone, MechWord } from '../engine/mechanics/index';
 import type { TextureBank } from './textures';
 import { pixelText } from './pixelText';
-import { CHIP_ICON_PX, CHIP_ICON_W, ailmentIconUrl, mechIconUrls } from './chipIcons';
+import { CHIP_ICON_PX, CHIP_ICON_W, ailmentIconUrls, mechIconUrls } from './chipIcons';
 
 
 /** Colours of regional variants: the element's for fire, ice and thunder; by region for the element-less ones. */
@@ -605,7 +605,7 @@ export class BattleView {
       // `cls` and `urls`: the same word as the DOM draws it, for the list a tapped +N opens (touch overflow).
       type W = { text: string; fill: number; icons: Texture[]; cls: string; urls: string[] };
       const loaded = (urls: string[]) => urls.flatMap((u) => { const t = this.bank?.get(u); if (!t && this.bank) missing.add(u); return t ?? []; });
-      const ofChip = (c: AilmentChip): W => ({ text: T.ailmentChip(c), fill: AILMENT_FILL[c.id], icons: loaded([ailmentIconUrl(c.id)]), cls: `slx-ail slx-ail-${c.id}`, urls: [ailmentIconUrl(c.id)] });
+      const ofChip = (c: AilmentChip): W => ({ text: T.ailmentChip(c), fill: AILMENT_FILL[c.id], icons: loaded(ailmentIconUrls(c.id)), cls: `slx-ail slx-ail-${c.id}`, urls: ailmentIconUrls(c.id) });
       const ofWord = (x: MechWord): W => ({ text: x.text, fill: MECH_FILL[x.tone], icons: loaded(mechIconUrls(x)), cls: `slx-mech slx-mech-${x.tone}`, urls: mechIconUrls(x) });
       const wide = (w: W) => ailLabelWidth(w.text) + CHIP_ICON_W * w.icons.length;
       const halting = chips.filter(isHalting);

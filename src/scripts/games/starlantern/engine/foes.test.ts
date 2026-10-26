@@ -11,7 +11,8 @@ import { applyEffect } from './skills';
 import { T } from '../data/text.zh-TW';
 import { ENEMIES } from '../data/enemies';
 import type { Effect, EnemyDef, EnemySkill } from './types';
-import type { Combatant } from './combatant';
+import type { BattleEvent, Combatant } from './combatant';
+import { AILMENT_IDS, ailmentChance, ailmentChips, cureAilments } from './ailments';
 
 /** Roster plan B2–B4 (spec §6.2): the foes' mechanics, each named as the spec's test duties name it. */
 
@@ -950,5 +951,117 @@ describe('M18 mimic (roster plan B8)', () => {
     const deep = createBattle({ party: fullParty(LEGACY_LINEUP), enemyIds: ['lost-shadow'], inventory: {}, revealed: {}, scale: { depth: 20, region: 'mainline', elite: 'lost-shadow' } });
     const top = deep.party.reduce((a, b) => (b.max.atk > a.max.atk ? b : a));
     expect(deep.enemies[0].max.atk).toBeGreaterThan(Math.round(top.max.atk * 0.6));
+  });
+});
+
+describe('M9 forget (roster plan B9)', () => {
+  const lost = (over: Partial<Combatant> = {}) =>
+    makeBattle([P('scarlet', { forget: true, tp: 50, max: { hp: 9999, tp: 50 } as never, ...over })], [E('e0', { max: { hp: 9999 } as never })], { inventory: { potion: 1 } });
+
+  it('attacks instead of casting', () => {
+    const r = resolveRound(lost(), { scarlet: { kind: 'skill', skill: 'fire-star', target: 'e0' } }, constRng(0.5));
+    expect(acted(r, 'scarlet')).toEqual(['攻擊']);
+    expect(r.log.find((e) => e.type === 'damage' && e.target === 'e0')).toMatchObject({ element: 'phys' });
+    expect(r.party[0].tp).toBe(50);   // nothing was paid
+    // It lasts her one turn.
+    expect(r.party[0].forget).toBeUndefined();
+    const r2 = resolveRound(r, { scarlet: { kind: 'skill', skill: 'fire-star', target: 'e0' } }, constRng(0.5));
+    expect(acted(r2, 'scarlet')).toEqual(['火之星彈']);
+  });
+
+  it('items and ultimates still work', () => {
+    const item = resolveRound(lost({ hp: 10 }), { scarlet: { kind: 'item', item: 'potion', target: 'scarlet' } }, constRng(0.5));
+    expect(acted(item, 'scarlet')).toEqual(['回復藥']);
+    const ult = resolveRound(lost({ limit: 100 }), { scarlet: { kind: 'ultimate', target: 'e0' } }, constRng(0.5));
+    expect(ult.log.some((e) => e.type === 'act' && e.actor === 'scarlet' && e.ultimate)).toBe(true);
+    const guard = resolveRound(lost(), { scarlet: { kind: 'defend' } }, constRng(0.5));
+    expect(acted(guard, 'scarlet')).toEqual(['防禦']);
+  });
+
+  it('a foe that forgets attacks plainly too', () => {
+    const s = makeBattle([P('scarlet', { max: { hp: 9999 } as never })], [E('e0', { forget: true })], { enemyDefs: { e0: def([{ name: '大招', chance: 1, target: 'enemies', effects: [hit(300)] }]) } });
+    s.intents = { e0: { kind: 'enemy-skill', index: 0 } };
+    expect(acted(resolveRound(s, defend(s), constRng(0.5)), 'e0')).toEqual(['攻擊']);
+  });
+
+  it('cure clears forget', () => {
+    const s = lost();
+    const ctx = { rng: constRng(0.5), itemBoost: false, revealed: {}, log: [], battle: s };
+    applyEffect(s.party[0], s.party[0], { kind: 'cure' }, ctx);
+    expect(s.party[0].forget).toBeUndefined();
+    expect(ailmentChips(lost().party[0])).toEqual([{ id: 'forget' }]);
+  });
+
+  it("Bobby's first aid still cures in its old order", () => {
+    expect(AILMENT_IDS).toEqual(['poison', 'burn', 'bleed', 'shock', 'freeze', 'sleep', 'forget']);
+    // A cure of the old six leaves a forget alone; the whole list takes it.
+    const c = P('bobby', { forget: true, poison: true });
+    cureAilments(c, AILMENT_IDS.slice(0, 6));
+    expect([c.poison, c.forget]).toEqual([false, true]);
+    cureAilments(c, AILMENT_IDS);
+    expect(c.forget).toBeUndefined();
+  });
+
+  it('a boss halves it, and sleepRes resists it', () => {
+    expect(ailmentChance(E('e0', { boss: true }), 'forget', 0.5)).toBeCloseTo(0.25, 12);
+    expect(ailmentChance(P('noel', { x: { sleepRes: 40 } }), 'forget', 0.5)).toBeCloseTo(0.3, 12);
+    // It lands with one draw, and logs as an ailment.
+    const s = lost({ forget: undefined });
+    const ctx = { rng: constRng(0), itemBoost: false, revealed: {}, log: [] as BattleEvent[], battle: s };
+    applyEffect(s.enemies[0], s.party[0], { kind: 'inflict', status: 'forget', chance: 0.5 }, ctx);
+    expect(s.party[0].forget).toBe(true);
+    expect(ctx.log).toContainEqual({ type: 'status', target: 'scarlet', status: 'forget' });
+  });
+});
+
+describe('M17 TP thieves (roster plan B9)', () => {
+  it('tp never below zero', () => {
+    const s = makeBattle([P('scarlet', { tp: 5, max: { hp: 9999 } as never })], [E('e0')], { enemyDefs: { e0: def([{ name: '汲取', chance: 1, target: 'enemy', effects: [{ ...hit(50), tpDrain: 15 } as Effect] }]) } });
+    s.intents = { e0: { kind: 'enemy-skill', index: 0, target: 'scarlet' } };
+    const r = resolveRound(s, defend(s), constRng(0.5));
+    expect(r.party[0].tp).toBe(0);
+    expect(r.enemies[0].drained).toBe(5);
+    expect(r.log).toContainEqual({ type: 'foe', actor: 'e0', cue: 'drain', target: 'scarlet', amount: 5 });
+    // A full pool loses the whole share.
+    const full = makeBattle([P('scarlet', { tp: 40, max: { hp: 9999, tp: 40 } as never })], [E('e0')], { enemyDefs: s.enemyDefs });
+    full.intents = s.intents;
+    expect(resolveRound(full, defend(full), constRng(0.5)).party[0].tp).toBe(25);
+  });
+});
+
+describe('M25 poison hunters (roster plan B9)', () => {
+  it('only against the poisoned', () => {
+    const sting = (poisoned: boolean) => {
+      const s = makeBattle([P('scarlet', { poison: poisoned, max: { hp: 9999 } as never })], [E('e0')], { enemyDefs: { e0: def([{ name: '毒針', chance: 1, target: 'enemy', effects: [{ ...hit(100), vsPoisoned: 50 } as Effect] }]) } });
+      s.intents = { e0: { kind: 'enemy-skill', index: 0, target: 'scarlet' } };
+      return (resolveRound(s, { scarlet: { kind: 'attack', target: 'e0' } }, constRng(0.5)).log.find((e) => e.type === 'damage' && e.target === 'scarlet') as { amount: number }).amount;
+    };
+    const plain = sting(false), poisoned = sting(true);
+    expect(Math.abs(poisoned / plain - 1.5)).toBeLessThan(0.05);
+    expect(ENEMIES['sand-scorpion'].skills.some((k) => k.effects.some((e) => e.kind === 'damage' && e.vsPoisoned === 50))).toBe(true);
+  });
+});
+
+describe('M15 buff thieves (roster plan B9)', () => {
+  it('moves buffs and leaves debuffs, auras and wards', () => {
+    const m = P('scarlet', {
+      buffs: [{ stat: 'atk', pct: 30, turns: 3, src: 'noel' }, { stat: 'def', pct: -20, turns: 2 }, { stat: 'spd', pct: 10, turns: 1 }],
+      auras: [{ stat: 'res', pct: 15, turns: 0 }], ward: { def: 20, res: 20, src: 'chizuru' },
+    });
+    const foe = E('e0', { buffs: [{ stat: 'atk', pct: 10, turns: 1 }] });
+    const log: BattleEvent[] = [];
+    applyEffect(foe, m, { kind: 'dispel' }, { rng: constRng(0.5), itemBoost: false, revealed: {}, log });
+    // Her debuff stays; her aura and the barrier's ward are not buffs.
+    expect(m.buffs).toEqual([{ stat: 'def', pct: -20, turns: 2 }]);
+    expect(m.auras).toEqual([{ stat: 'res', pct: 15, turns: 0 }]);
+    expect(m.ward).toEqual({ def: 20, res: 20, src: 'chizuru' });
+    // The foe has them now as its own (the stronger atk replacing its weaker one), for the rounds they had left.
+    expect(foe.buffs).toEqual([{ stat: 'atk', pct: 30, turns: 3, src: 'e0' }, { stat: 'spd', pct: 10, turns: 1, src: 'e0' }]);
+    expect(log).toContainEqual({ type: 'foe', actor: 'e0', cue: 'dispel', target: 'scarlet' });
+    // Nothing to take: nothing happens, and nothing is said.
+    const bare = P('noel');
+    const quiet: BattleEvent[] = [];
+    applyEffect(foe, bare, { kind: 'dispel' }, { rng: constRng(0.5), itemBoost: false, revealed: {}, log: quiet });
+    expect(quiet).toEqual([]);
   });
 });

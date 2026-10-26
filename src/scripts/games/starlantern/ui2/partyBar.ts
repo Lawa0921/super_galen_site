@@ -5,7 +5,7 @@ import type { Row } from '../engine/types';
 import type { AilmentChip } from '../engine/ailments';
 import type { MechWord } from '../engine/mechanics/index';
 import { bySeverity, fitRow, isHalting, textWidth } from '../render/ailmentStyle';
-import { CHIP_ICON_PX, CHIP_ICON_W, ailmentIconUrl, mechIconUrls } from '../render/chipIcons';
+import { CHIP_ICON_PX, CHIP_ICON_W, ailmentIconUrls, mechIconUrls } from '../render/chipIcons';
 import type { ArtIndex } from '../render/textures';
 import { anyLanded, noteMissing } from './lateArt';
 import { moreTrigger, type MorePopover } from './morePopover';
@@ -210,7 +210,7 @@ export class PartyBar {
     const chips = bySeverity(m.ailments ?? []);
     const halting = chips.filter(isHalting);
     const art = noteMissing(this.art, (p.rowWait = new Set()));
-    const ailWord = (c: AilmentChip) => chipWord(art, `slx-ail slx-ail-${c.id}`, T.ailmentChip(c), [ailmentIconUrl(c.id)]);
+    const ailWord = (c: AilmentChip) => chipWord(art, `slx-ail slx-ail-${c.id}`, T.ailmentChip(c), ailmentIconUrls(c.id));
     const words = [
       ...halting.map(ailWord),
       ...(m.mech ?? []).map((x) => chipWord(art, `slx-mech slx-mech-${x.tone}`, x.text, mechIconUrls(x))),

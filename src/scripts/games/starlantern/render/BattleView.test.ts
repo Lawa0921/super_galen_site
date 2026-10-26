@@ -508,6 +508,18 @@ describe('BattleView enemy status', () => {
     expect(view.intentText('e0')).toBe('');
   });
 
+  it('an ailment without an icon shows its name, and its picture is never asked for (roster plan B9)', () => {
+    const asked: string[] = [];
+    const spy = { get: (u: string) => { asked.push(u); return u.includes('/icon/') ? Texture.WHITE : Texture.WHITE; }, has: () => true } as unknown as TextureBank;
+    const view = new BattleView(true, spy);
+    view.setup(battle([]), { width: 640, height: 360 }, 1);
+    view.showAilments({ e0: [{ id: 'forget' }, { id: 'burn', turns: 2 }] });
+    expect(view.ailmentTexts('e0').map((t) => t.text)).toEqual([T.ailment.forget, '灼燒2']);
+    expect(view.ailmentTexts('e0')[0].style.fill).toBe(AILMENT_FILL.forget);
+    expect(asked).toContain(art.ailmentIcon('burn'));
+    expect(asked).not.toContain(art.ailmentIcon('forget'));
+  });
+
   it('showAilments draws one coloured label per ailment above the head, most severe first, and replaces them', () => {
     const view = new BattleView(true, bank);
     view.setup(battle([]), { width: 640, height: 360 }, 1);

@@ -37,7 +37,9 @@ export type Effect =
    * `lift` (battle only, plan 8h ruling 11e): a 同步 lifted this power; `by` gave it, `from` is the power before it.
    */
   | { kind: 'damage'; power: number; element: Element; scale: 'atk' | 'mag'; melee: boolean; hits?: number; crit?: 'always'; execute?: number; wounded?: number; scatter?: true; aimPct?: number;
-      onHit?: { status: AilmentId; chance: number }[]; aftermath?: true; armorBreak?: true; drainPct?: number; tpPerHit?: number; lift?: Lift }
+      onHit?: { status: AilmentId; chance: number }[]; aftermath?: true; armorBreak?: true; drainPct?: number; tpPerHit?: number; lift?: Lift;
+      /** Roster plan B9: `tpDrain`, each landed hit takes that much TP from the target, never below 0 (M17); `vsPoisoned`, percent more on a poisoned target (M25). */
+      tpDrain?: number; vsPoisoned?: number }
   /** `overflowPct`: what the heal spills past max HP becomes a shield, up to this percent of max HP (the hero's 滿溢, plan 8d). */
   | { kind: 'heal'; power: number; overflowPct?: number; lift?: Lift }
   | { kind: 'restore'; hp?: number; tp?: number }
@@ -116,7 +118,9 @@ export type Effect =
    * Roster plan B8 (M6): the foe strikes back at whoever landed the party's last blow, in that blow's element, at its power
    * up to `cap`, with its own numbers; with no such blow on record (or its caster down) it is a plain attack.
    */
-  | { kind: 'mirror'; cap: number };
+  | { kind: 'mirror'; cap: number }
+  /** Roster plan B9 (M15): the foe takes every buff off the target (never a debuff, an aura or a ward) and wears it itself. */
+  | { kind: 'dispel' };
 /**
  * A skill's part in its owner's mechanic: `release` spends Chizuru's barrier for power; `coin-power` and `coin-hits` spend
  * Liz's coins for power or for hits; `consume-aim` spends Sylvie's aim for power; `ember-power` spends Scarlet's embers
