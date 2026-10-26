@@ -54,7 +54,7 @@
 | §6 機制 M1–M28 | 多處撞名 | 見下方「機制對照」 | 裁定 9。 |
 | §7.1 招牌素材與戰利品 | 部分過時 | `MaterialKind` 沒有 `trophy`（`engine/types.ts:226`）；`MATERIALS` 22 種（`data/data.test.ts:35`）；`engine/forge/uses.test.ts:13-15` 要求每個非 junk 素材都有鍛造用途 | 決定：加 `trophy` 與 `keepsake` 兩種（裁定 12）；資料一進來就帶「銘刻」「製作」用途（A3）。 |
 | §7.2 銘文 | ✓（要補一條） | 星輝要求全部詞綴頂值（`engine/loot/item.ts:52-61`） | 決定：只在**非特殊**裝備（普通到史詩）上銘刻；星輝只出現在特殊裝備，所以不衝突。 |
-| §7.3 專屬獨特 | 部分過時 | `pickSpecial` 的池子由 `SPECIAL_LIST` 篩出（`data/gear.ts:185`、`engine/loot/drops.ts:132-146`）；放進去會改變既有掉落；`bossKills` 以 `難度:地區:深度` 為鍵（`engine/tiers.ts:68-70`），不是敵人 id | 決定：專屬獨特帶 `owner`、`region: null`，不進任何 `pickSpecial` 池、沒有剪影；製作的「先擊倒過」讀圖鑑的 `felled`（裁定 14、15）。 |
+| §7.3 專屬獨特 | 部分過時 | `pickSpecial` 的池子由 `SPECIAL_LIST` 篩出（`data/gear.ts:185`、`engine/loot/drops.ts:132-146`）；放進去會改變既有掉落；`bossKills` 以 `地區:深度` 為鍵（普通以上的難度再加前綴，`engine/tiers.ts:68-70`），不是敵人 id | 決定：專屬獨特帶 `owner`、`region: null`，不進任何 `pickSpecial` 池、沒有剪影；製作的「先擊倒過」讀圖鑑的 `felled`（裁定 14、15）。 |
 | §7.4 送禮 | 過時 | `GIFTABLE` 已由 `kind` 推導（`data/story/bond.ts:64-69`），新的 `monster` 素材會自動變成可送、普通 +1；`trophy` 不可送；`GIFT_LINES` 以素材為鍵（`data/bond.zh-TW.ts:18-24`）；`data/story/bond.test.ts:15-23` 釘死 18 種 | 裁定 13。 |
 | §7.5 串流與鹽 | 過時 | 八個 SHA-256 初始字全部已用（`run.ts:99`、`:101`，`tiers.ts:15`，`drops.ts:34`、`:186`，`memories.ts:27`，`fragments.ts:100`，`runes.ts:18`）；另有 `FORGE_SALT 0x2f6b1d3a`、`0x5bd1e995`、`0x27d4eb2f`、`0xe11e`、`0x2545f491` | 決定：`WARDEN_SALT = 0x428a2f98`、`TROPHY_SALT = 0x71374491`（SHA-256 的前兩個輪常數）；不需要 `AFFIX_SALT`。 |
 | §8 遇敵組成 | ✓ | `data/floors.ts:5`、`:20`、`:35` 每層只有 3–4 組 | — |
@@ -90,7 +90,7 @@
 | M18 模仿 | 新 | `createBattle` 的倍率鏈（`battle.ts:211-217`） | `EnemyDef.mimic?: number` |
 | M19 幻影 | 新（要 M4） | — | `opener: 'decoy'` |
 | M20 傷害平分 | 新 | — | `EnemyDef.shareWith?: string` |
-| M21 再生 | 撞名 | 符文 `regen`、`tpRegen`（`battle.ts:696-704`） | `EnemyDef.mend?: { pct; stopBy? }` |
+| M21 再生 | 撞名 | 關鍵天賦 `regen`（`c.keystones.includes('regen')`）與 `tpRegen`（`battle.ts:696-704`） | `EnemyDef.mend?: { pct; stopBy? }` |
 | M22 重新站起 | 撞名 | `Effect revive`（`engine/types.ts:43`）；`deadAlly` 目標已能用，但只看機率（`engine/skills.ts:393-398`） | 自己：`EnemyDef.rise?: { pct }`；替同伴：既有 `revive`＋新的 `EnemySkill.when?: 'deadAlly'` |
 | M23 冰封 | 撞名 | `frozen` 是凍結異常（`combatant.ts:73-74`） | `opener: 'encased'`、`Combatant.encased` |
 | M24 宣告標記 | 撞名 | `mark` 是凜的機制（`engine/types.ts:66`、`engine/skills.ts:449-457`） | `Effect { kind: 'hunt' }`；我方嘲諷優先（`forcedTarget` 的順序 `battle.ts:423-424`） |
@@ -105,13 +105,19 @@
 
 spec 已核准（2026-10-26，控制者依使用者授權）。下面是 spec 沒寫、或因對照報告改掉的細節，全部是「設計者裁定」，同時抄進 spec §0。
 
-1. **分期與 PR**。照「分期與 PR」表的順序；同一個 PR 內的任務依編號執行。E 系列（美術）和 B、C 沒有檔案衝突，可以並行；但 E1 發布之前 D 必須已合併。L 系列一定在對應的 E 合併之後。每個 PR 的第一個任務錄自己的 `gate-0`（從開工時的 `origin/master`）。
-2. **檔名**：`data/monsters.ts`（開關、表、`bossFor`、`wardenFor`、`bandOf`）、`data/monsters.test.ts`、`data/enemies.roster.ts`、`data/materials.roster.ts`、`data/gear.roster.ts`、`data/bestiary.zh-TW.ts`、`data/bestiary.test.ts`、`engine/bestiary.ts`、`engine/foes.ts`（敵方機制的純函式）、`engine/balance.roster.test.ts`、`engine/tierBands.roster.test.ts`、`art-factory/starlantern/tools/roster_art.py`、`review_roster.py`、`test_roster_art.py`。`data/*.roster.ts` 會被 `render/gearArt.test.ts:27` 的 glob 自動排除，這正是 5d 補遺 S6 的設計。
+1. **分期與 PR**。照「分期與 PR」表的順序；同一個 PR 內的任務依編號執行。開工條件：
+   - B1、D 要 A 已合併；B2 要 B1；C 要 B2（C 的掉落與圖鑑會讀 B 的 `left`、`summoned`）。
+   - E 系列的**生成與審核**可以在 D 合併之後和 B、C 並行（只動 `art-factory/` 與暫存區）；E1 的**發布**（E1c）要 A、D、B2 已合併（`forget` 的圖示要 B9 的型別）。E2–E4 的發布要前一個 E 已合併。
+   - L1 要 A、B1、B2、C、E1 都已合併（機制、第 22 項、圖鑑註冊表都要在）；L2–L4 要對應的 E 與前一個 L 已合併。
+   - `data/monsters.ts`、`data/monsters.test.ts`、`render/artPaths.test.ts` 會被 A、B11、C1、D4、每個 E 與 L 改：後合併的 rebase 之後重跑全套，總數照當下實際值重算。
+   - 每個 PR 的第一個任務錄自己的 `gate-0`（從開工時的 `origin/master`）。
+2. **檔名**：`data/monsters.ts`（開關、表、`bossFor`、`wardenFor`、`bandOf`）、`data/monsters.test.ts`、`data/enemies.roster.ts`、`data/materials.roster.ts`、`data/gear.roster.ts`、`data/bestiary.zh-TW.ts`、`data/bestiary.test.ts`、`engine/bestiary.ts`、`engine/foes.ts`（敵方機制的純函式）、`engine/balance.roster.test.ts`、`engine/tierBands.roster.test.ts`、`art-factory/starlantern/tools/roster_art.py`、`review_roster.py`、`test_roster_art.py`。`render/gearArt.test.ts:27` 的 glob 會載入 `data/*.roster.ts`，把裡面的 id 從 5d 的交叉檢查扣掉（5d 補遺 S6 的設計），所以名冊的圖示與裝備圖由本計畫自己的測試（D4 的 `every art id is published`）守。
 3. **開關的讀法**（spec §11.1）：
    - `ROSTER_ART`、`ROSTER_LIVE` 在 `data/monsters.ts`，一開始都是空的；`ROSTER_LIVE ⊆ ROSTER_ART`（測試）。
    - `listedEnemy(id)` = 舊 id（`LEGACY_ENEMY_IDS`，今天的 10 個）或 `ROSTER_LIVE.has(id)`；`artEnemy(id)` = 舊 id 或 `ROSTER_ART.has(id)`。
    - 素材與專屬獨特跟著它的主人：`ownerOf(mat)`／`SpecialDef.owner`；`artMaterial(id)` = 舊素材或主人在 `ROSTER_ART`。
-   - 讀列表的地方全部改用這些函式：`NORMAL_ENEMIES`（`engine/scaling.ts:270`）、手冊（`engine/story/handbook.ts:121`）、`allArtUrls` 的敵人、素材、裝備三個迴圈（`render/artPaths.ts:230`、`:239`、`:248`）、`encounterTable`、`bossFor`、`wardenFor`、專屬獨特的替換。**查詢**（`ENEMIES[id]`、`MATERIALS[id]`、`SPECIALS[id]`）不受影響。
+   - `NORMAL_ENEMIES`（`engine/scaling.ts:270`）改成 `listedEnemy(id) && !boss && !story && !rank`：守關者與部件不是一般怪。
+   - 讀列表的地方全部改用這些函式：`NORMAL_ENEMIES`、手冊（`engine/story/handbook.ts:121`）、`allArtUrls` 的敵人、素材、裝備三個迴圈（`render/artPaths.ts:230`、`:239`、`:248`）、`encounterTable`、`bossFor`、`wardenFor`、專屬獨特的替換。**查詢**（`ENEMIES[id]`、`MATERIALS[id]`、`SPECIALS[id]`）不受影響。
 4. **取消 spec §5.7 的「飽食個體」（M12）與 22e**。難度系統已經讓噩夢、地獄的菁英與頭目帶詞綴，普通難度「不走新分支」是難度系統的契約；第二套詞綴會撞名、撞種子、在名字下方疊兩種標籤。spec §5.8 的懸賞接口改指向 `rollAffixes`（純函式，以位置為鍵，懸賞板可以預先算）。
 5. **新頭目與守關者在高難度**：新頭目（`boss: true`）照舊吃頭目詞綴（以深度為鍵，`engine/game.ts:1652`）、`bossHp`／`bossAtk`；部件不是 `boss`，不吃詞綴；守關者走菁英路徑，吃菁英詞綴（以格子為鍵）。`tierBands.ts`、`buildBands.ts`、`parity.ts`、`balance.test.ts:191`、`balance.lineups.test.ts:81` 寫死的 `lanterneater` **保留**當參考；真正遇到的新頭目由 22b（普通）與 22j（高難度）量。
 6. **「故事怪物」不用 `story` 欄位**。`story: true` 的意思是劇情戰的敵人（`scarlet-foe`）：不隨機出現、保留自己的弱點。名冊用兩個新欄位：`lore?: CharacterId`（和哪位夥伴的過去有關，給圖鑑與送禮用）與 `remnant?: true`（人的殘影：倒下的戰鬥紀錄寫「〇〇散成了霧」，不寫倒下）。`remnant` 的物種：`bell-watcher`、`bell-warden`、`hush-acolyte`、`hollow-hunter`、`hollow-champion`、`keeper-echo`、`mirage-dancer`、`mirage-lead`、`frozen-pilgrim`、`debt-collector`、`fallen-knight`、`banner-bearer`、`last-commander`。
@@ -121,11 +127,12 @@ spec 已核准（2026-10-26，控制者依使用者授權）。下面是 spec �
    - **M27 停針 → 遲滯**：難度系統已裁定「我方永遠不會失去整回合」，所以 `stopped-clock` 的「停針」改成對一名隊員施加既有的 `delay`（下一回合最後行動）並 spd −30% 1 回合；不能連兩回合對同一人（`Combatant.delayedBy` 記錄）。
    - **M28 吞入**：被吞的隊員**照常行動**，但單體行動只能打施放者（「從裡面打」，傷害 ×1.5）、範圍技只打得到施放者；敵人選不到他、隊友補不到他（道具與自己的技能可以）；每回合結束受中毒傷害；對施放者累積造成 15% 最大 HP 或過了 1 回合就吐出；全隊最後一個站著的人不會被吞。
 10. **守關者戰**：
-    - 地圖：`Content.kind` 加 `'warden'`；`floorOf` 在 owner 微光的迴圈之後，用 `mulberry32(seed ^ WARDEN_SALT)` 呼叫 `placeSpecial`；條件 `d ≥ 8`、`d % 5 === 3`、不是頭目層、`wardenFor(region, d)` 已上線。地圖格沿用精英的事件地磚（`EventTileKey 'elite'`，不需要新美術）。
+    - 地圖：`Content.kind` 與地圖的 `Tile` 都加 `'warden'`（不可以重用 `'elite'`：`move` 會把 `'elite'` 送去 `eliteGroup`，`engine/game.ts:358`）；`floorOf` 在 owner 微光的迴圈之後，用 `mulberry32(seed ^ WARDEN_SALT)` 呼叫 `placeSpecial`；條件 `d ≥ 8`、`d % 5 === 3`、不是頭目層、`wardenFor(region, d)` 已上線。`'warden'` 格**畫**精英的事件地磚（`EventTileKey 'elite'`，不需要新美術）。
     - 戰鬥：`startBattle(group, false, true, group[0], 0, { warden: true })`。數值與報酬走精英路徑（`ELITE`、`ELITE_REWARD`、`battleGear` 的精英分支、`battleRunes` 的精英列、菁英詞綴）；**不呼叫** `pieceDrops`、`lootFragments`（spec §8.3：守關者不給記憶碎片）；同隊好感照精英給（`FIELD_POINTS.strong`）。
     - 打倒後那一格變地板、這趟不再出現（照 `eliteAt` 的做法）。
     - 組：`WARDEN_GROUPS`（`data/monsters.ts`），守關者單獨或帶 1 隻護衛。
-11. **`bossFor(region, depth): string[]`**：本道第 3 層與終幕照舊在 `bossFor` 之前處理（`engine/game.ts:338-342`）；本道 5 的倍數 `MAINLINE_BOSSES[(d/5 − 1) % 10]`；地區 `REGION_BOSSES[r][(d/5 − 1) % 3]`；那隻還沒上線就回 `['lanterneater']`。多部位回傳 `['old-city-archon', 'archon-hand', 'archon-hand']`、`['rime-sovereign', 'rime-pillar', 'rime-pillar']`。部件 `rank: 'part'`，等級跟本體的家鄉（`BOSS_HOME`），exp 30、gold 0、無掉落、不進表、不吃詞綴。本道第 30 層在終幕之後是 `lantern-mother`（L2 上線）。
+11. **`bossFor(region, depth): string[]`**：本道第 3 層與終幕照舊在 `bossFor` 之前處理（`engine/game.ts:338-342`）；本道 5 的倍數 `MAINLINE_BOSSES[(d/5 − 1) % 10]`；地區 `REGION_BOSSES[r][(d/5 − 1) % 3]`；那隻還沒上線就回 `['lanterneater']`。多部位回傳 `['old-city-archon', 'archon-hand', 'archon-hand']`、`['rime-sovereign', 'rime-pillar', 'rime-pillar']`。部件 `rank: 'part'`，等級跟本體的家鄉（`BOSS_HOME`），exp 30、gold 0、無掉落、不進表、不吃詞綴。
+    - **燈喰之母只在終幕出現**（改 spec §5.6 的「本道 30」）：`MAINLINE_BOSSES` 的第 30 層那一格是 `lanterneater`。既有的劇情裁定「終幕之後第 30 層是長大的燈喰之獸，不是她」（`engine/game.test.ts:3545-3551`）照舊。`lantern-mother` 是終幕的外型（L2c），她的戰利品與專屬獨特在終幕那一戰掉，製作的「先擊倒過」也由終幕滿足。本道 5–50 層仍然兩兩不同（第 30 層的燈喰之獸只和第 3 層重複，第 3 層不在範圍內）。
 12. **素材種類**：`MaterialKind` 加 `'trophy'` 與 `'keepsake'`。spec 的 39 個戰利品＝頭目 28 個各 1＋守關者 11 個各 1（部件沒有）。其中九位夥伴故事守關者的那 9 個是 `keepsake`（遺物：凜 `tower-dust`、瑟蕾 `moon-silver`、千鶴 `shrine-rope`、莎菲拉 `copper-anklet`、希爾薇 `ashen-acorn`、諾艾兒 `ash-page`、波比 `automaton-core`、莉茲 `vault-coin`、絲嘉蕾 `gate-splinter`），其餘 30 個（頭目 28＋`requiem-conductor`、`lantern-brood`）是 `trophy`。兩者都必掉 1 個、都是製作專屬獨特的材料，只差能不能送。招牌素材 59 個是 `monster`。
 13. **送禮**（取代 spec §7.4）：
     - `GIFT_KINDS` 加 `'keepsake'`，不加 `'trophy'`：仍然完全由 `kind` 推導，沒有例外名單。打頭目的戰利品不能拿去刷好感；遺物可以送。
@@ -136,7 +143,7 @@ spec 已核准（2026-10-26，控制者依使用者授權）。下面是 spec �
 15. **專屬獨特怎麼來**：
     - 掉落：在新頭目或守關者的戰鬥裡，`rollBossGear`／精英那一件照舊用 `lootRng` 跑完；那件是 `legendaryTier` 時，用 `trophyRng` 抽 `OWN_UNIQUE_SHARE = 0.5`，中了就換成該敵人的專屬獨特（`rollItem` 以 `trophyRng` 重擲數值，保留 uid），再以同一個 uid 跑一次 `applyStarlit`。高難度提高傳說級占比，所以專屬獨特也跟著多：這是高難度「掉落更好」的承諾，不另調。
     - 製作：鍛造屋「製作」頁新列：戰利品或遺物 5 ＋ `star-tear` 1 ＋ `setGold(ilvl)`；**條件**是圖鑑裡那隻 `felled ≥ 1`；用 `forgeRng` 抽一次，照 `craftSet`（`engine/forge/craft.ts:80-94`）。
-16. **銘文**：`ItemInstance.inscription?: string`（物種 id）。新物種那隻的 `lootRng` 掉了裝備、而且不是特殊裝備時，用 `trophyRng` 抽 `INSCRIBE_CHANCE = 0.25`；中了就把一條詞綴換成該物種的銘文鍵（槽位不允許就不換，但仍記 `inscription`），數值在同一稀有度與 ilvl 的範圍內由 `trophyRng` 重擲。名稱後加「・〇〇銘」（物種名的前兩個字，表在 `data/bestiary.zh-TW.ts`）。鍛造屋「銘刻」：同物種招牌素材 3 ＋ `REROLL.gold(ilvl)`，把一條詞綴重洗成銘文鍵，用 `forgeRng`。
+16. **銘文**：每個一般物種的銘文鍵寫在 `EnemyDef.inscribe?: AnyStat`（spec §5.3、§5.4 的「銘文」欄，A2 加）。`ItemInstance.inscription?: string`（物種 id）。新物種那隻的 `lootRng` 掉了裝備、而且不是特殊裝備時，用 `trophyRng` 抽 `INSCRIBE_CHANCE = 0.25`；中了就把一條詞綴換成該物種的銘文鍵（槽位不允許就不換，但仍記 `inscription`），數值在同一稀有度與 ilvl 的範圍內由 `trophyRng` 重擲。名稱後加「・〇〇銘」（物種名的前兩個字，表在 `data/bestiary.zh-TW.ts`）。鍛造屋「銘刻」：同物種招牌素材 3 ＋ `REROLL.gold(ilvl)`，把一條詞綴重洗成銘文鍵，用 `forgeRng`。
 17. **圖鑑**：`GameState.bestiary?: Record<string, { seen: number; felled: number; inscribed?: true }>`。`startBattle` 記 `seen`（定義 id；地區變體算同一種；召喚的算；幻影不算），勝利記 `felled`（打倒的每一隻，包含召喚的）。不抽亂數。`SAVE_VERSION` 維持 9；`isValid` 檢查形狀（非負整數），`loadGame` 在驗證之後呼叫 `repairBestiary` 丟掉 `ENEMIES` 沒有的 id（照 `dropUnknownBanters`，`engine/save.ts:261`）。
 18. **沒見過的物種不顯示剪影**：只顯示「？？？」與出沒地點。5d 規定剪影只能由核准的圖確定性轉出、不能用 CSS 畫（`contract.md`、5d 補遺），為 100 隻做剪影檔不值得。
 19. **sim gate 與重錄**（見「重錄規則」）：只有 L1b、L2b、L2c、L3b、L4b 可以讓普通帶的報告改變；其他任務一律 `gate: identical`。任何任務的 `contribution.json` 都必須和 `contribution.8d-final.160.json` 逐位元相同。
@@ -157,7 +164,7 @@ spec 已核准（2026-10-26，控制者依使用者授權）。下面是 spec �
 ## 待使用者決定（只有美術與大取捨）
 
 1. **美術要你核准五次**：契約規定每一批都要你在審核頁核准（R0 風格樣本 5 隻＋1 張圖示表＋1 張裝備表；R1 13 隻；R2 27 隻；R3 28 隻；R4 27 隻）。如果你願意只看 R0 的風格、之後交給機械 QA＋獨立代理審核就發布，要改 `contract.md:145`；不改的話計畫照現狀走。
-2. **生成量**：至少 115 張 codex 圖（每張最多重生 3 次），Plus 有額度上限。照計畫分四批、每批之間有你的核准，額度用完就暫停等待，不換工具。若你想縮小規模（例如先只做本道 47 隻、地區 53 隻延後），告訴控制者，L3、L4 與 E3、E4 可以整段延後，前面不受影響。
+2. **生成量**：至少 120 張 codex 圖（R0 每隻至少 2 版；每個 id 最多 3 次），Plus 有額度上限。照計畫分四批、每批之間有你的核准，額度用完就暫停等待，不換工具。若你想縮小規模（例如先只做本道 47 隻、地區 53 隻延後），告訴控制者，L3、L4 與 E3、E4 可以整段延後，前面不受影響。
 
 ## 分期與 PR
 
@@ -177,7 +184,7 @@ spec 已核准（2026-10-26，控制者依使用者授權）。下面是 spec �
 | **E4** 美術四 | `feat/starlantern-roster-art4` | R4 | E4a–E4b（2） | identical | 27＋27＋12 件（24 張）= **78** |
 | **L4** 上線四與收尾 | `feat/starlantern-roster-live4` | 腐毒、暗影、鋼鐵；希爾薇、莉茲、絲嘉蕾的遺物；全套收尾 | L4a–L4d（4） | **重錄** | 0 |
 
-合計 13 個 PR、53 個任務。`allArtUrls()` 從 722 到 999（+277）；每次發布以當下實際值＋該批件數重算（5d 補遺 S8）。codex 生成至少 115 張：E1 21（18 敵人＋1 圖示表＋1 裝備表＋1 異常圖示表）、E2 31、E3 32、E4 31。
+合計 13 個 PR、53 個任務。`allArtUrls()` 從 722 到 999（+277）；每次發布以當下實際值＋該批件數重算（5d 補遺 S8）。codex 生成至少 120 張：E1 26（R0 的 5 隻各 2 版＋R1 的 13 隻＋1 圖示表＋1 裝備表＋1 異常圖示）、E2 31、E3 32、E4 31。
 
 E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py plan-json` 產生精確清單）：
 
@@ -214,7 +221,7 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 2. 切換之後跑閘門存成 `gate-L<n>`：vitest 必須全綠（門檻一個都沒放寬），最後一行預期是 `gate: DIFFERENT`。
 3. `contribution.json` 仍然和 8d-final 逐位元相同（裁定 7）；不同就 BLOCKED。
 4. 寫 SDD `rebaseline-L<n>.md`：`report.txt` 的完整差異（舊行→新行）；每個改變的平衡項目前後的數字與門檻；改變的動作雜湊檔與它們的格子名；**確認第 1–3 層的每一行都沒變**（用 `grep` 列出 depth ≤ 3 的行並 `diff`，結果附上）；`git diff --name-only` 證明凍結檔沒改。
-5. 選擇性執行的帶在同一個任務裡跑：`ROSTER_BANDS=1` 的第 22 項、`BANDS=1` 的 `tierBands.*`（含 22j）；`engine/__fixtures__/tiers/baseline.normal.txt` 照難度計畫 Task 0 的方式重錄，差異附進同一份 md。
+5. 選擇性執行的帶在同一個任務裡跑，**每一波都跑**（它們也讀現行的 `encounterTable`：`engine/buildBands.ts:82`、`engine/balance.bond.test.ts:82`、`:126`，不可以拖到收尾才發現）：`ROSTER_BANDS=1` 的第 22 項、`BANDS=1` 的 `tierBands.*`（含 22j）、`npm run test:starlantern:bands`（`builds.bands.*`）、`BOND_BANDS=1`（含 `BANDS=1` 的 21e）的第 21 項；`engine/__fixtures__/tiers/baseline.normal.txt` 照難度計畫 Task 0 的方式重錄，差異附進同一份 md。這些檔案是凍結的：紅了只能照第 7 點調新物種。
 6. 審查：控制者派一位全新脈絡的審查者（Opus），只給兩份 `report.txt`、`rebaseline-L<n>.md` 與 `git diff`；他確認 (a) 第 1–3 層沒有任何一行變、(b) 每一個改變的行都在原門檻內、(c) 凍結檔、`TIERS`、`AFFIXES`、既有旋鈕沒有 diff、(d) 動作雜湊改變的格子都含新上線的 id。通過才 commit；之後同一個 PR 的任務改以 `gate-L<n>` 為比較基準。
 7. 紅燈時只能：調**新物種自己**的數字（spec §5.1 的 ±15% 形狀、技能機率、召喚次數）、或從表裡拿掉某一組；四輪還紅就 BLOCKED，附每一輪的表。
 
@@ -247,9 +254,10 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 - 字級只有 12／24px（`ui2/typeScale.test.ts`）；新介面只用既有元件（`MenuView`、手冊清單、`confirmBox`、`win`、鍛造屋的分頁）；SCSS 只改 `src/styles/_starlantern-ui.scss`，禁 `!important`、行內樣式、`element.style`。
 
 **換行**（改檔前 `git ls-files --eol <檔>`，改完 `git diff --stat` 必須等於 `git diff --stat --ignore-cr-at-eol`；整檔被改寫就是換行壞了，立刻再改一次修回；CRLF 與混用檔不可以用 `sed -i`；新檔一律 LF。2026-10-26 量到的：）
-- LF：`data/{gear,materials}.ts`、`data/story/bond.ts`、`engine/{scaling,scaling.test,events,parity,bands}.ts`、`engine/dungeon/run.ts`、`engine/loot/drops.ts`、`engine/forge/*.ts`、`engine/story/handbook.ts`、`ui2/scenes/{forge,handbook}.ts`、`docs/superpowers/**/*.md`。
-- CRLF：`data/enemies.ts`、`engine/{types,state,sim}.ts`、`render/artPaths.ts`、`render/artPaths.test.ts`、`art-factory/starlantern/registry.json`。
-- 混用（新行照相鄰行）：`data/text.zh-TW.ts`、`engine/{battle,combatant,skills,game,save}.ts`、`render/BattleView.ts`、`ui2/scenes/battle.ts`。
+- LF：`data/{gear,materials}.ts`、`data/story/bond.ts`、`engine/{scaling,scaling.test,events,parity,bands,sim.test,tierBands.test}.ts`、`render/ailmentStyle.ts`、`engine/dungeon/run.ts`、`engine/loot/drops.ts`、`engine/forge/*.ts`、`engine/story/handbook.ts`、`ui2/scenes/{forge,handbook}.ts`、`docs/superpowers/**/*.md`。
+- CRLF：`data/enemies.ts`、`data/data.test.ts`、`engine/{types,state,sim,testing,battle.test,game.test}.ts`、`render/artPaths.ts`、`render/artPaths.test.ts`、`art-factory/starlantern/registry.json`。
+- 混用（新行照相鄰行）：`data/text.zh-TW.ts`、`engine/{battle,combatant,skills,game,save}.ts`、`render/BattleView.ts`、`ui2/partyBar.ts`、`ui2/scenes/battle.ts`。
+- 上面沒列到的檔，動手前一律先 `git ls-files --eol` 量。
 - 新檔（LF）：本計畫新增的所有檔案。
 
 **git**
@@ -273,7 +281,7 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 - [ ] **W3 寫**：每一隻：`trait`（特性一句，見過就顯示，寫打法不寫數字：「先打旗手，牠活著的時候大家都比較兇。」）；`lines[0]`（擊倒過才顯示的介紹）；故事物種的 `lines[1]`、`lines[2]` 帶 `after: StoryGate`（裁定 20 的閘門）。人的殘影那一句只寫到「她記得的那個人不在這裡」的程度。專屬獨特的 `lore` 一句（獲得時顯示，不得含揭露詞）。遺物的婉拒、痊癒各一句，照她的聲音表。帳本的新條目在同一個 commit 加。
 - [ ] **W4 守門**：名字、`trait`、沒有閘門的句子都過檢查詞掃描；有檢查詞的句子必須有不早於該詞揭露點的閘門（`data/bestiary.test.ts` 的 `every gated word waits for its reveal`）。
 - [ ] **W5 綠**：`rtk proxy npx vitest run --testTimeout=20000 src/scripts/games/starlantern` 全綠，然後做收尾 G。
-- [ ] **W6 朗讀稿**：`BESTIARY_DUMP=<SDD>/task-<N>-after.md rtk proxy npx vitest run src/scripts/games/starlantern/data/bestiary.test.ts`（C6 加的匯出：每一隻的名字、特性、每一句與它的閘門）。
+- [ ] **W6 朗讀稿**：`BESTIARY_DUMP=<SDD>/task-<N>-after.md rtk proxy npx vitest run src/scripts/games/starlantern/data/bestiary.test.ts`（C5 加的匯出：每一隻的名字、特性、每一句與它的閘門）。
 - [ ] **W7 冷讀**：控制者派一位沒讀過設計文件的全新讀者，只給朗讀稿。及格：讀得出每一隻怎麼打；語氣是輕快的日系圖鑑，有梗但不油；人的殘影讀起來是「記憶的形狀」，不是反派；沒有一句讓他出戲；全篇沒有「……」。不及格回到 W3。
 
 ## Review Focus
@@ -282,9 +290,9 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 2. **舊戰鬥逐位元相同**：閘門 identical；`contribution.json` 永遠等於 8d-final。→ 每個任務。
 3. **不從舊串流多抽**：`trophy draws never move a lootRng draw`、`placing a warden moves nothing else on the floor`、`a summon or a fled foe takes no loot or rune draw`。→ A4、B4、C1、C2。
 4. **機制看得懂、不形成必帶隊伍**：每個機制都在意圖、名牌或紀錄上；守護與部件只擋單體；遺忘、遲滯、吞入都不讓我方失去整回合。→ B 系列的畫面測試、22d、22f。
-5. **掉落總量不變**：銘文不加條數與範圍；專屬獨特只替換、不增加特殊裝備的出現率（10 萬次統計）；製作要先擊倒過。→ C1–C3。
+5. **掉落總量不變**：銘文不加條數與範圍；專屬獨特只替換、不增加特殊裝備的出現率（10 萬次統計）；製作要先擊倒過。→ C1、C2、C4。
 6. **送禮速度不變**：沒有新的「最愛」「喜歡」；戰利品不可送；遺物集滿碎片才收下。→ A3、L 的寫作任務。
-7. **不劇透**：名字、特性、無閘門的句子沒有檢查詞；有檢查詞的句子閘門不早於揭露點。→ A5、C6、W4。
+7. **不劇透**：名字、特性、無閘門的句子沒有檢查詞；有檢查詞的句子閘門不早於揭露點。→ A5、C5、W4。
 8. **美術只發布核准的**：`ROSTER_ART` 的每個 id 的敵人圖、圖示、專屬獨特圖都是 `published`；`ROSTER_LIVE ⊆ ROSTER_ART`；runtime 路徑沒有被淘汰的圖。→ D4、E 系列。
 
 ---
@@ -322,7 +330,7 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 
 **Files:**
 - Create：`data/monsters.ts`、`data/monsters.test.ts`。
-- Modify：`engine/scaling.ts`（`legacyEncounterTable`；`encounterTable` 暫時就是它；`NORMAL_ENEMIES` 讀 `listedEnemy`）、`engine/parity.ts:65`（改呼叫 `legacyEncounterTable`）、`engine/story/handbook.ts:121`（`listedEnemy`）、`render/artPaths.ts:230`（`artEnemy`）。
+- Modify：`engine/scaling.ts`（`legacyEncounterTable`；`encounterTable` 暫時就是它；`NORMAL_ENEMIES` 照裁定 3：`listedEnemy && !boss && !story && !rank`）、`engine/parity.ts:65`（改呼叫 `legacyEncounterTable`）、`engine/story/handbook.ts:121`（`listedEnemy`）、`render/artPaths.ts:230`（`artEnemy`）。
 - Test：`data/monsters.test.ts`、`engine/scaling.test.ts`（新增）、`engine/story/handbook.test.ts`、`render/artPaths.test.ts`。
 - 已知會紅：預期沒有（清單內容不變）。
 
@@ -343,10 +351,12 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 
 **Files:**
 - Create：`data/enemies.roster.ts`。
-- Modify：`engine/types.ts`（`EnemyDef` 加 `rank?: 'warden' | 'part'`、`lore?: CharacterId`、`remnant?: true`、`band?: 'B' | 'C' | 'D' | 'E' | 'F'`、`home?: RegionId`）、`data/enemies.ts`（`ENEMIES` 合併 `ROSTER_ENEMIES`；舊的 `LIST` 不動）。
+- Modify：`engine/types.ts`（`EnemyDef` 加 `rank?: 'warden' | 'part'`、`lore?: CharacterId`、`remnant?: true`、`band?: 'B' | 'C' | 'D' | 'E' | 'F'`、`home?: RegionId`、`inscribe?: AnyStat`）、`data/enemies.ts`（`ENEMIES` 合併 `ROSTER_ENEMIES`；舊的 `LIST` 不動）。
 - Test：`data/monsters.test.ts`、`data/data.test.ts`、`engine/scaling.test.ts`、`engine/story/handbook.test.ts`、`render/artPaths.test.ts`、`render/BattleView.test.ts`。
 - 已知會紅與改法（意圖不變）：
-  - `data/data.test.ts:95-97`「每個非頭目、非劇情的敵人都在某張表裡」→ 改成 `listedEnemy` 的那些；名冊物種在 A4 的 `every roster species sits in at least two groups` 量。
+  - `data/data.test.ts:31-33`（8 個非頭目、頭目只有 `lanterneater`）→ 只數 `LEGACY_ENEMY_IDS`（名冊的數量由 `one hundred new ids` 量）；
+  - `engine/scaling.test.ts:460-468`（所有 `ENEMIES` 的 `scaleEnemy` 結果的 SHA-256 釘子）→ 只走 `LEGACY_ENEMY_IDS`，雜湊值不變；名冊的 `tier null` 等式另外寫一個不釘雜湊的迴圈；
+  - `data/data.test.ts:95-97`「每個非頭目、非劇情的敵人都在某張表裡」→ 只看 `NORMAL_ENEMIES`（裁定 3 的定義）；A4 起改讀「舊表 ∪ `MAINLINE_TABLES` ∪ `NATIVE_GROUPS` ∪ `WARDEN_GROUPS`」，名冊物種另由 A4 的 `every roster species sits in at least two groups` 量。
   - `render/artPaths.test.ts:62`、`:235` → 只看 `artEnemy` 的 id。
   - `engine/story/handbook.test.ts:178` → 只看 `listedEnemy`。
 - Read：spec §5.1–§5.6、裁定 6、11。
@@ -358,6 +368,7 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
   - `only plain effects so far`：每個技能只用 spec §1.4 的效果種類（`damage`、`inflict` 的 `poison`／`sleep`、`buff`、`heal`）；機制欄位在 B 系列才加。
   - `drops` 在本任務一律是空陣列：`data/data.test.ts:83` 要求每個掉落素材都存在，素材在 A3 才有；A3 補上掉落與它的測試。
   - `remnants and lore are as ruled`：`remnant` 恰好是裁定 6 的 13 個；`lore` 是 spec §4.2 的故事物種，值是對的夥伴。
+  - `every normal species carries its inscription key`：59 個一般物種的 `inscribe` 逐一等於 spec §5.3、§5.4 的「銘文」欄，而且是裝備 `AFFIXES`（`data/gear.ts:34`）的鍵；守關者、頭目、部件沒有。
   - `no element wall per band`：A4 量（要表）。
 - [ ] **Step 2**：執行，確認紅。
 - [ ] **Step 3**：實作 `data/enemies.roster.ts`：照 spec §5.3–§5.6 的表、裁定 20 的改名；**機制先不寫**，表裡的「特性」先寫成最接近的 D 技能或省略（B 系列逐一補上，B11 有 `every trait is implemented` 測試）。故事物種的 `weak`／`resist` 照表；地區原生寫該地區的（`scaleEnemy` 本來就會蓋掉）。
@@ -403,7 +414,7 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 - [ ] **Step 1：寫失敗的測試**
   - `data/monsters.test.ts`（spec §3.4、§9.1 的資料檢查，量的是**完整**表，不看 live）：`every group has one to three`；`twelve groups a table`；`every roster species sits in at least two groups`；`pairs come in pairs`（`mist-twin`、`ice-komainu`）；`freshness`（本道任兩個相差 ≥ 6 層的深度 4–60，物種集合重疊 ≤ 60%）；`no species fills a table`（每張表至少 8 種、每種 ≤ 40% 的組）；`natives lead a region`（第 4 層起至少 4 種原生、原生組 ≥ 40%）；`no element wall`（spec §5.1：抗物理 ≤ 25%、任一屬性被抗 ≤ 1/3、沒有弱點 ≤ 20%）；`exp holds against the legacy tables`（7 區 × 深度 4–30，新表平均 `groupExp`（寶物怪算 0）÷ 舊表 ∈ [0.92, 1.08]）；`bosses never repeat`（本道 5–50 兩兩不同、每區 5／10／15 兩兩不同）；`bossFor and wardenFor tables`（逐格字面值，含多部位組與循環）；`salts are distinct`（`WARDEN_SALT` 和對照報告 §7.5 列出的全部鹽與常數都不同；`TROPHY_SALT` 在 C1 才存在，C1 補進同一個測試；寫法照 `engine/loot/runes.test.ts:45`）。
   - `engine/scaling.test.ts`：`the roster with nothing live changes nothing`（7 區 × 深度 1–60 的 `encounterTable` 等於 `legacyEncounterTable`；`bossFor` 全部 `['lanterneater']`；`wardenFor` 全部 `null`）。
-  - `engine/floors.snapshot.test.ts`：`placing a warden moves nothing else on the floor`（用測試注入的 live 集合：`withRosterLive(ids, f)`，`engine/testing.ts` 新增，`finally` 還原；同一份 fixture，扣掉 `warden` 的內容之後逐格相同；`d % 5 === 3`、`d ≥ 8` 的層恰好多一個守關者格）。
+  - `engine/floors.snapshot.test.ts`：`placing a warden moves nothing else on the floor`（用測試注入的 live 集合：`withRosterLive(ids, f)`，`engine/testing.ts` 新增，`finally` 還原；同一份 fixture，扣掉 `warden` 的內容、並把守關者那一格的 `tiles` 遮掉（`placeSpecial` 會改寫那一格，`engine/dungeon/rooms.ts:108`；fixture 裡那一格必須是空房的地板）之後逐格相同；`d % 5 === 3`、`d ≥ 8` 的層恰好多一個守關者格，地圖格是 `'warden'`）。
 - [ ] **Step 2**：執行，確認紅。
 - [ ] **Step 3**：實作。表的組照 spec §8.2、§8.3；`exp holds` 紅的時候只能調新物種自己的 `exp`（spec §5.1 的表是提案），列進報告。
 - [ ] **Step 4**：這些測試檔、全套、tsc、閘門 identical。
@@ -517,8 +528,8 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 ### Task B9：遺忘（M9）、吸 TP（M17）、對中毒加傷（M25）、抹去（M15）
 
 **Files:**
-- Modify：`engine/ailments.ts`（`AilmentId` 加 `'forget'`，放在 `AILMENT_IDS` 最後；1 回合；`sleepRes` 抵抗；頭目減半；`cure` 解除）、`engine/battle.ts`（遺忘中 `skill` 改普攻；道具、絕技、防禦照常）、`engine/types.ts`（`damage.tpDrain`、`damage.vsPoisoned`、`Effect { kind: 'dispel' }`）、`engine/skills.ts`、`engine/combatant.ts`、`ui2/partyBar.ts`（異常列對沒有圖示的異常照既有文字顯示：先確認路徑存在，沒有就補文字退回；**不畫任何圖**）。`render/artPaths.ts` 的 `AILMENT_ICON_IDS` **不改**（裁定 22）。
-- Test：`engine/ailments.test.ts`、`engine/foes.test.ts`、`ui2/partyBar.test.ts`。
+- Modify：`engine/ailments.ts`（`AilmentId` 加 `'forget'`，放在 `AILMENT_IDS` 最後；1 回合；`sleepRes` 抵抗；頭目減半；`cure` 解除）、`engine/battle.ts`（遺忘中 `skill` 改普攻；道具、絕技、防禦照常）、`engine/types.ts`（`damage.tpDrain`、`damage.vsPoisoned`、`Effect { kind: 'dispel' }`）、`engine/skills.ts`、`engine/combatant.ts`；`AilmentShown` 變寬之後三張窮舉表要補 `forget`：`data/text.zh-TW.ts` 的 `STATUS_LINE`、`AILMENT_NAME`（`:20`、`:23`）、`render/ailmentStyle.ts:11` 的 `AILMENT_FILL`；異常小圖示永遠去要 `ailmentIconUrl(c.id)`（`render/BattleView.ts:546`、`ui2/partyBar.ts:213`）：兩處都改成「`AILMENT_ICON_IDS` 沒有它就只顯示文字」，**不畫任何圖**。`render/artPaths.ts` 的 `AILMENT_ICON_IDS` **不改**（裁定 22）。
+- Test：`engine/ailments.test.ts`、`engine/foes.test.ts`、`ui2/partyBar.test.ts`、`render/BattleView.test.ts`。
 - 已知會紅：`engine/ailments.test.ts` 若有列舉 `AILMENT_IDS` 的字面值，加上 `forget`（意圖不變），列進報告。
 
 - [ ] **Step 1**：`attacks instead of casting`、`items and ultimates still work`、`cure clears forget`、`Bobby's first aid still cures in its old order`、`a boss halves it`、`tp never below zero`、`only against the poisoned`、`moves buffs and leaves debuffs, auras and wards`、`an ailment without an icon shows its name`。
@@ -547,6 +558,7 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 **Files:**
 - Create：`engine/balance.roster.test.ts`、`engine/tierBands.roster.test.ts`。
 - Modify：`engine/bands.ts`（`balance.roster.test.ts` 進 `BANDS.normal`；`tierBands.roster.test.ts` 進 `nightmare` 與 `hell`）、`engine/sim.ts`（`simBattle` 收選用的 `enemyIds` 已經可以；如需 `withRosterLive` 就從 `engine/testing.ts` 用）。
+- 已知會紅：`engine/sim.test.ts:303`（`BANDS.nightmare`、`BANDS.hell` 逐字等於各一個檔）→ 改成「各含原本那個檔與 `tierBands.roster.test.ts`」，`:304` 的「檔案存在」照舊；列進報告。
 - Read：spec §9.3、裁定 4、5；`engine/balance.bond.test.ts`（選擇性執行的寫法、不 import 凍結檔的輔助函式）。
 
 - [ ] **Step 1：寫帶**（spec §9.3，門檻全部沿用；22e 取消）：22a 物種等價、22b 頭目等價（對照同深度同地區的 `lanterneater`）、22c 地區深處、22d 深帶歪隊、22f 頭目歪隊、22g 寶物怪（只報告）、22h 專屬獨特天花板、22i 守關者；22j（`tierBands.roster.test.ts`）：每個新頭目在它出現的第 10–25 層，噩夢魔法階與地獄稀有階（同 N3、H2 的隊伍與詞綴），勝率 ≥ 同格 `lanterneater` − 0.10、而且「不裝符文」的勝率 ≤ 同格 `lanterneater` 的不裝符文 + 0.10；每個守關者在地獄第 20、25 層（有的話）勝率 ≥ .75（同 HE）。檔頭寫跑法。
@@ -566,7 +578,7 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 ### Task C1：`trophyRng` 與銘文
 
 **Files:**
-- Modify：`engine/loot/drops.ts`（`TROPHY_SALT = 0x71374491`、`trophyRng(run)`、`inscribe(item, speciesId, rng)`）、`engine/dungeon/run.ts`（`Run.trophyDraws`，`newRun` 設 0）、`engine/types.ts`（`ItemInstance.inscription?`）、`engine/save.ts`（`isItem`：`inscription` 必須是 `ENEMIES` 的一般物種 id）、`engine/game.ts`（`battleGear` 的一般怪迴圈：那隻是名冊物種、掉了裝備、不是特殊裝備 → `trophyRng` 抽 `INSCRIBE_CHANCE`）、`data/forge.ts`（`INSCRIBE_CHANCE`、`OWN_UNIQUE_SHARE`）、`engine/loot/item.ts`（名稱「・〇〇銘」）、`data/bestiary.zh-TW.ts`（`INSCRIPTION_NAME` 表；C6 前先建檔）。
+- Modify：`engine/loot/drops.ts`（`TROPHY_SALT = 0x71374491`、`trophyRng(run)`、`inscribe(item, speciesId, rng)`）、`engine/dungeon/run.ts`（`Run.trophyDraws`，`newRun` 設 0）、`engine/types.ts`（`ItemInstance.inscription?`）、`engine/save.ts`（`isItem`：`inscription` 必須是 `ENEMIES` 的一般物種 id）、`engine/game.ts`（`battleGear` 的一般怪迴圈：那隻是名冊物種、掉了裝備、不是特殊裝備 → `trophyRng` 抽 `INSCRIBE_CHANCE`）、`data/forge.ts`（`INSCRIBE_CHANCE`、`OWN_UNIQUE_SHARE`）、`engine/loot/item.ts`（名稱「・〇〇銘」）、`data/bestiary.zh-TW.ts`（`INSCRIPTION_NAME` 表；本任務先建檔）。
 - Test：`engine/loot/drops.test.ts`、`engine/game.test.ts`、`engine/save.test.ts`、`data/monsters.test.ts`（鹽）。
 
 - [ ] **Step 1**：`trophy draws never move a lootRng draw`（同一個種子、同一串戰鬥，有沒有銘文：`lootDraws` 與每一件 `lootRng` 的產出相同）；`an inscription never raises an item's affix count or range`（10 萬件統計：條數、每條數值範圍和不銘刻的同稀有度同 ilvl 一致）；`a slot that cannot take the key keeps its affixes but carries the mark`；`legacy foes never inscribe`；`the save keeps an inscription and refuses an unknown one`；`salts are distinct`（補上 `TROPHY_SALT`）。
@@ -581,16 +593,7 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 - [ ] **Step 1**：`own uniques never raise the special rate`（10 萬次頭目掉落：特殊裝備的總出現率和不替換時的差 < 0.5 個百分點）；`the swap moves no lootRng draw`；`a swapped piece can still be starlit, keyed by its uid`；`only a live owner's unique drops`。
 - [ ] **Step 2–5**：commit：`feat(starlantern): a boss or a warden may leave its own unique`。
 
-### Task C3：鍛造屋的銘刻與製作
-
-**Files:**
-- Modify：`engine/forge/forge.ts`（`inscribeAt`：同物種招牌素材 3 ＋ `REROLL.gold(ilvl)`，`forgeRng` 一次；特殊裝備與星輝不可）、`engine/forge/craft.ts`（`craftOwnUnique`：戰利品或遺物 5 ＋ `star-tear` 1 ＋ `setGold(ilvl)`，條件 `bestiary[owner].felled ≥ 1`，照 `craftSet`）、`engine/forge/uses.ts`（A3 的用途文字接上真的動作）、`ui2/scenes/forge.ts`（重洗頁加「銘刻」）、`ui2/scenes/forgeCraft.ts`（製作頁加「專屬裝備」區塊；沒擊倒過的列灰色、說明「尚未擊倒〇〇」；未上線的主人不列）、`data/text.zh-TW.ts`。
-- Test：`engine/forge/forge.test.ts`、`engine/forge/craft.test.ts`、`engine/forge/economy.test.ts`、`ui2/scenes/forge.test.ts`。
-
-- [ ] **Step 1**：`inscribing costs three of its signature and one forge draw`、`a special piece cannot be inscribed`、`crafting needs a kill first`、`crafting draws once`；`economy.test.ts` 新增 `crafting an own unique never pays more than its inputs`（每個深度，賣價 ≤ 材料價＋金幣）；畫面：`the inscribe row and the own-unique rows`、`an unbeaten owner is greyed out with its reason`。
-- [ ] **Step 2–5**：e2e 必跑；commit：`feat(starlantern): inscribe at the forge, and craft what a boss would not drop`。
-
-### Task C4：圖鑑的狀態
+### Task C3：圖鑑的狀態
 
 **Files:**
 - Create：`engine/bestiary.ts`、`engine/bestiary.test.ts`。
@@ -600,17 +603,16 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 - [ ] **Step 1**：`seen counts a species once a fight, regions alike`；`a summon is seen, a decoy is not`；`felled counts every foe beaten`；`the bestiary draws nothing`（`game.rng`、`lootRng`、`runeRng`、`memoryRng`、`trophyRng` 次數不變）；`the save version stays 9`；`a bestiary round-trips`；`an unknown id is dropped on load, the save is not corrupt`；`a negative or broken count is corrupt`。
 - [ ] **Step 2–5**：commit：`feat(starlantern): the bestiary remembers what was seen and felled`。
 
-### Task C5：圖鑑頁
+### Task C4：鍛造屋的銘刻與製作
 
 **Files:**
-- Modify：`engine/story/handbook.ts`（`CodexPage.monsters` 擴充：只列 `listedEnemy`；`{ id, name, seen, felled, haunts, weak | 'prism' | null, trait | null, lines: string[], own?: { id; got: boolean } }`；`lines` 由 C6 的註冊表與 `gateOpen` 決定）、`ui2/scenes/handbook.ts`（圖鑑內加篩選「本道／各地區／頭目」；沒見過的「？？？」只有出沒，不顯示圖；見過的顯示圖、名字、出沒、弱點、次數、特性；擊倒過加第一句、招牌素材與銘文；頭目與守關者加「專屬裝備：已取得／未取得」）、`data/bestiary.zh-TW.ts`（介面字串）、`src/styles/_starlantern-ui.scss`。
-- Test：`engine/story/handbook.test.ts`、`ui2/scenes/handbook.test.ts`、`ui2/typeScale.test.ts`。
-- 已知會紅：`engine/story/handbook.test.ts:178-181`（A2 已改成 `listedEnemy`）若斷言了 `monsters` 的欄位形狀，照新形狀改，意圖不變。
+- Modify：`engine/forge/forge.ts`（`inscribeAt`：同物種招牌素材 3 ＋ `REROLL.gold(ilvl)`，`forgeRng` 一次；特殊裝備與星輝不可）、`engine/forge/craft.ts`（`craftOwnUnique`：戰利品或遺物 5 ＋ `star-tear` 1 ＋ `setGold(ilvl)`，條件 `bestiary[owner].felled ≥ 1`，照 `craftSet`）、`engine/forge/uses.ts`（A3 的用途文字接上真的動作）、`ui2/scenes/forge.ts`（重洗頁加「銘刻」）、`ui2/scenes/forgeCraft.ts`（製作頁加「專屬裝備」區塊；沒擊倒過的列灰色、說明「尚未擊倒〇〇」；未上線的主人不列）、`data/text.zh-TW.ts`。
+- Test：`engine/forge/forge.test.ts`、`engine/forge/craft.test.ts`、`engine/forge/economy.test.ts`、`ui2/scenes/forge.test.ts`。
 
-- [ ] **Step 1**：`only live foes are listed`、`an unseen foe is a name of question marks and a place`、`the filters split main road, regions and bosses`、`lines open with their gates`、`a prism foe shows its weakness as turning`、`the own-unique line reads the codex`；清單與右欄留在面板內（照 `8db54d901` 的工房清單）。
-- [ ] **Step 2–5**：e2e 必跑；commit：`feat(starlantern): a bestiary page with filters, and nothing shown before it is met`。
+- [ ] **Step 1**：`inscribing costs three of its signature and one forge draw`、`a special piece cannot be inscribed`、`crafting needs a kill first`、`crafting draws once`；`economy.test.ts` 新增 `crafting an own unique never pays more than its inputs`（每個深度，賣價 ≤ 材料價＋金幣）；畫面：`the inscribe row and the own-unique rows`、`an unbeaten owner is greyed out with its reason`。
+- [ ] **Step 2–5**：e2e 必跑；commit：`feat(starlantern): inscribe at the forge, and craft what a boss would not drop`。
 
-### Task C6：圖鑑文字的註冊表與守門
+### Task C5：圖鑑文字的註冊表與守門
 
 **Files:**
 - Modify：`data/bestiary.zh-TW.ts`（`BESTIARY: Partial<Record<string, { trait: string; lines: { text: string; after?: StoryGate }[] }>>`，一開始是空的；`INSCRIPTION_NAME`）。
@@ -619,6 +621,16 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 
 - [ ] **Step 1：寫守門**：`every live foe has an entry`（`ROSTER_LIVE` 為空時通過；L 任務起生效）；`no entry for a foe that does not exist`；`every gated word waits for its reveal`（A5 的清單＋每個詞最早的揭露閘門：`靜鐘會`→`act3`、`守燈人`→`act4`、`燈喰之母`→`finale`、`艾斯特拉`→`act4`、夥伴的詞照 `REVEALED` 的片數；`after` 不早於它）；`a remnant's last line stays a memory`（含夥伴名字的句子一定有該夥伴的 `mem:` 閘門）；`handbook text spends no 「……」`、`no Latin letters or digits`、`no line over sixty`；`BESTIARY_DUMP` 匯出朗讀稿（W6 用）；`glyphs.test.ts` 掃得到本檔。
 - [ ] **Step 2–5**：commit：`test(starlantern): bestiary text gates before any is written`。
+
+### Task C6：圖鑑頁
+
+**Files:**
+- Modify：`engine/story/handbook.ts`（`CodexPage.monsters` 擴充：只列 `listedEnemy`；`{ id, name, seen, felled, haunts, weak | 'prism' | null, trait | null, lines: string[], own?: { id; got: boolean } }`；`lines` 由 C5 的註冊表與 `gateOpen` 決定）、`ui2/scenes/handbook.ts`（圖鑑內加篩選「本道／各地區／頭目」；沒見過的「？？？」只有出沒，不顯示圖；見過的顯示圖、名字、出沒、弱點、次數、特性；擊倒過加第一句、招牌素材與銘文；頭目與守關者加「專屬裝備：已取得／未取得」）、`data/bestiary.zh-TW.ts`（介面字串）、`src/styles/_starlantern-ui.scss`。
+- Test：`engine/story/handbook.test.ts`、`ui2/scenes/handbook.test.ts`、`ui2/typeScale.test.ts`。
+- 已知會紅：`engine/story/handbook.test.ts:178-181`（A2 已改成 `listedEnemy`）若斷言了 `monsters` 的欄位形狀，照新形狀改，意圖不變。
+
+- [ ] **Step 1**：`only live foes are listed`、`an unseen foe is a name of question marks and a place`、`the filters split main road, regions and bosses`、`lines open with their gates`、`a prism foe shows its weakness as turning`、`the own-unique line reads the codex`；清單與右欄留在面板內（照 `8db54d901` 的工房清單）。
+- [ ] **Step 2–5**：e2e 必跑；commit：`feat(starlantern): a bestiary page with filters, and nothing shown before it is met`。
 
 **PR C 收尾**：全新脈絡審查（重點：串流、統計測試、存檔修復）。
 
@@ -667,7 +679,7 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 
 # PR E1：美術第一批（R0＋R1）
 
-**開工條件**：PR D 已合併。生成一次只跑一張（`codex_still` 不能並行）。
+**開工條件**：PR D 已合併（生成與審核）；E1c 發布前 A、B2 也已合併（裁定 1）。生成一次只跑一張（`codex_still` 不能並行）。
 
 ### Task E1a：R0 風格樣本
 
@@ -693,7 +705,7 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 
 # PR L1：上線一（本道 B、C 帶）
 
-**開工條件**：E1 已合併。錄本 PR 的 `gate-0`。
+**開工條件**：A、B1、B2、C、E1 都已合併（裁定 1）。錄本 PR 的 `gate-0`。
 
 ### Task L1a：寫作（本道淺層＋凜與瑟蕾的遺物）
 
@@ -703,7 +715,12 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 ### Task L1b：上線切換與重錄
 
 **Files:** `data/monsters.ts`（`ROSTER_LIVE` 加 `paper-moth`、`lamp-wight`、`root-hound`、`tin-soldier`、`dust-mimic`、`market-ghost`、`tongueless-bell`、`hollow-hunter`、`mist-twin`、`moon-crow`、`bell-watcher`、`sleepwalker`、`hoarder`、`fog-warden`、`silent-bell`、`hollow-champion`、`false-moon`、`bell-warden`）、`engine/__fixtures__/tiers/baseline.normal.txt`（重錄）、已知會紅的釘子。
-- 已知會紅與改法：`engine/scaling.test.ts:254`、`:357`（`NORMAL_ENEMIES` 長度 8）→ 8 ＋本波上線的一般物種數，註解寫算式；`scaling.test.ts` 裡「霜凍第 6 層見到全部」之類列舉舊表的斷言 → 改成讀 `legacyEncounterTable`，意圖（舊表的覆蓋）不變；`data/data.test.ts:97` 已在 A2 改成 `listedEnemy`，現在必須覆蓋本波物種；其他走 `NORMAL_ENEMIES` 的斷言（`engine/scaling.test.ts:60`、`:90`、`:375`、`:385`）開始量新物種：紅了先當成新物種的資料或機制錯去修；只有斷言本身和裁定衝突時（例：`prism` 物種不吃地區弱點，裁定 9）才加排除條件，寫註解、列進報告。
+- 已知會紅與改法（意圖都不變，全部列進報告）：
+  - `engine/scaling.test.ts:254`、`:357`（`NORMAL_ENEMIES` 長度 8）→ 8 ＋本波上線的一般物種 13 ＝ 21（裁定 3 的定義不含守關者與部件），註解寫算式；
+  - 這些讀現行 `encounterTable` 的測試，量的是「舊表上的某個既有行為」，改成讀 `legacyEncounterTable`：`engine/battle.test.ts:600`（第 4 層的雜湊，`BASELINE` 在 `:32`）、`engine/battle.test.ts:1143-1174`、`engine/tierBands.test.ts:119`、`:125`（`n1`、`n2` 的格數）、`engine/ledger.test.ts:539`、`engine/builds.test.ts:383`、`engine/builds.guard.test.ts:76`、`engine/runes.guard.test.ts:124`、`engine/policy.test.ts:641`；切換前先 `grep -rn "encounterTable(" src/scripts/games/starlantern --include=*.test.ts` 列出全部，名單以 grep 為準；
+  - `scaling.test.ts` 裡列舉舊表覆蓋的斷言（例：霜凍第 6 層見到全部）→ 讀 `legacyEncounterTable`；
+  - `data/data.test.ts:95-97`（A2、A4 改過）現在必須覆蓋本波物種；
+  - 其他走 `NORMAL_ENEMIES` 的斷言（`engine/scaling.test.ts:60`、`:90`、`:375`、`:385`）開始量新物種：紅了先當成新物種的資料或機制錯去修；只有斷言本身和裁定衝突時（例：`prism` 物種不吃地區弱點，裁定 9）才加排除條件，寫註解。
 
 - [ ] **Step 1**：切換前閘門 identical。
 - [ ] **Step 2**：加進 `ROSTER_LIVE`；`data/monsters.test.ts`、`data/bestiary.test.ts`（`every live foe has an entry`）綠。
@@ -738,12 +755,13 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 ### Task L2b：上線切換與重錄
 - [ ] 照 L1b：加入 R2 除 `lantern-mother` 以外的 26 個 id；`DEEP_TRAITS` 從這一波起在新表生效；22 帶、22j、`tierBands.*`、`baseline.normal.txt`、`economy.test.ts`；`rebaseline-L2.md`；審查。commit：`feat(starlantern): the deep road meets its new foes (live wave 2)`。
 
-### Task L2c：燈喰之母
+### Task L2c：燈喰之母（終幕的外型）
 
-**Files:** `data/story/scenes.ts:16`（`FINALE_BOSS.base` → `lantern-mother`）、`data/monsters.ts`（`ROSTER_LIVE` 加 `lantern-mother`）、`engine/game.test.ts:3504`、`:3549`（終幕之後第 30 層的名字：改成 `bossFor` 給的「燈喰之母」，意圖不變）。
+**Files:** `data/story/scenes.ts:16`（`FINALE_BOSS.base` → `lantern-mother`；`power` 不動）、`data/monsters.ts`（`ROSTER_LIVE` 加 `lantern-mother`）、`engine/game.test.ts:3500-3505`（地區第 30 層）與 `:3545-3551`（終幕之後本道第 30 層）。
+- 已知會紅與改法：這兩個測試用 `ENEMIES[FINALE_BOSS.base].name` 表示「長大的燈喰之獸，不是她」。換成 `lantern-mother` 之後這個寫法就錯了：改成讀那一戰實際的頭目——`ENEMIES[bossFor(region, 30)[0]].name`（本道第 30 層是 `lanterneater`，裁定 11；熾焰第 30 層在 L3 之後是熾焰的頭目），`not.toBe(STORY.finaleBossName)` 照舊。意圖不變，列進報告。
 
-- [ ] **Step 1：失敗的測試**：`the finale is fought against the mother's own shape, with the lantern-eater's numbers`（`scaleEnemy` 後的數值、技能逐欄等於舊的終幕）；`after the finale depth thirty is the mother`。
-- [ ] **Step 2**：照重錄規則（第 19b 項的報告行預期只有名字與 id 改變、數字相同；數字不同就 BLOCKED）。
+- [ ] **Step 1：失敗的測試**：`the finale is fought against the mother's own shape, with the lantern-eater's numbers`（`scaleEnemy` 後的數值、技能、弱點逐欄等於舊的終幕，只有 `id`、外型不同；名字照舊由 `names` 給 `STORY.finaleBossName`）；`after the finale depth thirty is still the grown beast, not her`（本道）；`the mother's trophy and own unique drop at the finale`（`drops` 有她的戰利品；終幕勝利後圖鑑 `felled` 有她）。
+- [ ] **Step 2**：閘門。第 19b 項的報告行沒有名字與 id、動作雜湊用鍵不用名字，所以**預期 identical**；若是 DIFFERENT，照重錄規則 4–6 證明差異只來自 id 或外型（數字一個都沒變），否則 BLOCKED。
 - [ ] **Step 3**：審查；commit：`feat(starlantern): the finale wears the lantern-mother's own shape`。
 
 ### Task L2d：e2e
