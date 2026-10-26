@@ -17,7 +17,7 @@ forget chip. Structure as gear_art.py (plan 5d).
   plan-json                              write art-factory/starlantern/roster-plan.json (the exact lists per round)
 
 Rounds (spec §13.5): r0 the style sample (5 foes, the R0+R1 icon sheet, the R0+R1 unique sheet, the forget chip), r1-r4 the
-rest. Every asset belongs to the round of its owner (an R1 foe's icon drawn on the R0 sheet is published with R1), so a
+rest; the forget chip drawn with r0 is approved and published as its own round `forget` in E1c (ruling 27). Every asset belongs to the round of its owner (an R1 foe's icon drawn on the R0 sheet is published with R1), so a
 published round always has a foe's sprite, its icon and its unique together. Run from the repo root.
 """
 import datetime, json, re, subprocess, sys, time
@@ -424,6 +424,9 @@ def make_mat_ref(out=None, public=None):
 CHIP = (12, 14)                       # G4 full set: chip icons are 14 x 14, long edge 12
 FORGET = 'ail-forget'
 FORGET_ASSET = f'icon-{FORGET}-{CHIP[1]}'
+# Controller ruling 27 (2026-10-26): drawn with R0, but the game only lists it once B9 adds `forget` to AilmentShown, so it is
+# its own round: approved on an independent review record and published in E1c, with `forget` added to AILMENT_ICON_IDS.
+FORGET_ROUND = 'forget'
 FORGET_COLOUR = '#8FD9B6'             # misty sea green: no other ailment chip is green (B9 gives AILMENT_FILL.forget this colour)
 FORGET_DESC = (f'one soft round thought cloud in misty sea green {FORGET_COLOUR} with a thick dark diagonal band wiping across it, '
                'as if the thought were being erased')
@@ -552,8 +555,8 @@ def KIND_OF(aid):
 
 
 def round_of(aid):
-    """The round an asset is approved and published with: its owner foe's (the forget chip: R0)."""
-    if aid == FORGET_ASSET: return 'r0'
+    """The round an asset is approved and published with: its owner foe's (the forget chip: its own, ruling 27)."""
+    if aid == FORGET_ASSET: return FORGET_ROUND
     if aid.startswith('enemy-'): return ROUND_OF[aid[len('enemy-'):]]
     if aid.startswith('icon-'): return ROUND_OF[materials()[aid[len('icon-'):]]]
     u = aid[len('gear-'):]; u = u[:-len('-large')] if u.endswith('-large') else u
@@ -561,7 +564,7 @@ def round_of(aid):
 
 
 def label(rnd):
-    if rnd not in ROUNDS: raise ValueError(f'batch must be one of {list(ROUNDS)}')
+    if rnd not in ROUNDS and rnd != FORGET_ROUND: raise ValueError(f'batch must be one of {list(ROUNDS) + [FORGET_ROUND]}')
     return f'roster-{rnd}'
 
 
@@ -877,7 +880,7 @@ def do_publish(reg, rnd, public=None):
     for aid in aids:
         reg.set(aid, runtime=runtime(aid)); reg.publish(aid, public, roster=True)
     reg.write_manifest(public)
-    add_roster_art(ROUNDS[rnd])
+    if ROUNDS.get(rnd): add_roster_art(ROUNDS[rnd])
     foes = sum(a.startswith('enemy-') for a in aids); icons = sum(a.startswith('icon-') and a != FORGET_ASSET for a in aids)
     gear = sum(a.startswith('gear-') and not a.endswith('-large') for a in aids)
     who = rec.get('by') or f'independent review {rec.get("date")}'

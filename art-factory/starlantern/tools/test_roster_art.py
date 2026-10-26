@@ -118,7 +118,9 @@ def test_the_forget_icon_is_a_g4_chip():
     j = by_id()['sheet-ail-roster-1']
     assert j['batch'] == 'r0' and j['parts'] == ['ail-forget'] and R.assets_of(j, 'ail-forget') == ['icon-ail-forget-14']
     assert 'Never draw letters, numbers or Z shapes.' in j['prompt'] and R.FORGET_COLOUR in j['prompt']
-    assert R.round_of('icon-ail-forget-14') == 'r0'
+    # controller ruling 27: drawn with R0, but it waits for B9's `forget` in AilmentShown and publishes in E1c on its own
+    assert R.round_of('icon-ail-forget-14') == 'forget' and 'icon-ail-forget-14' not in R.batch_assets('r0')
+    assert R.batch_assets('forget') == ['icon-ail-forget-14'] and R.label('forget') == 'roster-forget'
 
 
 def test_no_text_in_icons():
@@ -395,7 +397,7 @@ def test_publish_with_a_fake_approved_batch_writes_runtime_manifest_and_roster_a
     assert (public / 'assets/games/starlantern/enemy/paper-moth.png').is_file()
     assert reg.get('icon-faded-letter')['runtime'] == '/assets/games/starlantern/icon/faded-letter.png'
     assert reg.get('gear-fog-halberd-large')['runtime'] == '/assets/games/starlantern/gear/fog-halberd-large.png'
-    assert reg.get('icon-ail-forget-14')['runtime'] == '/assets/games/starlantern/icon/ail-forget-14.png'
+    assert 'icon-ail-forget-14' not in reg.data['assets']                    # the forget chip waits for E1c (ruling 27)
     assert 'icon-wight-wick' not in reg.data['assets']                       # an R1 owner's icon waits for R1
     urls = json.loads((public / 'assets/games/starlantern/manifest.json').read_text(encoding='utf-8'))['urls']
     assert '/assets/games/starlantern/enemy/paper-moth.png' in urls and len(urls) == len(done)
@@ -405,9 +407,9 @@ def test_publish_with_a_fake_approved_batch_writes_runtime_manifest_and_roster_a
     raw = R.ARTPATHS_TEST.read_bytes()
     assert b'\r\n' in raw and b'\n' not in raw.replace(b'\r\n', b'')                           # its CRLF kept
     t = raw.decode('utf-8')
-    n = 722 + 5 + 5 + 2 * 2 + 1
+    n = 722 + 5 + 5 + 2 * 2
     assert f'expect(urls).toHaveLength({n});' in t and f'expect(new Set(urls).size).toBe({n});' in t
-    assert f'// + roster R0 (user: 可以 2026-10-27): 5 foes, 5 material icons, 2 own uniques x 2, the forget chip = {n}' in t
+    assert f'// + roster R0 (user: 可以 2026-10-27): 5 foes, 5 material icons, 2 own uniques x 2 = {n}' in t
     assert R.roster_art_ids(R.MONSTERS_TS) == R.ROUNDS['r0']
     with pytest.raises(PermissionError):
         R.do_publish(A.Registry(R.REG_PATH), 'r1', public)                    # nothing approved there
