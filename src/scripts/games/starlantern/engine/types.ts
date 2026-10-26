@@ -101,7 +101,12 @@ export type Effect =
   /** The target's ultimate gauge grows by `amount` (Safira's 拍手). */
   | { kind: 'gauge'; amount: number }
   /** A foe calls the target out: next round every foe's single blow goes to her; a taunt comes first, defending lifts it (roster plan B2, M24). */
-  | { kind: 'hunt' };
+  | { kind: 'hunt' }
+  /**
+   * After a landed hit on the target, the foe takes gold from the run pack: up to depth × `perDepth` a time, never below
+   * zero; a kill gives it back (a warden twice over), a flee loses it (roster plan B3, M13). A fight with no pack takes none.
+   */
+  | { kind: 'steal'; perDepth: number };
 /**
  * A skill's part in its owner's mechanic: `release` spends Chizuru's barrier for power; `coin-power` and `coin-hits` spend
  * Liz's coins for power or for hits; `consume-aim` spends Sylvie's aim for power; `ember-power` spends Scarlet's embers
@@ -225,6 +230,14 @@ export interface EnemyDef {
   home?: RegionId;
   /** The affix key an ordinary species' gear can carry as its inscription (spec §7.2, ruling 16). */
   inscribe?: AnyStat;
+  /** Roster plan B3 (M3): it leaves the fight at the end of this round, still standing; it pays nothing then. */
+  fleeAfter?: number;
+  /**
+   * Roster plan B3–B4 (M14, M19, M23): how it opens a fight. `asleep`, two rounds asleep and angry when it wakes; `ambush`,
+   * first to act in round one; `disguise`, a 「寶箱？」 that springs first with +50% atk in round one until a hit unmasks it;
+   * `decoy`, a 1 HP phantom of itself beside it (`decoys` of them) while it is harder to hit; `encased` (plan B2 PR).
+   */
+  opener?: 'disguise' | 'asleep' | 'ambush' | 'decoy' | 'encased';
 }
 export interface ItemDef {
   id: string; name: string; price: number; target: Target | null; effects: Effect[]; battle: boolean; returnToTown?: boolean; desc: string;

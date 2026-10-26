@@ -472,6 +472,7 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 **Files:**
 - Modify：`engine/types.ts`（`EnemyDef.fleeAfter?`、`opener?`、`Effect { kind: 'steal'; perDepth }`）、`engine/combatant.ts`（`stolen?`、`disguised?`）、`engine/battle.ts`（回合結束 `fleeAfter` → `left`；`opener` 在 `meetEnemy` 套用：`asleep` 設 `sleep`、`ambush` 第一回合最先、`disguise` 名牌「寶箱？」直到第一次受傷且第一回合 atk +50%）、`engine/game.ts`（偷竊：從 `run.loot.gold` 移到 `stolen`，每次上限 `depth × perDepth`，不會讓背包變負；打倒奉還，守關者 ×2；逃走或戰敗就沒了）、`engine/mechanics/index.ts`（`foeWords`：「寶箱？」「偷走 〇〇 金」）。模擬沒有 `run`：不偷（`the sim steals nothing`）。
 - Test：`engine/foes.test.ts`、`engine/game.test.ts`、`engine/battle.test.ts`。
+- 實作裁定（B3）：戰鬥的錢包 `BattleState.purse = { gold, depth }` 只在有會偷的敵人時由 `startBattle` 放上（其他戰鬥的狀態一個欄位都不多），每回合寫回 `run.loot.gold`；奉還的金額加進 `rewards().gold`，另記 `returned` 供畫面說明；偷竊只在同一招的傷害打中那名隊員時發生。逃走在回合結束、角色機制之後結算；場上只剩離場的敵人時算勝利（什麼都不給）。開場：`asleep` 睡 2 回合（第 3 回合行動）、醒來 atk +50% 3 回合；`disguise` 也算伏擊（第一回合最先），名字換成「寶箱？」、第一回合 atk +50%（1 回合），被打中一下才現形。
 
 - [ ] **Step 1：寫失敗的測試**：`flees at the end of round N`、`a fled foe pays nothing and takes no loot or rune draw`、`returns on a kill`、`a warden returns twice`、`lost on a flee`、`never below zero`、`the sim steals nothing`、每種開場一個成功與一個邊界（`asleep wakes on a hit or by round three`、`ambush acts first only in round one`、`disguise lifts on the first hit`）。
 - [ ] **Step 2–5**：同上；commit：`feat(starlantern): foes that run, steal and open the fight their own way`。

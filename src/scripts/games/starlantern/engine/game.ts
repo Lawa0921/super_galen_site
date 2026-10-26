@@ -4,6 +4,7 @@ import { ITEMS } from '../data/items';
 import { capacity, carried, weightOf } from '../data/weights';
 import { FLOORS } from '../data/floors';
 import { STORY_FIGHT_ROUNDS, createBattle, planEnemies, resolveRound, rewards, writeBack, type Action, type BattleScale, type BattleState, type Difficulty } from './battle';
+import { stealsIn } from './foes';
 import { floorOf, newRun, startDepths, terrainOf, type Portal, type Run } from './dungeon/run';
 import type { Content } from './dungeon/rooms';
 import { applyPieces, forcedGlimmers, memoryRng, pieceDrops, pityAfterFloor, type FragmentGain } from './story/memories';
@@ -106,6 +107,8 @@ export interface BattleEnd {
   fragments?: FragmentGain[];
   /** The part of `gold` that was Liz's left-over coins (plan 8c); absent or 0 when none. */
   coinGold?: number;
+  /** The part of `gold` that felled thieves gave back (roster plan B3, M13); absent when none did. */
+  returned?: number;
   /** Runes the fight dropped into the bag, in order (plan 8f); absent when none. */
   runes?: RuneRef[];
   /** Runes paid as gold for want of room (RUNE_STACK); their gold is in `state.gold`, not in `gold` or the run pack. */
@@ -698,6 +701,7 @@ export class Game {
     if (this.phase !== 'battle' || !this.battle) return null;
     const b = resolveRound(this.battle, actions, this.rng);
     this.battle = b;
+    if (b.purse && this.run) this.run.loot.gold = b.purse.gold;   // what a thief took is gone from the pack at once (B3)
     this.state.inventory = { ...b.inventory };
     this.state.revealed = structuredClone(b.revealed);
     this.state.party = writeBack(this.state.party, b);
@@ -1657,6 +1661,8 @@ export class Game {
       }
     }
     this.battle = createBattle({ party: this.state.party, enemyIds, boss, inventory: this.state.inventory, revealed: this.state.revealed, scale, depth: this.floor, altar: this.run?.altarBuffs, extra, ...rest });
+    // A thief in the fight reaches into the run pack (roster plan B3, M13); a fight without one carries no purse.
+    if (run && stealsIn(this.battle, (c) => this.battle!.enemyDefs?.[c.key])) this.battle.purse = { gold: run.loot.gold, depth: this.floor };
     planEnemies(this.battle, this.rng);
     this.phase = 'battle';
     // Bond plan ruling 3: who starts this fight out of danger. One who starts in it is not saved by living through it.

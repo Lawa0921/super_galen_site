@@ -38,6 +38,7 @@ export function battleLines(log: BattleEvent[], nameOf: (key: string) => string)
       case 'frozen': return T.log.frozen(nameOf(e.actor));
       case 'survived': return STORY.survived;
       case 'trigger': return T.log.trigger(nameOf(e.actor), RUNES[e.rune].name, SKILLS[e.skill]?.name ?? e.skill);
+      case 'foe': return T.log.foe[e.cue](nameOf(e.actor), e.target ? nameOf(e.target) : '', e.amount ?? 0);
     }
   });
 }

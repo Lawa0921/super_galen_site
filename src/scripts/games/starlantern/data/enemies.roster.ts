@@ -53,6 +53,8 @@ const windup = (s: EnemySkill, name: string): EnemySkill => ({ ...s, windup: nam
 const guard = (turns: number): Effect => ({ kind: 'cover', turns });
 /** Plan B2 (M24): the foe calls its target out; next round every foe's single blow goes to her. */
 const hunt: Effect = { kind: 'hunt' };
+/** Plan B3 (M13): after its hit lands, it takes up to depth × `perDepth` gold from the run pack. */
+const steal = (perDepth: number): Effect => ({ kind: 'steal', perDepth });
 const poison = (chance: number): Effect => ({ kind: 'inflict', status: 'poison', chance });
 
 /** The elements of a region, for its own foes (data/regions.ts REGIONS: `scaleEnemy` gives these in the region anyway). */
@@ -101,6 +103,7 @@ interface Spec {
   name: string; arch: Arch; mul?: Shape; hp?: number; weak?: Element[]; resist?: Element[]; skills?: EnemySkill[];
   band?: EnemyDef['band']; home?: Exclude<RegionId, 'mainline'>; lore?: CharacterId; remnant?: true; inscribe?: EnemyDef['inscribe'];
   rank?: EnemyDef['rank'];
+  fleeAfter?: number; opener?: EnemyDef['opener'];
 }
 
 function foe(id: string, s: Spec): EnemyDef {
@@ -112,6 +115,7 @@ function foe(id: string, s: Spec): EnemyDef {
     exp: part ? 30 : EXP_TUNE[id] ?? ARCH[s.arch][6], gold: part ? 0 : ARCH[s.arch][7], drops: dropsOf(id, s.arch), skills: s.skills ?? [],
     ...(s.rank ? { rank: s.rank } : {}), ...(s.lore ? { lore: s.lore } : {}), ...(s.remnant ? { remnant: true } : {}),
     ...(s.band ? { band: s.band } : {}), ...(s.home ? { home: s.home } : {}), ...(s.inscribe ? { inscribe: s.inscribe } : {}),
+    ...(s.fleeAfter ? { fleeAfter: s.fleeAfter } : {}), ...(s.opener ? { opener: s.opener } : {}),
   };
 }
 
@@ -127,10 +131,10 @@ const MAINLINE: [string, Spec][] = [
     skills: [windup(sk('撲咬', 0.2, 'enemy', hit(230)), '伏低')] }],
   ['tin-soldier', { name: '錫兵殘影', arch: 'heavy', mul: { def: UP }, weak: ['thunder'], resist: ['ice'], band: 'B', inscribe: 'armor',
     skills: [sk('列隊', 0.25, 'ally', guard(2))] }],
-  ['dust-mimic', { name: '塵封木箱', arch: 'std', weak: ['fire'], band: 'B', inscribe: 'goldFind',
+  ['dust-mimic', { name: '塵封木箱', arch: 'std', weak: ['fire'], band: 'B', inscribe: 'goldFind', opener: 'disguise',
     skills: [sk('咬合', 0.3, 'enemy', hit(140))] }],
   ['market-ghost', { name: '市集的吆喝聲', arch: 'support', mul: { spd: UP }, weak: ['thunder'], band: 'B', inscribe: 'matFind',
-    skills: [sk('順手牽羊', 0.35, 'enemy', hit(90))] }],
+    skills: [sk('順手牽羊', 0.35, 'enemy', hit(90), steal(5))] }],
   // C 10–15: bells, wardens, hollow ones and paired shadows
   ['tongueless-bell', { name: '無舌鐘', arch: 'caster', mul: { spd: DOWN }, weak: ['ice'], resist: ['thunder'], band: 'C', inscribe: 'tpCost',
     skills: [sk('無聲的鐘鳴', 0.35, 'row', hit(80, 'thunder'))] }],
@@ -142,7 +146,7 @@ const MAINLINE: [string, Spec][] = [
     skills: [sk('鏡羽', 0.3, 'enemy', hit(120))] }],
   ['bell-watcher', { name: '鐘樓巡守', arch: 'std', weak: ['ice'], band: 'C', inscribe: 'evasion', lore: 'rin', remnant: true,
     skills: [sk('宣告', 0.25, 'enemy', hunt), sk('巡守之杖', 0.3, 'enemy', hit(130))] }],
-  ['sleepwalker', { name: '夢遊者', arch: 'heavy', mul: { atk: UP }, weak: ['fire'], resist: ['thunder'], band: 'C', inscribe: 'hp',
+  ['sleepwalker', { name: '夢遊者', arch: 'heavy', mul: { atk: UP }, weak: ['fire'], resist: ['thunder'], band: 'C', inscribe: 'hp', opener: 'asleep',
     skills: [sk('夢中揮拳', 0.3, 'enemy', hit(160))] }],
   // D 16–24: the old city's statues, its requiem, the lantern-eater's young, the ancestors' machines
   ['old-city-sentinel', { name: '古城衛像', arch: 'heavy', weak: ['thunder'], resist: ['phys'], band: 'D', inscribe: 'def',
@@ -178,8 +182,8 @@ const MAINLINE: [string, Spec][] = [
   ['returning-light', { name: '歸途之光', arch: 'support', mul: { hp: DOWNDOWN }, band: 'F', inscribe: 'expBonus',
     skills: [sk('守望', 0.5, 'allies', buff('def', 30, 2))] }],
   // the treasure foes
-  ['hoarder', { name: '拾憶鼠', arch: 'treasure', band: 'B', inscribe: 'matFind' }],
-  ['gilded-hoarder', { name: '金箔拾憶鼠', arch: 'treasure', band: 'E', inscribe: 'goldFind' }],
+  ['hoarder', { name: '拾憶鼠', arch: 'treasure', band: 'B', inscribe: 'matFind', fleeAfter: 3 }],
+  ['gilded-hoarder', { name: '金箔拾憶鼠', arch: 'treasure', band: 'E', inscribe: 'goldFind', fleeAfter: 2 }],
 ];
 
 const NATIVE: [string, Spec][] = [
@@ -222,9 +226,10 @@ const NATIVE: [string, Spec][] = [
   ['veil-stalker', { name: '帷幕潛行者', arch: 'std', home: 'shade', inscribe: 'critDmg', skills: [sk('背刺', 0.3, 'enemy', hit(120, 'phys', { crit: 'always' }))] }],
   ['hush-acolyte', { name: '靜默侍者', arch: 'caster', home: 'shade', inscribe: 'tpCost', lore: 'rin', remnant: true,
     skills: [sk('靜默', 0.3, 'cross', hit(80, 'ice'))] }],
-  ['vault-mimic', { name: '餓肚子的寶庫', arch: 'heavy', home: 'shade', inscribe: 'goldFind', lore: 'liz', skills: [sk('吞金', 0.3, 'enemy', hit(150))] }],
+  ['vault-mimic', { name: '餓肚子的寶庫', arch: 'heavy', home: 'shade', inscribe: 'goldFind', lore: 'liz', opener: 'disguise',
+    skills: [sk('吞金', 0.3, 'enemy', hit(150), steal(5))] }],
   ['debt-collector', { name: '敲門的影子', arch: 'std', home: 'shade', inscribe: 'vuln', lore: 'liz', remnant: true,
-    skills: [sk('記下名字', 0.25, 'enemy', hunt), sk('敲門', 0.3, 'enemy', hit(120))] }],
+    skills: [sk('記下名字', 0.25, 'enemy', hunt), sk('敲門', 0.3, 'enemy', hit(120), steal(5))] }],
   // 鋼鐵要塞
   ['rivet-golem', { name: '鉚釘機兵', arch: 'heavy', home: 'iron', inscribe: 'armor', skills: [sk('鉚接', 0.25, 'ally', guard(2))] }],
   ['siege-crab', { name: '攻城蟹', arch: 'heavy', home: 'iron', inscribe: 'meleeDR', skills: [windup(sk('破城鉗', 0.2, 'row', hit(170)), '舉鉗')] }],
@@ -256,7 +261,7 @@ const WARDENS: [string, Spec][] = [
   ['grey-elder', { name: '灰化的老樹', arch: 'heavy', rank: 'warden', home: 'mire', lore: 'sylvie',
     skills: [sk('纏根', 0.3, 'row', buff('spd', -40, 2)), sk('枯枝', 0.3, 'enemy', hit(140))] }],
   ['locked-vault', { name: '鎖著的金庫', arch: 'heavy', rank: 'warden', mul: { def: UPUP }, home: 'shade', lore: 'liz',
-    skills: [sk('金庫門', 0.3, 'enemy', hit(150))] }],
+    skills: [sk('金庫門', 0.3, 'enemy', hit(150), steal(5))] }],
   ['gate-breaker', { name: '撞門的巨影', arch: 'heavy', rank: 'warden', home: 'iron', lore: 'scarlet',
     skills: [windup(sk('撞門', 0.2, 'enemies', hit(120)), '後退助跑')] }],
 ];
@@ -306,7 +311,7 @@ const BOSSES: [string, Spec][] = [
   // 暗影迴廊
   ['faceless-host', { name: '無面之主', arch: 'boss', home: 'shade', skills: pair('影刃', 'ice', '無面之擊') }],
   ['vault-dragon', { name: '金庫之龍', arch: 'boss', mul: { hp: 1.1 }, home: 'shade',
-    skills: [sk('金幣吐息', 0.35, 'row', hit(120, 'fire')), sk('龍爪', 0.3, 'enemy', hit(160))] }],
+    skills: [sk('金幣吐息', 0.35, 'row', hit(120, 'fire')), sk('龍爪', 0.3, 'enemy', hit(160), steal(5))] }],
   ['shadow-parade', { name: '影之行列', arch: 'boss', home: 'shade', skills: pair('夜行', 'ice', '影之鞭') }],
   // 鋼鐵要塞
   ['fortress-colossus', { name: '要塞巨像', arch: 'boss', home: 'iron',

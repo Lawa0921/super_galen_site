@@ -185,6 +185,8 @@ export const T = {
     foe: {
       /** M1: the intent of a foe winding a skill up. */
       windup: (skill: string) => `蓄力：${skill}`,
+      /** M14: the name a foe in disguise wears until a hit unmasks it. */
+      disguise: '寶箱？',
     },
   },
   element: { phys: '物理', fire: '火', ice: '冰', thunder: '雷' },
@@ -253,6 +255,15 @@ export const T = {
     trigger: (who: string, rune: string, skill: string) => `${who}的${rune}：${skill}！`,
     damage: (who: string, n: number, mult: number) => `${who} 受到 ${n} 傷害${mult > 1 ? '（弱點）' : mult < 1 ? '（抗性）' : ''}`,
     ko: (who: string) => `${who} 倒下了`,
+    /** The roster's foe mechanics (roster plan B3–B4): `who` the foe, `other` whom it touched, `n` the gold it took. */
+    foe: {
+      flee: (who: string) => `${who}溜走了！`,
+      steal: (who: string, other: string, n: number) => `${who}從${other}身上摸走了 ${n} 金！`,
+      wake: (who: string) => `${who}醒了，氣呼呼的！`,
+      reveal: (who: string) => `寶箱現出原形：是${who}！`,
+      summon: (who: string, other: string) => `${who}叫來了${other}！`,
+      rise: (who: string) => `${who}又站了起來！`,
+    },
     heal: (who: string, n: number) => `${who} 回復 ${n} HP`,
     tp: (who: string, n: number) => `${who} 回復 ${n} TP`,
     revive: (who: string) => `${who} 復活了`,

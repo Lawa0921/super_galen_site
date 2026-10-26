@@ -193,3 +193,168 @@ describe('M24 hunt (roster plan B2)', () => {
     expect(r.party[1].hunted).toBeUndefined();
   });
 });
+
+describe('M3 flee (roster plan B3)', () => {
+  /** A treasure foe that flees after `n` rounds, beside a slime; the party only defends. */
+  const field = (n: number) => makeBattle([P('scarlet')], [E('e0', { name: '拾憶鼠' }), E('e1')], { enemyDefs: { e0: def([], { fleeAfter: n }) } });
+
+  it('flees at the end of round N', () => {
+    let s = field(3);
+    for (let r = 1; r <= 2; r++) {
+      s = resolveRound(s, defend(s), constRng(0.5));
+      expect(s.enemies[0].alive, `round ${r}`).toBe(true);
+    }
+    s = resolveRound(s, defend(s), constRng(0.5));
+    expect(s.enemies[0]).toMatchObject({ alive: false, left: true });
+    expect(s.log).toContainEqual({ type: 'foe', actor: 'e0', cue: 'flee' });
+    // Gone, it is no one's target and makes no plan.
+    expect(s.intents!.e0).toBeUndefined();
+    expect(s.outcome).toBe('ongoing');
+  });
+
+  it('a fled foe pays nothing and takes no loot or rune draw', () => {
+    let s = field(1);
+    s = resolveRound(s, defend(s), constRng(0.5));
+    s.enemies[1].hp = 0;
+    s.enemies[1].alive = false;
+    const solo = { ...s, enemies: [s.enemies[1]], enemyDefs: {} };
+    expect(rewards(s, constRng(0), false)).toEqual(rewards(solo, constRng(0), false));
+  });
+
+  it('a foe that falls before its round does not flee', () => {
+    let s = field(1);
+    s.enemies[0].hp = 1;
+    s = resolveRound(s, { scarlet: { kind: 'attack', target: 'e0' } }, constRng(0.5));
+    expect(s.enemies[0].left).toBeUndefined();
+    expect(s.log.some((e) => e.type === 'foe' && e.cue === 'flee')).toBe(false);
+  });
+});
+
+describe('M13 steal (roster plan B3)', () => {
+  const steal = (perDepth = 5): EnemySkill => ({ name: '順手牽羊', chance: 1, target: 'enemy', effects: [hit(50), { kind: 'steal', perDepth }] });
+  /** A thief beside a slime; the party's run pack holds `gold` at depth 4 (cap 20 a steal). */
+  const field = (gold: number, over: Partial<EnemyDef> = {}) =>
+    makeBattle([P('scarlet', { max: { hp: 999 } as never })], [E('e0', { name: '吆喝聲' }), E('e1')], { enemyDefs: { e0: def([steal()], over) }, purse: { gold, depth: 4 } });
+
+  it('takes from the pack, up to depth × perDepth', () => {
+    const r = resolveRound(field(100), defend(field(100)), constRng(0.5));
+    expect(r.purse).toEqual({ gold: 80, depth: 4 });
+    expect(r.enemies[0].stolen).toBe(20);
+    expect(r.log).toContainEqual({ type: 'foe', actor: 'e0', cue: 'steal', target: 'scarlet', amount: 20 });
+  });
+
+  it('never below zero', () => {
+    let s = field(3);
+    s = resolveRound(s, defend(s), constRng(0.5));
+    expect(s.purse!.gold).toBe(0);
+    expect(s.enemies[0].stolen).toBe(3);
+    s = resolveRound(s, defend(s), constRng(0.5));
+    expect(s.purse!.gold).toBe(0);
+    expect(s.enemies[0].stolen).toBe(3);
+  });
+
+  it('only a landed hit steals', () => {
+    const s = field(100);
+    s.party[0].x = { evasion: 100000 };
+    const r = resolveRound(s, defend(s), constRng(0.1));
+    expect(r.purse!.gold).toBe(100);
+    expect(r.enemies[0].stolen).toBeUndefined();
+  });
+
+  it('returns on a kill', () => {
+    const s = resolveRound(field(100), defend(field(100)), constRng(0.5));
+    for (const e of s.enemies) { e.hp = 0; e.alive = false; }
+    s.outcome = 'win';
+    const paid = rewards(s, constRng(0.99), false);
+    const none = rewards({ ...s, enemies: s.enemies.map((e) => ({ ...e, stolen: undefined })) }, constRng(0.99), false);
+    expect(paid.returned).toBe(20);
+    expect(paid.gold).toBe(none.gold + 20);
+    expect(none.returned).toBeUndefined();
+  });
+
+  it('a warden returns twice', () => {
+    const s = resolveRound(field(100, { rank: 'warden' }), defend(field(100)), constRng(0.5));
+    for (const e of s.enemies) { e.hp = 0; e.alive = false; }
+    s.outcome = 'win';
+    expect(rewards(s, constRng(0.99), false).returned).toBe(40);
+  });
+
+  it('lost on a flee', () => {
+    const s = resolveRound(field(100), defend(field(100)), constRng(0.5));
+    s.enemies[0].alive = false;
+    s.enemies[0].left = true;
+    s.enemies[1].hp = 0;
+    s.enemies[1].alive = false;
+    s.outcome = 'win';
+    expect(rewards(s, constRng(0.99), false).returned).toBeUndefined();
+  });
+
+  it('the sim steals nothing', () => {
+    // A fight with no purse (the sim has no run): the hit lands and nothing is taken.
+    const s = makeBattle([P('scarlet', { max: { hp: 999 } as never })], [E('e0')], { enemyDefs: { e0: def([steal()]) } });
+    const r = resolveRound(s, defend(s), constRng(0.5));
+    expect(hitsOn(r, 'scarlet')).toBe(1);
+    expect(r.enemies[0].stolen).toBeUndefined();
+    expect(r.log.some((e) => e.type === 'foe')).toBe(false);
+  });
+});
+
+describe('M14 openers (roster plan B3)', () => {
+  const party = () => fullParty(LEGACY_LINEUP);
+  /** A fight with one roster-shaped foe whose definition opens its own way. */
+  const open = (opener: NonNullable<EnemyDef['opener']>, skills: EnemySkill[] = []) => {
+    const was = ENEMIES.slime;
+    try {
+      (ENEMIES as Record<string, EnemyDef>).slime = { ...was, opener, skills, stats: { ...was.stats, hp: 9999, spd: 1 } };
+      return createBattle({ party: party(), enemyIds: ['slime'], inventory: {}, revealed: {} });
+    } finally {
+      (ENEMIES as Record<string, EnemyDef>).slime = was;
+    }
+  };
+  const defendAll = (s: BattleState) => Object.fromEntries(s.party.filter((c) => c.alive).map((c) => [c.key, { kind: 'defend' as const }]));
+
+  it('asleep wakes on a hit or by round three', () => {
+    let s = open('asleep');
+    expect(s.enemies[0].sleep).toBe(2);
+    // Left alone it sleeps two rounds and wakes in the third, angrier.
+    s = resolveRound(s, defendAll(s), constRng(0.5));
+    s = resolveRound(s, defendAll(s), constRng(0.5));
+    expect(acted(s, 'e0')).toEqual([]);
+    s = resolveRound(s, defendAll(s), constRng(0.5));
+    expect(acted(s, 'e0')).toEqual(['攻擊']);
+    expect(s.log).toContainEqual({ type: 'foe', actor: 'e0', cue: 'wake' });
+    expect(s.enemies[0].buffs).toContainEqual(expect.objectContaining({ stat: 'atk', pct: 50 }));
+    // A hit wakes it at once: slower than the party, it acts in that very round, angrier.
+    const h = open('asleep');
+    const r1 = resolveRound(h, { ...defendAll(h), scarlet: { kind: 'attack', target: 'e0' } }, constRng(0.5));
+    expect(r1.enemies[0].sleep).toBe(0);
+    expect(acted(r1, 'e0')).toEqual(['攻擊']);
+    expect(r1.log).toContainEqual({ type: 'foe', actor: 'e0', cue: 'wake' });
+  });
+
+  it('ambush acts first only in round one', () => {
+    let s = open('ambush');
+    s = resolveRound(s, defendAll(s), constRng(0.5));
+    const order = (b: BattleState) => b.log.filter((e) => e.type === 'act').map((e) => (e as { actor: string }).actor);
+    expect(order(s)[0]).toBe('e0');
+    s = resolveRound(s, defendAll(s), constRng(0.5));
+    expect(order(s).at(-1)).toBe('e0');   // the slowest, as it is
+  });
+
+  it('disguise lifts on the first hit', () => {
+    let s = open('disguise');
+    const foe = () => s.enemies[0];
+    expect(foe().name).toBe('寶箱？');
+    expect(foe().disguised).toBe(ENEMIES.slime.name);
+    expect(foe().buffs).toContainEqual(expect.objectContaining({ stat: 'atk', pct: 50, turns: 1 }));
+    // It springs first in round one, still in disguise while no hit lands on it.
+    s = resolveRound(s, defendAll(s), constRng(0.5));
+    expect(s.log.find((e) => e.type === 'act')).toMatchObject({ actor: 'e0' });
+    expect(foe().name).toBe('寶箱？');
+    expect(foe().buffs.some((b) => b.stat === 'atk')).toBe(false);   // the first round's bite only
+    s = resolveRound(s, { ...defendAll(s), scarlet: { kind: 'attack', target: 'e0' } }, constRng(0.5));
+    expect(foe().name).toBe(ENEMIES.slime.name);
+    expect(foe().disguised).toBeUndefined();
+    expect(s.log).toContainEqual({ type: 'foe', actor: 'e0', cue: 'reveal' });
+  });
+});

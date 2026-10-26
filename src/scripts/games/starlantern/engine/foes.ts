@@ -3,8 +3,49 @@
  * decision here is made without a draw (spec §6.1); a combatant without these fields walks every path it walked before.
  */
 import type { BattleState } from './battle';
-import type { Combatant } from './combatant';
-import type { EnemySkill } from './types';
+import { addBuff, type Combatant } from './combatant';
+import type { EnemyDef, EnemySkill } from './types';
+import { T } from '../data/text.zh-TW';
+
+/** M14: rounds an `asleep` opener sleeps (it acts in round three); its anger on waking; a disguise's first bite. */
+export const OPENER = { sleepRounds: 2, wakeAtkPct: 50, wakeTurns: 3, disguiseAtkPct: 50 } as const;
+
+/** M14: a foe as its opener has it at the start of a fight (meetEnemy). Draws nothing. */
+export function openWith(c: Combatant, d: EnemyDef): void {
+  switch (d.opener) {
+    case 'asleep':
+      c.sleep = OPENER.sleepRounds;
+      c.dozing = true;
+      return;
+    case 'ambush':
+      c.ambush = true;
+      return;
+    case 'disguise':
+      c.ambush = true;
+      c.disguised = c.name;
+      c.name = T.battle.foe.disguise;
+      addBuff(c, { stat: 'atk', pct: OPENER.disguiseAtkPct, turns: 1 });
+      return;
+  }
+}
+
+/** M14: a dozing foe at its first turn awake (woken by a hit or by its rounds) wakes angry. Draws nothing. */
+export function wakeUp(s: BattleState, c: Combatant): void {
+  if (!c.dozing) return;
+  delete c.dozing;
+  addBuff(c, { stat: 'atk', pct: OPENER.wakeAtkPct, turns: OPENER.wakeTurns });
+  s.log.push({ type: 'foe', actor: c.key, cue: 'wake' });
+}
+
+/** M13: whether any foe of the fight can steal (only then does a fight get a purse; game.ts startBattle). */
+export function stealsIn(s: BattleState, defOf: (c: Combatant) => EnemyDef | undefined): boolean {
+  return s.enemies.some((c) => defOf(c)?.skills.some((k) => k.effects.some((e) => e.kind === 'steal')));
+}
+
+/** M13: the gold felled thieves give back, a warden's twice over; a thief that left keeps it. */
+export function returnedGold(s: BattleState, defOf: (c: Combatant) => EnemyDef | undefined): number {
+  return s.enemies.reduce((n, c) => n + (!c.alive && !c.left && c.stolen ? c.stolen * (defOf(c)?.rank === 'warden' ? 2 : 1) : 0), 0);
+}
 
 const living = (cs: Combatant[]) => cs.filter((c) => c.alive);
 /** A foe that can stir: awake and not frozen (a sleeping or frozen guard guards no one, as Scarlet covers no one then). */
@@ -41,8 +82,20 @@ export function foesRoundStart(s: BattleState): void {
   for (const c of s.party) if (c.defending && c.hunted !== undefined) delete c.hunted;
 }
 
-/** At a round's end, after the mechanics: a foe's guard counts down its rounds (M2); a hunt for this round is over (M24). */
-export function foesRoundEnd(s: BattleState): void {
+/**
+ * At a round's end, after the mechanics: a foe whose time is up leaves, still standing (M3: alive no more, `left`, paying
+ * nothing); a foe's guard counts down its rounds (M2); a hunt for this round is over (M24).
+ */
+export function foesRoundEnd(s: BattleState, defOf: (c: Combatant) => EnemyDef | undefined = () => undefined): void {
+  for (const e of s.enemies) {
+    const after = defOf(e)?.fleeAfter;
+    if (!e.alive || after === undefined || s.round < after) continue;
+    e.alive = false;
+    e.left = true;
+    delete e.cover;
+    delete e.winding;
+    s.log.push({ type: 'foe', actor: e.key, cue: 'flee' });
+  }
   for (const e of s.enemies) {
     if (!e.cover) continue;
     if (e.cover.turns > 1) e.cover = { ...e.cover, turns: e.cover.turns - 1 };

@@ -48,6 +48,7 @@ export function battleCues(log: BattleEvent[], defIdOf: (key: string) => string 
     } else if (ev.type === 'miss') out.push({ kind: 'miss', key: ev.target });
     else if (ev.type === 'ko') out.push({ kind: 'ko', key: ev.target });
     else if (ev.type === 'mech') { out.push({ kind: 'mech', key: ev.actor, cue: ev.cue }, { kind: 'wait', ms: EVENT_MS, keep: true }); return; }
+    else if (ev.type === 'foe') { /* a foe mechanic's moment (roster plan B3): its line is its picture */ }
     else if ('target' in ev) {
       const fx = effectFor(ev, actor, weaponOf(actorKey));
       if (fx) out.push(ev.type === 'heal' ? { kind: 'fx', key: ev.target, fx, amount: ev.amount } : { kind: 'fx', key: ev.target, fx });

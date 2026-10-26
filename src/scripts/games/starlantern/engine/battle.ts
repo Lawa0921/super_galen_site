@@ -17,7 +17,7 @@ import { SECONDARY_KEYS } from './stats';
 import { applyEffect, patchSkill, pctOf, type EffectContext } from './skills';
 import { afterAction, afterFoe, castCost, castDef, extraAction, initMechs, mechBeforeTicks, mechRoundEnd, payMech, watchAction, type CastDef } from './mechanics/index';
 import { AILMENT, ageAilments, shockTick, tickAilments } from './ailments';
-import { foeGuard, foesRoundEnd, foesRoundStart, guardTargets, huntedIn } from './foes';
+import { foeGuard, foesRoundEnd, foesRoundStart, guardTargets, huntedIn, openWith, returnedGold, wakeUp } from './foes';
 import { countCast, credit, lossOf, type Ledger } from './ledger';
 import { AIM, barrierPower, type Barrier } from './mech';
 import type { MoonPhase } from './mechanics/moon';
@@ -61,6 +61,11 @@ export interface BattleState {
   partyScale?: number;
   /** Rounds the party must last for a win (a story fight); absent in a plain fight. */
   survive?: number;
+  /**
+   * Roster plan B3 (M13): the run pack's gold a thief can take, and the depth that caps each theft; set by the game only for
+   * a fight with a thief in it (game.ts writes `gold` back to the pack each round). The sim has none: nothing is taken.
+   */
+  purse?: { gold: number; depth: number };
   /** The barriers over the party (engine/mech.ts); the old roster raises none. */
   barriers?: Barrier[];
   /** The last plain skill a companion cast, for the hero's echo (engine/mechanics/echo.ts): who, in which round, as cast, at what TP. */
@@ -268,15 +273,19 @@ export function meetEnemy(s: BattleState, id: string, m: Meeting, as: MeetAs = {
   const name = as.letter ? `${d.name} ${as.letter}` : d.name;
   const c = fromEnemy(d, key, name, elite ? 'elite' : region ? regionTint(region) : undefined, level);
   if (aff) c.affixes = [...aff];
+  openWith(c, d);   // its opener (roster plan B3, M14); none on the old roster
   s.enemies.push(c);
   return c;
 }
 
-/** By speed, a little shuffled; a foe pinned for `round` (Sylvie's pin) goes last. One draw per combatant either way. */
+/**
+ * By speed, a little shuffled; a foe pinned for `round` (Sylvie's pin) goes last, and a foe that ambushes goes first in
+ * round one (roster plan B3, M14). One draw per combatant either way.
+ */
 export function turnOrder(cs: Combatant[], rng: Rng, round = 0): Combatant[] {
   return cs
-    .map((c, i) => ({ c, i, k: stat(c, 'spd') * (1 + rng() * 0.25), last: round > 0 && c.delay === round }))
-    .sort((a, b) => Number(a.last) - Number(b.last) || b.k - a.k || a.i - b.i)
+    .map((c, i) => ({ c, i, k: stat(c, 'spd') * (1 + rng() * 0.25), last: round > 0 && c.delay === round, first: round === 1 && !!c.ambush }))
+    .sort((a, b) => Number(b.first) - Number(a.first) || Number(a.last) - Number(b.last) || b.k - a.k || a.i - b.i)
     .map((x) => x.c);
 }
 
@@ -776,8 +785,8 @@ function endOfRound(s: BattleState, ctx: EffectContext, rng: Rng): void {
   }
   // The mechanics close the round last, after every tick (a foe a tick felled has already lost its mark).
   mechRoundEnd(s, ctx, rng);
-  // Then the foes' own countdowns (roster plan B2): a guard's rounds, a hunt's round.
-  foesRoundEnd(s);
+  // Then the foes' own countdowns (roster plan B2–B3): a flight, a guard's rounds, a hunt's round.
+  foesRoundEnd(s, (c) => enemyDef(s, c));
 }
 
 /**
@@ -839,6 +848,7 @@ export function resolveRound(prev: BattleState, actions: Record<string, Action>,
     // A lost turn breaks a foe's charge (roster plan B2, M1).
     if (actor.frozen) { delete actor.frozen; delete actor.winding; actor.freezeGuard = AILMENT.freezeGuard; s.log.push({ type: 'frozen', actor: actor.key }); continue; }
     if (actor.sleep > 0) { actor.sleep -= 1; delete actor.winding; s.log.push({ type: 'asleep', actor: actor.key }); continue; }
+    if (actor.dozing) wakeUp(s, actor);   // a foe that opened asleep wakes angry (roster plan B3, M14)
     const act = actor.side === 'party' ? actions[actor.key] : enemyActs.get(actor.key);
     const heroUp = s.party.some((c) => c.key === 'hero' && c.alive);
     if (act) {
@@ -918,7 +928,7 @@ export function intentLabel(s: BattleState, key: string): string {
  * The living party's goldFind, matFind and expBonus are each summed and held to 100: gold and exp are raised by their
  * sum and rounded, every drop chance by matFind's.
  */
-export function rewards(s: BattleState, rng: Rng, dropBoost: boolean, dropMul = 1): { exp: number; gold: number; drops: Record<string, number>; coinGold: number } {
+export function rewards(s: BattleState, rng: Rng, dropBoost: boolean, dropMul = 1): { exp: number; gold: number; drops: Record<string, number>; coinGold: number; returned?: number } {
   let exp = 0, gold = 0;
   const drops: Record<string, number> = {};
   const find = (k: SecondaryKey) => Math.min(100, living(s.party).reduce((n, c) => n + (c.x[k] ?? 0), 0));
@@ -938,7 +948,9 @@ export function rewards(s: BattleState, rng: Rng, dropBoost: boolean, dropMul = 
   }
   // Liz's coins left at a won fight's end become gold (plan 8c ruling 21); no draw.
   const coinGold = s.outcome === 'win' ? s.party.reduce((n, c) => n + (c.mech?.kind === 'coins' ? c.mech.coins * COINS.gold : 0), 0) : 0;
-  return { exp: Math.round(exp * (1 + find('expBonus') / 100)), gold: Math.round(gold * (1 + find('goldFind') / 100)) + coinGold, drops, coinGold };
+  // What felled thieves took comes back with the gold (roster plan B3, M13); no draw. Absent when none did.
+  const returned = returnedGold(s, (c) => enemyDef(s, c));
+  return { exp: Math.round(exp * (1 + find('expBonus') / 100)), gold: Math.round(gold * (1 + find('goldFind') / 100)) + coinGold + returned, drops, coinGold, ...(returned ? { returned } : {}) };
 }
 
 export function writeBack(p: Party, s: BattleState): Party {

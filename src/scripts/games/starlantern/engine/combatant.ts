@@ -116,7 +116,18 @@ export interface Combatant {
   winding?: number;
   /** Roster plan B2 (M24): the round a foe's hunt sends every single blow to this member. */
   hunted?: number;
+  /** Roster plan B3 (M13): the gold this foe took from the run pack, given back if it is felled. */
+  stolen?: number;
+  /** Roster plan B3 (M14): its own name while it wears 「寶箱？」 as its `name`; a landed hit unmasks it. */
+  disguised?: string;
+  /** Roster plan B3 (M14): asleep from the start; it wakes angry (`wake`) at its first turn awake. */
+  dozing?: true;
+  /** Roster plan B3 (M14): it acts first in round one. */
+  ambush?: true;
 }
+
+/** Roster plan B3–B4: a foe mechanic's moment in the log (battleLines words it). */
+export type FoeCue = 'flee' | 'steal' | 'wake' | 'reveal' | 'summon' | 'rise';
 
 /** The aim stacks `a` holds on `t` (Sylvie; 0 for anyone else or any other foe). */
 const aimOn = (a: Combatant, t: Combatant): number => (a.mech?.kind === 'aim' && a.mech.target === t.key ? a.mech.stacks : 0);
@@ -153,7 +164,9 @@ export type BattleEvent =
   /** A survive fight lasted its rounds. */
   | { type: 'survived' }
   /** A trigger rune cast `skill` for `actor`, for free (plan 8e Task 6). */
-  | { type: 'trigger'; actor: string; skill: string; rune: RuneId };
+  | { type: 'trigger'; actor: string; skill: string; rune: RuneId }
+  /** A foe mechanic's moment (roster plan B3–B4): `target` the member or foe it touched, `amount` the gold it took. */
+  | { type: 'foe'; actor: string; cue: FoeCue; target?: string; amount?: number };
 
 export const MAX_BUFFS = 3;
 export const SLEEP_TURNS = 3;
@@ -347,6 +360,7 @@ export function dealDamage(t: Combatant, amount: number, opts: { dot?: true; led
     delete t.challenged;
     delete t.winding;
     delete t.hunted;
+    delete t.dozing;
     // Her marks and her aim end with her (their words go from the foes too).
     if (t.mech?.kind === 'mark') t.mech.marks = [];
     if (t.mech?.kind === 'aim') { t.mech.target = null; t.mech.stacks = 0; delete t.mech.lock; }

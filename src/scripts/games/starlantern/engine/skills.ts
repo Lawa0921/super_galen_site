@@ -316,6 +316,14 @@ function gainHp(t: Combatant, amount: number): number {
   return t.hp - before;
 }
 
+/** A landed hit unmasks a foe in disguise (roster plan B3, M14): its own name comes back. */
+function unmask(t: Combatant, ctx: EffectContext): void {
+  if (t.disguised === undefined) return;
+  t.name = t.disguised;
+  delete t.disguised;
+  ctx.log.push({ type: 'foe', actor: t.key, cue: 'reveal' });
+}
+
 export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ctx: EffectContext): void {
   switch (eff.kind) {
     case 'damage': {
@@ -336,6 +344,7 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
         }
         const hpBefore = target.hp;
         const lost = dealDamage(target, amount, { ledger: ctx.ledger, log: ctx.log });
+        unmask(target, ctx);
         ctx.lastHit = { target: target.key, amount: lost };
         if (target.side === 'enemy') reveal(ctx.revealed, target.defId, eff.element);
         ctx.log.push({ type: 'damage', target: target.key, amount: lost, element: eff.element, mult, ...(crit ? { crit } : {}) });
@@ -540,6 +549,17 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
       // Fed to another member: counted apart in a ledger that asks (plan 8h Task 5b, H3).
       const gauge = ctx.ledger?.gauge;
       if (gauge && target !== actor && target.limit > before) gauge[actor.key] = (gauge[actor.key] ?? 0) + target.limit - before;
+      return;
+    }
+    case 'steal': {
+      // Only on a hit that landed on this target in this action, and only from a run pack (the sim has none). No draw.
+      const purse = ctx.battle?.purse;
+      if (!purse || actor.side !== 'enemy' || ctx.lastHit?.target !== target.key) return;
+      const n = Math.min(purse.gold, purse.depth * eff.perDepth);
+      if (n <= 0) return;
+      purse.gold -= n;
+      actor.stolen = (actor.stolen ?? 0) + n;
+      ctx.log.push({ type: 'foe', actor: actor.key, cue: 'steal', target: target.key, amount: n });
       return;
     }
     case 'hunt': {

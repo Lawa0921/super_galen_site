@@ -6359,3 +6359,52 @@ describe('foes that leave or join a fight (roster plan B1)', () => {
   });
 });
 
+describe('a thief in a real fight (roster plan B3, M13)', () => {
+  /** A fight on floor 4 against the market's thief and a slime, with `gold` in the run pack. */
+  const thief = (gold: number) => {
+    const g = inMap(1, mulberry32(7));
+    g.run!.loot.gold = gold;
+    (g as unknown as { startBattle: (ids: string[], boss: boolean) => void }).startBattle(['market-ghost', 'slime'], false);
+    const b = g.battle!;
+    // Its theft every round, for sure; the slime only defends.
+    b.enemyDefs!.e0 = { ...b.enemyDefs!.e0, skills: b.enemyDefs!.e0.skills.map((k) => ({ ...k, chance: 1 })) };
+    b.intents = { e0: { kind: 'enemy-skill', index: 0, target: 'hero' } };
+    return g;
+  };
+  const defendAll = (g: Game) => Object.fromEntries(g.battle!.party.filter((c) => c.alive).map((c) => [c.key, { kind: 'defend' as const }]));
+
+  it("takes the pack's gold at once, and a kill gives it back", () => {
+    const g = thief(100);
+    expect(g.battle!.purse).toEqual({ gold: 100, depth: 1 });
+    let taken = 0;
+    for (let i = 0; i < 6 && !taken; i++) {
+      g.submitRound(defendAll(g));
+      taken = g.battle!.enemies[0].stolen ?? 0;
+    }
+    expect(taken).toBe(5);   // depth 1 × 5
+    expect(g.run!.loot.gold).toBe(95);
+    const before = g.run!.loot.gold;
+    const end = killAll(g);
+    expect(end.returned).toBe(5);
+    expect(g.run!.loot.gold - before).toBe(end.gold);
+    expect(end.gold).toBeGreaterThanOrEqual(5);
+  });
+
+  it('lost when the party flees', () => {
+    const g = thief(100);
+    for (let i = 0; i < 6 && !g.battle!.enemies[0].stolen; i++) g.submitRound(defendAll(g));
+    expect(g.run!.loot.gold).toBe(95);
+    const fled = (() => { for (let i = 0; i < 40; i++) { const r = g.submitRound({ hero: { kind: 'escape' } }); if (r?.end) return r; } return null; })();
+    expect(fled?.end?.outcome).toBe('fled');
+    // Whatever it took, all of it, is gone with it.
+    const stolen = fled!.battle.enemies[0].stolen ?? 0;
+    expect(stolen).toBeGreaterThanOrEqual(5);
+    expect(g.run!.loot.gold).toBe(100 - stolen);
+  });
+
+  it('a fight without a thief keeps no purse', () => {
+    const g = inMap(1, mulberry32(7));
+    stepOnto(g, plantAt(g, 'elite'));
+    expect(g.battle!.purse).toBeUndefined();
+  });
+});
