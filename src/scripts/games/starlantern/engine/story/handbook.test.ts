@@ -1,6 +1,7 @@
 import { afterEach, describe, it, expect } from 'vitest';
 import { CHARACTERS, CHARACTER_IDS } from '../../data/characters';
 import { ENEMIES } from '../../data/enemies';
+import { listedEnemy } from '../../data/monsters';
 import { SETS, SPECIALS } from '../../data/gear';
 import { REGIONS } from '../../data/regions';
 import { chainLength, CHAINS } from '../../data/story/chains';
@@ -175,7 +176,7 @@ describe("the adventurer's handbook", () => {
     s.codex = [Object.keys(SPECIALS)[0], Object.keys(SETS)[0]];
     s.revealed = { slime: ['fire'] };
     const c = handbook(s).codex;
-    expect(c.monsters.map((m) => m.id)).toEqual(Object.values(ENEMIES).filter((e) => !e.story).map((e) => e.id));
+    expect(c.monsters.map((m) => m.id)).toEqual(Object.values(ENEMIES).filter((e) => listedEnemy(e.id) && !e.story).map((e) => e.id));
     expect(c.monsters.some((m) => m.id === 'scarlet-foe')).toBe(false);
     expect(c.monsters.find((m) => m.id === 'slime')!.weak).toEqual(['fire']);
     expect(c.monsters.find((m) => m.id === 'bat')!.weak).toBeNull();

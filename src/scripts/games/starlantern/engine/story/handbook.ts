@@ -1,5 +1,6 @@
 import { CHARACTER_IDS, titleOf } from '../../data/characters';
 import { ENEMIES } from '../../data/enemies';
+import { listedEnemy } from '../../data/monsters';
 import { SETS, SPECIALS } from '../../data/gear';
 import { REGIONS } from '../../data/regions';
 import { CHAINS, chainLength } from '../../data/story/chains';
@@ -118,7 +119,7 @@ export function handbook(s: GameState): Handbook {
     // A set piece sits in SPECIALS too, but it is listed under its set, not twice.
     specials: s.codex.filter((id) => Object.hasOwn(SPECIALS, id) && !SPECIALS[id].set),
     sets: s.codex.filter((id) => Object.hasOwn(SETS, id)),
-    monsters: Object.values(ENEMIES).filter((e) => !e.story).map((e) => ({ id: e.id, name: e.name, weak: s.revealed[e.id] ? [...s.revealed[e.id]] : null })),
+    monsters: Object.values(ENEMIES).filter((e) => listedEnemy(e.id) && !e.story).map((e) => ({ id: e.id, name: e.name, weak: s.revealed[e.id] ? [...s.revealed[e.id]] : null })),
   };
   // An act's page opens once its scene has played as well (final review I-2): the depth alone can come a whole stay early,
   // when Rin's reveal plays alone and holds the act for the next return.

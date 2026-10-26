@@ -5,7 +5,8 @@ import { KEYSTONE_GATE } from './talents';
 import { EQUIPMENT } from './equipment';
 import { ITEMS } from './items';
 import { MATERIALS } from './materials';
-import { SETS } from './gear';
+import { SETS, SPECIALS } from './gear';
+import { ENEMIES } from './enemies';
 import type { RegionId } from './regions';
 import { RUNES, type RuneId, type RuneTier, type Tag } from './runes';
 import { numeral } from './numeral';
@@ -979,7 +980,7 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
     },
   },
   forge: {
-    kind: { essence: '精華', monster: '怪物素材', region: '地區素材', rare: '稀有素材', junk: '雜物' } as Record<MaterialKind, string>,
+    kind: { essence: '精華', monster: '怪物素材', region: '地區素材', rare: '稀有素材', junk: '雜物', trophy: '戰利品', keepsake: '遺物' } as Record<MaterialKind, string>,
     group: FORGE_GROUP,
     use: (u: MaterialUse): string => {
       switch (u.kind) {
@@ -992,6 +993,8 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
         case 'base': return `${SLOT_KIND[u.slot]}打造`;
         case 'set': return `${SETS[u.set]?.name ?? u.set}打造`;
         case 'unlock': return `${EQUIPMENT[u.base]?.name ?? u.base}解鎖`;
+        case 'inscribe': return `銘刻${ENEMIES[u.species]?.name ?? u.species}的銘文`;
+        case 'craft': return `製作${SPECIALS[u.unique]?.name ?? u.unique}`;
       }
     },
     usedFor: (list: string) => `用於：${list}`,
@@ -1006,6 +1009,8 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
         case 'base': return `${SLOT_KIND[u.slot]}打造`;
         case 'set': return SETS[u.set]?.name ?? u.set;
         case 'unlock': return `${EQUIPMENT[u.base]?.name ?? u.base}解鎖`;
+        case 'inscribe': return '銘刻';
+        case 'craft': return '製作專屬裝備';
       }
     },
     junkOnly: '雜物：只能賣錢',

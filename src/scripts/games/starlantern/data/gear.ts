@@ -1,5 +1,6 @@
 import type { AnyStat, Effect, GearSlot, Rarity, Sheet, SkillRules, Target, Element, WeaponKind } from '../engine/types';
 import type { RegionId } from './regions';
+import { ROSTER_SPECIALS } from './gear.roster';
 
 export const GEAR_SLOTS: GearSlot[] = ['weapon', 'offhand', 'head', 'body', 'hands', 'feet', 'neck', 'ring'];
 export const RARITIES: Rarity[] = ['common', 'magic', 'rare', 'epic', 'legendary', 'unique', 'set'];
@@ -114,6 +115,11 @@ export interface SpecialDef {
   source: 'any' | 'elite' | 'boss'; power?: string; fixed?: AnyStat[]; set?: string; lore: string;
   /** Set on every weapon: what the hero's basic attack and mastery follow (data/equipment.ts weaponKindOf). */
   weaponKind?: WeaponKind;
+  /**
+   * A roster boss's or warden's own unique (data/gear.roster.ts, roster plan ruling 14): never in a drop pool, never
+   * silhouetted; its art waits on that foe's (ROSTER_ART).
+   */
+  owner?: string;
 }
 export interface SetDef {
   id: string; name: string; region: RegionId; pieces: string[]; two: Partial<Sheet>; four: Partial<Sheet>;
@@ -179,16 +185,17 @@ const SPECIAL_WEAPON_KIND: Record<string, WeaponKind> = {
 /** Set weapons are all named "...之刃" and are swords. */
 const withKind = (s: SpecialDef): SpecialDef => s.slot !== 'weapon' ? s : { ...s, weaponKind: s.set ? 'sword' : SPECIAL_WEAPON_KIND[s.id] };
 
-export const SPECIALS: Record<string, SpecialDef> = Object.fromEntries([...SPECIAL_LIST, ...SET_PIECES].map(withKind).map((s) => [s.id, s]));
+/** Every special by id; the roster's own uniques come last and name their weapon kinds themselves. */
+export const SPECIALS: Record<string, SpecialDef> = Object.fromEntries([...[...SPECIAL_LIST, ...SET_PIECES].map(withKind), ...ROSTER_SPECIALS].map((s) => [s.id, s]));
 
 /** A region's legendary and unique; set pieces are reached through SETS. */
 export function regionSpecials(region: RegionId): SpecialDef[] {
-  return SPECIAL_LIST.filter((s) => s.region === region);
+  return SPECIAL_LIST.filter((s) => s.region === region && !s.owner);
 }
 
 /** The eight character legendaries, which drop anywhere. */
 export function generalLegendaries(): SpecialDef[] {
-  return SPECIAL_LIST.filter((s) => s.region === null && s.rarity === 'legendary');
+  return SPECIAL_LIST.filter((s) => s.region === null && s.rarity === 'legendary' && !s.owner);
 }
 
 /** Display name of a special item or a set; an unknown id comes back as itself. */

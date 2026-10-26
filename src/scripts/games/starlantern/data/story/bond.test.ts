@@ -12,16 +12,32 @@ import {
   giftableOf, type Companion, type Tone,
 } from './bond';
 
-/** Spec §6.1: every monster, junk, rare and region material there is today. */
+/** Spec §6.1: every monster, junk, rare and region material there was before the monster roster. */
 const EIGHTEEN = [
   'moss', 'bat-wing', 'thorn-fang', 'crystal-shell', 'ice-crystal', 'lizard-scale', 'star-stone', 'dusk-cloth', 'old-coin',
   'ancient-gear', 'star-tear', 'king-scale', 'blaze-core', 'frost-heart', 'storm-stone', 'mire-gland', 'shade-crystal', 'iron-shard',
 ];
 
 describe('bond data', () => {
-  it('GIFTABLE is every monster, junk, rare and region material', () => {
-    expect([...GIFTABLE].sort()).toEqual([...EIGHTEEN].sort());
-    expect(GIFT_KINDS).toEqual(['monster', 'junk', 'rare', 'region']);
+  it('the eighteen are still giftable', () => {
+    for (const id of EIGHTEEN) expect(GIFTABLE, id).toContain(id);
+  });
+
+  it('no trophy is giftable', () => {
+    // Roster plan ruling 13: a boss's trophy is never a way to buy a bond.
+    const trophies = Object.values(MATERIALS).filter((m) => m.kind === 'trophy').map((m) => m.id);
+    expect(trophies.length).toBeGreaterThan(0);
+    for (const id of trophies) expect(GIFTABLE, id).not.toContain(id);
+  });
+
+  it('GIFTABLE is every monster, junk, rare, region and keepsake material', () => {
+    // Roster plan ruling 13: the kind alone decides, with no list of exceptions; a keepsake is giftable, a trophy is not.
+    expect(GIFT_KINDS).toEqual(['monster', 'junk', 'rare', 'region', 'keepsake']);
+    // Counted apart from the derivation: the eighteen, the roster's 59 signatures and its 9 keepsakes (ruling 12).
+    const KEEPSAKES = ['moon-silver', 'tower-dust', 'automaton-core', 'copper-anklet', 'shrine-rope', 'ash-page', 'ashen-acorn', 'vault-coin', 'gate-splinter'];
+    expect(GIFTABLE).toHaveLength(18 + 59 + 9);
+    for (const id of KEEPSAKES) expect(GIFTABLE, id).toContain(id);
+    expect(GIFTABLE.filter((id) => MATERIALS[id].owner && MATERIALS[id].kind === 'monster')).toHaveLength(59);
     for (const id of GIFTABLE) {
       expect(id.startsWith('essence-')).toBe(false);
       expect(ITEMS[id]).toBeUndefined();

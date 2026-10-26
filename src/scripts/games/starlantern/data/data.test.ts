@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { CHARACTERS, CHARACTER_IDS } from './characters';
 import { SKILLS } from './skills';
 import { ENEMIES } from './enemies';
+import { LEGACY_ENEMY_IDS, MAINLINE_TABLES, NATIVE_GROUPS, WARDEN_GROUPS } from './monsters';
+import { NORMAL_ENEMIES } from '../engine/scaling';
 import { ITEMS } from './items';
 import { EQUIPMENT, WEAPON_KINDS, weaponKindOf } from './equipment';
 import { slotsFor } from '../engine/party';
@@ -28,11 +30,14 @@ describe('meeting copy', () => {
 describe('data integrity', () => {
   it('matches the spec content counts', () => {
     expect(CHARACTER_IDS).toHaveLength(10);
-    const enemies = Object.values(ENEMIES);
+    // The roster's hundred are counted by data/monsters.test.ts (one hundred new ids): these are the game's own ten.
+    const enemies = LEGACY_ENEMY_IDS.map((id) => ENEMIES[id]);
     expect(enemies.filter((e) => !e.boss && !e.story)).toHaveLength(8);
     expect(enemies.filter((e) => e.boss).map((e) => e.id)).toEqual(['lanterneater']);
     expect(Object.keys(EQUIPMENT)).toHaveLength(25);
-    expect(Object.keys(MATERIALS)).toHaveLength(22);
+    // The game's own 22, then the roster's 98 (each with its `owner`; data/monsters.test.ts ninety-eight new materials).
+    expect(Object.values(MATERIALS).filter((m) => !m.owner)).toHaveLength(22);
+    expect(Object.keys(MATERIALS)).toHaveLength(22 + 98);
     expect(FLOORS.map((f) => f.id)).toEqual([1, 2, 3]);
   });
 
@@ -93,8 +98,13 @@ describe('data integrity', () => {
   });
 
   it('places every normal enemy in some encounter group', () => {
-    const used = new Set(FLOORS.flatMap((f) => f.encounters.flat()));
-    for (const e of Object.values(ENEMIES)) if (!e.boss && !e.story) expect(used.has(e.id), e.id).toBe(true);
+    // The legacy floors and every roster table, live or not (roster plan Task A4): each ordinary foe and warden has a group.
+    const used = new Set([
+      ...FLOORS.flatMap((f) => f.encounters.flat()), ...Object.values(MAINLINE_TABLES).flat(2), ...Object.values(NATIVE_GROUPS).flat(2),
+      ...Object.values(WARDEN_GROUPS).flat(),
+    ]);
+    for (const id of NORMAL_ENEMIES) expect(used.has(id), id).toBe(true);
+    for (const e of Object.values(ENEMIES)) if (!e.boss && !e.story && e.rank !== 'part') expect(used.has(e.id), e.id).toBe(true);
   });
 });
 
@@ -140,7 +150,8 @@ describe('every weapon-slot def has a kind', () => {
     expect(weapons.length).toBeGreaterThanOrEqual(10);
     for (const s of weapons) expect(WEAPON_KINDS[s.weaponKind!], s.id).toBeDefined();
     for (const s of Object.values(SPECIALS)) if (s.slot !== 'weapon') expect(s.weaponKind, s.id).toBeUndefined();
-    expect(Object.fromEntries(weapons.filter((s) => !s.set).map((s) => [s.id, s.weaponKind]))).toEqual({
+    // The roster's own uniques name their kinds themselves (data/monsters.test.ts thirty-nine own uniques).
+    expect(Object.fromEntries(weapons.filter((s) => !s.set && !s.owner).map((s) => [s.id, s.weaponKind]))).toEqual({
       'lg-chizuru': 'spear', 'lg-liz': 'spear', 'blaze-heart-sword': 'sword', 'frost-winter-staff': 'staff',
       'storm-thunder-bow': 'bow', 'shade-silent-blade': 'dagger',
     });

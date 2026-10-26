@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { MATERIALS } from '../../data/materials';
 import { ITEMS } from '../../data/items';
 import { EQUIPMENT } from '../../data/equipment';
-import { GEAR_SLOTS, SETS } from '../../data/gear';
+import { GEAR_SLOTS, SETS, SPECIALS } from '../../data/gear';
+import { ENEMIES } from '../../data/enemies';
 import { REGIONS } from '../../data/regions';
 import { T } from '../../data/text.zh-TW';
 import { RARE_MATERIALS } from '../loot/drops';
@@ -38,6 +39,14 @@ describe('material uses', () => {
     expect(u).toContainEqual({ kind: 'legendaryReroll' });
   });
 
+  it('a roster signature inscribes, a trophy or keepsake crafts its own unique (roster plan Task A3)', () => {
+    expect(materialUses('faded-letter')).toEqual([{ kind: 'inscribe', species: 'paper-moth' }]);
+    expect(materialUses('fog-gate-plate')).toEqual([{ kind: 'craft', unique: 'fog-halberd' }]);
+    expect(materialUses('moon-silver')).toEqual([{ kind: 'craft', unique: 'moonless-mirror' }]);
+    expect(T.forge.use({ kind: 'inscribe', species: 'paper-moth' })).toBe('銘刻遺信紙蛾的銘文');
+    expect(T.forge.use({ kind: 'craft', unique: 'fog-halberd' })).toBe('製作霧門長戟');
+  });
+
   it('the unlock tally shows as a use', () => {
     expect(materialUses('thorn-fang')).toContainEqual({ kind: 'unlock', base: 'thorn-gauntlets' });
   });
@@ -56,7 +65,9 @@ describe('material uses', () => {
         : u.kind === 'unlock' ? !!EQUIPMENT[u.base]
           : u.kind === 'base' ? GEAR_SLOTS.includes(u.slot)
             : u.kind === 'regionReroll' ? !!REGIONS[u.region] && T.forge.group[u.region] !== undefined
-              : true;
+              : u.kind === 'inscribe' ? !!ENEMIES[u.species]?.inscribe
+                : u.kind === 'craft' ? !!SPECIALS[u.unique]?.owner
+                  : true;
     const long = T.forge.use(u), short = T.forge.useShort(u);
     if (!known || !long || !short || /undefined|NaN/.test(long + short)) return null;
     return long;

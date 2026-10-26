@@ -61,11 +61,12 @@ export const TALK_POINTS = { preferred: 3, other: 2, skipped: 2 } as const;
  * The material kinds a gift may be (spec §6.1). Essences are the forge's currency; consumables, gear and fragments are not
  * materials at all. GIFTABLE is derived from this, never listed by hand, so a new material of these kinds is giftable.
  */
-export const GIFT_KINDS: readonly MaterialKind[] = ['monster', 'junk', 'rare', 'region'];
+/** Roster plan ruling 13: a keepsake is giftable, a trophy never is (a boss's spoil buys no bond). */
+export const GIFT_KINDS: readonly MaterialKind[] = ['monster', 'junk', 'rare', 'region', 'keepsake'];
 /** The ids of `materials` whose kind is giftable, in their order. */
 export const giftableOf = (materials: Record<string, MaterialDef>): GiftId[] =>
   Object.values(materials).filter((m) => GIFT_KINDS.includes(m.kind)).map((m) => m.id);
-/** Every giftable material: today the 18 of spec §6.1. */
+/** Every giftable material: the 18 of spec §6.1, then the roster's signatures and keepsakes. */
 export const GIFTABLE: GiftId[] = giftableOf(MATERIALS);
 
 /** One companion's tastes. `healed`: what a declined material becomes once her memories are all told. */

@@ -1,4 +1,5 @@
 import type { EnemyDef } from '../engine/types';
+import { rosterEnemies } from './enemies.roster';
 
 const s = (hp: number, atk: number, def: number, mag: number, res: number, spd: number) => ({ hp, tp: 0, atk, def, mag, res, spd });
 
@@ -39,4 +40,8 @@ const LIST: EnemyDef[] = [
     skills: [{ name: '紅蓮斬', chance: 0.4, target: 'enemy', effects: [{ kind: 'damage', power: 130, element: 'fire', scale: 'atk', melee: true }] }] },
 ];
 
-export const ENEMIES: Record<string, EnemyDef> = Object.fromEntries(LIST.map((e) => [e.id, e]));
+/**
+ * Every foe by id: the ten above, then the monster roster's hundred (data/enemies.roster.ts), for lookups. A list of foes
+ * reads data/monsters.ts (listedEnemy, artEnemy), never this record whole.
+ */
+export const ENEMIES: Record<string, EnemyDef> = Object.fromEntries([...LIST, ...rosterEnemies(LIST.find((e) => e.id === 'lanterneater')!)].map((e) => [e.id, e]));

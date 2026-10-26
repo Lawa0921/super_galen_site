@@ -3,16 +3,17 @@ import { createHash } from 'node:crypto';
 import type { EnemyDef } from './types';
 import { CONDITIONS } from '../data/conditions';
 import { ENEMIES } from '../data/enemies';
+import { LEGACY_ENEMY_IDS, MAINLINE_TABLES, NATIVE_GROUPS, ROSTER_LIVE, bossFor, wardenFor } from '../data/monsters';
 import { FLOORS } from '../data/floors';
 import { REGIONS, REGION_RIDER, type RegionId } from '../data/regions';
 import { createBattle, intentLabel, planEnemies, rewards } from './battle';
 import { expToNext, LEGACY_LINEUP } from './party';
 import { mulberry32 } from './rng';
 import { DEEP_ENEMIES, deepPower, enemyLevelAt, homeLevel, BOSS_PARTY_SCALE, DEPTH_CLEAR_SHARE, ENEMY_POWER, FIRST_DEPTH_CAP, GROUP_CAP, PARTY_SCALE, NORMAL_ENEMIES, REGION_DROP_CHANCE, REGION_TRAITS_FROM, depthClearExp, depthLevel, empower, encounterGroup, enemyPower, groupCap, partyScale, scaleEnemy, bossPartyScale } from './scaling';
-import { constRng, fullParty } from './testing';
+import { constRng, fullParty, withRosterLive } from './testing';
 import { TIERS, type DepthFactors, type TierDef } from '../data/difficulty';
 import { AFFIXES } from '../data/affixes';
-import { rewardGrowth } from './scaling';
+import { encounterTable, legacyEncounterTable, rewardGrowth } from './scaling';
 
 const MAIN = REGIONS.mainline;
 const wolf = ENEMIES.wolf;
@@ -458,14 +459,18 @@ describe("a fight's difficulty in scaleEnemy (difficulty plan Task 1)", () => {
     // Guard (green before the implementation): a null tier is the call without one, and both are the enemies as they
     // were before any tier code: a SHA-256 of every enemy x region x depth 1/5/10/25 x elite, recorded at 29fc255ca (the
     // difficulty plan's base; T0-T1 review, minor 1: equal to each other alone would pass a x1 path).
+    // The pin covers the game's own ten (roster plan Task A2); the roster's hundred take the same equality, unpinned, below.
     const all: EnemyDef[] = [];
-    for (const def of Object.values(ENEMIES)) for (const r of Object.values(REGIONS)) for (const d of [1, 5, 10, 25]) {
+    for (const def of LEGACY_ENEMY_IDS.map((id) => ENEMIES[id])) for (const r of Object.values(REGIONS)) for (const d of [1, 5, 10, 25]) {
       for (const elite of [false, true]) {
         expect(scaleEnemy(def, d, r, elite, plain, null), `${def.id} ${r.id} d${d}`).toEqual(scaleEnemy(def, d, r, elite, plain));
         all.push(scaleEnemy(def, d, r, elite));
       }
     }
     expect(createHash('sha256').update(JSON.stringify(all)).digest('hex')).toBe('8adea5577db5e02f5647cf2ccaea2f3f1ba25482c96dc2b8c441147b43d17b19');
+    for (const def of Object.values(ENEMIES).filter((e) => !LEGACY_ENEMY_IDS.includes(e.id))) for (const r of Object.values(REGIONS)) for (const d of [1, 5, 10, 25]) {
+      for (const elite of [false, true]) expect(scaleEnemy(def, d, r, elite, plain, null), `${def.id} ${r.id} d${d}`).toEqual(scaleEnemy(def, d, r, elite, plain));
+    }
   });
 
   it('a tier scales hp, atk and mag, not def, mdf or spd', () => {
@@ -574,5 +579,57 @@ describe('affixes in scaleEnemy (difficulty plan Task 3)', () => {
     // No affixes, or an empty list: as without.
     expect(scaleEnemy(wolf, 10, MAIN, false, plain, night, [])).toEqual(base);
     expect(scaleEnemy(wolf, 10, MAIN, false, plain, null, [])).toEqual(scaleEnemy(wolf, 10, MAIN, false, plain));
+  });
+});
+
+describe('the legacy encounter table (roster plan Task A1)', () => {
+  it('the legacy table is the table', () => {
+    for (const region of Object.keys(REGIONS) as RegionId[]) for (let d = 1; d <= 60; d++) {
+      expect(encounterTable(region, d), `${region} ${d}`).toEqual(legacyEncounterTable(region, d));
+    }
+  });
+});
+
+describe('the roster waits on its live set (roster plan Task A4)', () => {
+  it('the roster with nothing live changes nothing', () => {
+    expect(ROSTER_LIVE.size).toBe(0);
+    for (const region of Object.keys(REGIONS) as RegionId[]) for (let d = 1; d <= 60; d++) {
+      expect(encounterTable(region, d), `${region} ${d}`).toEqual(legacyEncounterTable(region, d));
+      if (d % 5 === 0) expect(bossFor(region, d), `${region} ${d}`).toEqual(['lanterneater']);
+      expect(wardenFor(region, d), `${region} ${d}`).toBeNull();
+    }
+  });
+
+  it('depths one to three stay legacy, and a live table replaces a deeper one', () => {
+    const ids = Object.keys(ENEMIES).filter((id) => !LEGACY_ENEMY_IDS.includes(id));
+    withRosterLive(ids, () => {
+      for (const region of Object.keys(REGIONS) as RegionId[]) for (const d of [1, 2, 3]) expect(encounterTable(region, d)).toEqual(legacyEncounterTable(region, d));
+      expect(encounterTable('mainline', 4)).toEqual(MAINLINE_TABLES.B);
+      expect(encounterTable('mainline', 31)).toEqual(MAINLINE_TABLES.F);
+      expect(encounterTable('frost', 12)).toEqual([...NATIVE_GROUPS.frost, ...MAINLINE_TABLES.C.slice(0, 6)]);
+    });
+    // Fewer than six live groups: the legacy table plus the live new ones (spec §8.1 step 4).
+    withRosterLive(['paper-moth', 'root-hound'], () => {
+      const legacy = legacyEncounterTable('mainline', 4);
+      expect(encounterTable('mainline', 4)).toEqual([...legacy, ['paper-moth', 'paper-moth', 'paper-moth'], ['root-hound', 'wolf'], ['root-hound', 'root-hound']]);
+      expect(encounterTable('mainline', 10)).toEqual(legacyEncounterTable('mainline', 10));
+    });
+    expect(ROSTER_LIVE.size).toBe(0);
+  });
+
+  it('a region keeps its legacy table until its natives are live (PR A review ruling)', () => {
+    const roadB = Object.values(MAINLINE_TABLES.B).flat();
+    withRosterLive(roadB, () => {
+      expect(encounterTable('frost', 4)).toEqual([...legacyEncounterTable('frost', 4), ...MAINLINE_TABLES.B.slice(0, 6)]);
+      expect(encounterTable('mainline', 4)).toEqual(MAINLINE_TABLES.B);
+    });
+    withRosterLive([...roadB, ...NATIVE_GROUPS.frost.flat()], () => {
+      expect(encounterTable('frost', 4)).toEqual([...NATIVE_GROUPS.frost, ...MAINLINE_TABLES.B.slice(0, 6)]);
+      expect(encounterTable('blaze', 4)).toEqual([...legacyEncounterTable('blaze', 4), ...MAINLINE_TABLES.B.slice(0, 6)]);
+    });
+    // A treasure foe alone never joins a legacy table.
+    withRosterLive(['hoarder'], () => {
+      for (const d of [4, 10, 16]) expect(encounterTable('mainline', d)).toEqual(legacyEncounterTable('mainline', d));
+    });
   });
 });

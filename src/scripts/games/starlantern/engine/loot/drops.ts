@@ -128,16 +128,18 @@ export function rollTier(rng: Rng, w: Record<Tier, number>): Tier {
 const canDrop = (s: SpecialDef, source: DropSource): boolean =>
   s.source === 'any' || (s.source === 'elite' && (source === 'elite' || source === 'boss')) || (s.source === 'boss' && source === 'boss');
 
-/** Which special item a legendary-tier roll becomes. */
-function pickSpecial(rng: Rng, region: RegionId, source: DropSource): SpecialDef {
-  const general = () => pick(rng, generalLegendaries());
+/** Which special item a legendary-tier roll becomes (exported for the roster's pool tests). */
+export function pickSpecial(rng: Rng, region: RegionId, source: DropSource): SpecialDef {
+  // A roster unique (`owner`) is never a candidate (roster plan ruling 14); the lists hold none today, so no draw moves.
+  const pool = (list: SpecialDef[]) => list.filter((s) => !s.owner);
+  const general = () => pick(rng, pool(generalLegendaries()));
   if (region === 'mainline') return general();
   const r = rng();
   let cand: SpecialDef | undefined;
   if (r < 0.5) {
-    cand = rng() < 0.4 ? pick(rng, regionSpecials(region).filter((s) => s.rarity === 'legendary')) : general();
+    cand = rng() < 0.4 ? pick(rng, pool(regionSpecials(region)).filter((s) => s.rarity === 'legendary')) : general();
   } else if (r < 0.75) {
-    cand = pick(rng, regionSpecials(region).filter((s) => s.rarity === 'unique'));
+    cand = pick(rng, pool(regionSpecials(region)).filter((s) => s.rarity === 'unique'));
   } else {
     const set = Object.values(SETS).find((s) => s.region === region);
     cand = set ? SPECIALS[pick(rng, set.pieces)] : undefined;
