@@ -1,3 +1,4 @@
+import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { ENEMIES } from './enemies';
 import { AFFIXES, SPECIALS, generalLegendaries, regionSpecials } from './gear';
@@ -691,5 +692,30 @@ describe('a warden waits for its room (PR A review, item 3)', () => {
     const ready = Object.hasOwn(MARKER_GLYPH, 'warden');
     expect(ready).toBe(false);
     for (const id of [...MAINLINE_WARDENS, ...Object.values(REGION_WARDENS)]) expect(ROSTER_LIVE.has(id) && !ready, `${id} is live with no warden room`).toBe(false);
+  });
+});
+
+describe('roster art switch (roster plan Task D4)', () => {
+  // A roster id enters ROSTER_ART only in its art round's publish commit (art-factory/starlantern/tools/roster_art.py publish):
+  // from then on the game loads its sprite, its material's icon and its own unique's two gear images, so all of them must
+  // be published in the registry and on disk. The 5d cross-check (render/gearArt.test.ts) leaves the roster's ids to this.
+  const registry = JSON.parse(readFileSync('art-factory/starlantern/registry.json', 'utf8')) as {
+    assets: Record<string, { status?: string; runtime?: string }>;
+  };
+  const published = (aid: string) => {
+    const e = registry.assets[aid];
+    return e?.status === 'published' && !!e.runtime && existsSync(`public${e.runtime}`);
+  };
+
+  it('every art id is published', () => {
+    for (const id of ROSTER_ART) {
+      expect(ENEMIES[id], id).toBeDefined();
+      expect(published(`enemy-${id}`), `enemy-${id}`).toBe(true);
+      for (const m of Object.values(MATERIALS).filter((x) => x.owner === id)) expect(published(`icon-${m.id}`), `icon-${m.id}`).toBe(true);
+      for (const s of Object.values(SPECIALS).filter((x) => x.owner === id)) {
+        expect(published(`gear-${s.id}`), `gear-${s.id}`).toBe(true);
+        expect(published(`gear-${s.id}-large`), `gear-${s.id}-large`).toBe(true);
+      }
+    }
   });
 });
