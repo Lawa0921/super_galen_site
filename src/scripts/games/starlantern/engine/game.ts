@@ -824,6 +824,7 @@ export class Game {
     // In an elite fight the first enemy is the elite; the rest are escorts.
     for (let i = elite ? 1 : 0; i < b.enemies.length; i++) {
       if (b.survive && b.enemies[i].alive) continue;
+      if (b.enemies[i].left || b.enemies[i].summoned) continue;   // it takes no loot draw (roster plan B1)
       const rng = lootRng(run);
       if (rng() < GEAR_CHANCE.monster) gear.push(rollGear(rng, this.dropCtx('monster', tier)));
     }
@@ -861,6 +862,7 @@ export class Game {
     for (let i = 0; i < b.enemies.length; i++) {
       const first = elite && i === 0;
       if (!first && b.survive && b.enemies[i].alive) continue;
+      if (b.enemies[i].left || b.enemies[i].summoned) continue;   // it takes no rune draw (roster plan B1)
       const chance = first ? RUNE_DROP.elite : RUNE_DROP.monster;
       if (rng() < (t ? chance * t.runeDrop : chance)) roll(first ? 'elite' : 'monster');
     }

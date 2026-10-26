@@ -1,6 +1,6 @@
 import { afterEach, describe, it, expect, vi } from 'vitest';
 import { Game, type BattleEnd, type MoveResult } from './game';
-import { STORY_FIGHT_ROUNDS, type Difficulty } from './battle';
+import { STORY_FIGHT_ROUNDS, meetEnemy, type BattleState, type Difficulty } from './battle';
 import { BACKUP_KEY, SAVE_KEY, V8_KEY, loadGame, saveGame } from './save';
 import { SAVE_VERSION, newGame, START_ITEMS, type GameState } from './state';
 import { constRng, memoryStorage, plainItem, version8Save, withNode } from './testing';
@@ -6308,3 +6308,54 @@ describe('a tier gained on a dive (bond plan Task 14)', () => {
     expect(h.bondUps).toEqual([{ id: 'selene', tier: 1 }]);
   });
 });
+
+describe('foes that leave or join a fight (roster plan B1)', () => {
+  /** An elite fight on floor 1 with runes open; `f` changes the fight first. The loot and rune draws its win took. */
+  const fight = (seed: number, f?: (b: BattleState) => void) => {
+    const g = inMap(1, mulberry32(seed));
+    g.state.runesOpen = true;
+    stepOnto(g, plantAt(g, 'elite'));
+    const n = g.battle!.enemies.length;
+    f?.(g.battle!);
+    const at = { loot: g.run!.lootDraws, rune: g.run!.runeDraws };
+    const end = killAll(g);
+    return { end, n, loot: g.run!.lootDraws - at.loot, rune: g.run!.runeDraws - at.rune };
+  };
+
+  it('a summoned foe pays nothing and takes no loot or rune draw', () => {
+    for (let seed = 1; seed <= 12; seed++) {
+      const plain = fight(seed);
+      const more = fight(seed, (b) => {
+        const c = meetEnemy(b, 'golem', { scale: { depth: 1, region: 'mainline', condition: 'plain' }, k: 1 });
+        c.summoned = true;
+      });
+      expect(more.loot, String(seed)).toBe(plain.loot);
+      expect(more.rune, String(seed)).toBe(plain.rune);
+      expect(more.end.exp, String(seed)).toBe(plain.end.exp);
+      expect(more.end.gold, String(seed)).toBe(plain.end.gold);
+      expect(more.end.drops, String(seed)).toEqual(plain.end.drops);
+      // One rune stream a fight; the summon draws nothing from it, so the same runes come.
+      expect(more.end.runes, String(seed)).toEqual(plain.end.runes);
+      expect(more.end.gear.map((it) => it.uid), String(seed)).toEqual(plain.end.gear.map((it) => it.uid));
+    }
+  });
+
+  it('a foe that left pays nothing and takes no loot or rune draw', () => {
+    let fights = 0;
+    for (let seed = 1; seed <= 80 && fights < 6; seed++) {
+      const plain = fight(seed);
+      if (plain.n !== 2) continue;
+      fights++;
+      let gone = 0;
+      const fled = fight(seed, (b) => { const e = b.enemies[1]; gone = b.enemyDefs![e.key].exp; e.alive = false; e.left = true; });
+      expect(fled.loot, String(seed)).toBe(plain.loot - 1);
+      // One rune stream a fight: the elite draws first, then the escort, who left and draws nothing.
+      expect(fled.rune, String(seed)).toBe(plain.rune);
+      expect(plain.end.runes?.slice(0, fled.end.runes?.length ?? 0) ?? [], String(seed)).toEqual(fled.end.runes ?? []);
+      expect(fled.end.exp, String(seed)).toBeLessThan(plain.end.exp);
+      expect(gone).toBeGreaterThan(0);
+    }
+    expect(fights).toBe(6);
+  });
+});
+

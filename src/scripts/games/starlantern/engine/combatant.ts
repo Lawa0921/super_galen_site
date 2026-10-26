@@ -105,6 +105,13 @@ export interface Combatant {
   riposte?: { power: number; turns: number };
   /** Who this foe must strike, and in which round (Scarlet's 盾擊). */
   challenged?: { by: string; round: number };
+  /**
+   * Roster plan B1: a foe that left the fight (it fled, spec M3). It is also not `alive`, so nothing targets it and the
+   * fight is over without it; it pays nothing and takes no loot or rune draw, and no one raises it.
+   */
+  left?: true;
+  /** Roster plan B1: a foe that joined mid-fight (a summon, spec M4): it pays nothing and takes no loot or rune draw. */
+  summoned?: true;
 }
 
 /** The aim stacks `a` holds on `t` (Sylvie; 0 for anyone else or any other foe). */

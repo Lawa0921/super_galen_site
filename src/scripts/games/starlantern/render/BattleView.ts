@@ -77,6 +77,10 @@ interface Slot {
   tint: { color: number | null; elite: boolean };
   /** A picture not loaded at setup: drawn when it lands (no placeholder body meanwhile), at the size it would have had. */
   want?: { url: string; maxH: number; slotW: number; ground: number };
+  /** Its whole name (★ and all), cut again to its slot when the row is laid out anew (`addFoe`). */
+  fullName: string;
+  /** The tallest its picture may stand. */
+  maxH: number;
 }
 const BAR_W = 64;
 /**
@@ -283,49 +287,87 @@ export class BattleView {
       this.scene.addChild(plain);
       this.bgWant = { url: art.bg(floor), size };
     }
-    const n = state.enemies.length;
-    const slotW = (size.width - left) / (n + 1);
-    this.ailMax = slotW - AIL_SLOT_MARGIN;
-    this.labelMax = slotW - LABEL_SLOT_MARGIN;
     const usable = size.height - bottom;
     const ground = bottom > 0 ? usable - 28 : size.height * 0.85;   // 28 px under the feet for the name and the HP bar
-    state.enemies.forEach((e, i) => {
-      const box = new Container();
-      const body = new Container();
-      const tex = this.bank?.get(enemyArt(e.defId)) ?? null;
-      const maxH = (bottom > 0 ? usable : size.height) * (e.boss ? (bottom > 0 ? 0.62 : 0.7) : 0.45);
-      const elite = e.tint === 'elite';
-      const name = elite && !e.name.startsWith('★') ? `★${e.name}` : e.name;
-      const label = pixelText(slotName(name, this.labelMax), 12, 0xffffff);
-      label.anchor.set(0.5, 0);
-      const lift = bottom > 0 ? NAME_LIFT : 0;
-      label.y = -lift;
-      const bar = new Graphics();
-      bar.y = 19 - lift;
-      const intent = pixelText('', 12, 0xffe08a);
-      intent.anchor.set(0.5, 1);
-      const ail = new Container();
-      box.addChild(body, label, bar, ail, intent);
-      box.x = left + slotW * (i + 1);
-      box.y = ground;
-      box.alpha = e.alive ? 1 : 0;
-      this.scene.addChild(box);
-      const key = tintKey(e.tint, region);
-      const color = key ? TINT_COLORS[key] : null;
-      const base = this.tintFor(key, elite);
-      body.filters = base;
-      const slot: Slot = { key: e.key, box, body, texture: null, hp: e.hp, max: e.max.hp, bar, intent, name: label, ail, base, tint: { color, elite } };
-      // Its picture, or, until it lands, no body at all: just its name and bar (no placeholder art).
-      if (tex) this.placeBody(slot, tex, maxH, slotW, ground);
-      else {
-        slot.want = { url: enemyArt(e.defId), maxH, slotW, ground };
-        intent.y = Math.max(TOP_CLEAR - ground, -30);
-        ail.y = intent.y + AIL_UNDER_INTENT;
-      }
-      this.slots.set(e.key, slot);
-      this.drawBar(slot);
-    });
+    this.row = { left, bottom, usable, ground, region };
+    const slotW = this.slotWidth(state.enemies.length);
+    state.enemies.forEach((e, i) => this.makeSlot(e, i, slotW));
     if (!this.fast && !this.calm) this.alive(size);
+  }
+
+  /** The row's layout, fixed at setup: the insets, the height left above the party bar, the ground line and the region. */
+  private row = { left: 0, bottom: 0, usable: 360, ground: 306, region: undefined as RegionId | undefined };
+
+  /** One enemy's slot width with `n` in the row, and the ailment row and label widths that follow from it. */
+  private slotWidth(n: number): number {
+    const slotW = (this.size.width - this.row.left) / (n + 1);
+    this.ailMax = slotW - AIL_SLOT_MARGIN;
+    this.labelMax = slotW - LABEL_SLOT_MARGIN;
+    return slotW;
+  }
+
+  /** An enemy's box in slot `i` of a row of slots `slotW` wide: its picture (or, until it lands, none), name, bar and rows. */
+  private makeSlot(e: Combatant, i: number, slotW: number): Slot {
+    const { left, bottom, usable, ground, region } = this.row;
+    const size = this.size;
+    const box = new Container();
+    const body = new Container();
+    const tex = this.bank?.get(enemyArt(e.defId)) ?? null;
+    const maxH = (bottom > 0 ? usable : size.height) * (e.boss ? (bottom > 0 ? 0.62 : 0.7) : 0.45);
+    const elite = e.tint === 'elite';
+    const name = elite && !e.name.startsWith('★') ? `★${e.name}` : e.name;
+    const label = pixelText(slotName(name, this.labelMax), 12, 0xffffff);
+    label.anchor.set(0.5, 0);
+    const lift = bottom > 0 ? NAME_LIFT : 0;
+    label.y = -lift;
+    const bar = new Graphics();
+    bar.y = 19 - lift;
+    const intent = pixelText('', 12, 0xffe08a);
+    intent.anchor.set(0.5, 1);
+    const ail = new Container();
+    box.addChild(body, label, bar, ail, intent);
+    box.x = left + slotW * (i + 1);
+    box.y = ground;
+    box.alpha = e.alive ? 1 : 0;
+    this.scene.addChild(box);
+    const key = tintKey(e.tint, region);
+    const color = key ? TINT_COLORS[key] : null;
+    const base = this.tintFor(key, elite);
+    body.filters = base;
+    const slot: Slot = { key: e.key, box, body, texture: null, hp: e.hp, max: e.max.hp, bar, intent, name: label, ail, base, tint: { color, elite }, fullName: name, maxH };
+    // Its picture, or, until it lands, no body at all: just its name and bar (no placeholder art).
+    if (tex) this.placeBody(slot, tex, maxH, slotW, ground);
+    else {
+      slot.want = { url: enemyArt(e.defId), maxH, slotW, ground };
+      intent.y = Math.max(TOP_CLEAR - ground, -30);
+      ail.y = intent.y + AIL_UNDER_INTENT;
+    }
+    this.slots.set(e.key, slot);
+    this.defIds.set(e.key, e.defId);
+    this.drawBar(slot);
+    return slot;
+  }
+
+  /**
+   * A foe that joined the fight after setup (roster plan B1: a summon): its slot is added at the end of the row and the
+   * row is laid out again, every slot narrower, its picture refitted and its name cut to the new width. Draws nothing.
+   */
+  addFoe(e: Combatant): void {
+    if (this.slots.has(e.key) || this.scene.destroyed) return;
+    const n = this.slots.size + 1;
+    const slotW = this.slotWidth(n);
+    let i = 0;
+    for (const s of this.slots.values()) {
+      if (!s.box.destroyed) {
+        s.box.x = this.row.left + slotW * (i + 1);
+        s.name.text = slotName(s.fullName, this.labelMax);
+        const pic = s.body.children[0];
+        if (s.texture && pic instanceof Sprite) pic.scale.set(Math.min(s.maxH / s.texture.height, (slotW * 0.9) / s.texture.width));
+        if (s.want) s.want.slotW = slotW;
+      }
+      i++;
+    }
+    this.makeSlot(e, n - 1, slotW);
   }
 
   /** A regional variant: a colour matrix toward its colour and a soft outer glow. An elite: a gold outline. */
@@ -647,9 +689,10 @@ export class BattleView {
     return s && !s.ail.destroyed ? s.ail.children.filter((c): c is Sprite => c instanceof Sprite) : [];
   }
 
-  /** Set shown HP to the battle state's values (after a round). */
+  /** Set shown HP to the battle state's values (after a round); a foe the view has not met yet joins the row (`addFoe`). */
   syncHp(state: BattleState): void {
     for (const e of state.enemies) {
+      if (!this.slots.has(e.key)) this.addFoe(e);
       const s = this.slots.get(e.key);
       if (s && !s.bar.destroyed) { s.hp = e.hp; s.max = e.max.hp; this.drawBar(s); }
     }

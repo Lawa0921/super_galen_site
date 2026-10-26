@@ -199,34 +199,23 @@ export function createBattle(o: {
   for (const id of enemyIds) counts[id] = (counts[id] ?? 0) + 1;
   const seen: Record<string, number> = {};
   const sc = o.scale;
-  const region = sc ? REGIONS[sc.region] : null;
   const t = sc ? tierOf(sc.difficulty) : null;
-  const defs: Record<string, EnemyDef> = {};
   const crowdAt = t && t.crowdAffixChance > 0 && sc?.crowdAffix && !o.boss && !sc.elite ? Math.floor(sc.crowdAffix.pick * enemyIds.length) : -1;
-  const enemies = enemyIds.map((id, i) => {
-    const n = (seen[id] = (seen[id] ?? 0) + 1);
-    const elite = !!sc && sc.elite === id && n === 1;
-    // The affixes go on the elite, or in a boss fight on each boss (ruling 5), only on a higher tier; none drawn here.
-    const aff = t && sc?.affixes?.length && (elite || (o.boss && ENEMIES[id].boss)) ? sc.affixes : i === crowdAt ? [sc!.crowdAffix!.id] : undefined;
-    const met = !sc || !region ? ENEMIES[id] : t ? scaleEnemy(ENEMIES[id], sc.depth, region, elite, CONDITIONS[sc.condition ?? 'plain'], t, aff) : scaleEnemy(ENEMIES[id], sc.depth, region, elite, CONDITIONS[sc.condition ?? 'plain']);
-    // An enemy is met at its level for the fight's depth (enemyLevelAt; the deep road's own extra power on top), or at
-    // its own home level when the fight has no scale.
-    const level = sc ? enemyLevelAt(sc.depth) : homeLevel(met);
-    const empowered = empower(met, level);
-    const power = k * (o.bossPower ?? 1) * (sc ? deepPower(sc.depth) : 1);
-    const scaled = power === 1 ? empowered : { ...empowered, stats: mul(empowered.stats, { hp: power, atk: power, mag: power }) };
-    const d = o.names?.[id] ? { ...scaled, name: o.names[id] } : scaled;
-    defs[`e${i}`] = d;
-    const name = counts[id] > 1 ? `${d.name} ${String.fromCharCode(64 + n)}` : d.name;
-    const c = fromEnemy(d, `e${i}`, name, elite ? 'elite' : region ? regionTint(region) : undefined, level);
-    if (aff) c.affixes = [...aff];
-    return c;
-  });
   const s: BattleState = {
-    round: 0, party, enemies, boss: !!o.boss, inventory: { ...o.inventory }, revealed: structuredClone(o.revealed),
+    round: 0, party, enemies: [], boss: !!o.boss, inventory: { ...o.inventory }, revealed: structuredClone(o.revealed),
     itemBoost: hasPassive(o.party, 'itemBoost'), log: [], outcome: 'ongoing',
   };
-  if (sc) s.enemyDefs = defs;
+  if (sc) s.enemyDefs = {};
+  const meeting: Meeting = { scale: sc, boss: !!o.boss, k, bossPower: o.bossPower, names: o.names };
+  enemyIds.forEach((id, i) => {
+    const n = (seen[id] = (seen[id] ?? 0) + 1);
+    meetEnemy(s, id, meeting, {
+      elite: !!sc && sc.elite === id && n === 1,
+      ...(counts[id] > 1 ? { letter: String.fromCharCode(64 + n) } : {}),
+      ...(i === crowdAt ? { crowd: sc!.crowdAffix!.id } : {}),
+    });
+  });
+  const enemies = s.enemies;
   if (o.survive) {
     s.survive = o.survive;
     for (const c of party) c.undying = true;
@@ -238,6 +227,45 @@ export function createBattle(o: {
   // 常駐 (plan 8e): the lasting buffs and barriers go up, and the reserve comes off max TP.
   applyLasting(s);
   return s;
+}
+
+/**
+ * How a fight meets its foes (createBattle's): its scale, whether it is a boss fight, the party-size multiplier `k`, the
+ * extra boss power and the names it renames foes to. Kept for a foe that joins the fight later (roster plan B1).
+ */
+export interface Meeting {
+  scale?: BattleScale; boss?: boolean; k: number; bossPower?: number; names?: Record<string, string>;
+}
+/** One foe as it is met: the fight's elite, its letter among foes of its kind (absent: the only one), the crowd affix. */
+export interface MeetAs { elite?: boolean; letter?: string; crowd?: AffixId }
+
+/**
+ * Meets one foe (roster plan B1): its definition as this fight scales it, made a combatant keyed `e<n>` after the foes
+ * already there, added to `s.enemies` (and its definition to `s.enemyDefs` in a scaled fight). createBattle meets each of
+ * its group with this, in order, so a fight is the same as before field for field. Draws nothing.
+ */
+export function meetEnemy(s: BattleState, id: string, m: Meeting, as: MeetAs = {}): Combatant {
+  const sc = m.scale;
+  const region = sc ? REGIONS[sc.region] : null;
+  const t = sc ? tierOf(sc.difficulty) : null;
+  const elite = !!as.elite;
+  // The affixes go on the elite, or in a boss fight on each boss (ruling 5), only on a higher tier; none drawn here.
+  const aff = t && sc?.affixes?.length && (elite || (m.boss && ENEMIES[id].boss)) ? sc.affixes : as.crowd ? [as.crowd] : undefined;
+  const met = !sc || !region ? ENEMIES[id] : t ? scaleEnemy(ENEMIES[id], sc.depth, region, elite, CONDITIONS[sc.condition ?? 'plain'], t, aff) : scaleEnemy(ENEMIES[id], sc.depth, region, elite, CONDITIONS[sc.condition ?? 'plain']);
+  // An enemy is met at its level for the fight's depth (enemyLevelAt; the deep road's own extra power on top), or at
+  // its own home level when the fight has no scale.
+  const level = sc ? enemyLevelAt(sc.depth) : homeLevel(met);
+  const empowered = empower(met, level);
+  const power = m.k * (m.bossPower ?? 1) * (sc ? deepPower(sc.depth) : 1);
+  const scaled = power === 1 ? empowered : { ...empowered, stats: mul(empowered.stats, { hp: power, atk: power, mag: power }) };
+  const d = m.names?.[id] ? { ...scaled, name: m.names[id] } : scaled;
+  const key = `e${s.enemies.length}`;
+  if (s.enemyDefs) s.enemyDefs[key] = d;
+  const name = as.letter ? `${d.name} ${as.letter}` : d.name;
+  const c = fromEnemy(d, key, name, elite ? 'elite' : region ? regionTint(region) : undefined, level);
+  if (aff) c.affixes = [...aff];
+  s.enemies.push(c);
+  return c;
 }
 
 /** By speed, a little shuffled; a foe pinned for `round` (Sylvie's pin) goes last. One draw per combatant either way. */
@@ -297,7 +325,8 @@ function resolveTargets(s: BattleState, actor: Combatant, target: Target | null,
     case 'allies': return living(allies);
     case 'self': return [actor];
     case 'deadAlly': {
-      const t = allies.find((c) => c.key === chosen && !c.alive) ?? allies.find((c) => !c.alive);
+      // A foe that left the fight is not a fallen ally (roster plan B1).
+      const t = allies.find((c) => c.key === chosen && !c.alive && !c.left) ?? allies.find((c) => !c.alive && !c.left);
       return t ? [t] : [];
     }
     default: return [];
@@ -858,6 +887,7 @@ export function rewards(s: BattleState, rng: Rng, dropBoost: boolean, dropMul = 
   const matMul = 1 + find('matFind') / 100;
   for (const e of s.enemies) {
     if (s.survive && e.alive) continue;   // a survive fight pays only for the foes knocked out
+    if (e.left || e.summoned) continue;   // a foe that left or was summoned pays nothing, and draws nothing (roster plan B1)
     const d = enemyDef(s, e)!;
     exp += d.exp;
     gold += d.gold;

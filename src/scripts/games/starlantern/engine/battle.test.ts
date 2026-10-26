@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { createHash } from 'node:crypto';
-import { STORY_FIGHT_ROUNDS, LIMIT_MAX, LIMIT_PER_ACTION, LIMIT_PER_HIT_SCALE, createBattle, escapeChance, intentLabel, resolveRound, rewards, skillCost, skillFor, turnOrder, writeBack } from './battle';
+import { STORY_FIGHT_ROUNDS, LIMIT_MAX, LIMIT_PER_ACTION, LIMIT_PER_HIT_SCALE, createBattle, escapeChance, intentLabel, meetEnemy, resolveRound, rewards, skillCost, skillFor, turnOrder, writeBack } from './battle';
 import { WEAPON_MASTERY_PCT } from '../data/equipment';
 import { RIN_DAWN, SKY_LANTERN, ULTIMATES, skyForm, HERO_ULTIMATES } from '../data/ultimates';
 import { ENEMIES } from '../data/enemies';
@@ -13,6 +13,7 @@ import { dealDamage, stat, type BattleEvent, type Combatant } from './combatant'
 import { inflictAilment } from './ailments';
 import type { EffectContext } from './skills';
 import { constRng, makeBattle, makeCombatant, plainItem, fullParty } from './testing';
+import type { BattleState } from './battle';
 import { KEYSTONE_GATE, KEYSTONE_VALUES as V, MAX_KEYSTONES, MEMORY_KEYSTONE_VALUES, type KeystoneId } from '../data/talents';
 import { chainLength } from '../data/story/chains';
 import { SKILLS } from '../data/skills';
@@ -1222,5 +1223,89 @@ describe('affixes in a fight (difficulty plan Task 3)', () => {
     const b = start({ enemyIds: ['wolf'], elite: 'wolf', affixes: list });
     list.push('swift');
     expect(b.enemies[0].affixes).toEqual(['tough']);
+  });
+});
+
+describe('meeting one foe at a time (roster plan B1)', () => {
+  const party = fullParty(LEGACY_LINEUP);
+  const k = (boss: boolean) => (boss ? bossPartyScale : partyScale)(activeIds(party).length);
+
+  it('meetEnemy matches createBattle', () => {
+    const cases: { ids: string[]; boss?: boolean; scale?: Parameters<typeof createBattle>[0]['scale']; names?: Record<string, string>; bossPower?: number }[] = [
+      { ids: ['wolf', 'wolf', 'bat'], scale: { depth: 10, region: 'mainline', elite: 'wolf' } },
+      { ids: ['slime', 'golem', 'slime'], scale: { depth: 14, region: 'frost', condition: 'plain' } },
+      { ids: ['wolf', 'bat', 'wolf'], scale: { depth: 12, region: 'blaze', elite: 'bat', difficulty: 'nightmare', affixes: ['tough', 'swift'] } },
+      { ids: ['wolf', 'bat', 'slime'], scale: { depth: 20, region: 'mainline', difficulty: 'hell', crowdAffix: { pick: 0.5, id: 'scorch' } } },
+      { ids: ['lanterneater'], boss: true, scale: { depth: 10, region: 'shade', difficulty: 'nightmare', affixes: ['scorch'] }, names: { lanterneater: '試名' }, bossPower: 1.2 },
+      { ids: ['slime', 'bat'] },
+    ];
+    for (const c of cases) {
+      const whole = createBattle({ party, enemyIds: c.ids, boss: c.boss, inventory: {}, revealed: {}, scale: c.scale, names: c.names, bossPower: c.bossPower });
+      const empty = createBattle({ party, enemyIds: [], boss: c.boss, inventory: {}, revealed: {}, scale: c.scale, names: c.names, bossPower: c.bossPower });
+      const counts: Record<string, number> = {}, seen: Record<string, number> = {};
+      for (const id of c.ids) counts[id] = (counts[id] ?? 0) + 1;
+      const t = c.scale?.difficulty === 'hell' && c.scale.crowdAffix && !c.boss && !c.scale.elite ? Math.floor(c.scale.crowdAffix.pick * c.ids.length) : -1;
+      c.ids.forEach((id, i) => {
+        const n = (seen[id] = (seen[id] ?? 0) + 1);
+        meetEnemy(empty, id, { scale: c.scale, boss: !!c.boss, k: k(!!c.boss), bossPower: c.bossPower, names: c.names },
+          { elite: !!c.scale && c.scale.elite === id && n === 1, ...(counts[id] > 1 ? { letter: String.fromCharCode(64 + n) } : {}), ...(i === t ? { crowd: c.scale!.crowdAffix!.id } : {}) });
+      });
+      expect(empty.enemies, c.ids.join()).toEqual(whole.enemies);
+      expect(empty.enemyDefs, c.ids.join()).toEqual(whole.enemyDefs);
+      expect(Object.keys(empty.enemyDefs ?? {}), c.ids.join()).toEqual(Object.keys(whole.enemyDefs ?? {}));
+    }
+  });
+
+  it('a foe met later takes the next key and its own letter', () => {
+    const s = createBattle({ party, enemyIds: ['wolf', 'wolf'], inventory: {}, revealed: {}, scale: { depth: 8, region: 'mainline' } });
+    const c = meetEnemy(s, 'wolf', { scale: { depth: 8, region: 'mainline' }, k: k(false) }, { letter: 'C' });
+    expect(c.key).toBe('e2');
+    expect(s.enemies.map((e) => e.name)).toEqual([...s.enemies.slice(0, 2).map((e) => e.name), `${s.enemyDefs!.e2.name} C`]);
+    expect(s.enemyDefs!.e2).toEqual(s.enemyDefs!.e0);
+  });
+
+  it('a foe that left is out of the fight and pays nothing', () => {
+    const s = createBattle({ party, enemyIds: ['wolf', 'bat'], inventory: {}, revealed: {}, scale: { depth: 6, region: 'mainline' } });
+    const bat = s.enemies[1];
+    bat.alive = false;
+    bat.left = true;
+    s.enemies[0].hp = 1;
+    // Everyone attacks the wolf; it falls, and with the bat gone the fight is won.
+    const acts = Object.fromEntries(s.party.filter((c) => c.alive).map((c) => [c.key, { kind: 'attack' as const, target: 'e0' }]));
+    const after = resolveRound(s, acts, constRng(0.5));
+    expect(after.outcome).toBe('win');
+    // It pays what the wolf alone pays (the party's finds and bonuses on top), drawing for the wolf's drops only.
+    const draws = (s: BattleState) => { let n = 0; return { paid: rewards(s, () => { n++; return 0; }, false), n: () => n }; };
+    const fled = draws(after), solo = draws({ ...after, enemies: [after.enemies[0]] });
+    expect(fled.paid).toEqual(solo.paid);
+    expect(fled.n()).toBe(solo.n());
+    expect(fled.paid.exp).toBeGreaterThan(0);
+  });
+
+  it('a foe that left is never raised as a fallen ally', () => {
+    const raiser = E('e0', { defId: 'lanterneater' });
+    const gone = E('e1', { alive: false, hp: 0, left: true });
+    const fallen = E('e2', { alive: false, hp: 0 });
+    const s = makeBattle([P('scarlet')], [raiser, gone, fallen], {
+      enemyDefs: { e0: { ...ENEMIES.slime, skills: [{ name: '喚回', chance: 1, target: 'deadAlly', effects: [{ kind: 'revive', hpPct: 50 }] }] } },
+    });
+    s.intents = { e0: { kind: 'enemy-skill', index: 0 } };
+    const after = resolveRound(s, { scarlet: { kind: 'defend' } }, constRng(0.5));
+    expect(after.enemies[1].alive).toBe(false);
+    expect(after.enemies[2].alive).toBe(true);
+  });
+
+  it('a summoned foe pays nothing', () => {
+    const s = createBattle({ party, enemyIds: ['wolf'], inventory: {}, revealed: {}, scale: { depth: 6, region: 'mainline' } });
+    const c = meetEnemy(s, 'slime', { scale: { depth: 6, region: 'mainline' }, k: k(false) });
+    c.summoned = true;
+    for (const e of s.enemies) { e.hp = 0; e.alive = false; }
+    s.outcome = 'win';
+    const draws: number[] = [];
+    const paid = rewards(s, () => { draws.push(0); return 0; }, false);
+    expect(paid.exp).toBe(s.enemyDefs!.e0.exp);
+    expect(paid.gold).toBe(s.enemyDefs!.e0.gold);
+    // The wolf's drops are drawn; the slime's are not.
+    expect(draws.length).toBe(s.enemyDefs!.e0.drops.length);
   });
 });

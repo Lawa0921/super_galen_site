@@ -76,6 +76,40 @@ describe('BattleView left inset', () => {
   });
 });
 
+describe('BattleView late foes (roster plan B1)', () => {
+  it('BattleView adds a foe mid-fight and lays the row out again', () => {
+    const view = new BattleView(true, bank);
+    const s = battle([]);
+    view.setup(s, { width: 640, height: 360 }, 1, 160, 66);
+    expect(view.anchor('e0')!.x).toBeCloseTo(160 + (640 - 160) / 2, 0);
+    const late = makeCombatant({ key: 'e1', side: 'enemy', name: '新來的', max: { hp: 80 } as never });
+    const two: BattleState = { ...s, enemies: [...s.enemies, late] };
+    view.syncHp(two);
+    // Two slots over the area right of the command window, in order.
+    expect(view.anchor('e0')!.x).toBeCloseTo(160 + (640 - 160) / 3, 0);
+    expect(view.anchor('e1')!.x).toBeCloseTo(160 + ((640 - 160) * 2) / 3, 0);
+    expect(view.anchor('e1')!.y).toBeCloseTo(view.anchor('e0')!.y, 0);
+    expect(view.nameOf('e1')).toBe('新來的');
+    expect(view.enemyHp('e1')).toEqual({ hp: 80, max: 80 });
+    expect(view.enemyBoxOf('e1')!.alpha).toBe(1);
+    // A second sync adds nothing more.
+    view.syncHp(two);
+    const boxes = (view.root.children[0] as Container).children.filter((c) => c instanceof Container && !(c instanceof Sprite) && c.children.length > 0);
+    expect(boxes).toHaveLength(2);
+  });
+
+  it('an intent fits the narrower slots after foes join', () => {
+    const view = new BattleView(true, bank);
+    const s = battle([]);
+    view.setup(s, { width: 640, height: 360 }, 1, 160, 66);
+    view.syncHp({ ...s, enemies: [...s.enemies, makeCombatant({ key: 'e1', side: 'enemy' }), makeCombatant({ key: 'e2', side: 'enemy' })] });
+    const long = '一個非常非常非常非常非常非常長的招式名稱（全體） → 千鶴';
+    view.showIntents({ e0: long, e1: long, e2: long });
+    const slotW = (640 - 160) / 4;
+    for (const k of ['e0', 'e1', 'e2']) expect(view.intentRect(k)!.width, k).toBeLessThanOrEqual(slotW);
+  });
+});
+
 describe('BattleView bottom inset', () => {
   it('stands enemies and their names above the party bar', () => {
     const view = new BattleView(true, bank);
