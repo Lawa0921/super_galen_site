@@ -2,11 +2,23 @@ import { describe, expect, it } from 'vitest';
 import { ENEMIES } from './enemies';
 import { AFFIXES, SPECIALS, generalLegendaries, regionSpecials } from './gear';
 import { MATERIALS } from './materials';
-import type { RegionId } from './regions';
 import type { AnyStat, CharacterId, GearSlot, WeaponKind } from '../engine/types';
 import { pickSpecial } from '../engine/loot/drops';
 import { mulberry32 } from '../engine/rng';
-import { LEGACY_ENEMY_IDS, ROSTER_ART, ROSTER_LIVE, artEnemy, artMaterial, artSpecial, listedEnemy, liveRosterIds, ownerOf } from './monsters';
+import {
+  LEGACY_ENEMY_IDS, MAINLINE_BOSSES, MAINLINE_TABLES, MAINLINE_WARDENS, NATIVE_GROUPS, REGION_BOSSES, REGION_WARDENS, ROSTER_ART, ROSTER_LIVE,
+  WARDEN_GROUPS, artEnemy, artMaterial, artSpecial, bandOf, bossFor, listedEnemy, liveRosterIds, ownerOf, wardenFor,
+} from './monsters';
+import { REGIONS, type RegionId } from './regions';
+import { legacyEncounterTable, scaleEnemy } from '../engine/scaling';
+import { withRosterLive } from '../engine/testing';
+import { GLIMMER_SALT, WARDEN_SALT } from '../engine/dungeon/run';
+import { STARLIT_SALT } from '../engine/loot/drops';
+import { FORGE_SALT } from '../engine/forge/cost';
+import { RUNE_SALT } from '../engine/loot/runes';
+import { ABSORB_SALT } from '../engine/story/fragments';
+import { MEMORY_SALT } from '../engine/story/memories';
+import { AFFIX_SALT } from '../engine/tiers';
 
 describe('roster switches (roster plan Task A1, spec §11.1)', () => {
   it('the live set is inside the art set', () => {
@@ -130,7 +142,9 @@ describe('one hundred roster foes (roster plan Task A2, spec §5)', () => {
     };
     for (const [id, [arch]] of Object.entries(NORMALS)) {
       check(id, arch);
-      expect([ENEMIES[id].exp, ENEMIES[id].gold], id).toEqual([ARCH[arch][6], ARCH[arch][7]]);
+      // Exp is tuned by Task A4 (exp holds against the legacy tables); it stays near its archetype's.
+      expect(ENEMIES[id].exp >= ARCH[arch][6] * 0.6 && ENEMIES[id].exp <= ARCH[arch][6] * 1.15, `${id} exp ${ENEMIES[id].exp}`).toBe(true);
+      expect(ENEMIES[id].gold, id).toBe(ARCH[arch][7]);
       expect(ENEMIES[id].floor, id).toBe(3);
       expect(ENEMIES[id].boss, id).toBeFalsy();
       expect(ENEMIES[id].rank, id).toBeUndefined();
@@ -348,5 +362,179 @@ describe('roster materials and own uniques (roster plan Task A3, spec §7)', () 
   it('art waits on the owner (ruling 3)', () => {
     for (const m of Object.values(MATERIALS)) expect(artMaterial(m.id), m.id).toBe(!m.owner);
     for (const s of Object.values(SPECIALS)) expect(artSpecial(s.id), s.id).toBe(!s.owner);
+  });
+});
+
+const BANDS = ['B', 'C', 'D', 'E', 'F'] as const;
+const NATIVE_REGIONS = ['blaze', 'frost', 'storm', 'mire', 'shade', 'iron'] as const;
+const ALL_REGIONS: RegionId[] = ['mainline', ...NATIVE_REGIONS];
+/** A region's full table (spec §8.1 step 2, nothing filtered): its six native groups and the band's first six. */
+const fullTable = (region: RegionId, band: (typeof BANDS)[number]): string[][] =>
+  region === 'mainline' ? MAINLINE_TABLES[band] : [...NATIVE_GROUPS[region], ...MAINLINE_TABLES[band].slice(0, 6)];
+const speciesOf = (t: string[][]) => new Set(t.flat());
+
+describe('roster tables, bosses and wardens (roster plan Task A4, spec §3.4, §8, §9.1)', () => {
+  it('bandOf follows spec §3.1', () => {
+    expect([1, 3, 4, 9, 10, 15, 16, 24, 25, 30, 31, 60].map(bandOf)).toEqual(['A', 'A', 'B', 'B', 'C', 'C', 'D', 'D', 'E', 'E', 'F', 'F']);
+  });
+
+  it('every group has one to three', () => {
+    for (const b of BANDS) for (const g of MAINLINE_TABLES[b]) expect(g.length >= 1 && g.length <= 3, `${b} ${g}`).toBe(true);
+    for (const r of NATIVE_REGIONS) for (const g of NATIVE_GROUPS[r]) expect(g.length >= 1 && g.length <= 3, `${r} ${g}`).toBe(true);
+    for (const [id, g] of Object.entries(WARDEN_GROUPS)) {
+      expect(g[0], id).toBe(id);
+      expect(g.length >= 1 && g.length <= 2, id).toBe(true);
+    }
+    for (const id of [...BANDS.flatMap((b) => MAINLINE_TABLES[b].flat()), ...NATIVE_REGIONS.flatMap((r) => NATIVE_GROUPS[r].flat())]) {
+      expect(ENEMIES[id], id).toBeDefined();
+      expect(ENEMIES[id].boss || ENEMIES[id].rank || ENEMIES[id].story, id).toBeFalsy();
+    }
+  });
+
+  it('twelve groups a table', () => {
+    for (const b of BANDS) expect(MAINLINE_TABLES[b], b).toHaveLength(12);
+    for (const r of NATIVE_REGIONS) {
+      expect(NATIVE_GROUPS[r], r).toHaveLength(6);
+      for (const b of BANDS) expect(fullTable(r, b), `${r} ${b}`).toHaveLength(12);
+    }
+  });
+
+  it('every roster species sits in at least two groups', () => {
+    const groups = [...BANDS.flatMap((b) => MAINLINE_TABLES[b]), ...NATIVE_REGIONS.flatMap((r) => NATIVE_GROUPS[r])];
+    for (const id of Object.keys(NORMALS)) expect(groups.filter((g) => g.includes(id)).length, id).toBeGreaterThanOrEqual(2);
+    // A native stays home.
+    for (const [id, r] of Object.entries(NATIVES)) {
+      for (const b of BANDS) expect(MAINLINE_TABLES[b].flat(), id).not.toContain(id);
+      for (const o of NATIVE_REGIONS) if (o !== r) expect(NATIVE_GROUPS[o].flat(), id).not.toContain(id);
+    }
+  });
+
+  it('pairs come in pairs', () => {
+    const groups = [...BANDS.flatMap((b) => MAINLINE_TABLES[b]), ...NATIVE_REGIONS.flatMap((r) => NATIVE_GROUPS[r])];
+    for (const id of ['mist-twin', 'ice-komainu']) {
+      const with_ = groups.filter((g) => g.includes(id));
+      expect(with_.length, id).toBeGreaterThan(0);
+      for (const g of with_) expect(g.filter((x) => x === id), `${id} ${g}`).toHaveLength(2);
+    }
+  });
+
+  it('freshness', () => {
+    // Spec §3.4: depths six or more apart (4-60) meet mostly other species. A band holds one table, so two depths of one band
+    // (D spans nine depths, F has no end) share it: the measure is between the band tables, each against every other, as
+    // |shared| / the smaller table's species.
+    for (let i = 0; i < BANDS.length; i++) for (let j = i + 1; j < BANDS.length; j++) {
+      const [a, b] = [speciesOf(MAINLINE_TABLES[BANDS[i]]), speciesOf(MAINLINE_TABLES[BANDS[j]])];
+      const shared = [...a].filter((x) => b.has(x)).length;
+      expect(shared / Math.min(a.size, b.size), `${BANDS[i]} ${BANDS[j]}`).toBeLessThanOrEqual(0.6);
+    }
+  });
+
+  it('no species fills a table', () => {
+    for (const r of ALL_REGIONS) for (const b of BANDS) {
+      const t = fullTable(r, b);
+      expect(speciesOf(t).size, `${r} ${b}`).toBeGreaterThanOrEqual(8);
+      for (const id of speciesOf(t)) expect(t.filter((g) => g.includes(id)).length / t.length, `${r} ${b} ${id}`).toBeLessThanOrEqual(0.4);
+    }
+  });
+
+  it('natives lead a region', () => {
+    for (const r of NATIVE_REGIONS) for (const b of BANDS) {
+      const t = fullTable(r, b);
+      const natives = [...speciesOf(t)].filter((id) => ENEMIES[id].home === r);
+      expect(natives.length, `${r} ${b}`).toBeGreaterThanOrEqual(4);
+      expect(t.filter((g) => g.some((id) => ENEMIES[id].home === r)).length / t.length, `${r} ${b}`).toBeGreaterThanOrEqual(0.4);
+    }
+  });
+
+  it('no element wall', () => {
+    // Spec §5.1, on each main-road table: a physical resist at most 25% of its species, any one element resisted by at most a
+    // third, and no weakness at all at most 20%.
+    for (const b of BANDS) {
+      const ids = [...speciesOf(MAINLINE_TABLES[b])];
+      const share = (f: (id: string) => boolean) => ids.filter(f).length / ids.length;
+      expect(share((id) => ENEMIES[id].resist.includes('phys')), `${b} phys`).toBeLessThanOrEqual(0.25);
+      for (const el of ['phys', 'fire', 'ice', 'thunder'] as const) expect(share((id) => ENEMIES[id].resist.includes(el)), `${b} ${el}`).toBeLessThanOrEqual(1 / 3);
+      expect(share((id) => ENEMIES[id].weak.length === 0), `${b} none`).toBeLessThanOrEqual(0.2);
+    }
+  });
+
+  it('exp holds against the legacy tables', () => {
+    // Spec §9.1 point 4: per region and depth 4-30, the full new table's mean group exp (a treasure foe counted as 0) over
+    // the legacy table's, both scaled to the depth and region as the game pays them.
+    const exp = (g: string[], region: RegionId, depth: number) =>
+      g.reduce((n, id) => n + (NORMALS[id]?.[0] === 'treasure' ? 0 : scaleEnemy(ENEMIES[id], depth, REGIONS[region], false).exp), 0);
+    const mean = (t: string[][], region: RegionId, depth: number) => t.reduce((n, g) => n + exp(g, region, depth), 0) / t.length;
+    // A region's legacy table is the same at every depth past 3, so each depth is measured alone. The main road's follows
+    // the terrain cycle and swings by a third from one depth to the next, while a band holds one table: there each band is
+    // measured over its depths together (the sums of the means).
+    const inRange = (ratio: number, what: string) => expect(ratio >= 0.92 && ratio <= 1.08, `${what} ${ratio.toFixed(3)}`).toBe(true);
+    for (const r of NATIVE_REGIONS) for (let d = 4; d <= 30; d++) {
+      const band = bandOf(d) as (typeof BANDS)[number];
+      inRange(mean(fullTable(r, band), r, d) / mean(legacyEncounterTable(r, d), r, d), `${r} d${d}`);
+    }
+    for (const b of ['B', 'C', 'D', 'E'] as const) {
+      let fresh = 0, legacy = 0;
+      for (let d = 4; d <= 30; d++) if (bandOf(d) === b) {
+        fresh += mean(MAINLINE_TABLES[b], 'mainline', d);
+        legacy += mean(legacyEncounterTable('mainline', d), 'mainline', d);
+      }
+      inRange(fresh / legacy, `mainline ${b}`);
+    }
+  });
+
+  it('bosses never repeat', () => {
+    const main = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50].map((d) => MAINLINE_BOSSES[(d / 5 - 1) % 10]);
+    expect(new Set(main).size).toBe(10);
+    for (const r of NATIVE_REGIONS) expect(new Set(REGION_BOSSES[r]).size, r).toBe(3);
+    for (const id of [...MAINLINE_BOSSES, ...NATIVE_REGIONS.flatMap((r) => REGION_BOSSES[r])]) expect(ENEMIES[id].boss, id).toBe(true);
+  });
+
+  it('bossFor and wardenFor tables', () => {
+    expect([...MAINLINE_BOSSES]).toEqual(['fog-warden', 'silent-bell', 'hollow-champion', 'old-city-archon', 'gorged-beast', 'lanterneater',
+      'forgotten-festival', 'starless-whale', 'stopped-clock', 'first-lantern']);
+    expect(REGION_BOSSES).toEqual({
+      blaze: ['ember-tyrant', 'sandstorm-maw', 'mirage-city'], frost: ['rime-sovereign', 'white-silence', 'rift-maw'],
+      storm: ['thunder-roc', 'storm-conductor', 'starfire-colossus'], mire: ['mire-hydra', 'grey-blight', 'bog-leviathan'],
+      shade: ['faceless-host', 'vault-dragon', 'shadow-parade'], iron: ['fortress-colossus', 'siege-titan', 'last-commander'],
+    });
+    expect([...MAINLINE_WARDENS]).toEqual(['false-moon', 'bell-warden', 'toppled-automaton', 'requiem-conductor', 'lantern-brood']);
+    expect(REGION_WARDENS).toEqual({ blaze: 'mirage-lead', frost: 'ice-shrine', storm: 'burning-page', mire: 'grey-elder', shade: 'locked-vault', iron: 'gate-breaker' });
+    // Everything live (a test's own switch): the lookups cell by cell, the cycles and the many-part groups.
+    withRosterLive(rosterIds(), () => {
+      expect(bossFor('mainline', 5)).toEqual(['fog-warden']);
+      expect(bossFor('mainline', 20)).toEqual(['old-city-archon', 'archon-hand', 'archon-hand']);
+      expect(bossFor('mainline', 30)).toEqual(['lanterneater']);
+      expect(bossFor('mainline', 50)).toEqual(['first-lantern']);
+      expect(bossFor('mainline', 55)).toEqual(['fog-warden']);
+      expect(bossFor('mainline', 70)).toEqual(['old-city-archon', 'archon-hand', 'archon-hand']);
+      expect(bossFor('frost', 5)).toEqual(['rime-sovereign', 'rime-pillar', 'rime-pillar']);
+      expect(bossFor('frost', 15)).toEqual(['rift-maw']);
+      expect(bossFor('frost', 20)).toEqual(['rime-sovereign', 'rime-pillar', 'rime-pillar']);
+      expect(bossFor('blaze', 10)).toEqual(['sandstorm-maw']);
+      expect(bossFor('iron', 45)).toEqual(['last-commander']);
+      expect(wardenFor('mainline', 8)).toBe('false-moon');
+      expect(wardenFor('mainline', 13)).toBe('bell-warden');
+      expect(wardenFor('mainline', 28)).toBe('lantern-brood');
+      expect(wardenFor('mainline', 33)).toBe('false-moon');
+      expect(wardenFor('shade', 18)).toBe('locked-vault');
+      for (const d of [1, 3, 5, 7, 9, 10, 12, 15, 20]) expect(wardenFor('mainline', d), `${d}`).toBeNull();
+    });
+    // A boss not yet live is the lantern-eater, as today; so is a live boss whose part is not.
+    withRosterLive(['old-city-archon'], () => expect(bossFor('mainline', 20)).toEqual(['lanterneater']));
+    withRosterLive(['old-city-archon', 'archon-hand'], () => expect(bossFor('mainline', 20)).toEqual(['old-city-archon', 'archon-hand', 'archon-hand']));
+    withRosterLive(['bell-warden'], () => {
+      expect(wardenFor('mainline', 13)).toBe('bell-warden');
+      expect(wardenFor('mainline', 8)).toBeNull();
+    });
+  });
+
+  it('salts are distinct', () => {
+    // Plan §7.5: the eight SHA-256 initial words in use, and the other salts and constants of the game's streams.
+    // RESCUE_SALT (run.ts, not exported) and the literal salts of the chest, floor, fill and event streams are written out.
+    const used = [GLIMMER_SALT, STARLIT_SALT, FORGE_SALT, RUNE_SALT, ABSORB_SALT, MEMORY_SALT, AFFIX_SALT,
+      0x6a09e667, 0x3c6ef372, 0x5bd1e995, 0x27d4eb2f, 0xe11e, 0x2545f491];
+    expect(new Set(used).size).toBe(used.length);
+    expect(WARDEN_SALT).toBe(0x428a2f98);
+    expect(used).not.toContain(WARDEN_SALT);
   });
 });

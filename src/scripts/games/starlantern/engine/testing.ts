@@ -9,6 +9,7 @@ import type { CharacterId, ItemInstance, Party } from './types';
 import { CHARACTER_IDS } from '../data/characters';
 import { newGame, type GameState } from './state';
 import { BOND_SWITCH } from './story/bond';
+import { ROSTER_ART, ROSTER_LIVE } from '../data/monsters';
 
 /** A plain common instance of a base (no affixes) at the base's own level, for fixtures. */
 export function plainItem(base: string, uid: number): ItemInstance {
@@ -124,4 +125,22 @@ export function withTold(s: GameState, c: CharacterId, n: number): GameState {
   const seen = [...s.story.seen];
   for (let k = 1; k <= n; k++) if (!seen.includes(memScene(c, k))) seen.push(memScene(c, k));
   return { ...s, party: { ...party, roster }, story: { ...s.story, seen } };
+}
+
+/**
+ * Roster plan Task A4: runs `f` with `ids` live (and their art published, ROSTER_LIVE ⊆ ROSTER_ART), then puts both sets back
+ * as they were, even when `f` throws. For tests of what the lists do once a foe goes live, before any has.
+ */
+export function withRosterLive<T>(ids: string[], f: () => T): T {
+  const art = ROSTER_ART as Set<string>, live = ROSTER_LIVE as Set<string>;
+  const added = ids.filter((id) => !live.has(id));
+  const addedArt = ids.filter((id) => !art.has(id));
+  for (const id of addedArt) art.add(id);
+  for (const id of added) live.add(id);
+  try {
+    return f();
+  } finally {
+    for (const id of added) live.delete(id);
+    for (const id of addedArt) art.delete(id);
+  }
 }

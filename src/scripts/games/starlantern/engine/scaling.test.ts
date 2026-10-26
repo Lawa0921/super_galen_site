@@ -3,14 +3,14 @@ import { createHash } from 'node:crypto';
 import type { EnemyDef } from './types';
 import { CONDITIONS } from '../data/conditions';
 import { ENEMIES } from '../data/enemies';
-import { LEGACY_ENEMY_IDS } from '../data/monsters';
+import { LEGACY_ENEMY_IDS, MAINLINE_TABLES, NATIVE_GROUPS, ROSTER_LIVE, bossFor, wardenFor } from '../data/monsters';
 import { FLOORS } from '../data/floors';
 import { REGIONS, REGION_RIDER, type RegionId } from '../data/regions';
 import { createBattle, intentLabel, planEnemies, rewards } from './battle';
 import { expToNext, LEGACY_LINEUP } from './party';
 import { mulberry32 } from './rng';
 import { DEEP_ENEMIES, deepPower, enemyLevelAt, homeLevel, BOSS_PARTY_SCALE, DEPTH_CLEAR_SHARE, ENEMY_POWER, FIRST_DEPTH_CAP, GROUP_CAP, PARTY_SCALE, NORMAL_ENEMIES, REGION_DROP_CHANCE, REGION_TRAITS_FROM, depthClearExp, depthLevel, empower, encounterGroup, enemyPower, groupCap, partyScale, scaleEnemy, bossPartyScale } from './scaling';
-import { constRng, fullParty } from './testing';
+import { constRng, fullParty, withRosterLive } from './testing';
 import { TIERS, type DepthFactors, type TierDef } from '../data/difficulty';
 import { AFFIXES } from '../data/affixes';
 import { encounterTable, legacyEncounterTable, rewardGrowth } from './scaling';
@@ -587,5 +587,33 @@ describe('the legacy encounter table (roster plan Task A1)', () => {
     for (const region of Object.keys(REGIONS) as RegionId[]) for (let d = 1; d <= 60; d++) {
       expect(encounterTable(region, d), `${region} ${d}`).toEqual(legacyEncounterTable(region, d));
     }
+  });
+});
+
+describe('the roster waits on its live set (roster plan Task A4)', () => {
+  it('the roster with nothing live changes nothing', () => {
+    expect(ROSTER_LIVE.size).toBe(0);
+    for (const region of Object.keys(REGIONS) as RegionId[]) for (let d = 1; d <= 60; d++) {
+      expect(encounterTable(region, d), `${region} ${d}`).toEqual(legacyEncounterTable(region, d));
+      if (d % 5 === 0) expect(bossFor(region, d), `${region} ${d}`).toEqual(['lanterneater']);
+      expect(wardenFor(region, d), `${region} ${d}`).toBeNull();
+    }
+  });
+
+  it('depths one to three stay legacy, and a live table replaces a deeper one', () => {
+    const ids = Object.keys(ENEMIES).filter((id) => !LEGACY_ENEMY_IDS.includes(id));
+    withRosterLive(ids, () => {
+      for (const region of Object.keys(REGIONS) as RegionId[]) for (const d of [1, 2, 3]) expect(encounterTable(region, d)).toEqual(legacyEncounterTable(region, d));
+      expect(encounterTable('mainline', 4)).toEqual(MAINLINE_TABLES.B);
+      expect(encounterTable('mainline', 31)).toEqual(MAINLINE_TABLES.F);
+      expect(encounterTable('frost', 12)).toEqual([...NATIVE_GROUPS.frost, ...MAINLINE_TABLES.C.slice(0, 6)]);
+    });
+    // Fewer than six live groups: the legacy table plus the live new ones (spec §8.1 step 4).
+    withRosterLive(['paper-moth', 'root-hound'], () => {
+      const legacy = legacyEncounterTable('mainline', 4);
+      expect(encounterTable('mainline', 4)).toEqual([...legacy, ['paper-moth', 'paper-moth', 'paper-moth'], ['root-hound', 'wolf'], ['root-hound', 'root-hound']]);
+      expect(encounterTable('mainline', 10)).toEqual(legacyEncounterTable('mainline', 10));
+    });
+    expect(ROSTER_LIVE.size).toBe(0);
   });
 });

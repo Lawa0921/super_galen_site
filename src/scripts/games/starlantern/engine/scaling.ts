@@ -2,7 +2,7 @@ import { CHARACTERS, LEGACY_CHARACTER_IDS } from '../data/characters';
 import { ABYSS } from '../data/hero';
 import { CONDITIONS, type ConditionDef } from '../data/conditions';
 import { ENEMIES } from '../data/enemies';
-import { listedEnemy } from '../data/monsters';
+import { listedEnemy, rosterTable } from '../data/monsters';
 import { FLOORS } from '../data/floors';
 import { REGION_RIDER, type RegionDef, type RegionId } from '../data/regions';
 import { terrainOf } from './dungeon/run';
@@ -281,7 +281,9 @@ export const NORMAL_ENEMIES: string[] = Object.values(ENEMIES).filter((e) => lis
  * not met by temple golems.
  */
 export function encounterTable(region: RegionId, depth: number): string[][] {
-  return legacyEncounterTable(region, depth);
+  // Roster plan Task A4 (spec §8.1): past depth 3 the roster's live groups join or replace the legacy table; with nothing
+  // live it is the legacy table, bit for bit.
+  return rosterTable(region, depth, legacyEncounterTable(region, depth));
 }
 
 /**

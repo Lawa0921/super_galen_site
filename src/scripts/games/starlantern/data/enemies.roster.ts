@@ -74,6 +74,23 @@ function dropsOf(id: string, arch: Arch): EnemyDef['drops'] {
   return [{ mat: own.id, chance }, ...(RARE[id] ? [{ mat: RARE[id][0], chance: RARE[id][1] }] : [])];
 }
 
+/**
+ * Task A4 (spec §9.1 point 4, plan Step 3): exp tuned from the archetype so the full tables pay what the legacy ones paid
+ * (data/monsters.test.ts exp holds against the legacy tables). The main road's bands stay near even; the frost natives come
+ * in heavy pairs, so each pays less, and the iron ones a little less.
+ */
+const EXP_TUNE: Record<string, number> = {
+  'paper-moth': 17, 'lamp-wight': 31, 'root-hound': 31, 'tin-soldier': 46, 'dust-mimic': 31, 'market-ghost': 31,
+  'tongueless-bell': 40, 'hollow-hunter': 31, 'mist-twin': 17, 'moon-crow': 31, 'bell-watcher': 31, 'sleepwalker': 44,
+  'old-city-sentinel': 38, 'requiem-choir': 26, 'lantern-larva': 26, 'epitaph-golem': 38, 'ancestor-automaton': 38,
+  'ash-archivist': 35, 'wick-shade': 17, 'keeper-echo': 42, 'ember-maw': 46, 'sorrow-crystal': 31, 'deep-tendril': 31,
+  'frost-doll': 27, 'glacier-tortoise': 27, 'snow-caller': 25, 'ice-komainu': 27, 'frozen-pilgrim': 18, 'thunder-kite': 14,
+  'storm-totem': 26, 'charge-jelly': 35, 'star-ember': 35, 'stolen-tome': 35, 'bog-mother': 38, 'rot-lily': 25,
+  'leech-knight': 25, 'ashen-treant': 38, 'spore-moth': 14, 'mirror-thief': 26, 'veil-stalker': 26, 'hush-acolyte': 35,
+  'vault-mimic': 39, 'debt-collector': 26, 'rivet-golem': 34, 'siege-crab': 34, 'herald-engine': 24, 'fallen-knight': 34,
+  'banner-bearer': 24,
+};
+
 interface Spec {
   name: string; arch: Arch; mul?: Shape; hp?: number; weak?: Element[]; resist?: Element[]; skills?: EnemySkill[];
   band?: EnemyDef['band']; home?: Exclude<RegionId, 'mainline'>; lore?: CharacterId; remnant?: true; inscribe?: EnemyDef['inscribe'];
@@ -86,7 +103,7 @@ function foe(id: string, s: Spec): EnemyDef {
   return {
     id, name: s.name, floor: 3, ...(s.arch === 'boss' ? { boss: true } : {}),
     stats: shape(s.arch, s.mul, s.hp), weak: [...weak], resist: [...resist],
-    exp: part ? 30 : ARCH[s.arch][6], gold: part ? 0 : ARCH[s.arch][7], drops: dropsOf(id, s.arch), skills: s.skills ?? [],
+    exp: part ? 30 : EXP_TUNE[id] ?? ARCH[s.arch][6], gold: part ? 0 : ARCH[s.arch][7], drops: dropsOf(id, s.arch), skills: s.skills ?? [],
     ...(s.rank ? { rank: s.rank } : {}), ...(s.lore ? { lore: s.lore } : {}), ...(s.remnant ? { remnant: true } : {}),
     ...(s.band ? { band: s.band } : {}), ...(s.home ? { home: s.home } : {}), ...(s.inscribe ? { inscribe: s.inscribe } : {}),
   };

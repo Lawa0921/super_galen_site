@@ -2,7 +2,9 @@ import type { Pos } from './types';
 
 export type Tile =
   | 'wall' | 'floor' | 'door' | 'up' | 'down' | 'chest' | 'entrance' | 'boss'
-  | 'fountain' | 'trap' | 'merchant' | 'altar' | 'elite' | 'vault' | 'key' | 'rescue' | 'glimmer';
+  | 'fountain' | 'trap' | 'merchant' | 'altar' | 'elite' | 'vault' | 'key' | 'rescue' | 'glimmer'
+  /** Roster plan ruling 10: a warden's room (drawn with the elite's event tile, plan B5). */
+  | 'warden';
 export type Dir = 'up' | 'down' | 'left' | 'right';
 
 export interface FloorMap {

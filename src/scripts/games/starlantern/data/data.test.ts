@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { CHARACTERS, CHARACTER_IDS } from './characters';
 import { SKILLS } from './skills';
 import { ENEMIES } from './enemies';
-import { LEGACY_ENEMY_IDS } from './monsters';
+import { LEGACY_ENEMY_IDS, MAINLINE_TABLES, NATIVE_GROUPS, WARDEN_GROUPS } from './monsters';
 import { NORMAL_ENEMIES } from '../engine/scaling';
 import { ITEMS } from './items';
 import { EQUIPMENT, WEAPON_KINDS, weaponKindOf } from './equipment';
@@ -98,9 +98,13 @@ describe('data integrity', () => {
   });
 
   it('places every normal enemy in some encounter group', () => {
-    const used = new Set(FLOORS.flatMap((f) => f.encounters.flat()));
-    // Every listed ordinary foe (roster plan ruling 3); a roster species waits for its tables (Task A4).
+    // The legacy floors and every roster table, live or not (roster plan Task A4): each ordinary foe and warden has a group.
+    const used = new Set([
+      ...FLOORS.flatMap((f) => f.encounters.flat()), ...Object.values(MAINLINE_TABLES).flat(2), ...Object.values(NATIVE_GROUPS).flat(2),
+      ...Object.values(WARDEN_GROUPS).flat(),
+    ]);
     for (const id of NORMAL_ENEMIES) expect(used.has(id), id).toBe(true);
+    for (const e of Object.values(ENEMIES)) if (!e.boss && !e.story && e.rank !== 'part') expect(used.has(e.id), e.id).toBe(true);
   });
 });
 

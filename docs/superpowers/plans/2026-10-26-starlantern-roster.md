@@ -412,11 +412,11 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 - `WARDEN_SALT = 0x428a2f98`（`engine/dungeon/run.ts`，export）。
 
 - [ ] **Step 1：寫失敗的測試**
-  - `data/monsters.test.ts`（spec §3.4、§9.1 的資料檢查，量的是**完整**表，不看 live）：`every group has one to three`；`twelve groups a table`；`every roster species sits in at least two groups`；`pairs come in pairs`（`mist-twin`、`ice-komainu`）；`freshness`（本道任兩個相差 ≥ 6 層的深度 4–60，物種集合重疊 ≤ 60%）；`no species fills a table`（每張表至少 8 種、每種 ≤ 40% 的組）；`natives lead a region`（第 4 層起至少 4 種原生、原生組 ≥ 40%）；`no element wall`（spec §5.1：抗物理 ≤ 25%、任一屬性被抗 ≤ 1/3、沒有弱點 ≤ 20%）；`exp holds against the legacy tables`（7 區 × 深度 4–30，新表平均 `groupExp`（寶物怪算 0）÷ 舊表 ∈ [0.92, 1.08]）；`bosses never repeat`（本道 5–50 兩兩不同、每區 5／10／15 兩兩不同）；`bossFor and wardenFor tables`（逐格字面值，含多部位組與循環）；`salts are distinct`（`WARDEN_SALT` 和對照報告 §7.5 列出的全部鹽與常數都不同；`TROPHY_SALT` 在 C1 才存在，C1 補進同一個測試；寫法照 `engine/loot/runes.test.ts:45`）。
+  - `data/monsters.test.ts`（spec §3.4、§9.1 的資料檢查，量的是**完整**表，不看 live）：`every group has one to three`；`twelve groups a table`；`every roster species sits in at least two groups`；`pairs come in pairs`（`mist-twin`、`ice-komainu`）；`freshness`（本道任兩個相差 ≥ 6 層的深度 4–60，物種集合重疊 ≤ 60%；**A4 實作修正**：一個帶只有一張表，D 帶跨 9 層、F 帶沒有底，同帶的兩個深度必然 100% 重疊，所以改成「每兩張不同帶的表」之間量，重疊＝共有物種 ÷ 較小那張表的物種數）；`no species fills a table`（每張表至少 8 種、每種 ≤ 40% 的組）；`natives lead a region`（第 4 層起至少 4 種原生、原生組 ≥ 40%）；`no element wall`（spec §5.1：抗物理 ≤ 25%、任一屬性被抗 ≤ 1/3、沒有弱點 ≤ 20%）；`exp holds against the legacy tables`（7 區 × 深度 4–30，新表平均 `groupExp`（寶物怪算 0，依深度與地區縮放）÷ 舊表 ∈ [0.92, 1.08]；**A4 實作修正**：本道的舊表跟著地形循環，相鄰深度就差三成，而一個帶只有一張表，所以本道改成每個帶在它的深度上合計比較，地區仍逐層比較；為了過這一關，新物種的 exp 由 `data/enemies.roster.ts` 的 `EXP_TUNE` 調整（霜凍原生成對的重型最多降到原型的 0.64），A2 的原型測試對一般物種的 exp 只要求在原型的 0.6–1.15 倍內）；`bosses never repeat`（本道 5–50 兩兩不同、每區 5／10／15 兩兩不同）；`bossFor and wardenFor tables`（逐格字面值，含多部位組與循環）；`salts are distinct`（`WARDEN_SALT` 和對照報告 §7.5 列出的全部鹽與常數都不同；`TROPHY_SALT` 在 C1 才存在，C1 補進同一個測試；寫法照 `engine/loot/runes.test.ts:45`）。
   - `engine/scaling.test.ts`：`the roster with nothing live changes nothing`（7 區 × 深度 1–60 的 `encounterTable` 等於 `legacyEncounterTable`；`bossFor` 全部 `['lanterneater']`；`wardenFor` 全部 `null`）。
   - `engine/floors.snapshot.test.ts`：`placing a warden moves nothing else on the floor`（用測試注入的 live 集合：`withRosterLive(ids, f)`，`engine/testing.ts` 新增，`finally` 還原；同一份 fixture，扣掉 `warden` 的內容、並把守關者那一格的 `tiles` 遮掉（`placeSpecial` 會改寫那一格，`engine/dungeon/rooms.ts:108`；fixture 裡那一格必須是空房的地板）之後逐格相同；`d % 5 === 3`、`d ≥ 8` 的層恰好多一個守關者格，地圖格是 `'warden'`）。
 - [ ] **Step 2**：執行，確認紅。
-- [ ] **Step 3**：實作。表的組照 spec §8.2、§8.3；`exp holds` 紅的時候只能調新物種自己的 `exp`（spec §5.1 的表是提案），列進報告。
+- [ ] **Step 3**：實作。表的組照 spec §8.2、§8.3（§8.3 的六組形狀照各區五種原型的組成盡量套：霜凍、暗影、鋼鐵沒有群，形狀照實際的原型改，每種原生至少兩組、狛犬一律兩隻）；`exp holds` 紅的時候只能調新物種自己的 `exp`（spec §5.1 的表是提案），列進報告。
 - [ ] **Step 4**：這些測試檔、全套、tsc、閘門 identical。
 - [ ] **Step 5**：收尾 G，commit：`feat(starlantern): roster tables, bosses and warden rooms, all waiting on the live set`。
 
@@ -784,7 +784,7 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 - [ ] 照 L1b；22c、22d 的熾焰、霜凍、雷鳴格；commit：`feat(starlantern): fire, frost and storm meet their own (live wave 3)`。
 
 ### Task L3c：e2e
-- [ ] 霜凍第 15 層永凍之守與冰柱、雷鳴第 8 層守關者；commit：`test(starlantern): e2e smoke for three lands`。
+- [ ] 霜凍第 5 層永凍之守與冰柱（A4 修正：spec §5.6 的表序與 §4.2 的深度定下霜凍是 5 永凍之守、10 白色寂靜、15 迷宮的裂口）、雷鳴第 8 層守關者；commit：`test(starlantern): e2e smoke for three lands`。
 
 # PR E4：美術第四批（R4）
 
