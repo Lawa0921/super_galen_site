@@ -9,7 +9,7 @@ forget chip. Structure as gear_art.py (plan 5d).
   note --id JOB --attempt N --reason R [--plain P]
                                          why an attempt was not used (registry `rejected_attempts`, `plain_reasons`)
   extend-cap --id JOB --extra N --by TEXT --review PATH
-                                         a controller's cap extension (at most 3 more attempts a job; who and the date in
+                                         a controller's cap extension (at most 3 more attempts, one per review; who and the date in
                                          --by, the review record it cites); gen counts it
   approve --batch r0 --by TEXT           R0 only: the USER's words and the date, after the review page (writes
                                          roster_style_approved and roster_style_anchor)
@@ -619,17 +619,18 @@ def selected(argv):
     return [j for j in jobs() if (ids is None or j['id'] in ids) and (not batch or j['batch'] == batch)]
 
 
-CAP_EXTRA_MAX = 3   # controller ruling 2026-10-26 (R1 review): at most 3 more attempts for a job, recorded, never silent
+CAP_EXTRA_MAX = 3   # controller rulings 2026-10-26/27 (R1 reviews): at most 3 more attempts per extension, one per review record
 
 
 def extend_cap(reg, sid, extra, by, review):
     """Record a controller's cap extension for job `sid` (registry `cap_extensions`): `by` names who and the date, `review`
-    the review record it cites. At most CAP_EXTRA_MAX more attempts in all for one job."""
+    the review record it cites. At most CAP_EXTRA_MAX more attempts per extension, and one extension per review record."""
     job_by_id(sid)
     if not DATE.search(by or ''): raise ValueError('--by needs who and the date (YYYY-MM-DD)')
     if not review: raise ValueError('--review: the review record the extension cites')
-    have = sum(x['extra'] for x in reg.data.get('cap_extensions', {}).get(sid, []))
-    if int(extra) < 1 or have + int(extra) > CAP_EXTRA_MAX: raise ValueError(f'a cap extension is at most {CAP_EXTRA_MAX} more attempts a job ({sid} has {have})')
+    past = reg.data.get('cap_extensions', {}).get(sid, [])
+    if int(extra) < 1 or int(extra) > CAP_EXTRA_MAX: raise ValueError(f'a cap extension is at most {CAP_EXTRA_MAX} more attempts')
+    if any(x['review'] == str(review) for x in past): raise ValueError(f'{sid} was already extended on {review}: a new extension cites a new review')
     reg.data.setdefault('cap_extensions', {}).setdefault(sid, []).append({'extra': int(extra), 'by': by, 'review': str(review)})
     reg._save()
 

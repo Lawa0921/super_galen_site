@@ -243,7 +243,7 @@
 ## 怪物名冊（roster plan PR D–E；spec §13）
 依據：`docs/superpowers/specs/2026-10-19-starlantern-monster-roster-design.md` §13 與 `docs/superpowers/plans/2026-10-26-starlantern-roster.md`（裁定 18、21–24）。
 - 工具：`tools/roster_art.py`（`gen`／`cand`／`pick`／`note`／`approve`／`publish`／`plan-json`）；審核頁 `tools/review_roster.py <rN>` → `tmp/starlantern/review-roster/<rN>/index.html`（`--contact=<png>` 另出一張遊戲實際大小的對照表）。`roster-plan.json` 由 `plan-json` 產生並 commit，測試檢查它是最新的。
-- 生成一律 `codex_still.py generate`（由 `roster_art.py gen` 呼叫，一次一張）；codex Plus 額度用完改用 codex credits，兩者都用完才停下回報；不換別的後端，絕不用佔位美術。每個 id 最多 3 次（`CAP`），R0 的每隻敵人至少 2 版擇優；控制者可以在審核後延長某個 id 的上限，最多再 3 次，用 `roster_art.py extend-cap --id J --extra N --by "<誰> <YYYY-MM-DD>" --review <審核紀錄>` 記在登錄表 `cap_extensions`，`gen` 只認這份紀錄（控制者 2026-10-26 裁定）。
+- 生成一律 `codex_still.py generate`（由 `roster_art.py gen` 呼叫，一次一張）；codex Plus 額度用完改用 codex credits，兩者都用完才停下回報；不換別的後端，絕不用佔位美術。每個 id 最多 3 次（`CAP`），R0 的每隻敵人至少 2 版擇優；控制者可以在審核後延長某個 id 的上限，每次最多 3 次、每份審核紀錄最多一次，用 `roster_art.py extend-cap --id J --extra N --by "<誰> <YYYY-MM-DD>" --review <審核紀錄>` 記在登錄表 `cap_extensions`，`gen` 只認這份紀錄（控制者 2026-10-26 裁定）。
 
 | 輪 | 敵人 | 同輪生成的表 |
 |---|---|---|

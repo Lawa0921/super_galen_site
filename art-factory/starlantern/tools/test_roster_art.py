@@ -191,6 +191,8 @@ def test_gen_past_the_cap_needs_a_recorded_controller_extension(factory, monkeyp
         R.extend_cap(A.Registry(R.REG_PATH), 'enemy-paper-moth', 3, by='controller', review='r1-review.md')
     with pytest.raises(ValueError, match='at most 3'):
         R.extend_cap(A.Registry(R.REG_PATH), 'enemy-paper-moth', 4, by='controller 2026-10-26', review='r1-review.md')
+    with pytest.raises(ValueError, match='review'):
+        R.extend_cap(A.Registry(R.REG_PATH), 'enemy-paper-moth', 3, by='controller 2026-10-26', review='')
     with pytest.raises(PermissionError, match='cap'):
         R.gen(['--only=enemy-paper-moth', '--n=4'])
     assert not calls
@@ -203,6 +205,11 @@ def test_gen_past_the_cap_needs_a_recorded_controller_extension(factory, monkeyp
     with pytest.raises(PermissionError, match='cap'):
         R.gen(['--only=enemy-paper-moth', '--n=7'])
     assert R.cap_of(A.Registry(R.REG_PATH), 'enemy-root-hound') == R.CAP
+    # a later review round may extend again (controller 2026-10-27), at most 3 each time and never twice on one record
+    with pytest.raises(ValueError, match='already'):
+        R.extend_cap(A.Registry(R.REG_PATH), 'enemy-paper-moth', 3, by='controller 2026-10-27', review='r1-review.md')
+    R.extend_cap(A.Registry(R.REG_PATH), 'enemy-paper-moth', 3, by='controller 2026-10-27', review='r1-review-round2.md')
+    assert R.cap_of(A.Registry(R.REG_PATH), 'enemy-paper-moth') == 9
 
 
 # --- fixtures and fakes -----------------------------------------------------------------------------------------------------
