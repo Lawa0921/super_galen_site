@@ -517,6 +517,14 @@ def _plan5d(entry):
     return str(entry.get('batch', '')).startswith(PLAN5D_BATCH)
 
 
+ROSTER_BATCH = 'roster-'
+
+
+def _roster(entry):
+    """The monster roster's art is approved and published only through roster_art.py (roster plan PR D)."""
+    return str(entry.get('batch', '')).startswith(ROSTER_BATCH)
+
+
 class Registry:
     def __init__(self, path):
         self.path = Path(path)
@@ -538,6 +546,8 @@ class Registry:
         if _plan5d(self.get(aid)):
             raise PermissionError(f'{aid} belongs to plan 5d batch {self.get(aid)["batch"]}: approve it with '
                                   '`gear_art.py approve --batch B --by ...` after the user approves its review page')
+        if _roster(self.get(aid)):
+            raise PermissionError(f'{aid} belongs to roster round {self.get(aid)["batch"]}: approve it with `roster_art.py approve --batch rN`')
         if self.get(aid).get('status') not in ('qa_passed', 'published'):
             raise PermissionError(f'{aid} has not passed QA')
         self.set(aid, status='approved')
@@ -545,11 +555,14 @@ class Registry:
     def _target(self, aid, public_root):
         return Path(public_root) / self.get(aid)['runtime'].lstrip('/')
 
-    def publish(self, aid, public_root, plan5d=False):
-        """plan5d=True only from gear_art.py publish, which first checks the batch approval and the shown images."""
+    def publish(self, aid, public_root, plan5d=False, roster=False):
+        """plan5d=True only from gear_art.py publish and roster=True only from roster_art.py publish, which first check the
+        batch approval and the shown images."""
         e = self.get(aid)
         if _plan5d(e) and not plan5d:
             raise PermissionError(f'{aid} belongs to plan 5d batch {e["batch"]}: publish it with `gear_art.py publish --batch B`')
+        if _roster(e) and not roster:
+            raise PermissionError(f'{aid} belongs to roster round {e["batch"]}: publish it with `roster_art.py publish --batch rN`')
         if e.get('status') != 'approved':
             raise PermissionError(f'{aid} is not approved')
         if not e.get('runtime'): raise ValueError(f'{aid} has no runtime path')
@@ -1242,6 +1255,119 @@ def silhouette(reg, gid, workdir, ink=(29, 26, 46), rim=(143, 134, 184), out=Non
     return res
 
 
+# --- the monster roster (roster plan PR D, Task D2; spec §13.1, §13.4) ---------------------------------------------------
+# Target art-pixel heights by class (--height) and the band the final subject must land in. A swarm foe comes three to a
+# row, so it also has a width cap. Changing any of these needs a controller ruling; the QA stamp moves by itself.
+ROSTER_HEIGHT = {'swarm': 52, 'normal': 64, 'heavy': 76, 'warden': 96, 'boss': 150}
+ROSTER_HEIGHT_BAND = {'swarm': (40, 64), 'normal': (48, 112), 'heavy': (48, 112), 'warden': (80, 120), 'boss': (120, 200)}
+ROSTER_SWARM_MAX_W = 72
+PALETTE_MAX = 32         # distinct opaque colours (contract: <= 32 per image)
+LUM_RANGE_MIN = 0.35     # 5th to 95th percentile of opaque luminance (0..1): less is `too flat to tint`
+LUM_MEAN_MIN = 0.35      # a main-road species (recoloured by region: brightness x colour) must not be mostly dark
+LUM_PCT = (5, 95)
+ROSTER_ERASED_MAX = 8    # enclosed transparent pixels whose raw was not the key: more is an over-erased interior
+ICON_HEIGHT = 32         # roster ruling 23: the material icons follow 5d's actual output (icon-blaze-core 33 x 35) ...
+ICON_BOX = 36            # ... so the final canvas fits a 36 x 36 box
+ROSTER_SPRITE_RULES = ('block downscale to the class height; alpha QA (residue, semi alpha, raw-canvas cut, spill, key tint); '
+                       'speckless subject height inside the class band, swarm width cap; opaque colours <= PALETTE_MAX; '
+                       'luminance p5-p95 spread >= LUM_RANGE_MIN, main-road mean >= LUM_MEAN_MIN; enclosed pockets of any size '
+                       'whose sampled raw is not the key count as erased')
+ROSTER_ICON_RULES = 'block downscale to ICON_HEIGHT; alpha QA with spill and key tint; final canvas inside ICON_BOX'
+SPEC_INPUTS['roster-sprite'] = ('ROSTER_HEIGHT', 'ROSTER_HEIGHT_BAND', 'ROSTER_SWARM_MAX_W', 'PALETTE_MAX', 'LUM_RANGE_MIN',
+                                'LUM_MEAN_MIN', 'LUM_PCT', 'ROSTER_ERASED_MAX', 'SPECK_MAX', 'MAGENTA', 'MAGENTA_SPILL_MAX',
+                                'KEY_TINT_INSIDE_MAX', 'SPILL_HUE', 'SPILL_STEP', 'SPILL_BAND', 'STRONG_DEFRINGE', '_SHIFTS',
+                                'ROSTER_SPRITE_RULES')
+SPEC_INPUTS['roster-icon'] = ('ICON_HEIGHT', 'ICON_BOX', 'SPECK_MAX', 'MAGENTA', 'MAGENTA_SPILL_MAX', 'KEY_TINT_INSIDE_MAX', 'SPILL_HUE',
+                              'SPILL_STEP', 'SPILL_BAND', 'STRONG_DEFRINGE', '_SHIFTS', 'ROSTER_ICON_RULES')
+
+
+def _opaque(final):
+    arr = np.asarray(final.convert('RGBA')); return arr, arr[..., 3] == 255
+
+
+def subject_size(final):
+    """(width, height) of the subject on a final PNG: alpha 255 only, specks of <= SPECK_MAX pixels left out."""
+    _, op = _opaque(final); box = speckless_box(op, SPECK_MAX)
+    return (0, 0) if box is None else (box[2] - box[0], box[3] - box[1])
+
+
+def height_band(final, cls):
+    """Spec §13.1: the subject's height inside its class band; a swarm foe also no wider than ROSTER_SWARM_MAX_W."""
+    w, h = subject_size(final); lo, hi = ROSTER_HEIGHT_BAND[cls]; out = []
+    if not lo <= h <= hi: out.append('subject height off its band')
+    if cls == 'swarm' and w > ROSTER_SWARM_MAX_W: out.append('swarm wider than its band')
+    return out
+
+
+def palette_count(final):
+    arr, op = _opaque(final)
+    return int(len(np.unique(arr[op][:, :3], axis=0))) if op.any() else 0
+
+
+def palette_max(final):
+    return ['too many colours'] if palette_count(final) > PALETTE_MAX else []
+
+
+def lum_stats(final):
+    """(p5, p95, mean) of the opaque pixels' luminance (Rec. 601, 0..1)."""
+    arr, op = _opaque(final)
+    if not op.any(): return (0.0, 0.0, 0.0)
+    y = (arr[op][:, :3].astype(np.float64) @ np.array([0.299, 0.587, 0.114])) / 255.0
+    lo, hi = np.percentile(y, LUM_PCT)
+    return (round(float(lo), 3), round(float(hi), 3), round(float(y.mean()), 3))
+
+
+def lum_range(final, mainline):
+    """Spec §13.4: the game tints a foe by brightness x colour (BattleView tintMatrix), so flat art turns into a blot and a
+    dark main-road foe turns black in every region."""
+    p5, p95, mean = lum_stats(final); out = []
+    if p95 - p5 < LUM_RANGE_MIN: out.append('too flat to tint')
+    if mainline and mean < LUM_MEAN_MIN: out.append('too dark to tint')
+    return out
+
+
+def _erased_pixels(img, final, block):
+    """Enclosed transparent pixels (pockets of any size) whose raw, sampled the way the final was, is not the key: art the
+    cutout took for magenta. True gaps between legs or arms are key-coloured in the raw and do not count."""
+    cut = cutout(img); bbox = cut.getbbox()
+    if bbox is None or not block: return 0
+    src = Image.new('RGB', (bbox[2] - bbox[0] + 2 * block, bbox[3] - bbox[1] + 2 * block), (255, 0, 255))
+    src.paste(img.convert('RGB').crop(bbox), (block, block))
+    hint = _near_magenta(np.asarray(to_art_pixels(src, block).convert('RGB')), 30)
+    a = np.asarray(final.convert('RGBA'))[..., 3]
+    if hint.shape != a.shape: return 0
+    return int((_enclosed_transparent(a, small=a.size) & ~hint).sum())
+
+
+def process_roster_sprite(reg, aid, img, workdir, raw, cls, mainline):
+    """One roster foe raw -> its final (block downscale to ROSTER_HEIGHT[cls], despill) and the roster gates on top of the
+    usual sprite QA: height band, palette, luminance spread (and a main-road foe's brightness), erased interior. QA records
+    `height`, `width`, `colours`, `lum` [p5, p95, mean] and `erased`, stamped with qa_spec('roster-sprite')."""
+    img = img.convert('RGB')
+    qa = _finish(reg, aid, img, 'sprite', workdir, raw, height=ROSTER_HEIGHT[cls], despill_=True)
+    final = Image.open(_final_path(reg.get(aid)['final'])).convert('RGBA')
+    w, h = subject_size(final); erased = _erased_pixels(img, final, qa.get('block'))
+    gates = height_band(final, cls) + palette_max(final) + lum_range(final, mainline) + (['interior erased'] if erased > ROSTER_ERASED_MAX else [])
+    qa['reasons'] += [r for r in gates if r not in qa['reasons']]
+    qa.update({'pass': not qa['reasons'], 'height': h, 'width': w, 'colours': palette_count(final), 'lum': list(lum_stats(final)),
+               'erased': erased, 'spec': qa_spec('roster-sprite')})
+    _save_final(reg, aid, final, qa, workdir, raw)
+    reg.set(aid, kind='roster-sprite', roster_class=cls, mainline=bool(mainline))
+    return qa
+
+
+def process_roster_icon(reg, aid, cell, workdir, raw):
+    """A roster material icon: the 5d material path (`_finish`, --height ICON_HEIGHT, despill) and the final canvas inside
+    ICON_BOX x ICON_BOX (roster ruling 23), stamped with qa_spec('roster-icon')."""
+    qa = _finish(reg, aid, cell.convert('RGB'), 'sprite', workdir, raw, height=ICON_HEIGHT, despill_=True)
+    final = Image.open(_final_path(reg.get(aid)['final'])).convert('RGBA')
+    if max(final.size) > ICON_BOX and 'larger than the icon box' not in qa['reasons']: qa['reasons'].append('larger than the icon box')
+    qa.update({'pass': not qa['reasons'], 'spec': qa_spec('roster-icon')})
+    _save_final(reg, aid, final, qa, workdir, raw)
+    reg.set(aid, kind='roster-icon')
+    return qa
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(prog='sl_art'); sub = ap.add_subparsers(dest='cmd', required=True)
     p = sub.add_parser('process'); p.add_argument('--id', required=True); p.add_argument('--raw', required=True, type=Path)
@@ -1274,6 +1400,9 @@ def main(argv=None):
         own = [aid for aid in todo if _plan5d(reg.get(aid))]
         if own:   # refused before anything is copied
             raise PermissionError(f'{own} belong to plan 5d batches: publish them with `gear_art.py publish --batch B`; nothing was published')
+        roster = [aid for aid in todo if _roster(reg.get(aid))]
+        if roster:
+            raise PermissionError(f'{roster} belong to roster rounds: publish them with `roster_art.py publish --batch rN`; nothing was published')
         for aid in todo: reg.publish(aid, public)
         reg.write_manifest(public)
     if args.cmd == 'status':

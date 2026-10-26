@@ -1392,13 +1392,14 @@ def _constants_read(f, seen=None):
     return out
 
 
-@pytest.mark.parametrize('kind, gate', [('gear-cell', 'process_gear_cell'), ('nine-slice', 'nine_slice'), ('skill-cell', 'process_skill_cell')])
+@pytest.mark.parametrize('kind, gate', [('gear-cell', 'process_gear_cell'), ('nine-slice', 'nine_slice'), ('skill-cell', 'process_skill_cell'),
+                                        ('roster-sprite', 'process_roster_sprite'), ('roster-icon', 'process_roster_icon')])
 def test_every_constant_a_gate_reads_is_in_its_stamp(kind, gate):
     assert _constants_read(getattr(A, gate)) - NOT_THRESHOLDS <= set(A.SPEC_INPUTS[kind]), \
         _constants_read(getattr(A, gate)) - NOT_THRESHOLDS - set(A.SPEC_INPUTS[kind])
 
 
-@pytest.mark.parametrize('kind', ['gear-cell', 'nine-slice', 'skill-cell'])
+@pytest.mark.parametrize('kind', ['gear-cell', 'nine-slice', 'skill-cell', 'roster-sprite', 'roster-icon'])
 def test_spec_stamp_is_a_readable_hash_that_moves_with_any_covered_constant(kind, monkeypatch):
     stamp = A.qa_spec(kind)
     assert re.fullmatch(rf'{kind}:[0-9a-f]{{12}}', stamp) and A.qa_spec(kind) == stamp       # deterministic
@@ -1581,3 +1582,99 @@ def test_the_coverage_ruling_moved_the_skill_stamp_only():
     assert A.qa_spec('skill-cell') != 'skill-cell:3b64a1fbd098'
     assert (A.qa_spec('gear-cell'), A.qa_spec('nine-slice')) == ('gear-cell:03c3f55cc7d1', 'nine-slice:eb0a6b65a905')       # gear and frames unchanged
     assert 'COVER_MIN' in A.SPEC_INPUTS['skill-cell']
+
+
+# --- the monster roster's sprite gates (roster plan D2, spec §13.1, §13.4) -------------------------------------------------
+def _final(h, w=None, colours=12, lum=(0.3, 0.9)):
+    """An RGBA final with a w x h opaque subject on a 1 px transparent pad: `colours` distinct greys in horizontal bands,
+    their luminance spread evenly over `lum` (0..1)."""
+    w = w or h; rgba = np.zeros((h + 2, w + 2, 4), np.uint8); lo, hi = lum
+    for y in range(h):
+        k = min(colours - 1, y * colours // h); v = round(255 * (lo + (hi - lo) * k / max(1, colours - 1)))
+        rgba[1 + y, 1:w + 1] = (v, v, v, 255)
+    return Image.fromarray(rgba, 'RGBA')
+
+
+def test_roster_heights_and_bands_by_class():
+    assert A.ROSTER_HEIGHT == {'swarm': 52, 'normal': 64, 'heavy': 76, 'warden': 96, 'boss': 150}
+    assert A.ROSTER_HEIGHT_BAND == {'swarm': (40, 64), 'normal': (48, 112), 'heavy': (48, 112), 'warden': (80, 120), 'boss': (120, 200)}
+    assert A.ROSTER_SWARM_MAX_W == 72
+
+
+@pytest.mark.parametrize('cls, h, w, bad', [
+    ('swarm', 52, 60, []), ('swarm', 39, 30, ['subject height off its band']), ('swarm', 52, 73, ['swarm wider than its band']),
+    ('normal', 64, 60, []), ('normal', 47, 40, ['subject height off its band']), ('normal', 113, 40, ['subject height off its band']),
+    ('heavy', 112, 140, []), ('warden', 79, 50, ['subject height off its band']), ('warden', 96, 120, []),
+    ('boss', 150, 160, []), ('boss', 119, 100, ['subject height off its band']), ('boss', 201, 100, ['subject height off its band'])])
+def test_height_band(cls, h, w, bad):
+    assert A.height_band(_final(h, w), cls) == bad
+
+
+def test_height_band_ignores_a_stray_speck():
+    arr = np.asarray(_final(60, 40)).copy(); big = np.zeros((90, 44, 4), np.uint8); big[25:87, :42] = arr
+    big[2:4, 2:4] = (200, 200, 200, 255)                                   # a 2 x 2 speck far above the subject
+    assert A.height_band(Image.fromarray(big, 'RGBA'), 'normal') == []
+
+
+def test_palette_max_counts_opaque_colours_only():
+    assert A.PALETTE_MAX == 32
+    assert A.palette_count(_final(64, 40, colours=32)) == 32 and A.palette_max(_final(64, 40, colours=32)) == []
+    assert A.palette_max(_final(64, 40, colours=33)) == ['too many colours']
+
+
+def test_lum_range_rejects_flat_art_and_dark_main_road_art():
+    assert (A.LUM_RANGE_MIN, A.LUM_MEAN_MIN) == (0.35, 0.35)
+    assert A.lum_range(_final(64, 40, lum=(0.3, 0.9)), mainline=True) == []
+    assert A.lum_range(_final(64, 40, lum=(0.5, 0.7)), mainline=False) == ['too flat to tint']
+    dark = _final(64, 40, lum=(0.0, 0.5))                                   # a full range, but mostly dark
+    assert A.lum_range(dark, mainline=False) == [] and A.lum_range(dark, mainline=True) == ['too dark to tint']
+    p5, p95, mean = A.lum_stats(dark)
+    assert p95 - p5 >= 0.35 and mean < 0.35
+
+
+def _sprite_raw(path, h=320, w=200, fill=None, cut=False, pink=False):
+    """A codex-like monster raw: a shaded body with a dark outline on flat magenta (a band of light to dark greys)."""
+    from PIL import ImageDraw
+    img = canvas(400, 400 if not cut else h); d = ImageDraw.Draw(img)
+    x0 = (400 - w) // 2; y0 = (400 - h) // 2 if not cut else 0
+    d.rectangle((x0, y0, x0 + w - 1, y0 + h - 1), fill=(30, 28, 40))
+    for k in range(8):
+        v = 70 + 22 * k
+        d.rectangle((x0 + 6, y0 + 6 + k * (h - 12) // 8, x0 + w - 7, y0 + 6 + (k + 1) * (h - 12) // 8 - 1), fill=fill or (v, v, v - 10))
+    if pink: d.rectangle((x0 + 60, y0 + 100, x0 + 100, y0 + 140), fill=(255, 120, 255))   # art keyed out as magenta
+    path.parent.mkdir(parents=True, exist_ok=True); img.save(path); return path
+
+
+def test_process_roster_sprite_records_the_gates_under_its_own_spec(tmp_path):
+    reg = A.Registry(tmp_path / 'r.json'); raw = _sprite_raw(tmp_path / 'raw.png')
+    q = A.process_roster_sprite(reg, 'enemy-test', Image.open(raw), tmp_path / 'w', raw, 'normal', mainline=True)
+    assert q['pass'], q
+    assert q['spec'] == A.qa_spec('roster-sprite') and re.fullmatch(r'roster-sprite:[0-9a-f]{12}', q['spec'])
+    assert q['height'] == 64 and q['colours'] <= 32 and len(q['lum']) == 3 and q['erased'] == 0
+    e = reg.get('enemy-test')
+    assert e['kind'] == 'roster-sprite' and e['roster_class'] == 'normal' and e['status'] == 'qa_passed' and 'runtime' not in e
+    assert not A.qa_stale(e)
+
+
+def test_process_roster_sprite_keeps_the_old_alpha_checks_and_rejects_erased_interiors(tmp_path):
+    reg = A.Registry(tmp_path / 'r.json')
+    cut = _sprite_raw(tmp_path / 'cut.png', cut=True)                       # the subject runs off the raw canvas
+    q = A.process_roster_sprite(reg, 'enemy-cut', Image.open(cut), tmp_path / 'w', cut, 'normal', mainline=True)
+    assert 'subject cut by the canvas edge' in q['reasons'] and reg.get('enemy-cut')['status'] == 'qa_failed'
+    pink = _sprite_raw(tmp_path / 'pink.png', pink=True)                    # an interior patch the key cut away
+    q = A.process_roster_sprite(reg, 'enemy-pink', Image.open(pink), tmp_path / 'w', pink, 'normal', mainline=True)
+    assert 'interior erased' in q['reasons'] and q['erased'] > A.ROSTER_ERASED_MAX, q
+    dark = _sprite_raw(tmp_path / 'dark.png', fill=(40, 40, 50))
+    q = A.process_roster_sprite(reg, 'enemy-dark', Image.open(dark), tmp_path / 'w', dark, 'normal', mainline=True)
+    assert 'too dark to tint' in q['reasons'] or 'too flat to tint' in q['reasons'], q
+
+
+def test_process_roster_icon_holds_the_5d_size(tmp_path):
+    reg = A.Registry(tmp_path / 'r.json')
+    cell = _shape_cell(300, 280, 'ellipse')
+    q = A.process_roster_icon(reg, 'icon-test', cell, tmp_path / 'w', tmp_path / 'raw.png')
+    assert q['pass'] and q['spec'] == A.qa_spec('roster-icon') and max(q['size']) <= A.ICON_BOX, q
+    assert A.ICON_HEIGHT == 32 and A.ICON_BOX == 36
+    wide = _shape_cell(360, 200, 'rect')                                    # 32 tall makes it 58 wide: past the 36 box
+    q = A.process_roster_icon(reg, 'icon-wide', wide, tmp_path / 'w', tmp_path / 'raw.png')
+    assert 'larger than the icon box' in q['reasons'], q
