@@ -7,23 +7,23 @@
   "residue": 0,
   "semi": 0,
   "edge": 0,
-  "holes": 3,
+  "holes": 5,
   "magenta_spill": 0,
   "key_tint_inside": 0,
   "block": 8,
   "size": [
-    152,
-    156
+    108,
+    161
   ],
-  "height": 153,
-  "width": 150,
-  "colours": 12175,
+  "height": 159,
+  "width": 106,
+  "colours": 6047,
   "lum": [
-    0.025,
-    0.943,
-    0.492
+    0.038,
+    0.919,
+    0.541
   ],
-  "erased": 1,
+  "erased": 5,
   "palette_over": true,
   "spec": "roster-sprite:439d4a4b14f9"
 }

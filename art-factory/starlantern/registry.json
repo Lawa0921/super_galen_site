@@ -37898,67 +37898,17 @@
       "rejected_attempts": {
         "a1": "a1: violet runes cut out as key (interior erased, erased 327; magenta residue)",
         "a2": "a2: the top chain runs off the canvas (subject cut by the canvas edge); key blends in the chain links (interior erased, erased 14)",
-        "a3": "a3: R1 review FAIL: the key darkened in a crack by its mouth and between chain links ((115,1,102), (96,7,80)); fails the widened key tint (key_tint_inside 7)"
+        "a3": "a3: R1 review FAIL: the key darkened in a crack by its mouth and between chain links ((115,1,102), (96,7,80)); fails the widened key tint (key_tint_inside 7)",
+        "a4": "a4: passes QA (key_tint_inside 2) but a clapper and a smooth rim drift from a3's design, and key specks sit by its side chains ((158,8,124), (87,14,55)); a5 is used"
       },
       "plain_reasons": {
         "a1": "紫色符文被當成洋紅去掉",
         "a2": "上方鎖鍊超出畫布、鍊環內有洋紅混色",
-        "a3": "鐘口裂縫與鍊環間透出被壓暗的洋紅底色"
+        "a3": "鐘口裂縫與鍊環間透出被壓暗的洋紅底色",
+        "a4": "設計偏離 a3（有鐘舌、鐘口完整），側邊鍊旁有洋紅點；採用 a5"
       },
       "final": "art-factory/starlantern/work/enemy-silent-bell/enemy-silent-bell.png",
-      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-silent-bell\\enemy-silent-bell-a3.png",
-      "qa": {
-        "pass": false,
-        "reasons": [
-          "magenta residue"
-        ],
-        "warnings": [
-          "enclosed holes"
-        ],
-        "residue": 0,
-        "semi": 0,
-        "edge": 0,
-        "holes": 4,
-        "magenta_spill": 0,
-        "key_tint_inside": 7,
-        "block": 7,
-        "size": [
-          159,
-          154
-        ],
-        "height": 152,
-        "width": 157,
-        "colours": 10690,
-        "lum": [
-          0.042,
-          0.949,
-          0.431
-        ],
-        "erased": 4,
-        "palette_over": true,
-        "spec": "roster-sprite:439d4a4b14f9"
-      },
-      "status": "qa_failed",
-      "kind": "roster-sprite",
-      "roster_class": "boss",
-      "mainline": true,
-      "chosen_attempt": "a3",
-      "source_id": "enemy-silent-bell",
-      "batch": "roster-r1"
-    },
-    "enemy-hollow-champion": {
-      "rejected_attempts": {
-        "a1": "a1: key blends between the sword blades (interior erased, erased 18)",
-        "a2": "a2: pinholes of key blend in the mist and between the swords (interior erased, erased 12); a visor face instead of mist",
-        "a3": "a3: R1 review FAIL: the neck reads as a flat blue lens, no mist anywhere, one kind of sword, a blocky gold golem next to R0's fog-warden"
-      },
-      "plain_reasons": {
-        "a1": "劍刃之間的洋紅混色被擦掉",
-        "a2": "霧與劍之間的小洞；臉是頭盔面甲而不是霧",
-        "a3": "頸口像玻璃鏡片、沒有霧、劍都一樣、像金色魔像"
-      },
-      "final": "art-factory/starlantern/work/enemy-hollow-champion/enemy-hollow-champion.png",
-      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-hollow-champion\\enemy-hollow-champion-a3.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-silent-bell\\enemy-silent-bell-a5.png",
       "qa": {
         "pass": true,
         "reasons": [],
@@ -37968,23 +37918,23 @@
         "residue": 0,
         "semi": 0,
         "edge": 0,
-        "holes": 3,
+        "holes": 7,
         "magenta_spill": 0,
-        "key_tint_inside": 0,
+        "key_tint_inside": 2,
         "block": 8,
         "size": [
-          152,
-          156
+          133,
+          151
         ],
-        "height": 153,
-        "width": 150,
-        "colours": 12175,
+        "height": 149,
+        "width": 131,
+        "colours": 9966,
         "lum": [
-          0.025,
-          0.943,
-          0.492
+          0.027,
+          0.887,
+          0.386
         ],
-        "erased": 1,
+        "erased": 6,
         "palette_over": true,
         "spec": "roster-sprite:439d4a4b14f9"
       },
@@ -37992,7 +37942,61 @@
       "kind": "roster-sprite",
       "roster_class": "boss",
       "mainline": true,
-      "chosen_attempt": "a3",
+      "chosen_attempt": "a5",
+      "source_id": "enemy-silent-bell",
+      "batch": "roster-r1"
+    },
+    "enemy-hollow-champion": {
+      "rejected_attempts": {
+        "a1": "a1: key blends between the sword blades (interior erased, erased 18)",
+        "a2": "a2: pinholes of key blend in the mist and between the swords (interior erased, erased 12); a visor face instead of mist",
+        "a3": "a3: R1 review FAIL: the neck reads as a flat blue lens, no mist anywhere, one kind of sword, a blocky gold golem next to R0's fog-warden",
+        "a4": "a4: the concept the review asked for, but key pinholes in its mist curls and between blades (interior erased, erased 28)",
+        "a5": "a5: key pinholes around an openwork sword hilt and the mist above the neck (interior erased, erased 12)"
+      },
+      "plain_reasons": {
+        "a1": "劍刃之間的洋紅混色被擦掉",
+        "a2": "霧與劍之間的小洞；臉是頭盔面甲而不是霧",
+        "a3": "頸口像玻璃鏡片、沒有霧、劍都一樣、像金色魔像",
+        "a4": "概念對了，但霧的捲鬚與劍之間有小洞",
+        "a5": "鏤空劍柄與頸上霧氣有小洞"
+      },
+      "final": "art-factory/starlantern/work/enemy-hollow-champion/enemy-hollow-champion.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-hollow-champion\\enemy-hollow-champion-a6.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 5,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 8,
+        "size": [
+          108,
+          161
+        ],
+        "height": 159,
+        "width": 106,
+        "colours": 6047,
+        "lum": [
+          0.038,
+          0.919,
+          0.541
+        ],
+        "erased": 5,
+        "palette_over": true,
+        "spec": "roster-sprite:439d4a4b14f9"
+      },
+      "status": "qa_passed",
+      "kind": "roster-sprite",
+      "roster_class": "boss",
+      "mainline": true,
+      "chosen_attempt": "a6",
       "source_id": "enemy-hollow-champion",
       "batch": "roster-r1"
     }

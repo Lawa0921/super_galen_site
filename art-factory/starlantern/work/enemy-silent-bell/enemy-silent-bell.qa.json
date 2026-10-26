@@ -1,31 +1,29 @@
 {
-  "pass": false,
-  "reasons": [
-    "magenta residue"
-  ],
+  "pass": true,
+  "reasons": [],
   "warnings": [
     "enclosed holes"
   ],
   "residue": 0,
   "semi": 0,
   "edge": 0,
-  "holes": 4,
+  "holes": 7,
   "magenta_spill": 0,
-  "key_tint_inside": 7,
-  "block": 7,
+  "key_tint_inside": 2,
+  "block": 8,
   "size": [
-    159,
-    154
+    133,
+    151
   ],
-  "height": 152,
-  "width": 157,
-  "colours": 10690,
+  "height": 149,
+  "width": 131,
+  "colours": 9966,
   "lum": [
-    0.042,
-    0.949,
-    0.431
+    0.027,
+    0.887,
+    0.386
   ],
-  "erased": 4,
+  "erased": 6,
   "palette_over": true,
   "spec": "roster-sprite:439d4a4b14f9"
 }

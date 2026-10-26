@@ -1,0 +1,43 @@
+{
+  "assets": {
+    "enemy-hollow-champion": {
+      "final": "art-factory/starlantern/work/enemy-hollow-champion/cand/a4/enemy-hollow-champion.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-hollow-champion\\enemy-hollow-champion-a4.png",
+      "qa": {
+        "pass": false,
+        "reasons": [
+          "interior erased"
+        ],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 41,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 8,
+        "size": [
+          109,
+          156
+        ],
+        "height": 154,
+        "width": 107,
+        "colours": 7368,
+        "lum": [
+          0.016,
+          0.909,
+          0.474
+        ],
+        "erased": 28,
+        "palette_over": true,
+        "spec": "roster-sprite:439d4a4b14f9"
+      },
+      "status": "qa_failed",
+      "kind": "roster-sprite",
+      "roster_class": "boss",
+      "mainline": true
+    }
+  }
+}
