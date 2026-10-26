@@ -37897,11 +37897,13 @@
     "enemy-silent-bell": {
       "rejected_attempts": {
         "a1": "a1: violet runes cut out as key (interior erased, erased 327; magenta residue)",
-        "a2": "a2: the top chain runs off the canvas (subject cut by the canvas edge); key blends in the chain links (interior erased, erased 14)"
+        "a2": "a2: the top chain runs off the canvas (subject cut by the canvas edge); key blends in the chain links (interior erased, erased 14)",
+        "a3": "a3: R1 review FAIL: the key darkened in a crack by its mouth and between chain links ((115,1,102), (96,7,80)); fails the widened key tint (key_tint_inside 7)"
       },
       "plain_reasons": {
         "a1": "紫色符文被當成洋紅去掉",
-        "a2": "上方鎖鍊超出畫布、鍊環內有洋紅混色"
+        "a2": "上方鎖鍊超出畫布、鍊環內有洋紅混色",
+        "a3": "鐘口裂縫與鍊環間透出被壓暗的洋紅底色"
       },
       "final": "art-factory/starlantern/work/enemy-silent-bell/enemy-silent-bell.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-silent-bell\\enemy-silent-bell-a3.png",
@@ -37947,11 +37949,13 @@
     "enemy-hollow-champion": {
       "rejected_attempts": {
         "a1": "a1: key blends between the sword blades (interior erased, erased 18)",
-        "a2": "a2: pinholes of key blend in the mist and between the swords (interior erased, erased 12); a visor face instead of mist"
+        "a2": "a2: pinholes of key blend in the mist and between the swords (interior erased, erased 12); a visor face instead of mist",
+        "a3": "a3: R1 review FAIL: the neck reads as a flat blue lens, no mist anywhere, one kind of sword, a blocky gold golem next to R0's fog-warden"
       },
       "plain_reasons": {
         "a1": "劍刃之間的洋紅混色被擦掉",
-        "a2": "霧與劍之間的小洞；臉是頭盔面甲而不是霧"
+        "a2": "霧與劍之間的小洞；臉是頭盔面甲而不是霧",
+        "a3": "頸口像玻璃鏡片、沒有霧、劍都一樣、像金色魔像"
       },
       "final": "art-factory/starlantern/work/enemy-hollow-champion/enemy-hollow-champion.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-hollow-champion\\enemy-hollow-champion-a3.png",
@@ -39876,5 +39880,21 @@
       "moved_to": "C:/Users/bag57/art-refs/starlantern/quarantine/stray-2026-10-26/",
       "reason": "invalid attempts, not counted toward any cap: an E1 run of gen --only=sheet-icons-roster-1 (the R1 silent-bronze redraw) matched these ids by prefix and drew them with the R1 correction text appended; the run was stopped and the ids came from the old icon_sheets() chunking (2 icons a sheet), which no longer exists"
     }
-  ]
+  ],
+  "cap_extensions": {
+    "enemy-silent-bell": [
+      {
+        "extra": 3,
+        "by": "controller cap extension 2026-10-26",
+        "review": "art-factory/starlantern/work/review/roster-r1-review-round1.md"
+      }
+    ],
+    "enemy-hollow-champion": [
+      {
+        "extra": 3,
+        "by": "controller cap extension 2026-10-26",
+        "review": "art-factory/starlantern/work/review/roster-r1-review-round1.md"
+      }
+    ]
+  }
 }

@@ -180,6 +180,31 @@ def test_gen_stops_at_the_attempt_cap(factory, monkeypatch):
         R.gen(['--only=enemy-paper-moth', '--n=4'])
 
 
+def test_gen_past_the_cap_needs_a_recorded_controller_extension(factory, monkeypatch):
+    """Controller ruling 2026-10-26 (R1 review): up to 3 more attempts for a job, recorded in the registry with who, when and
+    the review it cites; gen counts them, nothing else does."""
+    calls = []
+    monkeypatch.setattr(R.subprocess, 'run', lambda argv, **k: calls.append(argv) or subprocess.CompletedProcess(argv, 1, '', ''))
+    _sprite(factory / 'raw/enemy-slime/enemy-slime-a1.png')
+    for k in (1, 2, 3): _sprite(factory / f'raw/enemy-paper-moth/enemy-paper-moth-a{k}.png')
+    with pytest.raises(ValueError, match='date'):
+        R.extend_cap(A.Registry(R.REG_PATH), 'enemy-paper-moth', 3, by='controller', review='r1-review.md')
+    with pytest.raises(ValueError, match='at most 3'):
+        R.extend_cap(A.Registry(R.REG_PATH), 'enemy-paper-moth', 4, by='controller 2026-10-26', review='r1-review.md')
+    with pytest.raises(PermissionError, match='cap'):
+        R.gen(['--only=enemy-paper-moth', '--n=4'])
+    assert not calls
+    R.extend_cap(A.Registry(R.REG_PATH), 'enemy-paper-moth', 3, by='controller 2026-10-26', review='r1-review.md')
+    ext = A.Registry(R.REG_PATH).data['cap_extensions']['enemy-paper-moth']
+    assert ext == [{'extra': 3, 'by': 'controller 2026-10-26', 'review': 'r1-review.md'}] and R.cap_of(A.Registry(R.REG_PATH), 'enemy-paper-moth') == 6
+    assert R.gen(['--only=enemy-paper-moth', '--n=4']) is False                  # codex ran for a4 (and gave nothing)
+    assert len(calls) == 1 and 'enemy-paper-moth-a4.png' in calls[0]
+    for k in (4, 5, 6): _sprite(factory / f'raw/enemy-paper-moth/enemy-paper-moth-a{k}.png')
+    with pytest.raises(PermissionError, match='cap'):
+        R.gen(['--only=enemy-paper-moth', '--n=7'])
+    assert R.cap_of(A.Registry(R.REG_PATH), 'enemy-root-hound') == R.CAP
+
+
 # --- fixtures and fakes -----------------------------------------------------------------------------------------------------
 @pytest.fixture
 def factory(tmp_path, monkeypatch):
