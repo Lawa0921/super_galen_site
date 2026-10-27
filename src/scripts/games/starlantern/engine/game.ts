@@ -18,7 +18,7 @@ import { ALTAR_STAT_CAP_PCT, altarAt, altarHpLoss, eliteGroup, FOUNTAIN_PCT, POI
 import { EQUIPMENT } from '../data/equipment';
 import { SPECIALS } from '../data/gear';
 import { applyAutoJunk, BAG_SIZE, mintUid } from './loot/bag';
-import { chestHasGear, GEAR_CHANCE, inscribe, lootRng, rollBossGear, rollGear, rollRareMaterial, trophyRng, type DropCtx } from './loot/drops';
+import { chestHasGear, GEAR_CHANCE, inscribe, lootRng, ownUniqueOf, ownUniqueSwap, rollBossGear, rollGear, rollRareMaterial, trophyRng, type DropCtx } from './loot/drops';
 import { ENEMIES } from '../data/enemies';
 import { INSCRIBE_CHANCE } from '../data/forge';
 import { itemWeight, type DropSource } from './loot/item';
@@ -841,14 +841,15 @@ export class Game {
       const kills = this.state.dungeon.bossKills;
       const gear = rollBossGear(lootRng(run), { ...this.dropCtx('boss', tier), bossRepeat: (kills[key] ?? 0) > 0 });
       kills[key] = (kills[key] ?? 0) + 1;
-      return { gear };
+      return { gear: this.ownUnique(b, gear, ['boss', 'elite'], tier) };
     }
     const gear: ItemInstance[] = [];
     let rare: string | undefined;
     if (elite) {
       const rng = lootRng(run);
-      gear.push(rollGear(rng, this.dropCtx('elite', tier)));
+      const piece = rollGear(rng, this.dropCtx('elite', tier));
       rare = rollRareMaterial(rng);
+      gear.push(...this.ownUnique(b, [piece], ['elite'], tier));
     }
     // In an elite fight the first enemy is the elite; the rest are escorts.
     for (let i = elite ? 1 : 0; i < b.enemies.length; i++) {
@@ -858,6 +859,18 @@ export class Game {
       if (rng() < GEAR_CHANCE.monster) gear.push(this.inscribed(rollGear(rng, this.dropCtx('monster', tier)), b.enemies[i].defId));
     }
     return { gear, rare };
+  }
+
+  /**
+   * Roster plan Task C2 (spec §7.3, ruling 15): the gear of a live roster boss's fight, or of a live warden's (the first foe
+   * of an elite fight), after the loot stream is done with it: a legendary-tier piece may become that foe's own unique
+   * (`ownUniqueSwap`, on the trophy stream). Any other fight's gear is left as it is, and draws nothing.
+   */
+  private ownUnique(b: BattleState, gear: ItemInstance[], sources: DropSource[], tier: Difficulty | undefined): ItemInstance[] {
+    const foes = b.boss ? b.enemies.filter((e) => ENEMIES[e.defId]?.boss) : b.enemies.slice(0, 1);
+    const own = foes.map((e) => ownUniqueOf(e.defId)).find((s) => s);
+    if (!own) return gear;
+    return ownUniqueSwap(gear, sources, own, () => trophyRng(this.run!), this.dropCtx(sources[0], tier));
   }
 
   /**

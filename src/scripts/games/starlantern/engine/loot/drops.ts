@@ -1,6 +1,8 @@
 import { CONDITIONS, type ConditionId } from '../../data/conditions';
 import { AFFIXES, SETS, SPECIALS, STARLIT_RARITIES, generalLegendaries, regionSpecials, type SpecialDef } from '../../data/gear';
 import { ENEMIES } from '../../data/enemies';
+import { OWN_UNIQUE_SHARE } from '../../data/forge';
+import { ROSTER_LIVE } from '../../data/monsters';
 import type { RegionId } from '../../data/regions';
 import { depthLevel } from '../levels';
 import type { Run } from '../dungeon/run';
@@ -216,5 +218,36 @@ export function inscribe(it: ItemInstance, species: string, rng: Rng): ItemInsta
   if (!out.affixes.length || !AFFIXES[key].slots.includes(itemSlot(it)) || out.affixes.some((a) => a.key === key)) return out;
   const i = Math.floor(rng() * out.affixes.length);
   out.affixes[i] = { key, value: rollValue(rng, key, it.ilvl, it.rarity) };
+  return out;
+}
+
+/**
+ * Roster plan ruling 14 (spec §7.3, §11.1): the own unique of a roster boss or warden gone live; none for a foe that is
+ * not live, or that has none.
+ */
+export function ownUniqueOf(enemyId: string): SpecialDef | undefined {
+  if (!ROSTER_LIVE.has(enemyId)) return undefined;
+  return Object.values(SPECIALS).find((s) => s.owner === enemyId);
+}
+
+/**
+ * Roster plan Task C2 (spec §7.3, ruling 15): a live owner's fight, once the loot stream is done with its gear. Each
+ * legendary-tier piece (a special) in turn takes one trophy draw (`trophy` hands out a fresh one) and, under
+ * OWN_UNIQUE_SHARE, becomes `own`: rolled on that same draw, its uid and item level kept, then starlit or not as any drop
+ * of its source (`sources[i]`, keyed by the uid). At most one piece of a fight is swapped, so a special never becomes
+ * more likely: only which special it is changes.
+ */
+export function ownUniqueSwap(
+  gear: ItemInstance[], sources: DropSource[], own: SpecialDef, trophy: () => Rng, ctx: Pick<DropCtx, 'seed' | 'depth' | 'difficulty'>,
+): ItemInstance[] {
+  const out = [...gear];
+  for (let i = 0; i < out.length; i++) {
+    const it = out[i];
+    if (!it.special) continue;
+    const t = trophy();
+    if (t() >= OWN_UNIQUE_SHARE) continue;
+    out[i] = applyStarlit(rollItem(t, { uid: it.uid, ilvl: it.ilvl, rarity: own.rarity, special: own.id }), { ...ctx, source: sources[i] ?? 'boss' });
+    break;
+  }
   return out;
 }

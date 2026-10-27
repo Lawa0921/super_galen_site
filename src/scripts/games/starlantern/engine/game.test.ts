@@ -28,7 +28,7 @@ import { ABYSS, ABYSS_UNLOCK } from '../data/hero';
 import { CONDITIONS } from '../data/conditions';
 import { BAG_SIZE } from './loot/bag';
 import { MAX_ILVL, MAX_REACHED } from './levels';
-import { BOSS_LEGENDARY, chestHasGear, GEAR_CHANCE, mix, RARE_MATERIALS, rollBossGear, STARLIT_CHANCE } from './loot/drops';
+import { BOSS_LEGENDARY, chestHasGear, GEAR_CHANCE, mix, RARE_MATERIALS, rollBossGear, rollGear, STARLIT_CHANCE } from './loot/drops';
 import { itemLevel, itemWeight, rollItem } from './loot/item';
 import { MATERIALS } from '../data/materials';
 import { buy, unequip } from './town';
@@ -81,7 +81,7 @@ vi.mock('./portals', async (importOriginal) => {
 // Wrapped so a test can see what the game asked the boss roll for; it still rolls for real.
 vi.mock('./loot/drops', async (importOriginal) => {
   const mod = await importOriginal<typeof import('./loot/drops')>();
-  return { ...mod, rollBossGear: vi.fn(mod.rollBossGear) };
+  return { ...mod, rollBossGear: vi.fn(mod.rollBossGear), rollGear: vi.fn(mod.rollGear) };
 });
 
 // Wrapped so a test can see what a rune was rolled with (difficulty plan Task 6a-prime); it still rolls for real.
@@ -6643,5 +6643,72 @@ describe('the trophy stream in a fight (roster plan Task C1)', () => {
     } finally {
       GEAR_CHANCE.monster = saved;
     }
+  });
+});
+
+describe("a boss's or a warden's own unique in a fight (roster plan Task C2)", () => {
+  /** A boss fight on main road depth 5 of a game on `seed`, won at once; its gear and the draws it took. */
+  const bossFight = (seed: number) => {
+    const g = tiered('normal', mulberry32(seed));
+    expect(g.depart(MAIN, 5)).toEqual({ ok: true });
+    stepOnto(g, g.map().boss!);
+    const ids = g.battle!.enemies.map((e) => e.defId);
+    const at = { loot: g.run!.lootDraws, trophy: g.run!.trophyDraws };
+    const end = killAll(g);
+    return { g, ids, gear: [...end.gear, ...end.gearLeft], loot: g.run!.lootDraws - at.loot, trophy: g.run!.trophyDraws - at.trophy };
+  };
+
+  it('the swap moves no lootRng draw', () => {
+    const saved = BOSS_LEGENDARY.first;
+    let swaps = 0;
+    try {
+      BOSS_LEGENDARY.first = 1;
+      for (let seed = 1; seed <= 10; seed++) {
+        const plain = bossFight(seed);
+        const own = withRosterLive(['fog-warden'], () => bossFight(seed));
+        expect(plain.ids).toEqual(['lanterneater']);
+        expect(own.ids).toEqual(['fog-warden']);
+        expect(own.loot).toBe(plain.loot);
+        expect(plain.trophy).toBe(0);
+        // Each legendary-tier piece draws once, until one is swapped.
+        const swapped = own.gear.findIndex((it, i) => it.special !== plain.gear[i].special);
+        expect(own.trophy).toBe(swapped < 0 ? plain.gear.filter((it) => it.special).length : plain.gear.slice(0, swapped + 1).filter((it) => it.special).length);
+        own.gear.forEach((it, i) => {
+          expect([it.uid, it.ilvl]).toEqual([plain.gear[i].uid, plain.gear[i].ilvl]);
+          if (i !== swapped) expect(it).toEqual(plain.gear[i]);
+        });
+        if (swapped >= 0) {
+          swaps++;
+          expect(own.gear[swapped]).toMatchObject({ special: 'fog-halberd', rarity: 'unique' });
+        }
+      }
+    } finally {
+      BOSS_LEGENDARY.first = saved;
+    }
+    expect(swaps).toBeGreaterThan(0);
+    expect(swaps).toBeLessThan(10);
+  });
+
+  it("a warden's legendary-tier piece may be its own unique", async () => {
+    const real = await vi.importActual<typeof import('./loot/drops')>('./loot/drops');
+    let swaps = 0;
+    for (let seed = 1; seed <= 8; seed++) {
+      withRosterLive(['false-moon'], () => {
+        const g = tiered('normal', mulberry32(seed));
+        g.state.dungeon.reached.mainline = 30;
+        expect(g.depart(MAIN, 8)).toEqual({ ok: true });
+        const room = floorOf(g.run!, g.floor).contents.find((c) => c.kind === 'warden')!;
+        stepOnto(g, room.at);
+        // The elite piece comes out legendary-tier; the loot stream draws as it would.
+        vi.mocked(rollGear).mockImplementationOnce((rng, ctx) => ({ ...real.rollGear(rng, ctx), rarity: 'legendary', special: 'lg-selene' }));
+        const end = killAll(g);
+        const piece = [...end.gear, ...end.gearLeft][0];
+        expect(g.run!.trophyDraws).toBe(1);
+        if (piece.special === 'moonless-mirror') swaps++;
+        else expect(piece.special).toBe('lg-selene');
+      });
+    }
+    expect(swaps).toBeGreaterThan(0);
+    expect(swaps).toBeLessThan(8);
   });
 });
