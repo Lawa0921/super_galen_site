@@ -2,14 +2,16 @@ import { describe, it, expect } from 'vitest';
 import { newGame } from '../state';
 import { plainItem } from '../testing';
 import { DISMANTLE, ENHANCE_COST, ENHANCE_SUCCESS, ENHANCE_MAX } from '../../data/forge';
-import { dismantle, dismantleYield, enhance, fuse, reroll } from './forge';
-import { enhanceChance, enhanceCost, fuseCost, fuseSlots, rerollCost, rerollRange, swapPool } from './cost';
+import { dismantle, dismantleYield, enhance, fuse, inscribeAt, reroll } from './forge';
+import { enhanceChance, enhanceCost, fuseCost, fuseSlots, inscribeCost, rerollCost, rerollRange, signatureOf, swapPool } from './cost';
 import { AFFIXES, GEAR_SLOTS, ROLL_FLOOR, SPECIALS, affixRange, generalLegendaries } from '../../data/gear';
-import { FUSE_GOLD, FUSE_SLOT_COST, REGION_AFFIX_GROUP, REROLL } from '../../data/forge';
+import { FUSE_GOLD, FUSE_SLOT_COST, INSCRIBE_QTY, REGION_AFFIX_GROUP, REROLL, ownGold } from '../../data/forge';
+import { EQUIPMENT } from '../../data/equipment';
+import { withRosterLive } from '../testing';
 import { BAG_SIZE } from '../loot/bag';
 import { itemSlot, maxValue, rollItem } from '../loot/item';
 import { mulberry32 } from '../rng';
-import { craftSet } from './craft';
+import { craftLevel, craftOwnUnique, craftSet, ownCost, ownTrophyOf } from './craft';
 import { MATERIALS } from '../../data/materials';
 import { statsOf } from '../party';
 import type { GameState } from '../state';
@@ -556,5 +558,109 @@ describe('epic and starlit at the forge (plan 5g)', () => {
     const r = dismantle(s, [1]);
     expect(r.ok && r.out.essences).toEqual(DISMANTLE.epic);
     expect(r.ok && r.state.inventory).toEqual({ 'essence-rare': 2 });
+  });
+});
+
+describe('inscribing at the forge (roster plan Task C4)', () => {
+  const NECK = Object.values(EQUIPMENT).filter((e) => e.slot === 'neck').sort((a, b) => a.ilvl - b.ilvl)[0].id;
+  const BODY = Object.values(EQUIPMENT).filter((e) => e.slot === 'body').sort((a, b) => a.ilvl - b.ilvl)[0].id;
+  const piece = (extra: Partial<ItemInstance> = {}): ItemInstance =>
+    ({ uid: 1, base: NECK, rarity: 'rare', ilvl: 10, affixes: [{ key: 'hp', value: 30 }, { key: 'res', value: 4 }], enhance: 0, ...extra });
+  const stocked = (it: ItemInstance, sig = 5): GameState => ({ ...withBag([it]), gold: 1000, inventory: { 'faded-letter': sig } });
+
+  it('the signature and the cost', () => {
+    expect(signatureOf('paper-moth')).toBe('faded-letter');
+    expect(signatureOf('fog-warden')).toBeUndefined();   // a boss has a trophy, not a signature
+    expect(signatureOf('slime')).toBeUndefined();
+    expect(inscribeCost(piece(), 'paper-moth')).toEqual({ gold: REROLL.gold(10), mats: { 'faded-letter': INSCRIBE_QTY } });
+    expect(INSCRIBE_QTY).toBe(3);
+  });
+
+  it('inscribing costs three of its signature and one forge draw', () => {
+    const s = stocked(piece());
+    const r = inscribeAt(s, 1, 1, 'paper-moth');
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    const it = r.state.bag[0];
+    expect(it.affixes[0]).toEqual({ key: 'hp', value: 30 });
+    expect(it.affixes[1].key).toBe('sleepRes');
+    const [lo, hi] = rerollRange(it, 1)!;
+    expect(it.affixes[1].value).toBeGreaterThanOrEqual(lo);
+    expect(it.affixes[1].value).toBeLessThanOrEqual(hi);
+    expect(it).toMatchObject({ inscription: 'paper-moth', locked: 1 });
+    expect(r.state.inventory['faded-letter']).toBe(2);
+    expect(r.state.gold).toBe(1000 - REROLL.gold(10));
+    expect(r.state.forgeDraws - s.forgeDraws).toBe(1);
+    expect(r.state.bestiary?.['paper-moth']?.inscribed).toBe(true);
+    expect(r.out).toEqual({ before: { key: 'res', value: 4 }, after: it.affixes[1] });
+    // The state it was given is left alone.
+    expect(s.bag[0].affixes[1].key).toBe('res');
+    expect(s.inventory['faded-letter']).toBe(5);
+    // As a reroll does, it locks the affix: another one is refused after.
+    expect(inscribeAt({ ...r.state, inventory: { 'faded-letter': 3 } }, 1, 0, 'paper-moth')).toEqual({ ok: false, reason: 'affixLocked' });
+  });
+
+  it('a special piece cannot be inscribed', () => {
+    const cases: [string, ItemInstance, number, string, string][] = [
+      ['a unique', piece({ rarity: 'unique', special: 'blaze-ember-ring' }), 0, 'paper-moth', 'invalid'],
+      ['a starlit legendary', piece({ rarity: 'legendary', special: 'frost-bloom-neck', starlit: true }), 0, 'paper-moth', 'invalid'],
+      ['a common piece', piece({ rarity: 'common', affixes: [] }), 0, 'paper-moth', 'invalid'],
+      ['an affix that is not there', piece(), 5, 'paper-moth', 'invalid'],
+      ['a foe with no inscription', piece(), 0, 'slime', 'invalid'],
+      ['a slot that cannot take the key', piece({ base: BODY }), 0, 'paper-moth', 'none'],
+      ['the key on another affix', piece({ affixes: [{ key: 'hp', value: 30 }, { key: 'sleepRes', value: 9 }] }), 0, 'paper-moth', 'none'],
+      ['another affix locked', piece({ locked: 0 }), 1, 'paper-moth', 'affixLocked'],
+    ];
+    for (const [name, it, index, species, reason] of cases) expect(inscribeAt(stocked(it), 1, index, species), name).toEqual({ ok: false, reason });
+    expect(inscribeAt(stocked(piece(), 2), 1, 0, 'paper-moth')).toEqual({ ok: false, reason: 'mats' });
+    expect(inscribeAt({ ...stocked(piece()), gold: 0 }, 1, 0, 'paper-moth')).toEqual({ ok: false, reason: 'gold' });
+    expect(inscribeAt(stocked(piece()), 9, 0, 'paper-moth')).toEqual({ ok: false, reason: 'stock' });
+    // The key already on the chosen affix is fine: its value is rerolled and the piece takes the mark.
+    const same = inscribeAt(stocked(piece({ affixes: [{ key: 'sleepRes', value: 6 }] })), 1, 0, 'paper-moth');
+    expect(same.ok && same.state.bag[0]).toMatchObject({ inscription: 'paper-moth', locked: 0 });
+  });
+});
+
+describe('crafting an own unique (roster plan Task C4)', () => {
+  const rich = (): GameState => ({ ...withBag([]), gold: 100000, inventory: { 'fog-gate-plate': 5, 'star-tear': 1 } });
+
+  it('the recipe: its trophy five, a star tear and ownGold', () => {
+    const s = rich();
+    expect(ownTrophyOf('fog-halberd')).toBe('fog-gate-plate');
+    expect(ownTrophyOf('moonless-mirror')).toBe('moon-silver');   // a keepsake serves as well
+    expect(ownTrophyOf('blaze-ember-ring')).toBeUndefined();
+    expect(ownCost(s, 'fog-halberd')).toEqual({ gold: ownGold(craftLevel(s)), mats: { 'fog-gate-plate': 5, 'star-tear': 1 } });
+    expect(ownCost(s, 'blaze-ember-ring')).toBeNull();
+  });
+
+  it('crafting needs a kill first', () => {
+    withRosterLive(['fog-warden'], () => {
+      const s = rich();
+      expect(craftOwnUnique(s, 'fog-halberd')).toEqual({ ok: false, reason: 'unbeaten' });
+      s.bestiary = { 'fog-warden': { seen: 3, felled: 0 } };
+      expect(craftOwnUnique(s, 'fog-halberd')).toEqual({ ok: false, reason: 'unbeaten' });
+      s.bestiary = { 'fog-warden': { seen: 1, felled: 1 } };
+      const r = craftOwnUnique(s, 'fog-halberd');
+      expect(r.ok).toBe(true);
+      if (!r.ok) return;
+      expect(r.out.item).toMatchObject({ rarity: 'unique', special: 'fog-halberd', ilvl: craftLevel(s) });
+      expect(r.state.codex).toContain('fog-halberd');
+      expect(r.state.inventory).toEqual({});
+      expect(r.state.gold).toBe(100000 - ownGold(craftLevel(s)));
+    });
+    // An owner not live, or a piece that is no one's own, is no recipe at all.
+    const s = { ...rich(), bestiary: { 'fog-warden': { seen: 1, felled: 1 } } };
+    expect(craftOwnUnique(s, 'fog-halberd')).toEqual({ ok: false, reason: 'invalid' });
+    expect(craftOwnUnique(s, 'blaze-ember-ring')).toEqual({ ok: false, reason: 'invalid' });
+  });
+
+  it('crafting draws once', () => {
+    withRosterLive(['fog-warden'], () => {
+      const s = { ...rich(), bestiary: { 'fog-warden': { seen: 1, felled: 1 } } };
+      const r = craftOwnUnique(s, 'fog-halberd');
+      expect(r.ok && r.state.forgeDraws - s.forgeDraws).toBe(1);
+      expect(craftOwnUnique({ ...s, inventory: { 'fog-gate-plate': 4, 'star-tear': 1 } }, 'fog-halberd')).toEqual({ ok: false, reason: 'mats' });
+      expect(craftOwnUnique({ ...s, bag: Array.from({ length: BAG_SIZE }, (_, i) => at('common', i + 1)) }, 'fog-halberd')).toEqual({ ok: false, reason: 'full' });
+    });
   });
 });

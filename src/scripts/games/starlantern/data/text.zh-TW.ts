@@ -129,6 +129,7 @@ export const T = {
     mats: '素材不足', max: '已經強化到最高了', affixLocked: '這件裝備只能重鑄標著（重鑄鎖定）的詞綴，其他詞綴不可重鑄', none: '沒有可以換的詞綴',
     heavy: '太重了，冒險背包裝不下', lineup: '迷宮裡只能調整站位，不能換人', tp: 'TP 不足', 'no-effect': '沒有需要回復的人',
     down: '倒下的人不能行動', 'not-learned': '還沒學會這個技能',
+    unbeaten: '還沒有擊倒過它的主人',
   } as Record<string, string>,
   notices: {
     'save-reset': '存檔無法讀取，已開始新遊戲', wipe: '全滅……冒險背包遺失在迷宮裡，身上的金幣也少了四分之一。',
@@ -786,6 +787,13 @@ export const T = {
       rerolled: (before: string, after: string) => `重鑄完成！${before} → ${after}`,
       /** The new affix in a reroll result, with a word for which way it went (its colour says the same). */
       rerollTrend: (after: string, up: boolean) => `${after}（${up ? '提升' : '下降'}）`,
+      /** Roster plan Task C4, 銘刻: the method row, 「銘刻：遺信紙蛾」. */
+      inscribeWith: (species: string) => `銘刻：${species}`,
+      /** The detail: what the affix becomes, and whose mark the piece takes. */
+      inscribeTo: (stat: string, species: string) => `銘刻成　${stat}（${species}的銘文）`,
+      askInscribe: (label: string, affix: string) => `要把${label}的「${affix}」銘刻成銘文嗎？`,
+      /** 「生命 +30 → 睡眠抗性 +12%」: the old affix, then the inscribed one. */
+      inscribed: (before: string, after: string) => `銘刻完成！${before} → ${after}`,
       /** A fusion tier row: 「普通 ×3 → 魔法」. */
       fuseTier: (from: Rarity, to: Rarity) => `${RARITY[from]} ×3 → ${RARITY[to]}`,
       /** The 合成 row of the picking layer: 「合成（已選 2／3）」. */
@@ -803,7 +811,11 @@ export const T = {
       fuseRegionNote: '不會出現限定地區的裝備',
       fuseNeed: '費用：',
       fused: (label: string) => `合成完成！得到了${label}。`,
-      craftCats: { item: '消耗品', base: '底材', set: '套裝' },
+      craftCats: { item: '消耗品', base: '底材', set: '套裝', own: '專屬裝備' },
+      /** Roster plan Task C4: an own unique's owner, under its name in the detail. */
+      ownOf: (owner: string) => `${owner}的專屬裝備`,
+      /** Why an own unique's row is greyed out: its owner has never been felled (the bestiary says so). */
+      unbeaten: (owner: string) => `尚未擊倒${owner}`,
       /** A consumable row's right column: the shop's price, then the gold crafting one takes. */
       craftRow: (shop: number, cost: string) => `店價 ${shop} G 製作 ${cost}`,
       craftShop: (shop: number) => `店價 ${shop} G`,

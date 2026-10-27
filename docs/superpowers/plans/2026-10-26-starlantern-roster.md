@@ -142,7 +142,7 @@ spec 已核准（2026-10-26，控制者依使用者授權）。下面是 spec �
 14. **專屬獨特**：`gear.roster.ts` 的 39 件 `SpecialDef` 加 `owner: string`（敵人 id）、`region: null`、`source`（頭目 `'boss'`、守關者 `'elite'`）、固定 3 條詞綴、`weaponKind`（武器必填，`data/data.test.ts:139-142`）、`lore` 一句。`pickSpecial` 與 `regionSpecials` 一律排除有 `owner` 的；所以剪影集合（`render/artPaths.ts:173-176`）不變，每件只有小圖＋大圖兩張。
 15. **專屬獨特怎麼來**：
     - 掉落：在新頭目或守關者的戰鬥裡，`rollBossGear`／精英那一件照舊用 `lootRng` 跑完；那件是 `legendaryTier` 時，用 `trophyRng` 抽 `OWN_UNIQUE_SHARE = 0.5`，中了就換成該敵人的專屬獨特（`rollItem` 以 `trophyRng` 重擲數值，保留 uid），再以同一個 uid 跑一次 `applyStarlit`。高難度提高傳說級占比，所以專屬獨特也跟著多：這是高難度「掉落更好」的承諾，不另調。
-    - 製作：鍛造屋「製作」頁新列：戰利品或遺物 5 ＋ `star-tear` 1 ＋ `setGold(ilvl)`；**條件**是圖鑑裡那隻 `felled ≥ 1`；用 `forgeRng` 抽一次，照 `craftSet`（`engine/forge/craft.ts:80-94`）。
+    - 製作：鍛造屋「製作」頁新列：戰利品或遺物 5 ＋ `star-tear` 1 ＋ `ownGold(ilvl)`（= 200 ＋ 20 × ilvl；PR C 實作改：`setGold` 每級 16 G 跟的是套裝的賣價，獨特的賣價每級 20 G，item level 195 以上會倒賺，spec §0 第 20 條）；**條件**是圖鑑裡那隻 `felled ≥ 1`；用 `forgeRng` 抽一次，照 `craftSet`（`engine/forge/craft.ts:80-94`）。
 16. **銘文**：每個一般物種的銘文鍵寫在 `EnemyDef.inscribe?: AnyStat`（spec §5.3、§5.4 的「銘文」欄，A2 加）。`ItemInstance.inscription?: string`（物種 id）。新物種那隻的 `lootRng` 掉了裝備、而且不是特殊裝備時，用 `trophyRng` 抽 `INSCRIBE_CHANCE = 0.25`；中了就把一條詞綴換成該物種的銘文鍵（槽位不允許就不換，但仍記 `inscription`），數值在同一稀有度與 ilvl 的範圍內由 `trophyRng` 重擲。名稱後加「・〇〇銘」（物種名的前兩個字，表在 `data/bestiary.zh-TW.ts`）。鍛造屋「銘刻」：同物種招牌素材 3 ＋ `REROLL.gold(ilvl)`，把一條詞綴重洗成銘文鍵，用 `forgeRng`。
 17. **圖鑑**：`GameState.bestiary?: Record<string, { seen: number; felled: number; inscribed?: true }>`。`startBattle` 記 `seen`（定義 id；地區變體算同一種；召喚的算；幻影不算），勝利記 `felled`（打倒的每一隻，包含召喚的）。不抽亂數。`SAVE_VERSION` 維持 9；`isValid` 檢查形狀（非負整數），`loadGame` 在驗證之後呼叫 `repairBestiary` 丟掉 `ENEMIES` 沒有的 id（照 `dropUnknownBanters`，`engine/save.ts:261`）。
 18. **沒見過的物種不顯示剪影**：只顯示「？？？」與出沒地點。5d 規定剪影只能由核准的圖確定性轉出、不能用 CSS 畫（`contract.md`、5d 補遺），為 100 隻做剪影檔不值得。
@@ -641,7 +641,7 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 ### Task C4：鍛造屋的銘刻與製作
 
 **Files:**
-- Modify：`engine/forge/forge.ts`（`inscribeAt`：同物種招牌素材 3 ＋ `REROLL.gold(ilvl)`，`forgeRng` 一次；特殊裝備與星輝不可）、`engine/forge/craft.ts`（`craftOwnUnique`：戰利品或遺物 5 ＋ `star-tear` 1 ＋ `setGold(ilvl)`，條件 `bestiary[owner].felled ≥ 1`，照 `craftSet`）、`engine/forge/uses.ts`（A3 的用途文字接上真的動作）、`ui2/scenes/forge.ts`（重洗頁加「銘刻」）、`ui2/scenes/forgeCraft.ts`（製作頁加「專屬裝備」區塊；沒擊倒過的列灰色、說明「尚未擊倒〇〇」；未上線的主人不列）、`data/text.zh-TW.ts`。
+- Modify：`engine/forge/forge.ts`（`inscribeAt`：同物種招牌素材 3 ＋ `REROLL.gold(ilvl)`，`forgeRng` 一次；特殊裝備與星輝不可）、`engine/forge/craft.ts`（`craftOwnUnique`：戰利品或遺物 5 ＋ `star-tear` 1 ＋ `ownGold(ilvl)`（實作改，見裁定 15），條件 `bestiary[owner].felled ≥ 1`，照 `craftSet`）、`engine/forge/uses.ts`（A3 的用途文字接上真的動作）、`ui2/scenes/forge.ts`（重洗頁加「銘刻」）、`ui2/scenes/forgeCraft.ts`（製作頁加「專屬裝備」區塊；沒擊倒過的列灰色、說明「尚未擊倒〇〇」；未上線的主人不列）、`data/text.zh-TW.ts`。
 - Test：`engine/forge/forge.test.ts`、`engine/forge/craft.test.ts`、`engine/forge/economy.test.ts`、`ui2/scenes/forge.test.ts`。
 
 - [ ] **Step 1**：`inscribing costs three of its signature and one forge draw`、`a special piece cannot be inscribed`、`crafting needs a kill first`、`crafting draws once`；`economy.test.ts` 新增 `crafting an own unique never pays more than its inputs`（每個深度，賣價 ≤ 材料價＋金幣）；畫面：`the inscribe row and the own-unique rows`、`an unbeaten owner is greyed out with its reason`。

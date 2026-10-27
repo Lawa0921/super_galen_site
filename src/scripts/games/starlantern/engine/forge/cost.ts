@@ -1,13 +1,19 @@
 import { AFFIXES, GEAR_SLOTS, ROLL_FLOOR, affixRange, generalLegendaries } from '../../data/gear';
-import { ENHANCE_COST, ENHANCE_MAX, ENHANCE_SUCCESS, ESSENCE_OF, FUSE_GOLD, FUSE_SLOT_COST, REGION_AFFIX_GROUP, REROLL, type Cost } from '../../data/forge';
+import { ENHANCE_COST, ENHANCE_MAX, ENHANCE_SUCCESS, ESSENCE_OF, FUSE_GOLD, FUSE_SLOT_COST, INSCRIBE_QTY, REGION_AFFIX_GROUP, REROLL, type Cost } from '../../data/forge';
+import { ENEMIES } from '../../data/enemies';
+import { MATERIALS } from '../../data/materials';
 import { itemSlot, maxValue } from '../loot/item';
 import { mix } from '../loot/drops';
 import { mulberry32, type Rng } from '../rng';
 import type { GameState } from '../state';
 import type { AnyStat, CharacterId, GearSlot, ItemInstance, Slot } from '../types';
 
-/** Why a forge action was refused. `phase` is only ever returned by `Game`, never by the engine; `affixLocked` is not `T.reasons.locked`, which means "not unlocked yet" in the shop. */
-export type ForgeFail = 'invalid' | 'stock' | 'gold' | 'mats' | 'max' | 'full' | 'affixLocked' | 'none' | 'phase';
+/**
+ * Why a forge action was refused. `phase` is only ever returned by `Game`, never by the engine; `affixLocked` is not
+ * `T.reasons.locked`, which means "not unlocked yet" in the shop; `unbeaten`, an own unique whose owner was never felled
+ * (roster plan Task C4).
+ */
+export type ForgeFail = 'invalid' | 'stock' | 'gold' | 'mats' | 'max' | 'full' | 'affixLocked' | 'none' | 'phase' | 'unbeaten';
 export type ForgeResult<O> = { ok: true; state: GameState; out: O } | { ok: false; reason: ForgeFail };
 
 /** What is missing for `c`, gold first; null when the state can pay. */
@@ -116,4 +122,16 @@ export function fuseSlots(target: FuseTarget): GearSlot[] {
 export function fuseCost(target: FuseTarget, slot?: GearSlot): Cost {
   const base: Cost = { gold: FUSE_GOLD[target], mats: {} };
   return slot === undefined ? base : addCost(base, { gold: 0, mats: { ...FUSE_SLOT_COST[target] } });
+}
+
+/** Roster plan Task C4 (ruling 16): an ordinary roster species' signature material (its `monster` material); none otherwise. */
+export function signatureOf(species: string): string | undefined {
+  if (!ENEMIES[species]?.inscribe) return undefined;
+  return Object.values(MATERIALS).find((m) => m.owner === species && m.kind === 'monster')?.id;
+}
+
+/** What inscribing `species`' key on `it` costs (ruling 16): INSCRIBE_QTY of its signature and a reroll's gold; null when it has none. */
+export function inscribeCost(it: ItemInstance, species: string): Cost | null {
+  const sig = signatureOf(species);
+  return sig ? { gold: REROLL.gold(it.ilvl), mats: { [sig]: INSCRIBE_QTY } } : null;
 }

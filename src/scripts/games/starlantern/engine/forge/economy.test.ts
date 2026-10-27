@@ -3,7 +3,8 @@ import { newGame, type GameState } from '../state';
 import {
   BASE_RECIPES, CONSUMABLE_RECIPES, DISMANTLE, FUSE_GOLD, FUSE_NEXT, FUSE_SLOT_COST, SET_RECIPE, baseGold, setGold,
 } from '../../data/forge';
-import { GEAR_SLOTS, SETS } from '../../data/gear';
+import { GEAR_SLOTS, SETS, SPECIALS } from '../../data/gear';
+import { withRosterLive } from '../testing';
 import { EQUIPMENT } from '../../data/equipment';
 import { ITEMS } from '../../data/items';
 import { MATERIALS } from '../../data/materials';
@@ -12,8 +13,8 @@ import { MAX_ILVL, MAX_REACHED } from '../levels';
 import { sellPrice } from '../loot/item';
 import { buy, sell, sellJunk } from '../town';
 import type { ItemInstance, Rarity } from '../types';
-import { craftBase, craftItem, craftLevel, craftSet, setCost } from './craft';
-import { dismantle, fuse } from './forge';
+import { craftBase, craftItem, craftLevel, craftOwnUnique, craftSet, setCost } from './craft';
+import { dismantle, fuse, inscribeAt } from './forge';
 
 // Value invariants of the forge economy: no loop between the shop, crafting, fusion and dismantling may turn
 // inputs into more gold or essence value than they cost. Materials are valued at their sell price.
@@ -118,6 +119,37 @@ describe('the shop, consumables and fusion create no value either', () => {
         expect(r.out.item.ilvl).toBeLessThanOrEqual(Math.max(...lv));
         expect(spent(s, r.state) + s.bag.reduce((t, it) => t + gearValue(it), 0) > gearValue(r.out.item), `${from} ${lv}`).toBe(true);
       }
+    }
+  });
+});
+
+describe('the roster adds no loop either (roster plan Task C4)', () => {
+  it('crafting an own unique never pays more than its inputs', () => {
+    // Every own unique, at every reachable depth: what the craft spends is worth more than the piece.
+    const owned = Object.values(SPECIALS).filter((s) => s.owner);
+    expect(owned).toHaveLength(39);
+    for (const sp of owned) {
+      withRosterLive([sp.owner!], () => {
+        for (let d = 1; d <= MAX_REACHED; d++) {
+          const s = rich();
+          s.dungeon.reached.mainline = d;
+          s.bestiary = { [sp.owner!]: { seen: 1, felled: 1 } };
+          const r = craftOwnUnique(s, sp.id);
+          expect(r.ok, `${sp.id} depth ${d}`).toBe(true);
+          if (r.ok) expect(spent(s, r.state) > gearValue(r.out.item), `${sp.id} depth ${d}`).toBe(true);
+        }
+      });
+    }
+  });
+  it('inscribing turns no gold out: the piece sells and dismantles as it did', () => {
+    const s = rich();
+    s.bag = [{ uid: 1, base: 'moss-charm', rarity: 'rare', ilvl: 20, affixes: [{ key: 'hp', value: 40 }], enhance: 0 }];
+    s.nextUid = 2;
+    const r = inscribeAt(s, 1, 0, 'paper-moth');
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(gearValue(r.state.bag[0])).toBe(gearValue(s.bag[0]));
+      expect(spent(s, r.state)).toBeGreaterThan(0);
     }
   });
 });

@@ -44,9 +44,9 @@ import { NIGHT_BEATS, type ScriptLine } from '../data/story.zh-TW';
 import { DAWN_BACKLOG, dawnMemory, eveMemories, nextBeat, orderNight, planNight, restoreNight } from './story/nights';
 import { SPRING_AFTER, dayOf, nextDay } from './calendar';
 import { newGame, type GameState } from './state';
-import { craftBase, craftItem, craftSet } from './forge/craft';
+import { craftBase, craftItem, craftOwnUnique, craftSet } from './forge/craft';
 import type { ForgeFail, RerollOpts } from './forge/cost';
-import { dismantle, enhance, fuse, reroll } from './forge/forge';
+import { dismantle, enhance, fuse, inscribeAt, reroll } from './forge/forge';
 import { castField, packEquip, packUnequip } from './field';
 import { moveRune, socketRune, unsocketRune, type SocketAt, type SocketFail } from './sockets';
 import type { RuneRef } from '../data/runes';
@@ -1377,6 +1377,9 @@ export class Game {
   craftItem(id: string, qty: number) { return this.forgeAct((s) => craftItem(s, id, qty)); }
   craftBase(slot: GearSlot) { return this.forgeAct((s) => craftBase(s, slot)); }
   craftSet(pieceId: string) { return this.forgeAct((s) => craftSet(s, pieceId)); }
+  /** Roster plan Task C4: 銘刻 (inscribe `species`' key on affix `index`) and crafting an own unique. */
+  inscribe(uid: number, index: number, species: string) { return this.forgeAct((s) => inscribeAt(s, uid, index, species)); }
+  craftOwnUnique(uniqueId: string) { return this.forgeAct((s) => craftOwnUnique(s, uniqueId)); }
   /** Three runes of a kind into one of the next tier (engine/runeTrade fuseRunes; plan 8f Task 5): a forge action, town only. */
   fuseRune(r: RuneRef) {
     return this.forgeAct((s) => {
