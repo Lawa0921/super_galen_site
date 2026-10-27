@@ -2,7 +2,7 @@ import { SKILLS } from '../data/skills';
 import { T } from '../data/text.zh-TW';
 import type { AilmentShown } from '../engine/ailments';
 import type { MechWord } from '../engine/mechanics/index';
-import { MECH_ICON_KEYS, art, type MechIconKey } from './artPaths';
+import { AILMENT_ICON_IDS, MECH_ICON_KEYS, art, type MechIconKey } from './artPaths';
 
 export { MECH_ICON_KEYS };
 
@@ -15,6 +15,11 @@ export const CHIP_ICON_PX = 14;
 export const CHIP_ICON_W = CHIP_ICON_PX + 1;
 
 export const ailmentIconUrl = (id: AilmentShown): string => art.ailmentIcon(id);
+/**
+ * The icons an ailment's word may show: its own when it is published (AILMENT_ICON_IDS), none otherwise, so the word stands
+ * alone and no picture is asked for (roster plan B9: 遺忘's icon publishes with E1c; ruling 22).
+ */
+export const ailmentIconUrls = (id: AilmentShown): string[] => (AILMENT_ICON_IDS.includes(id) ? [ailmentIconUrl(id)] : []);
 
 /** The words a counter starts with, read from the game's own strings (a number follows). */
 const lead = (f: (n: number) => string): string => f(0).slice(0, -1);

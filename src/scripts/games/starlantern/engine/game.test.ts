@@ -6478,8 +6478,8 @@ describe('wardens on the map and bosses by depth (roster plan B5)', () => {
   it('the archon comes with two hands, and only the archon takes affixes', () => {
     withRosterLive(['old-city-archon', 'archon-hand'], () => {
       const g = deep('mainline', 20, 'nightmare');
-      expect(bossIds(g)).toEqual(['old-city-archon', 'archon-hand', 'archon-hand']);
-      const [archon, ...hands] = g.battle!.enemies;
+      expect(bossIds(g)).toEqual(['archon-hand', 'archon-hand', 'old-city-archon']);
+      const [archon, ...hands] = [...g.battle!.enemies].reverse();
       expect(archon.affixes).toEqual(rollAffixes(g.run!.seed, 20, TIERS.nightmare.bossAffixes));
       expect(hands.every((h) => h.affixes === undefined)).toBe(true);
       expect(g.battle!.boss).toBe(true);

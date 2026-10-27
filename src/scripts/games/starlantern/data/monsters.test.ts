@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { ENEMIES } from './enemies';
 import { AFFIXES, SPECIALS, generalLegendaries, regionSpecials } from './gear';
 import { MATERIALS } from './materials';
-import type { AnyStat, CharacterId, GearSlot, WeaponKind } from '../engine/types';
+import type { AnyStat, CharacterId, EnemyDef, GearSlot, WeaponKind } from '../engine/types';
 import { pickSpecial } from '../engine/loot/drops';
 import { mulberry32 } from '../engine/rng';
 import {
@@ -196,23 +196,28 @@ describe('one hundred roster foes (roster plan Task A2, spec §5)', () => {
   it('only plain effects and the mechanics built so far', () => {
     // Spec §1.4's kinds, and the mechanics plan B has built: M1's wind-up (B2), M2's guard (a foe's `cover` on an ally,
     // B2), M24's hunt (B2), M13's steal after a hit on one member (B3), M4's call of a foe that exists (B4) and M22's
-    // fold-back of a fallen ally (B4). The later mechanics (B2 PR) add their own fields.
-    const DAMAGE_KEYS = new Set(['kind', 'power', 'element', 'scale', 'melee', 'hits', 'crit', 'execute', 'wounded']);
-    const SKILL_KEYS = new Set(['name', 'chance', 'target', 'effects', 'windup', 'when', 'oncePerFight']);
-    for (const id of rosterIds()) for (const s of ENEMIES[id].skills) {
+    // fold-back of a fallen ally (B4). The B2 PR adds its own: M6's borrowed blow (B8); M9's forget, M17's TP drain, M25's
+    // poison hunt and M15's buff theft (B9); M27's stall and M28's swallow (B10); and every stage's skills (B7) are held
+    // to the same rules; B11's beats, kin, song and hoard too.
+    const DAMAGE_KEYS = new Set(['kind', 'power', 'element', 'scale', 'melee', 'hits', 'crit', 'execute', 'wounded', 'drainPct', 'tpDrain', 'vsPoisoned', 'hoardPct']);
+    const SKILL_KEYS = new Set(['name', 'chance', 'target', 'effects', 'windup', 'when', 'oncePerFight', 'every', 'needs', 'windupRounds', 'windupAllies', 'fragile']);
+    for (const id of rosterIds()) for (const s of [...ENEMIES[id].skills, ...(ENEMIES[id].stages ?? []).flatMap((st) => st.skills)]) {
       expect(['enemy', 'enemies', 'row', 'column', 'cross', 'self', 'ally', 'allies', 'deadAlly'], `${id} ${s.name}`).toContain(s.target);
       expect(s.target === 'deadAlly', `${id} ${s.name}`).toBe(s.when === 'deadAlly');
       expect(s.chance > 0 && s.chance <= 1, `${id} ${s.name}`).toBe(true);
       for (const k of Object.keys(s)) expect(SKILL_KEYS.has(k), `${id} ${s.name} ${k}`).toBe(true);
       if (s.windup !== undefined) expect(s.windup.length > 0 && s.windup !== s.name, `${id} ${s.name}`).toBe(true);
       for (const e of s.effects) {
-        expect(['damage', 'inflict', 'buff', 'heal', 'cover', 'hunt', 'steal', 'summon', 'revive'], `${id} ${s.name}`).toContain(e.kind);
+        expect(['damage', 'inflict', 'buff', 'heal', 'cover', 'hunt', 'steal', 'summon', 'revive', 'mirror', 'dispel', 'delay', 'engulf'], `${id} ${s.name}`).toContain(e.kind);
+        if (e.kind === 'delay' || e.kind === 'engulf') expect(s.target, `${id} ${s.name}`).toBe('enemy');
+        if (e.kind === 'dispel') expect(s.target, `${id} ${s.name}`).toBe('enemy');
+        if (e.kind === 'mirror') expect([s.target, s.effects.length, e.cap > 0], `${id} ${s.name}`).toEqual(['enemy', 1, true]);
         if (e.kind === 'summon') expect([s.target, s.effects.length, !!ENEMIES[e.id], e.max === undefined || e.max > 0], `${id} ${s.name}`).toEqual(['self', 1, true, true]);
         if (e.kind === 'revive') expect(s.when, `${id} ${s.name}`).toBe('deadAlly');
         if (e.kind === 'steal') expect([s.target, s.effects[0].kind, e.perDepth], `${id} ${s.name}`).toEqual(['enemy', 'damage', 5]);
         if (e.kind === 'cover') expect([s.target, s.effects.length], `${id} ${s.name}`).toEqual(['ally', 1]);
         if (e.kind === 'hunt') expect(s.target, `${id} ${s.name}`).toBe('enemy');
-        if (e.kind === 'inflict') expect(['poison', 'sleep'], `${id} ${s.name}`).toContain(e.status);
+        if (e.kind === 'inflict') expect(['poison', 'sleep', 'forget'], `${id} ${s.name}`).toContain(e.status);
         if (e.kind === 'damage') for (const k of Object.keys(e)) expect(DAMAGE_KEYS.has(k), `${id} ${s.name} ${k}`).toBe(true);
       }
     }
@@ -536,14 +541,14 @@ describe('roster tables, bosses and wardens (roster plan Task A4, spec §3.4, §
     // Everything live (a test's own switch): the lookups cell by cell, the cycles and the many-part groups.
     withRosterLive(rosterIds(), () => {
       expect(bossFor('mainline', 5)).toEqual(['fog-warden']);
-      expect(bossFor('mainline', 20)).toEqual(['old-city-archon', 'archon-hand', 'archon-hand']);
+      expect(bossFor('mainline', 20)).toEqual(['archon-hand', 'archon-hand', 'old-city-archon']);
       expect(bossFor('mainline', 30)).toEqual(['lanterneater']);
       expect(bossFor('mainline', 50)).toEqual(['first-lantern']);
       expect(bossFor('mainline', 55)).toEqual(['fog-warden']);
-      expect(bossFor('mainline', 70)).toEqual(['old-city-archon', 'archon-hand', 'archon-hand']);
-      expect(bossFor('frost', 5)).toEqual(['rime-sovereign', 'rime-pillar', 'rime-pillar']);
+      expect(bossFor('mainline', 70)).toEqual(['archon-hand', 'archon-hand', 'old-city-archon']);
+      expect(bossFor('frost', 5)).toEqual(['rime-pillar', 'rime-pillar', 'rime-sovereign']);
       expect(bossFor('frost', 15)).toEqual(['rift-maw']);
-      expect(bossFor('frost', 20)).toEqual(['rime-sovereign', 'rime-pillar', 'rime-pillar']);
+      expect(bossFor('frost', 20)).toEqual(['rime-pillar', 'rime-pillar', 'rime-sovereign']);
       expect(bossFor('blaze', 10)).toEqual(['sandstorm-maw']);
       expect(bossFor('iron', 45)).toEqual(['last-commander']);
       expect(wardenFor('mainline', 8)).toBe('false-moon');
@@ -555,7 +560,7 @@ describe('roster tables, bosses and wardens (roster plan Task A4, spec §3.4, §
     });
     // A boss not yet live is the lantern-eater, as today; so is a live boss whose part is not.
     withRosterLive(['old-city-archon'], () => expect(bossFor('mainline', 20)).toEqual(['lanterneater']));
-    withRosterLive(['old-city-archon', 'archon-hand'], () => expect(bossFor('mainline', 20)).toEqual(['old-city-archon', 'archon-hand', 'archon-hand']));
+    withRosterLive(['old-city-archon', 'archon-hand'], () => expect(bossFor('mainline', 20)).toEqual(['archon-hand', 'archon-hand', 'old-city-archon']));
     withRosterLive(['bell-warden'], () => {
       expect(wardenFor('mainline', 13)).toBe('bell-warden');
       expect(wardenFor('mainline', 8)).toBeNull();
@@ -726,6 +731,99 @@ describe('a warden waits for its room (PR A review, item 3)', () => {
   });
 });
 
+describe('roster plan B11: every roster foe fights the way the roster says', () => {
+  /** What each mechanic code asks of a definition (spec §6.2; ruling 9's names). */
+  const all = (d: EnemyDef) => [...d.skills, ...(d.stages ?? []).flatMap((st) => st.skills)];
+  const effects = (d: EnemyDef) => all(d).flatMap((k) => k.effects);
+  const CHECK: Record<string, (d: EnemyDef) => boolean> = {
+    M1: (d) => all(d).some((k) => !!k.windup),
+    M2: (d) => all(d).some((k) => k.target === 'ally' && k.effects.some((e) => e.kind === 'cover')),
+    M3: (d) => d.fleeAfter !== undefined,
+    M4: (d) => effects(d).some((e) => e.kind === 'summon'),
+    M5: (d) => !!d.prism || (!!d.stageEvery && d.stageEvery === 1),
+    M6: (d) => effects(d).some((e) => e.kind === 'mirror'),
+    M7: (d) => !!d.parts,
+    M8: (d) => !!d.stages?.length,
+    M9: (d) => effects(d).some((e) => e.kind === 'inflict' && e.status === 'forget'),
+    M10: (d) => !!d.onFall || !!d.onAllyFall,
+    M11: (d) => effects(d).some((e) => e.kind === 'damage' && !!e.drainPct),
+    M13: (d) => effects(d).some((e) => e.kind === 'steal'),
+    M14: (d) => d.opener === 'disguise' || d.opener === 'asleep' || d.opener === 'ambush',
+    M15: (d) => effects(d).some((e) => e.kind === 'dispel'),
+    M16: (d) => !!d.adapt,
+    M17: (d) => effects(d).some((e) => e.kind === 'damage' && !!e.tpDrain),
+    M18: (d) => !!d.mimic,
+    M19: (d) => d.opener === 'decoy',
+    M20: (d) => !!d.shareWith,
+    M21: (d) => !!d.mend,
+    M22: (d) => !!d.rise || all(d).some((k) => k.when === 'deadAlly'),
+    M23: (d) => d.opener === 'encased',
+    M24: (d) => effects(d).some((e) => e.kind === 'hunt'),
+    M25: (d) => effects(d).some((e) => e.kind === 'damage' && !!e.vsPoisoned),
+    M26: (d) => !!d.rally || !!d.throng,
+    M27: (d) => effects(d).some((e) => e.kind === 'delay'),
+    M28: (d) => effects(d).some((e) => e.kind === 'engulf'),
+    // The rules a trait in spec §5 names beyond the codes: a beat every N rounds, a skill that waits for its kin, a
+    // two-round song, harder to hit with each blow, a slow that deepens, a breath that grows with its hoard.
+    every: (d) => all(d).some((k) => !!k.every),
+    needs: (d) => all(d).some((k) => !!k.needs),
+    song: (d) => all(d).some((k) => (k.windupRounds ?? 1) > 1 && !!k.windupAllies?.length && !!k.fragile),
+    dodge: (d) => !!d.dodgeUp,
+    stack: (d) => effects(d).some((e) => e.kind === 'buff' && e.stackTo !== undefined),
+    hoard: (d) => effects(d).some((e) => e.kind === 'damage' && !!e.hoardPct),
+    // D: existing effects only (spec §6.2), at least one skill of its own.
+    D: (d) => d.skills.length > 0,
+  };
+  /** Spec §5.3–§5.6's 特性 column, as codes; a regional boss's 區 elements are its region's. */
+  const TRAITS: Record<string, string[]> = {
+    'paper-moth': ['D'], 'lamp-wight': ['D'], 'root-hound': ['M1'], 'tin-soldier': ['M2'], 'dust-mimic': ['M14'], 'market-ghost': ['M13'],
+    'tongueless-bell': ['M9'], 'hollow-hunter': ['M6'], 'mist-twin': ['M10'], 'moon-crow': ['M5'], 'bell-watcher': ['M24'], 'sleepwalker': ['M14'],
+    'old-city-sentinel': ['M1', 'M2'], 'requiem-choir': ['M4'], 'lantern-larva': ['M11'], 'epitaph-golem': ['D'], 'ancestor-automaton': ['M21'],
+    'ash-archivist': ['M15'], 'wick-shade': ['M10'], 'keeper-echo': ['M1', 'M6'], 'ember-maw': ['M4'], 'sorrow-crystal': ['M16'],
+    'deep-tendril': ['M17'], 'music-box': ['M1', 'song'], 'paper-cranes': ['M22'], 'lost-shadow': ['M18'], 'returning-light': ['D', 'M10'],
+    'hoarder': ['M3'], 'gilded-hoarder': ['M3', 'dodge'],
+    'cinder-imp': ['M10'], 'forge-hound': ['M1'], 'ash-mourner': ['D'], 'mirage-dancer': ['M19'], 'sand-scorpion': ['M25'],
+    'frost-doll': ['M2'], 'glacier-tortoise': ['M1'], 'snow-caller': ['D'], 'ice-komainu': ['M20'], 'frozen-pilgrim': ['M23'],
+    'thunder-kite': ['D'], 'storm-totem': ['D'], 'charge-jelly': ['M1'], 'star-ember': ['M17'], 'stolen-tome': ['M5'],
+    'bog-mother': ['M4'], 'rot-lily': ['D'], 'leech-knight': ['M11'], 'ashen-treant': ['M21'], 'spore-moth': ['M10'],
+    'mirror-thief': ['M6'], 'veil-stalker': ['D'], 'hush-acolyte': ['M9'], 'vault-mimic': ['M14', 'M13'], 'debt-collector': ['M24', 'M13'],
+    'rivet-golem': ['M2'], 'siege-crab': ['M1'], 'herald-engine': ['D'], 'fallen-knight': ['M2', 'M10'], 'banner-bearer': ['M26'],
+    'false-moon': ['M8'], 'bell-warden': ['M24', 'M9', 'M8'], 'toppled-automaton': ['M21', 'M22'], 'requiem-conductor': ['M4'],
+    'lantern-brood': ['M4'], 'mirage-lead': ['M19', 'every'], 'ice-shrine': ['M4', 'M7'], 'burning-page': ['M17', 'M9', 'M10'],
+    'grey-elder': ['M21', 'M4', 'every'], 'locked-vault': ['M13'], 'gate-breaker': ['M1', 'M4'],
+    'fog-warden': ['M1'], 'silent-bell': ['M9', 'M8'], 'hollow-champion': ['M6', 'M8'], 'old-city-archon': ['M7'], 'gorged-beast': ['M4', 'M11'],
+    'lantern-mother': ['D'], 'forgotten-festival': ['M4', 'needs'], 'starless-whale': ['M1', 'M11', 'every'], 'stopped-clock': ['M27'],
+    'first-lantern': ['M8', 'M5'], 'ember-tyrant': ['M8'], 'sandstorm-maw': ['every'], 'mirage-city': ['M4', 'M7'], 'rime-sovereign': ['M7'],
+    'white-silence': ['stack', 'M9'], 'rift-maw': ['M4', 'M8'], 'thunder-roc': ['M1'], 'storm-conductor': ['M24'], 'starfire-colossus': ['M17'],
+    'mire-hydra': ['M8'], 'grey-blight': ['M4', 'M7', 'M10'], 'bog-leviathan': ['M28'], 'faceless-host': ['M6', 'M4'],
+    'vault-dragon': ['M13', 'hoard'], 'shadow-parade': ['M4', 'M26'], 'fortress-colossus': ['M4', 'M1'], 'siege-titan': ['M1'],
+    'last-commander': ['M2'], 'archon-hand': ['D'], 'rime-pillar': ['D'],
+  };
+
+  it('every trait is implemented', () => {
+    expect(Object.keys(TRAITS).sort()).toEqual(rosterIds().sort());
+    for (const [id, codes] of Object.entries(TRAITS)) for (const code of codes) {
+      // grey-blight's pods are spore moths: their own fall poisons (M10 is theirs, called by it).
+      const d = id === 'grey-blight' && code === 'M10' ? ENEMIES['spore-moth'] : ENEMIES[id];
+      expect(CHECK[code](d), `${id} ${code}`).toBe(true);
+    }
+    // stolen-tome turns its pages in order, a round each, the intent naming the next one's element (M5 variant).
+    expect(ENEMIES['stolen-tome'].stageEvery).toBe(1);
+    expect(ENEMIES['stolen-tome'].stages).toHaveLength(2);
+  });
+
+  it('every summon names a roster foe that summons nothing deeper than one level', () => {
+    const calls = (d: EnemyDef) => all(d).flatMap((k) => k.effects).flatMap((e) => (e.kind === 'summon' ? [e.id] : []));
+    for (const id of rosterIds()) for (const callee of calls(ENEMIES[id])) {
+      const d = ENEMIES[callee];
+      expect(d, `${id} → ${callee}`).toBeDefined();
+      expect([!!d.boss, d.rank], `${id} → ${callee}`).toEqual([false, undefined]);
+      // What it calls may call once more, never a third time.
+      for (const grand of calls(d)) expect(calls(ENEMIES[grand]), `${id} → ${callee} → ${grand}`).toEqual([]);
+    }
+  });
+});
+
 describe('roster art switch (roster plan Task D4)', () => {
   // A roster id enters ROSTER_ART only in its art round's publish commit (art-factory/starlantern/tools/roster_art.py publish):
   // from then on the game loads its sprite, its material's icon and its own unique's two gear images, so all of them must
@@ -748,5 +846,65 @@ describe('roster art switch (roster plan Task D4)', () => {
         shipped(`gear-${s.id}-large`);
       }
     }
+  });
+});
+
+describe('roster plan B2 review item 7: the traits carry the numbers spec §5 and §0 item 19 fix', () => {
+  const all = (d: EnemyDef) => [...d.skills, ...(d.stages ?? []).flatMap((st) => st.skills)];
+  const effs = (id: string) => all(ENEMIES[id]).flatMap((k) => k.effects);
+  const dmg = (id: string, key: 'drainPct' | 'tpDrain' | 'vsPoisoned' | 'hoardPct') =>
+    effs(id).flatMap((e) => (e.kind === 'damage' && e[key] !== undefined ? [e[key]] : []));
+  const calls = (id: string) => effs(id).flatMap((e) => (e.kind === 'summon' ? [e.id] : []));
+
+  it('every mechanic parameter is the design value (design changes only through a recorded ruling in an L task)', () => {
+    const E = ENEMIES;
+    // M3, and the gilded hoarder's dodge (spec §5.3).
+    expect([E.hoarder.fleeAfter, E['gilded-hoarder'].fleeAfter, E['gilded-hoarder'].dodgeUp]).toEqual([3, 2, 10]);
+    // M7: every shield halves (spec §6.2's 50).
+    for (const id of ['old-city-archon', 'rime-sovereign', 'ice-shrine', 'mirage-city', 'grey-blight']) expect(E[id].parts?.cutPct, id).toBe(50);
+    expect([E['ice-shrine'].parts?.by, E['mirage-city'].parts?.by, E['grey-blight'].parts?.by]).toEqual([['ice-komainu'], ['mirage-dancer'], ['spore-moth']]);
+    // M22: 30% (spec §5.3 paper cranes, §5.5 toppled automaton).
+    expect(E['toppled-automaton'].rise).toEqual({ pct: 30 });
+    expect(effs('paper-cranes').find((e) => e.kind === 'revive')).toEqual({ kind: 'revive', hpPct: 0.3 });
+    // M11 (spec §5.3, §5.4, §5.6).
+    expect([dmg('lantern-larva', 'drainPct'), dmg('leech-knight', 'drainPct'), dmg('gorged-beast', 'drainPct')]).toEqual([[50], [50], [40]]);
+    // M17: 15 a hit; M25: half again; M16: three rounds; M18: 60%; M21: 12% shorted by thunder, 10% for the treant.
+    for (const id of ['deep-tendril', 'star-ember', 'burning-page', 'starfire-colossus']) expect(dmg(id, 'tpDrain'), id).toEqual([15]);
+    expect(dmg('sand-scorpion', 'vsPoisoned')).toEqual([50]);
+    expect([E['sorrow-crystal'].adapt, E['lost-shadow'].mimic]).toEqual([3, 60]);
+    expect([E['ancestor-automaton'].mend, E['ashen-treant'].mend]).toEqual([{ pct: 12, stopBy: 'thunder' }, { pct: 10 }]);
+    // M10: the twin's anger, the wick's and the imp's bursts, the returning light's farewell, the knight's steel.
+    expect(E['mist-twin'].onFall?.effects).toEqual([{ kind: 'buff', stat: 'atk', pct: 40, turns: 3 }]);
+    expect(E['wick-shade'].onFall?.effects[0]).toMatchObject({ kind: 'damage', power: 40, element: 'fire' });
+    expect([E['cinder-imp'].onFall?.target, E['cinder-imp'].onFall?.effects[0]]).toEqual(['row', expect.objectContaining({ power: 35, element: 'fire' })]);
+    expect(E['returning-light'].onFall?.effects).toEqual([{ kind: 'restore', hpPct: 10 }]);
+    expect(E['fallen-knight'].onAllyFall?.effects).toEqual([{ kind: 'buff', stat: 'def', pct: 30, turns: 3 }]);
+    expect(E['burning-page'].onFall?.effects).toEqual([{ kind: 'restore', tp: 20 }]);
+    // M19, M23, M26, M27, M28 and the slow that deepens.
+    expect([E['mirage-dancer'].opener, E['mirage-lead'].decoys, E['frozen-pilgrim'].opener]).toEqual(['decoy', 2, 'encased']);
+    expect([E['banner-bearer'].rally, E['shadow-parade'].throng]).toEqual([{ atk: 20 }, { id: 'lost-shadow', per: { atk: 15, mag: 15 } }]);
+    expect(effs('stopped-clock').filter((e) => e.kind === 'delay' || e.kind === 'buff')).toEqual([{ kind: 'delay' }, { kind: 'buff', stat: 'spd', pct: -30, turns: 2 }]);
+    expect(effs('bog-leviathan').some((e) => e.kind === 'engulf')).toBe(true);
+    expect(effs('white-silence').find((e) => e.kind === 'buff')).toEqual({ kind: 'buff', stat: 'spd', pct: -10, turns: 3, stackTo: -30 });
+    // M8: the thresholds and beats spec §5 names.
+    const below = (id: string) => (E[id].stages ?? []).map((st) => st.below);
+    expect([below('silent-bell'), below('bell-warden'), below('ember-tyrant'), below('rift-maw'), below('hollow-champion')]).toEqual([[50], [50], [50], [50], [40]]);
+    expect([below('mire-hydra'), below('first-lantern')]).toEqual([[66, 33], [66, 33]]);
+    expect([E['false-moon'].stageEvery, E['stolen-tome'].stageEvery]).toEqual([2, 1]);
+    // Every N rounds: the lead's beat and the elder's spores 3, the whale's dive 3, the sandstorm 2.
+    const every = (id: string) => all(E[id]).flatMap((k) => (k.every ? [k.every] : []));
+    expect([every('mirage-lead'), every('grey-elder'), every('starless-whale'), every('sandstorm-maw')]).toEqual([[3], [3], [3], [2]]);
+    // The festival: a lantern a turn (the boss cap keeps three), the fire once all three are lit, at 0.6 (§0 item 19).
+    const fire = all(E['forgotten-festival']).find((k) => k.needs);
+    expect([fire?.needs, fire?.chance]).toEqual([{ id: 'lamp-wight', n: 3 }, 0.6]);
+    expect(calls('forgotten-festival')).toEqual(['lamp-wight']);
+    // The music box: two turns, 10% to its kin a turn, broken by a hit.
+    const song = all(E['music-box']).find((k) => k.windupRounds);
+    expect([song?.windupRounds, song?.windupAllies, song?.fragile]).toEqual([2, [{ kind: 'restore', hpPct: 10 }], true]);
+    // M13: depth × 5.
+    for (const id of ['market-ghost', 'vault-mimic', 'debt-collector', 'locked-vault', 'vault-dragon']) {
+      expect(effs(id).filter((e) => e.kind === 'steal'), id).toEqual([{ kind: 'steal', perDepth: 5 }]);
+    }
+    expect(dmg('vault-dragon', 'hoardPct')).toEqual([100]);
   });
 });

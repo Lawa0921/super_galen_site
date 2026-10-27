@@ -12,7 +12,7 @@ const lineWidth = (r: { shown: AilmentChip[]; more: number }, gap: number) => {
 
 describe('ailment rows: one line, most severe first, the rest folded into +N', () => {
   it('the order is by severity: a lost turn, then damage each round, then what only shifts numbers', () => {
-    expect(AILMENT_SEVERITY).toEqual(['freeze', 'sleep', 'bleed', 'burn', 'poison', 'shock', 'chill']);
+    expect(AILMENT_SEVERITY).toEqual(['freeze', 'sleep', 'forget', 'bleed', 'burn', 'poison', 'shock', 'chill']);
     expect(bySeverity(FIVE).map((c) => c.id)).toEqual(['bleed', 'burn', 'poison', 'shock', 'chill']);
     expect(FIVE.map((c) => c.id)).toEqual(['poison', 'burn', 'bleed', 'shock', 'chill']);   // the input is not touched
   });

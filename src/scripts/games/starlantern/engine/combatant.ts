@@ -140,10 +140,45 @@ export interface Combatant {
   returned?: number;
   /** B1 review item 12: a named foe (a warden): on the elite path, but no ★ before its name. */
   named?: true;
+  /** Roster plan B7 (M5): its weakness turns (`EnemyDef.prism`), so a hit on it tells the bestiary nothing. */
+  prism?: true;
+  /** Roster plan B7 (M8): the index of the stage it fights in (`EnemyDef.stages`); absent, its own skills. */
+  stage?: number;
+  /** Roster plan B7 (M16): the rounds an adaptation lasts on it (`EnemyDef.adapt`). */
+  adapt?: number;
+  /** Roster plan B7 (M16): the element it adapted to, the rounds left (0: over, never again), and whether it was a weakness. */
+  adapted?: { el: Element; turns: number; weak?: true };
+  /** Roster plan B8 (M6): it borrows the party's blows, so the fight keeps the last one (`BattleState.lastPartyHit`). */
+  mirrors?: true;
+  /** Roster plan B8 (M7): the percent a hit on it lands at while a part or a guard of its stands (syncParts). */
+  cut?: number;
+  /** Roster plan B9 (M9): its next turn takes a skill as a plain attack (engine/ailments.ts); gone with that turn. */
+  forget?: true;
+  /** Roster plan B9 (M17): the TP this foe has drained from the party this fight. */
+  drained?: number;
+  /** Roster plan B10 (M21): what it mends at each round's end (EnemyDef.mend), and the last round a hit of `stopBy` shorted it. */
+  mend?: { pct: number; stopBy?: Element };
+  shorted?: number;
+  /** Roster plan B10 (M23): opened in ice: def and res ×2.5 and no turn, until a fire hit lands or round two ends. */
+  encased?: true;
+  /** Roster plan B10 (M27): the foe that delayed this member last; it never delays her twice in a row. */
+  delayedBy?: string;
+  /** Roster plan B10 (M28): the foe this member is inside. */
+  engulfed?: string;
+  /** Roster plan B10 (M28): the member this foe holds, the round it lets her out at the end of, and the HP it has lost since. */
+  gulp?: { key: string; until: number; taken: number };
+  /** Roster plan B11: the wind-up turns still to come after this one (a skill with `windupRounds`), and whether a hit breaks it. */
+  windLeft?: number;
+  windFragile?: true;
+  /** Roster plan B11: the evasion each landed hit adds to it (EnemyDef.dodgeUp). */
+  dodgeUp?: number;
+  /** Roster plan B11: its fall has been answered by the foes that steel themselves at an ally's fall (EnemyDef.onAllyFall). */
+  mourned?: true;
 }
 
 /** Roster plan B3–B4: a foe mechanic's moment in the log (battleLines words it). */
-export type FoeCue = 'flee' | 'steal' | 'wake' | 'reveal' | 'summon' | 'rise' | 'return' | 'vanish';
+export type FoeCue = 'flee' | 'steal' | 'wake' | 'reveal' | 'summon' | 'rise' | 'return' | 'vanish' | 'stage' | 'adapt' | 'drain' | 'dispel'
+  | 'short' | 'thaw' | 'engulf' | 'spit' | 'break';
 
 /** The aim stacks `a` holds on `t` (Sylvie; 0 for anyone else or any other foe). */
 const aimOn = (a: Combatant, t: Combatant): number => (a.mech?.kind === 'aim' && a.mech.target === t.key ? a.mech.stacks : 0);
@@ -184,7 +219,18 @@ export type BattleEvent =
   /** A foe mechanic's moment (roster plan B3–B4): `target` the member or foe it touched, `amount` the gold it took. */
   | { type: 'foe'; actor: string; cue: FoeCue; target?: string; amount?: number };
 
+/** Roster plan B2, B11: a foe's charge is gone (sleep, a freeze, a forget, a lost turn, a hit on a fragile song, its fall). */
+export function breakCharge(c: Combatant): void {
+  delete c.winding;
+  delete c.windLeft;
+  delete c.windFragile;
+}
+
 export const MAX_BUFFS = 3;
+/** Roster plan B10 (M23): the def and res an encased foe has over its own (×2.5). */
+export const ENCASED_PCT = 150;
+/** Roster plan B10 (M28): a hit from inside its engulfer lands half again as hard. */
+export const INSIDE_MUL = 1.5;
 export const SLEEP_TURNS = 3;
 
 /**
@@ -203,7 +249,8 @@ function buffPct(c: Pick<Combatant, 'buffs' | 'auras'>, s: BuffStat): number {
 export function stat(c: Combatant, s: BuffStat): number {
   // A chilled boss is slower, and a guard barrier's ward guards: both added to the buffs' percentages.
   const pct = buffPct(c, s) + (s === 'spd' && c.chill ? AILMENT.chillSpdPct : 0)
-    + (c.ward ? (s === 'def' ? c.ward.def : s === 'res' ? c.ward.res : 0) : 0);
+    + (c.ward ? (s === 'def' ? c.ward.def : s === 'res' ? c.ward.res : 0) : 0)
+    + (c.encased && (s === 'def' || s === 'res') ? ENCASED_PCT : 0);   // a foe in ice (roster plan B10, M23)
   return Math.max(1, Math.floor(c.max[s] * Math.max(0.25, 1 + pct / 100)));
 }
 
@@ -244,6 +291,8 @@ export interface DamageSpec {
   aimPct?: number;
   /** 破甲 (plan 8e): the target's armor and block count for nothing, and no block is rolled. */
   armorBreak?: true;
+  /** Roster plan B9 (M25): percent: damage times 1 + vsPoisoned / 100 against a poisoned target. */
+  vsPoisoned?: number;
 }
 
 /** Enemies crit for a flat 50% more, whatever critDmg they carry. */
@@ -300,6 +349,7 @@ export function hitAmount(a: Combatant, t: Combatant, spec: DamageSpec, r: HitRo
   if (t.boss || t.tint === 'elite') mult *= 1 + ax('eliteDmg') / 100;
   if (spec.execute) mult *= 1 + (spec.execute / 100) * (1 - t.hp / t.max.hp);
   if (spec.wounded && t.hp < t.max.hp) mult *= 1 + spec.wounded / 100;
+  if (spec.vsPoisoned && t.poison) mult *= 1 + spec.vsPoisoned / 100;
   // A crit on Rin's marked foe carries MARK.critSharePct of her crit damage (8d Task 3 ruling 1).
   const marked = a.mech?.kind === 'mark' && a.mech.marks.includes(t.key);
   if (r.crit) mult *= 1 + (a.side === 'enemy' ? ENEMY_CRIT_DMG : (ax('critDmg') * (marked ? MARK.critSharePct : 100)) / 100) / 100;
@@ -316,6 +366,9 @@ export function hitAmount(a: Combatant, t: Combatant, spec: DamageSpec, r: HitRo
   mult *= 1 - tx(spec.melee ? 'meleeDR' : 'rangedDR') / 100;
   if (t.defending) mult *= 0.5;
   if (t.shock) mult *= 1 + AILMENT.shockPct / 100;
+  // A body behind its parts (roster plan B8, M7): absent on every other foe.
+  if (t.cut !== undefined) mult *= t.cut / 100;
+  if (a.engulfed !== undefined && a.engulfed === t.key) mult *= INSIDE_MUL;   // from inside (roster plan B10, M28)
   // Keystones (data/talents.ts): a factor only when held, and no draws, so a fight without them keeps its sequence.
   if (a.keystones.includes('last-stand') && a.hp < a.max.hp * KEYSTONE_VALUES.lastStandHp) mult *= 1 + KEYSTONE_VALUES.lastStandPct / 100;
   if (t.keystones.includes('taunt-guard') && t.taunt > 0) mult *= 1 - KEYSTONE_VALUES.tauntGuardPct / 100;
@@ -375,8 +428,12 @@ export function dealDamage(t: Combatant, amount: number, opts: { dot?: true; led
     delete t.riposte;
     delete t.challenged;
     delete t.winding;
+    delete t.windLeft;
+    delete t.windFragile;
     delete t.hunted;
     delete t.dozing;
+    delete t.engulfed;   // a member who falls inside is let out; a foe that falls lets hers out (foes.settleGulps)
+    delete t.gulp;
     // Her marks and her aim end with her (their words go from the foes too).
     if (t.mech?.kind === 'mark') t.mech.marks = [];
     if (t.mech?.kind === 'aim') { t.mech.target = null; t.mech.stacks = 0; delete t.mech.lock; }

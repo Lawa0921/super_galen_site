@@ -1,4 +1,4 @@
-import { addBuff, dealDamage, hitAmount, isWeak, roll, rollHit, SLEEP_TURNS, stat, type BattleEvent, type Buff, type Combatant, type HitRolls } from './combatant';
+import { addBuff, breakCharge, dealDamage, hitAmount, isWeak, roll, rollHit, SLEEP_TURNS, stat, type BattleEvent, type Buff, type Combatant, type HitRolls } from './combatant';
 import type { SkillMod } from '../data/gear';
 import type { Rng } from './rng';
 import type { Effect, Element, SkillDef } from './types';
@@ -16,6 +16,7 @@ import { T } from '../data/text.zh-TW';
 import { overclock, placeDevice, tuneUp } from './mechanics/devices';
 import { raiseBarrier } from './mechanics/barrier';
 import { addEmbers } from './mechanics/embers';
+import { ENGULF, adaptTo, spit, thaw } from './foes';
 
 /**
  * `ledger`: the sim's contribution ledger (absent in the game); it reads the fight and never draws. `redirect`: set only
@@ -325,6 +326,31 @@ function shareWound(actor: Combatant, twin: Combatant, n: number, element: Eleme
   if (!twin.alive) ctx.log.push({ type: 'ko', target: twin.key });
 }
 
+/**
+ * Roster plan B10, on a landed hit: a mend stopped by its element is shorted for the round (M21); fire breaks ice (M23); an
+ * engulfer that has lost ENGULF.releasePct of its max HP since it swallowed lets its member out (M28). No draw.
+ */
+function foeStruck(t: Combatant, el: Element, lost: number, ctx: EffectContext): void {
+  if (t.mend?.stopBy === el) t.shorted = ctx.battle?.round ?? 0;
+  // Roster plan B11: a hit breaks a fragile song; each hit makes a skittish foe harder to hit.
+  if (t.windFragile && t.winding !== undefined && t.alive) { breakCharge(t); ctx.log.push({ type: 'foe', actor: t.key, cue: 'break' }); }
+  if (t.dodgeUp && t.alive) t.x.evasion = (t.x.evasion ?? 0) + t.dodgeUp;
+  if (t.encased && el === 'fire') thaw(ctx, t);
+  if (t.gulp && ctx.battle) {
+    t.gulp = { ...t.gulp, taken: t.gulp.taken + lost };
+    if (t.alive && t.gulp.taken * 100 >= t.max.hp * ENGULF.releasePct) spit(ctx.battle, t);
+  }
+}
+
+/** Roster plan B9 (M17): a landed hit takes up to `n` TP from the target, never below 0; the foe keeps count. No draw. */
+function drainTp(actor: Combatant, target: Combatant, n: number, ctx: EffectContext): void {
+  const took = Math.min(target.tp, n);
+  if (took <= 0) return;
+  target.tp -= took;
+  actor.drained = (actor.drained ?? 0) + took;
+  ctx.log.push({ type: 'foe', actor: actor.key, cue: 'drain', target: target.key, amount: took });
+}
+
 /** A landed hit unmasks a foe in disguise (roster plan B3, M14): its own name comes back. */
 function unmask(t: Combatant, ctx: EffectContext): void {
   if (t.disguised === undefined) return;
@@ -358,10 +384,16 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
         const lost = dealDamage(target, amount, { ledger: ctx.ledger, log: ctx.log });
         unmask(target, ctx);
         ctx.lastHit = { target: target.key, amount: lost };
-        if (target.side === 'enemy') reveal(ctx.revealed, target.defId, eff.element);
+        // A fight with a foe that borrows blows keeps the party's last one (roster plan B8, M6); no other fight does.
+        if (actor.side === 'party' && target.side === 'enemy' && ctx.battle?.enemies.some((e) => e.mirrors)) ctx.battle.lastPartyHit = { by: actor.key, element: eff.element, power: eff.power };
+        // A foe whose weakness turns tells the bestiary nothing (roster plan B7, M5).
+        if (target.side === 'enemy' && !target.prism) reveal(ctx.revealed, target.defId, eff.element);
         ctx.log.push({ type: 'damage', target: target.key, amount: lost, element: eff.element, mult, ...(crit ? { crit } : {}) });
         if (!target.alive) ctx.log.push({ type: 'ko', target: target.key });
         if (twin) shareWound(actor, twin, full - amount, eff.element, ctx);
+        adaptTo(target, eff.element, ctx.log);   // the first element to land on a foe that adapts (roster plan B7, M16)
+        if (eff.tpDrain) drainTp(actor, target, eff.tpDrain, ctx);   // a TP thief (roster plan B9, M17)
+        foeStruck(target, eff.element, lost, ctx);   // a mend shorted, ice broken, a hold loosened (roster plan B10)
         onLandedHit(actor, target, ctx);
         // Her runes on this hit (plan 8e): absent fields do nothing and draw nothing.
         runeHit(actor, target, eff, crit, hpBefore - target.hp, ctx);
@@ -399,7 +431,13 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
     }
     case 'restore': {
       if (!target.alive) return;
-      const k = ctx.itemBoost ? 2 : 1;
+      // The party's item boost is an item's; a foe's restore (roster plan B10) is what it says.
+      const k = ctx.itemBoost && actor.side === 'party' ? 2 : 1;
+      if (eff.hpPct) {
+        const amount = gainHp(target, Math.floor((target.max.hp * eff.hpPct) / 100));
+        if (actor.side === 'party' && target.side === 'party') credit(ctx.ledger, actor.key, 'healing', amount);
+        ctx.log.push({ type: 'heal', target: target.key, amount });
+      }
       if (eff.hp) {
         const amount = gainHp(target, eff.hp * k);
         if (actor.side === 'party' && target.side === 'party') credit(ctx.ledger, actor.key, 'healing', amount);
@@ -440,8 +478,11 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
       const more = actor.keystones.includes('troupe-step') && target.side === actor.side ? MEMORY_KEYSTONE_VALUES.troupeTurns : 0;
       // A ledger that credits buff givers learns which cast of hers gave it (plan 8h Task 5b review).
       const skill = ctx.ledger?.buffGivers ? castOf(ctx, actor) : undefined;
-      addBuff(target, { stat: eff.stat, pct: eff.pct, turns: eff.turns + more, src: actor.key, ...(skill ? { skill } : {}) });
-      ctx.log.push({ type: 'buff', target: target.key, stat: eff.stat, pct: eff.pct });
+      // A slow that deepens (roster plan B11): the held one of its stat and way, `pct` deeper, no further than `stackTo`.
+      const held = eff.stackTo !== undefined ? target.buffs.find((b) => b.stat === eff.stat && Math.sign(b.pct) === Math.sign(eff.pct)) : undefined;
+      const pct = held ? (eff.pct < 0 ? Math.max(eff.stackTo!, held.pct + eff.pct) : Math.min(eff.stackTo!, held.pct + eff.pct)) : eff.pct;
+      addBuff(target, { stat: eff.stat, pct, turns: eff.turns + more, src: actor.key, ...(skill ? { skill } : {}) });
+      ctx.log.push({ type: 'buff', target: target.key, stat: eff.stat, pct });
       return;
     }
     case 'taunt': {
@@ -510,12 +551,28 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
     case 'appraise': {
       if (!target.alive) return;
       target.appraised = actor.key;
-      for (const el of target.weak) reveal(ctx.revealed, target.defId, el);
+      if (!target.prism) for (const el of target.weak) reveal(ctx.revealed, target.defId, el);
       return;
     }
     case 'delay': {
       if (!target.alive) return;
+      if (actor.side === 'enemy') {
+        // A foe's stall (roster plan B10, M27): never the member it delayed last; she still acts, last.
+        if (target.delayedBy === actor.key) return;
+        for (const c of ctx.battle?.party ?? []) if (c.delayedBy === actor.key) delete c.delayedBy;
+        target.delayedBy = actor.key;
+      }
       target.delay = (ctx.battle?.round ?? 0) + 1;
+      return;
+    }
+    case 'engulf': {
+      // Roster plan B10 (M28): one member at a time, never the last one standing outside; no draw.
+      const s = ctx.battle;
+      if (!s || actor.side !== 'enemy' || target.side !== 'party' || !target.alive || !actor.alive || actor.gulp || target.engulfed) return;
+      if (s.party.filter((c) => c.alive && !c.engulfed).length < 2) return;
+      target.engulfed = actor.key;
+      actor.gulp = { key: target.key, until: s.round + 1, taken: 0 };
+      ctx.log.push({ type: 'foe', actor: actor.key, cue: 'engulf', target: target.key });
       return;
     }
     case 'aim-add': {
@@ -574,6 +631,15 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
       purse.gold -= n;
       actor.stolen = (actor.stolen ?? 0) + n;
       ctx.log.push({ type: 'foe', actor: actor.key, cue: 'steal', target: target.key, amount: n });
+      return;
+    }
+    case 'dispel': {
+      // Roster plan B9 (M15): every buff moves to the foe, for the rounds it had left; debuffs, auras and wards stay. No draw.
+      const taken = target.alive ? target.buffs.filter((b) => b.pct > 0) : [];
+      if (!taken.length) return;
+      target.buffs = target.buffs.filter((b) => b.pct <= 0);
+      for (const b of taken) addBuff(actor, { stat: b.stat, pct: b.pct, turns: b.turns, src: actor.key });
+      ctx.log.push({ type: 'foe', actor: actor.key, cue: 'dispel', target: target.key });
       return;
     }
     case 'hunt': {

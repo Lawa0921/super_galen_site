@@ -61,6 +61,16 @@ const call = (name: string, id: string, max: number | undefined, chance = 0.25):
 /** Plan B4 (M22): it folds a fallen ally back up at 30% HP, once a fight for the whole flock (B1 review item 6). */
 const refold = (name: string, chance: number): EnemySkill => ({ ...sk(name, chance, 'deadAlly', { kind: 'revive', hpPct: 0.3 }), when: 'deadAlly', oncePerFight: true });
 const poison = (chance: number): Effect => ({ kind: 'inflict', status: 'poison', chance });
+/** Plan B9 (M9): the target's next turn takes a skill as a plain attack. */
+const forget = (chance: number): Effect => ({ kind: 'inflict', status: 'forget', chance });
+/** Plan B9 (M17): a hit that drains `n` TP as it lands. */
+const drain = (e: Effect, n: number): Effect => ({ ...e, tpDrain: n } as Effect);
+/** M11: a hit that heals the foe `pct`% of what the target lost. */
+const bite = (e: Effect, pct: number): Effect => ({ ...e, drainPct: pct } as Effect);
+/** Plan B11: a skill that comes only every `n` rounds (on those rounds at its chance). */
+const every = (s: EnemySkill, n: number): EnemySkill => ({ ...s, every: n });
+/** Plan B8 (M6): it strikes back at whoever landed the party's last blow, in that element, at up to `cap` power. */
+const mirror = (name: string, cap: number, chance = 0.3): EnemySkill => sk(name, chance, 'enemy', { kind: 'mirror', cap });
 
 /** The elements of a region, for its own foes (data/regions.ts REGIONS: `scaleEnemy` gives these in the region anyway). */
 const REGION_ELEMENTS: Record<Exclude<RegionId, 'mainline'>, [Element[], Element[]]> = {
@@ -110,6 +120,9 @@ interface Spec {
   rank?: EnemyDef['rank'];
   fleeAfter?: number; opener?: EnemyDef['opener'];
   decoys?: number; onFall?: EnemyDef['onFall']; rise?: EnemyDef['rise']; shareWith?: string;
+  prism?: EnemyDef['prism']; adapt?: number; stages?: EnemyDef['stages']; stageEvery?: number;
+  parts?: EnemyDef['parts']; mimic?: number; mend?: EnemyDef['mend']; rally?: EnemyDef['rally']; throng?: EnemyDef['throng'];
+  dodgeUp?: number; onAllyFall?: EnemyDef['onAllyFall'];
 }
 
 function foe(id: string, s: Spec): EnemyDef {
@@ -124,6 +137,11 @@ function foe(id: string, s: Spec): EnemyDef {
     ...(s.fleeAfter ? { fleeAfter: s.fleeAfter } : {}), ...(s.opener ? { opener: s.opener } : {}),
     ...(s.decoys ? { decoys: s.decoys } : {}), ...(s.onFall ? { onFall: s.onFall } : {}), ...(s.rise ? { rise: s.rise } : {}),
     ...(s.shareWith ? { shareWith: s.shareWith } : {}),
+    ...(s.prism ? { prism: s.prism } : {}), ...(s.adapt ? { adapt: s.adapt } : {}),
+    ...(s.stages ? { stages: s.stages } : {}), ...(s.stageEvery ? { stageEvery: s.stageEvery } : {}),
+    ...(s.parts ? { parts: s.parts } : {}), ...(s.mimic ? { mimic: s.mimic } : {}),
+    ...(s.mend ? { mend: s.mend } : {}), ...(s.rally ? { rally: s.rally } : {}), ...(s.throng ? { throng: s.throng } : {}),
+    ...(s.dodgeUp ? { dodgeUp: s.dodgeUp } : {}), ...(s.onAllyFall ? { onAllyFall: s.onAllyFall } : {}),
   };
 }
 
@@ -131,82 +149,88 @@ const UP = 1.12, UPUP = 1.15, DOWN = 0.88, DOWNDOWN = 0.85;
 
 const MAINLINE: [string, Spec][] = [
   // B 4–9: the fog roots, the town's everyday memories
-  ['paper-moth', { name: '遺信紙蛾', arch: 'swarm', mul: { spd: UPUP }, weak: ['fire'], band: 'B', inscribe: 'sleepRes',
-    skills: [sk('撲粉', 0.25, 'row', sleep(0.25))] }],
+  ['paper-moth', { name: '遺信紙蛾', arch: 'swarm', mul: { spd: UPUP, atk: UPUP }, weak: ['fire'], band: 'B', inscribe: 'sleepRes',
+    skills: [sk('撲粉', 0.25, 'row', sleep(0.25)), sk('紙緣', 0.45, 'enemy', hit(130))] }],
   ['lamp-wight', { name: '提燈幽影', arch: 'support', weak: ['ice'], resist: ['fire'], band: 'B', inscribe: 'heal',
     skills: [sk('借光', 0.4, 'ally', heal(50))] }],
   ['root-hound', { name: '霧根獵犬', arch: 'std', mul: { atk: UP }, weak: ['fire'], band: 'B', inscribe: 'atk',
     skills: [windup(sk('撲咬', 0.2, 'enemy', hit(230)), '伏低')] }],
-  ['tin-soldier', { name: '錫兵殘影', arch: 'heavy', mul: { def: UP }, weak: ['thunder'], resist: ['ice'], band: 'B', inscribe: 'armor',
-    skills: [sk('列隊', 0.25, 'ally', guard(2))] }],
+  ['tin-soldier', { name: '錫兵殘影', arch: 'heavy', mul: { def: UP, atk: UPUP }, weak: ['thunder'], resist: ['ice'], band: 'B', inscribe: 'armor',
+    skills: [sk('列隊', 0.25, 'ally', guard(2)), sk('刺刀', 0.4, 'enemy', hit(160))] }],
   ['dust-mimic', { name: '塵封木箱', arch: 'std', weak: ['fire'], band: 'B', inscribe: 'goldFind', opener: 'disguise',
-    skills: [sk('咬合', 0.3, 'enemy', hit(140))] }],
+    skills: [sk('咬合', 0.2, 'enemy', hit(85))] }],
   ['market-ghost', { name: '市集的吆喝聲', arch: 'support', mul: { spd: UP }, weak: ['thunder'], band: 'B', inscribe: 'matFind',
     skills: [sk('順手牽羊', 0.35, 'enemy', hit(90), steal(5))] }],
   // C 10–15: bells, wardens, hollow ones and paired shadows
   ['tongueless-bell', { name: '無舌鐘', arch: 'caster', mul: { spd: DOWN }, weak: ['ice'], resist: ['thunder'], band: 'C', inscribe: 'tpCost',
-    skills: [sk('無聲的鐘鳴', 0.35, 'row', hit(80, 'thunder'))] }],
+    skills: [sk('無聲的鐘鳴', 0.35, 'row', hit(60, 'thunder'), forget(0.5)), sk('鐘身撞擊', 0.25, 'enemy', hit(110, 'thunder'))] }],
   ['hollow-hunter', { name: '空殼獵人', arch: 'std', weak: ['thunder'], band: 'C', inscribe: 'critDmg', remnant: true,
-    skills: [sk('借來的招式', 0.3, 'enemy', hit(150))] }],
-  ['mist-twin', { name: '霧雙子', arch: 'swarm', weak: ['fire'], resist: ['ice'], band: 'C', inscribe: 'multi',
+    skills: [mirror('借來的招式', 150, 0.35), sk('空殼之刃', 0.25, 'enemy', hit(130))] }],
+  ['mist-twin', { name: '霧雙子', arch: 'swarm', mul: { hp: UPUP, atk: UPUP }, weak: ['fire'], resist: ['ice'], band: 'C', inscribe: 'multi',
     onFall: { name: '雙生之怒', target: 'allies', effects: [buff('atk', 40, 3)] },
-    skills: [sk('雙影', 0.3, 'enemy', hit(100))] }],
-  ['moon-crow', { name: '映月鴉', arch: 'std', mul: { spd: UP }, band: 'C', inscribe: 'crit',
-    skills: [sk('鏡羽', 0.3, 'enemy', hit(120))] }],
+    skills: [sk('雙影', 0.5, 'enemy', hit(150))] }],
+  ['moon-crow', { name: '映月鴉', arch: 'std', mul: { spd: UP }, band: 'C', inscribe: 'crit', prism: 'cycle',
+    skills: [sk('鏡羽', 0.4, 'enemy', hit(140))] }],
   ['bell-watcher', { name: '鐘樓巡守', arch: 'std', weak: ['ice'], band: 'C', inscribe: 'evasion', lore: 'rin', remnant: true,
     skills: [sk('宣告', 0.25, 'enemy', hunt), sk('巡守之杖', 0.3, 'enemy', hit(130))] }],
   ['sleepwalker', { name: '夢遊者', arch: 'heavy', mul: { atk: UP }, weak: ['fire'], resist: ['thunder'], band: 'C', inscribe: 'hp', opener: 'asleep',
     skills: [sk('夢中揮拳', 0.3, 'enemy', hit(160))] }],
   // D 16–24: the old city's statues, its requiem, the lantern-eater's young, the ancestors' machines
   ['old-city-sentinel', { name: '古城衛像', arch: 'heavy', weak: ['thunder'], resist: ['phys'], band: 'D', inscribe: 'def',
-    skills: [sk('守護', 0.2, 'ally', guard(2)), windup(sk('審判之光', 0.25, 'column', hit(120, 'fire')), '舉起天秤')] }],
+    skills: [sk('守護', 0.2, 'ally', guard(2)), windup(sk('審判之光', 0.3, 'column', hit(140, 'fire')), '舉起天秤')] }],
   ['requiem-choir', { name: '鎮魂歌隊', arch: 'support', weak: ['phys'], resist: ['ice'], band: 'D', inscribe: 'tpRegen',
     skills: [call('召來幽影', 'lamp-wight', 1), sk('鎮魂合唱', 0.35, 'allies', heal(40))] }],
   ['lantern-larva', { name: '燈喰幼體', arch: 'std', weak: ['ice'], resist: ['fire'], band: 'D', inscribe: 'vuln',
-    skills: [sk('啃光', 0.3, 'enemy', hit(120, 'fire', { scale: 'atk', melee: true }))] }],
+    // M11: it feeds on the light it bites, and grows bolder the longer the fight goes.
+    skills: [sk('啃光', 0.3, 'enemy', bite(hit(110, 'fire', { scale: 'atk', melee: true }), 50)), sk('脹大', 0.25, 'self', buff('atk', 30, 3))] }],
   ['epitaph-golem', { name: '碑文守', arch: 'heavy', mul: { spd: DOWNDOWN }, weak: ['fire'], resist: ['thunder'], band: 'D', inscribe: 'res',
     skills: [sk('抹消之文', 0.3, 'row', buff('def', -30, 2))] }],
-  ['ancestor-automaton', { name: '古代機兵', arch: 'heavy', weak: ['thunder'], resist: ['ice'], band: 'D', inscribe: 'meleeDR', lore: 'bobby',
-    skills: [sk('齒輪重拳', 0.3, 'enemy', hit(150))] }],
+  ['ancestor-automaton', { name: '古代機兵', arch: 'heavy', weak: ['thunder'], resist: ['ice'], band: 'D', inscribe: 'meleeDR', lore: 'bobby', mend: { pct: 12, stopBy: 'thunder' },
+    skills: [sk('齒輪重拳', 0.25, 'enemy', hit(125))] }],
   ['ash-archivist', { name: '灰燼書記', arch: 'caster', weak: ['ice'], band: 'D', inscribe: 'mag',
-    skills: [sk('灰燼之頁', 0.4, 'enemy', hit(130, 'fire'))] }],
+    skills: [sk('抹去', 0.3, 'enemy', { kind: 'dispel' }), sk('灰燼之頁', 0.4, 'enemy', hit(130, 'fire'))] }],
   // E 25–30: wicks, the lantern-bearers, the brood under the lamp
   ['wick-shade', { name: '燭芯之影', arch: 'swarm', weak: ['ice'], resist: ['fire'], band: 'E', inscribe: 'fireRes',
     onFall: { name: '燭爆', target: 'enemies', effects: [hit(40, 'fire')] },
     skills: [sk('燭火', 0.3, 'enemy', hit(90, 'fire'))] }],
   ['keeper-echo', { name: '無名的提燈人', arch: 'caster', weak: ['phys'], band: 'E', inscribe: 'gauge', lore: 'hero', remnant: true,
-    skills: [windup(sk('燈火之誓', 0.2, 'enemies', hit(120, 'fire')), '舉燈')] }],
+    skills: [windup(sk('燈火之誓', 0.2, 'enemies', hit(120, 'fire')), '舉燈'), mirror('照回的燈影', 120)] }],
   ['ember-maw', { name: '餘燼之口', arch: 'heavy', weak: ['thunder'], resist: ['ice'], band: 'E', inscribe: 'fireDmg',
     skills: [call('點燃燭芯', 'wick-shade', 2), sk('吞吐', 0.3, 'row', hit(90, 'fire'))] }],
-  ['sorrow-crystal', { name: '悲傷結晶', arch: 'std', weak: ['phys'], band: 'E', inscribe: 'iceRes',
+  ['sorrow-crystal', { name: '悲傷結晶', arch: 'std', weak: ['phys'], band: 'E', inscribe: 'iceRes', adapt: 3,
     skills: [sk('碎晶', 0.3, 'enemy', hit(120, 'ice', { scale: 'atk' }))] }],
   ['deep-tendril', { name: '燈底之鬚', arch: 'std', weak: ['fire'], resist: ['ice'], band: 'E', inscribe: 'tp',
-    skills: [sk('汲取', 0.35, 'enemy', hit(110))] }],
+    skills: [sk('汲取', 0.35, 'enemy', drain(hit(110), 15))] }],
   // F 31+: lost things, a little brighter
   ['music-box', { name: '走音的音樂盒', arch: 'support', weak: ['phys'], resist: ['thunder'], band: 'F', inscribe: 'wil',
-    skills: [sk('搖籃曲', 0.25, 'row', sleep(0.3)), sk('演奏', 0.3, 'allies', heal(30))] }],
+    // M1 variant: two turns of 演奏 mend its kin 10% a turn; then the row sleeps. A landed hit stops the song.
+    skills: [{ ...windup(sk('搖籃曲', 0.3, 'row', sleep(0.5)), '演奏'), windupRounds: 2, windupAllies: [{ kind: 'restore', hpPct: 10 }], fragile: true },
+      sk('走音', 0.3, 'enemy', hit(90, 'thunder'))] }],
   ['paper-cranes', { name: '千紙鶴群', arch: 'swarm', weak: ['fire'], band: 'F', inscribe: 'agi',
     skills: [refold('重摺', 0.5), sk('紙刃', 0.3, 'enemy', hit(90, 'phys', { melee: false }))] }],
-  ['lost-shadow', { name: '走失的影子', arch: 'std', weak: ['phys'], band: 'F', inscribe: 'str',
+  ['lost-shadow', { name: '走失的影子', arch: 'std', weak: ['phys'], band: 'F', inscribe: 'str', mimic: 60,
     skills: [sk('影擊', 0.3, 'enemy', hit(140))] }],
+  // It never attacks: it only steadies its kin, and as it goes out the party gets a little of its light back.
   ['returning-light', { name: '歸途之光', arch: 'support', mul: { hp: DOWNDOWN }, band: 'F', inscribe: 'expBonus',
-    skills: [sk('守望', 0.5, 'allies', buff('def', 30, 2))] }],
+    onFall: { name: '歸途的微光', target: 'enemies', effects: [{ kind: 'restore', hpPct: 10 }] },
+    skills: [sk('守望', 1, 'allies', buff('def', 30, 2))] }],
   // the treasure foes
   ['hoarder', { name: '拾憶鼠', arch: 'treasure', band: 'B', inscribe: 'matFind', fleeAfter: 3 }],
-  ['gilded-hoarder', { name: '金箔拾憶鼠', arch: 'treasure', band: 'E', inscribe: 'goldFind', fleeAfter: 2 }],
+  ['gilded-hoarder', { name: '金箔拾憶鼠', arch: 'treasure', band: 'E', inscribe: 'goldFind', fleeAfter: 2, dodgeUp: 10 }],
 ];
 
 const NATIVE: [string, Spec][] = [
   // 熾焰之地
   ['cinder-imp', { name: '灰燼小鬼', arch: 'swarm', home: 'blaze', inscribe: 'fireDmg', skills: [sk('火花', 0.3, 'enemy', hit(80, 'fire'))],
     onFall: { name: '餘燼爆開', target: 'row', effects: [hit(35, 'fire')] } }],
-  ['forge-hound', { name: '熔爐犬', arch: 'std', home: 'blaze', inscribe: 'atk', skills: [windup(sk('熔吼', 0.2, 'row', hit(150, 'fire', { scale: 'atk' })), '吸氣')] }],
+  ['forge-hound', { name: '熔爐犬', arch: 'std', home: 'blaze', inscribe: 'atk', skills: [windup(sk('熔吼', 0.25, 'row', hit(150, 'fire', { scale: 'atk' })), '吸氣'), sk('熔牙', 0.45, 'enemy', hit(145))] }],
   ['ash-mourner', { name: '灰衣弔者', arch: 'support', home: 'blaze', inscribe: 'heal',
-    skills: [sk('弔歌', 0.3, 'allies', buff('mag', 30, 3)), sk('安息', 0.3, 'ally', heal(50))] }],
+    skills: [sk('弔歌', 0.3, 'allies', buff('mag', 30, 3)), sk('安息', 0.3, 'ally', heal(50)), sk('灰燼', 0.5, 'enemy', hit(130, 'fire'))] }],
   ['mirage-dancer', { name: '蜃樓舞者', arch: 'std', home: 'blaze', inscribe: 'evasion', lore: 'safira', remnant: true, opener: 'decoy',
     skills: [sk('幻舞', 0.3, 'enemy', hit(120))] }],
   ['sand-scorpion', { name: '沙海蠍', arch: 'std', home: 'blaze', inscribe: 'poisonRes', lore: 'safira',
-    skills: [sk('毒針', 0.35, 'enemy', hit(100), poison(0.5))] }],
+    // M25: the sting bites half again as hard into a member already poisoned.
+    skills: [sk('毒針', 0.5, 'enemy', { ...hit(135), vsPoisoned: 50 } as Effect, poison(0.5))] }],
   // 霜凍之地
   ['frost-doll', { name: '霜人偶', arch: 'heavy', home: 'frost', inscribe: 'iceRes', skills: [sk('冰之守', 0.25, 'ally', guard(2))] }],
   ['glacier-tortoise', { name: '冰河龜', arch: 'heavy', home: 'frost', inscribe: 'def',
@@ -214,71 +238,79 @@ const NATIVE: [string, Spec][] = [
   ['snow-caller', { name: '雪中呼喚', arch: 'caster', home: 'frost', inscribe: 'sleepRes',
     skills: [sk('雪眠', 0.25, 'cross', sleep(0.35)), sk('雪崩', 0.35, 'column', hit(100, 'ice'))] }],
   ['ice-komainu', { name: '冰狛犬', arch: 'heavy', home: 'frost', inscribe: 'block', lore: 'chizuru', shareWith: 'ice-komainu',
-    skills: [sk('狛犬之牙', 0.3, 'enemy', hit(140))] }],
-  ['frozen-pilgrim', { name: '凍結的參拜者', arch: 'std', home: 'frost', inscribe: 'res', lore: 'chizuru', remnant: true,
-    skills: [sk('冰之祈', 0.3, 'enemy', hit(110, 'ice', { scale: 'atk', melee: true }))] }],
+    skills: [sk('狛犬之牙', 0.25, 'enemy', hit(120))] }],
+  ['frozen-pilgrim', { name: '凍結的參拜者', arch: 'std', mul: { hp: UPUP, atk: UPUP }, home: 'frost', inscribe: 'res', lore: 'chizuru', remnant: true, opener: 'encased',
+    skills: [sk('冰之祈', 0.4, 'enemy', hit(140, 'ice', { scale: 'atk', melee: true }))] }],
   // 雷鳴之地
   ['thunder-kite', { name: '雷鳶', arch: 'swarm', home: 'storm', inscribe: 'spd',
     skills: [sk('迅雷爪', 0.35, 'enemy', hit(40, 'thunder', { scale: 'atk', melee: true, hits: 3 }))] }],
   ['storm-totem', { name: '避雷石柱', arch: 'support', home: 'storm', inscribe: 'thunderRes',
     skills: [sk('引雷', 0.4, 'allies', buff('spd', 30, 3)), sk('雷鳴鼓舞', 0.3, 'allies', buff('atk', 20, 3))] }],
   ['charge-jelly', { name: '蓄電水母', arch: 'caster', home: 'storm', inscribe: 'thunderDmg', skills: [windup(sk('放電', 0.25, 'enemies', hit(90, 'thunder')), '蓄電')] }],
-  ['star-ember', { name: '星屑火', arch: 'caster', home: 'storm', inscribe: 'tpRegen', lore: 'noel', skills: [sk('星火', 0.4, 'enemy', hit(120, 'fire'))] }],
-  ['stolen-tome', { name: '飛舞的魔法書', arch: 'caster', home: 'storm', inscribe: 'mag', lore: 'noel',
-    skills: [sk('火之頁', 0.25, 'enemy', hit(120, 'fire')), sk('冰之頁', 0.25, 'enemy', hit(120, 'ice')), sk('雷之頁', 0.25, 'enemy', hit(120, 'thunder'))] }],
+  ['star-ember', { name: '星屑火', arch: 'caster', home: 'storm', inscribe: 'tpRegen', lore: 'noel', skills: [sk('星火', 0.4, 'enemy', drain(hit(120, 'fire'), 15))] }],
+  // M5 variant: fire, then ice, then thunder, a page a round; its intent names the page (and so the element) to come.
+  ['stolen-tome', { name: '飛舞的魔法書', arch: 'caster', home: 'storm', inscribe: 'mag', lore: 'noel', stageEvery: 1,
+    skills: [sk('火之頁', 0.6, 'enemy', hit(110, 'fire'))],
+    stages: [{ skills: [sk('冰之頁', 0.6, 'enemy', hit(110, 'ice'))] }, { skills: [sk('雷之頁', 0.6, 'enemy', hit(110, 'thunder'))] }] }],
   // 腐毒沼澤
-  ['bog-mother', { name: '泥沼母體', arch: 'heavy', home: 'mire', inscribe: 'hp', skills: [call('冒泡', 'slime', 2), sk('泥漿', 0.3, 'row', hit(80))] }],
+  ['bog-mother', { name: '泥沼母體', arch: 'heavy', home: 'mire', inscribe: 'hp', skills: [call('冒泡', 'slime', 1, 0.15), sk('泥漿', 0.25, 'row', hit(55))] }],
   ['rot-lily', { name: '腐百合', arch: 'support', home: 'mire', inscribe: 'poisonRes',
     skills: [sk('腐香', 0.3, 'cross', poison(0.5)), sk('腐蝕', 0.25, 'row', buff('res', -30, 2))] }],
-  ['leech-knight', { name: '蛭甲騎士', arch: 'std', home: 'mire', inscribe: 'armor', skills: [sk('吸血突刺', 0.3, 'enemy', hit(130))] }],
-  ['ashen-treant', { name: '枯灰樹人', arch: 'heavy', home: 'mire', inscribe: 'wil', lore: 'sylvie', skills: [sk('纏根', 0.3, 'row', buff('spd', -40, 2))] }],
-  ['spore-moth', { name: '孢子蛾', arch: 'swarm', home: 'mire', inscribe: 'tp', skills: [sk('孢子', 0.3, 'enemy', poison(0.4))],
+  ['leech-knight', { name: '蛭甲騎士', arch: 'std', home: 'mire', inscribe: 'armor', skills: [sk('吸血突刺', 0.3, 'enemy', bite(hit(130), 50))] }],
+  ['ashen-treant', { name: '枯灰樹人', arch: 'heavy', home: 'mire', inscribe: 'wil', lore: 'sylvie', mend: { pct: 10 }, skills: [sk('纏根', 0.3, 'row', buff('spd', -40, 2))] }],
+  ['spore-moth', { name: '孢子蛾', arch: 'swarm', home: 'mire', inscribe: 'tp', skills: [sk('孢子', 0.3, 'enemy', poison(0.4)), sk('撲翅', 0.45, 'enemy', hit(115))],
     onFall: { name: '孢子四散', target: 'cross', effects: [poison(0.5)] } }],
   // 暗影迴廊
-  ['mirror-thief', { name: '鏡中竊影', arch: 'std', home: 'shade', inscribe: 'crit', skills: [sk('鏡擊', 0.3, 'enemy', hit(130))] }],
-  ['veil-stalker', { name: '帷幕潛行者', arch: 'std', home: 'shade', inscribe: 'critDmg', skills: [sk('背刺', 0.3, 'enemy', hit(120, 'phys', { crit: 'always' }))] }],
+  ['mirror-thief', { name: '鏡中竊影', arch: 'std', home: 'shade', inscribe: 'crit', skills: [mirror('鏡擊', 150, 0.45), sk('鏡刃', 0.45, 'enemy', hit(140))] }],
+  ['veil-stalker', { name: '帷幕潛行者', arch: 'std', home: 'shade', inscribe: 'critDmg', skills: [sk('背刺', 0.4, 'enemy', hit(130, 'phys', { crit: 'always', melee: false }))] }],
   ['hush-acolyte', { name: '靜默侍者', arch: 'caster', home: 'shade', inscribe: 'tpCost', lore: 'rin', remnant: true,
-    skills: [sk('靜默', 0.3, 'cross', hit(80, 'ice'))] }],
+    skills: [sk('靜默', 0.3, 'cross', hit(60, 'ice'), forget(0.4)), sk('鈴聲', 0.3, 'enemy', hit(110, 'ice'))] }],
   ['vault-mimic', { name: '餓肚子的寶庫', arch: 'heavy', home: 'shade', inscribe: 'goldFind', lore: 'liz', opener: 'disguise',
     skills: [sk('吞金', 0.3, 'enemy', hit(150), steal(5))] }],
   ['debt-collector', { name: '敲門的影子', arch: 'std', home: 'shade', inscribe: 'vuln', lore: 'liz', remnant: true,
-    skills: [sk('記下名字', 0.25, 'enemy', hunt), sk('敲門', 0.3, 'enemy', hit(120), steal(5))] }],
+    skills: [sk('記下名字', 0.25, 'enemy', hunt), sk('敲門', 0.5, 'enemy', hit(155), steal(5))] }],
   // 鋼鐵要塞
-  ['rivet-golem', { name: '鉚釘機兵', arch: 'heavy', home: 'iron', inscribe: 'armor', skills: [sk('鉚接', 0.25, 'ally', guard(2))] }],
+  ['rivet-golem', { name: '鉚釘機兵', arch: 'heavy', home: 'iron', inscribe: 'armor', skills: [sk('鉚接', 0.25, 'ally', guard(2)), sk('鉚錘', 0.3, 'enemy', hit(140))] }],
   ['siege-crab', { name: '攻城蟹', arch: 'heavy', home: 'iron', inscribe: 'meleeDR', skills: [windup(sk('破城鉗', 0.2, 'row', hit(170)), '舉鉗')] }],
   ['herald-engine', { name: '號令機', arch: 'support', home: 'iron', inscribe: 'gauge',
     skills: [sk('號令', 0.4, 'allies', buff('atk', 25, 3)), sk('整隊', 0.3, 'allies', buff('def', 20, 3))] }],
   ['fallen-knight', { name: '要塞的騎士殘影', arch: 'heavy', home: 'iron', inscribe: 'block', lore: 'scarlet', remnant: true,
+    onAllyFall: { name: '騎士的誓言', effects: [buff('def', 30, 3)] },
     skills: [sk('騎士之盾', 0.25, 'ally', guard(2)), sk('斬擊', 0.3, 'enemy', hit(140))] }],
-  ['banner-bearer', { name: '紅旗旗手', arch: 'support', home: 'iron', inscribe: 'str', lore: 'scarlet', remnant: true,
-    skills: [sk('揮旗', 0.4, 'allies', buff('atk', 20, 3))] }],
+  // M26: while the banner stands every other foe hits harder; it hardly fights itself.
+  ['banner-bearer', { name: '紅旗旗手', arch: 'support', home: 'iron', inscribe: 'str', lore: 'scarlet', remnant: true, rally: { atk: 20 },
+    skills: [sk('旗竿', 0.3, 'enemy', hit(80))] }],
 ];
 
 const WARDENS: [string, Spec][] = [
-  ['false-moon', { name: '不存在的月亮', arch: 'std', rank: 'warden', weak: ['fire'], resist: ['ice'], lore: 'selene',
-    skills: [sk('月明', 0.3, 'allies', heal(40)), sk('月蝕', 0.3, 'enemies', hit(90, 'ice'))] }],
+  // Spec §5.5 (ruling 20): two rounds of 月明 (it mends and steadies its allies), two of 月蝕 (cold on the whole party).
+  ['false-moon', { name: '不存在的月亮', arch: 'std', rank: 'warden', weak: ['fire'], resist: ['ice'], lore: 'selene', stageEvery: 2,
+    skills: [sk('月明之光', 0.4, 'allies', heal(40)), sk('月明之守', 0.3, 'allies', buff('def', 30, 2))],
+    stages: [{ skills: [sk('月蝕', 0.5, 'enemies', hit(90, 'ice')), sk('蝕影', 0.3, 'enemy', hit(130))] }] }],
+  // M24, M9, M8: at half its bell rings faster.
   ['bell-warden', { name: '鐘樓的守門人', arch: 'std', rank: 'warden', weak: ['ice'], lore: 'rin', remnant: true,
-    skills: [sk('鐘聲', 0.3, 'row', hit(90, 'thunder')), sk('點名', 0.25, 'enemy', hunt)] }],
-  ['toppled-automaton', { name: '倒下的機兵', arch: 'heavy', rank: 'warden', weak: ['thunder'], resist: ['ice'], lore: 'bobby', rise: { pct: 30 },
-    skills: [sk('重拳', 0.3, 'enemy', hit(160))] }],
+    skills: [sk('鐘聲', 0.3, 'row', hit(80, 'thunder'), forget(0.4)), sk('點名', 0.25, 'enemy', hunt), sk('鐘槌', 0.3, 'enemy', hit(130))],
+    stages: [{ below: 50, skills: [sk('急鐘', 0.45, 'row', hit(85, 'thunder'), forget(0.4)), sk('點名', 0.3, 'enemy', hunt), sk('鐘槌', 0.3, 'enemy', hit(130))] }] }],
+  ['toppled-automaton', { name: '倒下的機兵', arch: 'heavy', rank: 'warden', weak: ['thunder'], resist: ['ice'], lore: 'bobby', rise: { pct: 30 }, mend: { pct: 4, stopBy: 'thunder' },
+    skills: [sk('重拳', 0.3, 'enemy', hit(125))] }],
   ['requiem-conductor', { name: '鎮魂指揮者', arch: 'std', rank: 'warden', weak: ['phys'], resist: ['ice'],
     skills: [call('召集歌隊', 'requiem-choir', 2), sk('指揮', 0.4, 'allies', buff('spd', 40, 3)), sk('終章', 0.3, 'enemies', hit(80, 'ice'))] }],
   ['lantern-brood', { name: '燈底之巢', arch: 'heavy', rank: 'warden', weak: ['ice'], resist: ['fire'],
     // Spec §5.5: it never attacks; it hatches one a turn while there is room, and curls up when there is none (B1 review item 3).
     skills: [call('孵化', 'lantern-larva', undefined, 1), sk('蜷縮', 1, 'self', buff('def', 20, 2))] }],
   ['mirage-lead', { name: '蜃樓的領舞者', arch: 'std', rank: 'warden', home: 'blaze', lore: 'safira', remnant: true, opener: 'decoy', decoys: 2,
-    skills: [sk('轉拍', 0.3, 'allies', buff('spd', 30, 3)), sk('領舞', 0.3, 'enemy', hit(130))] }],
-  ['ice-shrine', { name: '冰中的拜殿', arch: 'heavy', rank: 'warden', home: 'frost', lore: 'chizuru',
+    skills: [every(sk('轉拍', 1, 'allies', buff('spd', 30, 3)), 3), sk('領舞', 0.3, 'enemy', hit(130))] }],
+  ['ice-shrine', { name: '冰中的拜殿', arch: 'heavy', rank: 'warden', home: 'frost', lore: 'chizuru', parts: { cutPct: 50, by: ['ice-komainu'] },
     skills: [call('喚醒狛犬', 'ice-komainu', 2), sk('寒光', 0.3, 'column', hit(100, 'ice'))] }],
   ['burning-page', { name: '燃燒的那一頁', arch: 'std', rank: 'warden', home: 'storm', lore: 'noel',
     onFall: { name: '最後一頁', target: 'enemies', effects: [{ kind: 'restore', tp: 20 }] },
-    skills: [sk('燃頁', 0.35, 'enemy', hit(120, 'fire', { scale: 'atk' }))] }],
-  ['grey-elder', { name: '灰化的老樹', arch: 'heavy', rank: 'warden', home: 'mire', lore: 'sylvie',
-    skills: [call('長出孢子', 'spore-moth', 2), sk('纏根', 0.3, 'row', buff('spd', -40, 2)), sk('枯枝', 0.3, 'enemy', hit(140))] }],
+    skills: [sk('燃頁', 0.35, 'enemy', drain(hit(120, 'fire', { scale: 'atk' }), 15)), sk('灰燼之字', 0.25, 'row', forget(0.4))] }],
+  ['grey-elder', { name: '灰化的老樹', arch: 'heavy', rank: 'warden', home: 'mire', lore: 'sylvie', mend: { pct: 5 },
+    skills: [every(call('長出孢子', 'spore-moth', undefined, 1), 3), sk('纏根', 0.3, 'row', buff('spd', -40, 2)), sk('枯枝', 0.3, 'enemy', hit(120))] }],
   ['locked-vault', { name: '鎖著的金庫', arch: 'heavy', rank: 'warden', mul: { def: UPUP }, home: 'shade', lore: 'liz',
     skills: [sk('金庫門', 0.3, 'enemy', hit(150), steal(5))] }],
-  ['gate-breaker', { name: '撞門的巨影', arch: 'heavy', rank: 'warden', home: 'iron', lore: 'scarlet',
-    skills: [call('爬上城牆', 'fallen-knight', 2), windup(sk('撞門', 0.2, 'enemies', hit(120)), '後退助跑')] }],
+  ['gate-breaker', { name: '撞門的巨影', arch: 'heavy', rank: 'warden', mul: { hp: DOWNDOWN }, home: 'iron', lore: 'scarlet',
+    skills: [call('爬上城牆', 'fallen-knight', 1, 0.15), windup(sk('撞門', 0.2, 'enemies', hit(85)), '後退助跑')] }],
 ];
 
 /** Two plain boss skills: an area spell and a heavy single blow (the lantern-eater's pattern), named per boss. */
@@ -291,60 +323,86 @@ const BOSSES: [string, Spec][] = [
   ['fog-warden', { name: '霧門守衛', arch: 'boss', mul: { hp: 0.95 }, weak: ['fire'], resist: ['ice'],
     skills: [windup(sk('霧門落下', 0.25, 'enemies', hit(130)), '霧門升起'), sk('霧壓', 0.3, 'row', buff('def', -25, 2))] }],
   ['silent-bell', { name: '啞鐘', arch: 'boss', mul: { hp: 1.05, spd: DOWN }, weak: ['ice'], resist: ['thunder'],
-    skills: [sk('無聲的轟鳴', 0.35, 'row', hit(110, 'thunder')), sk('鐘擊', 0.3, 'enemy', hit(160))] }],
+    skills: [sk('無聲的轟鳴', 0.35, 'row', hit(100, 'thunder'), forget(0.4)), sk('鐘擊', 0.3, 'enemy', hit(160))],
+    stages: [{ below: 50, skills: [sk('無聲的轟鳴', 0.45, 'row', hit(105, 'thunder'), forget(0.5)), sk('鐘擊', 0.35, 'enemy', hit(170))] }] }],
+  // Spec §5.6: borrowed blows; at 40% it breaks out a hundred styles of the sword (M6, M8).
   ['hollow-champion', { name: '空殼勇者', arch: 'boss', mul: { atk: UPUP }, weak: ['thunder'], remnant: true,
-    skills: [sk('一百種劍法', 0.3, 'enemy', hit(60, 'phys', { hits: 3 })), sk('勇者之擊', 0.3, 'enemy', hit(160))] }],
-  ['old-city-archon', { name: '古城執政像', arch: 'boss', hp: 800, weak: ['thunder'], resist: ['fire'], skills: pair('審判', 'fire', '王權') }],
-  ['gorged-beast', { name: '飽食之獸', arch: 'boss', mul: { hp: 1.08 }, weak: ['ice'], resist: ['fire'],
-    skills: [call('吐出燭芯', 'wick-shade', 2), ...pair('吞光', 'fire', '啃食')] }],
-  ['forgotten-festival', { name: '被遺忘的祭典', arch: 'boss', weak: ['ice'], skills: pair('祭典之火', 'fire', '狐火') }],
+    skills: [mirror('借來的劍招', 160, 0.35), sk('勇者之擊', 0.3, 'enemy', hit(160))],
+    stages: [{ below: 40, skills: [sk('一百種劍法', 0.4, 'enemy', hit(60, 'phys', { hits: 3 })), mirror('借來的劍招', 160, 0.3), sk('勇者之擊', 0.3, 'enemy', hit(160))] }] }],
+  ['old-city-archon', { name: '古城執政像', arch: 'boss', hp: 800, weak: ['thunder'], resist: ['fire'], parts: { cutPct: 50 }, skills: pair('審判', 'fire', '王權') }],
+  ['gorged-beast', { name: '飽食之獸', arch: 'boss', mul: { hp: DOWN }, weak: ['ice'], resist: ['fire'],
+    skills: [call('吐出燭芯', 'wick-shade', 1, 0.15), sk('吞光', 0.35, 'enemies', hit(85, 'fire')), sk('啃食', 0.3, 'enemy', bite(hit(130), 40))] }],
+  // M4, M8: a lantern lit each turn while there is room (the boss cap keeps it to three); with all three lit, the fire comes.
+  ['forgotten-festival', { name: '被遺忘的祭典', arch: 'boss', weak: ['ice'],
+    skills: [{ ...sk('祭典之火', 0.6, 'enemies', hit(110, 'fire')), needs: { id: 'lamp-wight', n: 3 } }, call('點燈', 'lamp-wight', undefined, 0.5), sk('狐火', 0.3, 'enemy', hit(150))] }],
   ['starless-whale', { name: '無星之鯨', arch: 'boss', mul: { hp: UPUP, spd: DOWNDOWN }, weak: ['thunder'], resist: ['ice'],
-    skills: [sk('吞沒', 0.25, 'enemies', hit(120, 'ice')), sk('鯨歌', 0.3, 'enemy', hit(160))] }],
-  ['stopped-clock', { name: '停擺的鐘心', arch: 'boss', weak: ['phys'], resist: ['thunder'], skills: pair('齒輪風暴', 'thunder', '指針') }],
-  ['first-lantern', { name: '最初的燈', arch: 'boss', mul: { hp: 1.1 }, skills: pair('初火', 'fire', '燈芯之擊') }],
+    // M1, M11: every third round it dives, and the round after the sea comes down on everyone.
+    skills: [every(windup(sk('吞沒', 1, 'enemies', hit(130, 'ice')), '深潛'), 3), sk('鯨歌', 0.3, 'enemy', bite(hit(160), 30))] }],
+  // M27 (ruling 9): 遲滯 sends a member to the end of the next round and slows her; never the same one twice in a row.
+  ['stopped-clock', { name: '停擺的鐘心', arch: 'boss', weak: ['phys'], resist: ['thunder'],
+    skills: [sk('遲滯', 0.35, 'enemy', hit(80, 'thunder'), { kind: 'delay' }, buff('spd', -30, 2)), ...pair('齒輪風暴', 'thunder', '指針')] }],
+  // M8, M5: three stages, each with its own weakness and its own element for the party-wide flame.
+  ['first-lantern', { name: '最初的燈', arch: 'boss', mul: { hp: 1.1 }, prism: 'stage', weak: ['ice'], skills: pair('初火', 'fire', '燈芯之擊'),
+    stages: [{ below: 66, weak: ['fire'], skills: pair('初冰', 'ice', '燈芯之擊') }, { below: 33, weak: ['phys'], skills: pair('初雷', 'thunder', '燈芯之擊') }] }],
   // 熾焰之地
-  ['ember-tyrant', { name: '焚城之焰', arch: 'boss', home: 'blaze', skills: pair('焚城', 'fire', '烈焰之拳') }],
+  ['ember-tyrant', { name: '焚城之焰', arch: 'boss', home: 'blaze', skills: [sk('火雨', 0.3, 'row', hit(100, 'fire')), sk('烈焰之拳', 0.3, 'enemy', hit(160))],
+    stages: [{ below: 50, skills: [sk('焚城', 0.45, 'enemies', hit(125, 'fire')), sk('烈焰之拳', 0.3, 'enemy', hit(165))] }] }],
   ['sandstorm-maw', { name: '沙暴之口', arch: 'boss', mul: { spd: UP }, home: 'blaze', lore: 'safira',
-    skills: [sk('沙暴', 0.3, 'enemies', hit(100, 'phys', { melee: false }), buff('spd', -20, 2)), sk('沙之顎', 0.3, 'enemy', hit(160))] }],
-  ['mirage-city', { name: '蜃樓之城', arch: 'boss', hp: 960, home: 'blaze', lore: 'safira',
-    skills: [call('舞者登場', 'mirage-dancer', 2), ...pair('幻之火', 'fire', '城門崩落')] }],
+    skills: [every(sk('沙暴', 1, 'enemies', hit(90, 'phys', { melee: false }), buff('spd', -20, 2)), 2), sk('沙之顎', 0.3, 'enemy', hit(160))] }],
+  ['mirage-city', { name: '蜃樓之城', arch: 'boss', hp: 960, home: 'blaze', lore: 'safira', parts: { cutPct: 50, by: ['mirage-dancer'] },
+    skills: [call('舞者登場', 'mirage-dancer', 1), ...pair('幻之火', 'fire', '城門崩落')] }],
   // 霜凍之地
-  ['rime-sovereign', { name: '永凍之守', arch: 'boss', hp: 820, home: 'frost', skills: pair('永凍', 'ice', '冰槌') }],
-  ['white-silence', { name: '白色寂靜', arch: 'boss', home: 'frost',
-    skills: [sk('寂靜', 0.3, 'enemies', buff('spd', -10, 3)), sk('雪幕', 0.35, 'cross', hit(110, 'ice'))] }],
+  ['rime-sovereign', { name: '永凍之守', arch: 'boss', hp: 820, home: 'frost', parts: { cutPct: 50 }, skills: pair('永凍', 'ice', '冰槌') }],
+  ['white-silence', { name: '白色寂靜', arch: 'boss', mul: { hp: 1.1 }, home: 'frost',
+    // The quiet deepens a step at a time, to three steps; its snow makes the party forget.
+    skills: [sk('寂靜', 0.35, 'enemies', { kind: 'buff', stat: 'spd', pct: -10, turns: 3, stackTo: -30 }), sk('雪幕', 0.45, 'cross', hit(140, 'ice'), forget(0.4)),
+      sk('冰柱落下', 0.35, 'enemy', hit(175))] }],
   ['rift-maw', { name: '迷宮的裂口', arch: 'boss', home: 'frost', lore: 'chizuru',
-    skills: [call('裂口湧出', 'frost-doll', 2), ...pair('裂口之息', 'ice', '撕裂')] }],
+    skills: [call('裂口湧出', 'frost-doll', 1), ...pair('裂口之息', 'ice', '撕裂')],
+    stages: [{ below: 50, skills: [call('裂口湧出', 'frost-doll', 1), sk('裂口之息', 0.5, 'enemies', hit(115, 'ice')), sk('撕裂', 0.3, 'enemy', hit(160))] }] }],
   // 雷鳴之地
   ['thunder-roc', { name: '雷鳴巨鵬', arch: 'boss', mul: { spd: UPUP }, home: 'storm',
     skills: [windup(sk('天雷俯衝', 0.2, 'enemies', hit(130, 'thunder', { scale: 'atk', melee: true })), '盤旋'), sk('雙爪', 0.3, 'enemy', hit(80, 'phys', { hits: 2 }))] }],
   ['storm-conductor', { name: '雷霆指揮者', arch: 'boss', home: 'storm',
-    skills: [sk('指名', 0.25, 'enemy', hunt), sk('連鎖雷', 0.35, 'cross', hit(120, 'thunder')), sk('雷杖', 0.3, 'enemy', hit(160))] }],
-  ['starfire-colossus', { name: '星火巨像', arch: 'boss', home: 'storm', lore: 'noel', skills: pair('星火', 'fire', '巨拳') }],
+    skills: [sk('指名', 0.2, 'enemy', hunt), sk('連鎖雷', 0.4, 'cross', hit(145, 'thunder')), sk('雷杖', 0.4, 'enemy', hit(190))] }],
+  ['starfire-colossus', { name: '星火巨像', arch: 'boss', home: 'storm', lore: 'noel',
+    skills: [sk('星火', 0.35, 'enemies', hit(110, 'fire')), sk('汲星', 0.3, 'enemy', drain(hit(140), 15))] }],
   // 腐毒沼澤
   ['mire-hydra', { name: '腐沼多頭蛇', arch: 'boss', mul: { hp: UP }, home: 'mire',
-    skills: [sk('毒霧', 0.35, 'cross', poison(0.6)), sk('多頭撕咬', 0.3, 'enemy', hit(80, 'phys', { hits: 2 }))] }],
-  ['grey-blight', { name: '灰枯', arch: 'boss', home: 'mire', lore: 'sylvie', skills: pair('枯灰', 'fire', '灰燼之觸') }],
+    // M8: at two thirds and at one third a new head grows, a new bite with it.
+    skills: [sk('毒霧', 0.35, 'cross', poison(0.6)), sk('多頭撕咬', 0.3, 'enemy', hit(90, 'phys', { hits: 2 }))],
+    stages: [
+      { below: 66, skills: [sk('第二個頭', 0.4, 'enemy', hit(160, 'ice')), sk('毒霧', 0.35, 'cross', poison(0.6)), sk('多頭撕咬', 0.3, 'enemy', hit(80, 'phys', { hits: 2 }))] },
+      { below: 33, skills: [sk('第三個頭', 0.4, 'enemies', hit(125, 'fire')), sk('第二個頭', 0.4, 'enemy', hit(160, 'ice')), sk('毒霧', 0.35, 'cross', poison(0.6)), sk('多頭撕咬', 0.3, 'enemy', hit(80, 'phys', { hits: 2 }))] },
+    ] }],
+  // M4, M7, M10: its pods are spore moths: while one stands it is shielded, and each bursts into poison as it falls.
+  ['grey-blight', { name: '灰枯', arch: 'boss', home: 'mire', lore: 'sylvie', parts: { cutPct: 50, by: ['spore-moth'] },
+    skills: [call('結出孢子莢', 'spore-moth', 1, 0.25), ...pair('枯灰', 'fire', '灰燼之觸')] }],
+  // M28 (ruling 9): it swallows one member for a round; she fights on from inside.
   ['bog-leviathan', { name: '沼底巨口', arch: 'boss', mul: { hp: 1.1 }, home: 'mire',
-    skills: [sk('巨口', 0.3, 'enemy', hit(170)), sk('沼氣', 0.3, 'cross', poison(0.5))] }],
+    skills: [sk('吞入', 0.3, 'enemy', hit(90), { kind: 'engulf' }), sk('巨口', 0.3, 'enemy', hit(170)), sk('沼氣', 0.3, 'cross', poison(0.5))] }],
   // 暗影迴廊
-  ['faceless-host', { name: '無面之主', arch: 'boss', home: 'shade', skills: [call('鏡中人', 'mirror-thief', 2), ...pair('影刃', 'ice', '無面之擊')] }],
+  ['faceless-host', { name: '無面之主', arch: 'boss', mul: { hp: DOWN }, home: 'shade',
+    skills: [call('鏡中人', 'mirror-thief', 1, 0.1), mirror('無面的回禮', 110), sk('影刃', 0.35, 'enemies', hit(95, 'ice')), sk('無面之擊', 0.3, 'enemy', hit(140))] }],
   ['vault-dragon', { name: '金庫之龍', arch: 'boss', mul: { hp: 1.1 }, home: 'shade',
-    skills: [sk('金幣吐息', 0.35, 'row', hit(120, 'fire')), sk('龍爪', 0.3, 'enemy', hit(160), steal(5))] }],
-  ['shadow-parade', { name: '影之行列', arch: 'boss', home: 'shade', skills: pair('夜行', 'ice', '影之鞭') }],
+    skills: [sk('金幣吐息', 0.4, 'row', { ...hit(125, 'fire'), hoardPct: 100 } as Effect), sk('龍爪', 0.4, 'enemy', hit(175), steal(5))] }],
+  // M4, M26: one more shadow joins the line each turn while there is room, and each one makes it stronger.
+  ['shadow-parade', { name: '影之行列', arch: 'boss', home: 'shade', throng: { id: 'lost-shadow', per: { atk: 15, mag: 15 } },
+    skills: [call('行列又長了', 'lost-shadow', undefined, 0.5), ...pair('夜行', 'ice', '影之鞭')] }],
   // 鋼鐵要塞
   ['fortress-colossus', { name: '要塞巨像', arch: 'boss', home: 'iron',
-    skills: [call('調來機兵', 'rivet-golem', 2), windup(sk('攻城砲', 0.25, 'enemies', hit(130, 'phys', { melee: false })), '裝填'), sk('鐵拳', 0.3, 'enemy', hit(160))] }],
-  ['siege-titan', { name: '攻城巨獸', arch: 'boss', mul: { atk: UP }, home: 'iron', lore: 'scarlet',
-    skills: [sk('破甲', 0.3, 'row', buff('def', -30, 2)), windup(sk('重擊', 0.3, 'enemy', hit(180)), '蓄勢')] }],
+    skills: [call('調來機兵', 'rivet-golem', 1, 0.15), windup(sk('攻城砲', 0.25, 'enemies', hit(95, 'phys', { melee: false })), '裝填'), sk('鐵拳', 0.3, 'enemy', hit(140))] }],
+  ['siege-titan', { name: '攻城巨獸', arch: 'boss', mul: { hp: 1.1, atk: UPUP }, home: 'iron', lore: 'scarlet',
+    skills: [sk('破甲', 0.3, 'row', buff('def', -30, 2)), windup(sk('重擊', 0.4, 'enemy', hit(220)), '蓄勢'), sk('踐踏', 0.3, 'enemies', hit(100))] }],
   ['last-commander', { name: '最後的指揮官', arch: 'boss', home: 'iron', lore: 'scarlet', remnant: true,
-    skills: [sk('守護', 0.25, 'ally', guard(2)), sk('號角', 0.35, 'allies', buff('def', 30, 3)), sk('指揮刀', 0.3, 'enemy', hit(160))] }],
+    skills: [sk('守護', 0.25, 'ally', guard(2)), sk('號角', 0.2, 'allies', buff('def', 30, 3)), sk('衝鋒號', 0.25, 'enemies', hit(100)), sk('指揮刀', 0.4, 'enemy', hit(200))] }],
 ];
 
 const PARTS: [string, Spec][] = [
-  ['archon-hand', { name: '執政像之手', arch: 'std', rank: 'part', hp: 260, mul: { spd: 0.88 }, weak: ['fire'],
-    skills: [sk('壓制', 0.35, 'row', hit(90))] }],
+  ['archon-hand', { name: '執政像之手', arch: 'std', rank: 'part', hp: 260, mul: { spd: 0.88, atk: DOWNDOWN }, weak: ['fire'],
+    skills: [sk('壓制', 0.3, 'row', hit(60))] }],
   ['rime-pillar', { name: '冰柱', arch: 'support', rank: 'part', hp: 240, home: 'frost',
-    skills: [sk('冰之加護', 0.35, 'allies', heal(40)), sk('冰壁', 0.3, 'allies', buff('def', 20, 2))] }],
+    skills: [sk('冰之加護', 0.25, 'allies', heal(25)), sk('冰壁', 0.2, 'allies', buff('def', 15, 2))] }],
 ];
 
 /** The lantern-mother: the lantern-eater's numbers and skills in her own shape (controller ruling; she is the finale's foe). */

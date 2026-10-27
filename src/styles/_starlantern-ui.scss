@@ -569,7 +569,7 @@ $slx-battle-left: 150px;
 // nothing leaves the screen. Like the panel's pop tags they stand over the command window's lower edge (z-index 3), so
 // the member choosing a command still sees them. The one colour source here; render/ailmentStyle.ts holds the same
 // values for the Pixi labels (ui2/rarity.test.ts).
-$slx-ailment: (poison: #b889fe, sleep: #c1c5d6, burn: #fe8a57, freeze: #92ebfd, chill: #8ea8fe, shock: #ffe845, bleed: #ff5c74);
+$slx-ailment: (poison: #b889fe, sleep: #c1c5d6, burn: #fe8a57, freeze: #92ebfd, chill: #8ea8fe, shock: #ffe845, bleed: #ff5c74, forget: #66b87e);
 .slx-pm-ail { position: absolute; left: 0; right: 0; bottom: 100%; z-index: 3; margin-bottom: 1px; display: flex; flex-wrap: nowrap; gap: 1px; overflow: hidden; pointer-events: none; }
 .slx-pm-ail[hidden] { display: none; }
 .slx-ail, .slx-mech { flex: none; padding: 0 1px; font-size: $slx-fs; line-height: 14px; border: 1px solid currentColor; white-space: nowrap; background: rgba($slx-win, 0.92); }

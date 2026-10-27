@@ -162,7 +162,7 @@ spec 已核准（2026-10-26，控制者依使用者授權）。下面是 spec �
 24. **生成**：一律 `codex_still.py generate`（`contract.md:6`）。四批全做（含地區）。codex Plus 額度用完時改用 codex credits（使用者 2026-10-26 裁定）；**兩者都用完**才暫停回報。工具不自動切換到其他後端，也**絕不用佔位美術**。
 25. **地區的表等原生上線才換（PR A 審查，控制者裁定）**：地區的表只有在**那個地區的原生組全部上線**之後才換成「原生 6 組＋本帶前 6 組」；在那之前一律是「舊表整張＋已上線的新組」（spec §8.1 第 4 步的過渡，不管新組有幾組）。本道照 spec §8.1 原規則。另外，只有寶物怪的那一組不會單獨加進舊表（舊表只有 3–4 組，牠會變成四、五場就一場）。測試：`data/monsters.test.ts` 的 `every live wave keeps the tables whole`，對 L1–L4 每一波的上線集合，在真的 `encounterTable` 上逐帶逐區驗 spec §3.4 與經驗等價。
 26. **`palette_max` 只記錄（控制者 2026-10-26 裁定，R0 審查後）**：spec §13.4 的「不透明色數 ≤ 32」改成只記在 QA（`colours`、`palette_over`），不擋核准與發布。理由：codex 從來畫不出 32 色以內的圖，已核准的舊怪是 1.2k–10k 色（slime 1,254、lanterneater 10,423），R0 五隻是 1.7k–13k 色；量化會改掉使用者核准的圖。其餘 QA 關卡不變（spec §0 第 16 條）。
-27. **遺忘圖示晚一步發布（控制者 2026-10-26 裁定，R0 審查後）**：`icon-ail-forget-14` 跟 R0 一起畫、QA 已過，但 `AilmentShown` 要到 B9 才有 `forget`，先發布會讓 manifest 多一個遊戲不認得的網址（`published.test.ts`）。所以它是自己的一輪（`roster_art.py` 的 `forget`，登錄表 `roster-forget`）：R0 發布時不含它；E1c 在 B2 合併後以獨立審核紀錄 `approve --batch forget --review <紀錄>`、`publish --batch forget`，同一個 commit 把 `forget` 加進 `AILMENT_ICON_IDS`。圖示主色 `#8FD9B6`（霧綠），B9 的 `AILMENT_FILL.forget` 用同一色（spec §0 第 17 條）。
+27. **遺忘圖示晚一步發布（控制者 2026-10-26 裁定，R0 審查後）**：`icon-ail-forget-14` 跟 R0 一起畫、QA 已過，但 `AilmentShown` 要到 B9 才有 `forget`，先發布會讓 manifest 多一個遊戲不認得的網址（`published.test.ts`）。所以它是自己的一輪（`roster_art.py` 的 `forget`，登錄表 `roster-forget`）：R0 發布時不含它；E1c 在 B2 合併後以獨立審核紀錄 `approve --batch forget --review <紀錄>`、`publish --batch forget`，同一個 commit 把 `forget` 加進 `AILMENT_ICON_IDS`。圖示主色 `#8FD9B6`（霧綠）；B9 的 `AILMENT_FILL.forget` 原定同色，但它和既有的機制色太近，改用 `#66B87E`（spec §0 第 17、19 條，`scripts/starlantern-chip-colour.mjs` 選出）。
 
 ## 使用者已決定（2026-10-26）
 
@@ -548,6 +548,7 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 - Modify：`engine/ailments.ts`（`AilmentId` 加 `'forget'`，放在 `AILMENT_IDS` 最後；1 回合；`sleepRes` 抵抗；頭目減半；`cure` 解除）、`engine/battle.ts`（遺忘中 `skill` 改普攻；道具、絕技、防禦照常）、`engine/types.ts`（`damage.tpDrain`、`damage.vsPoisoned`、`Effect { kind: 'dispel' }`）、`engine/skills.ts`、`engine/combatant.ts`；`AilmentShown` 變寬之後三張窮舉表要補 `forget`：`data/text.zh-TW.ts` 的 `STATUS_LINE`、`AILMENT_NAME`（`:20`、`:23`）、`render/ailmentStyle.ts:11` 的 `AILMENT_FILL`；異常小圖示永遠去要 `ailmentIconUrl(c.id)`（`render/BattleView.ts:546`、`ui2/partyBar.ts:213`）：兩處都改成「`AILMENT_ICON_IDS` 沒有它就只顯示文字」，**不畫任何圖**。`render/artPaths.ts` 的 `AILMENT_ICON_IDS` **不改**（裁定 22）。
 - Test：`engine/ailments.test.ts`、`engine/foes.test.ts`、`ui2/partyBar.test.ts`、`render/BattleView.test.ts`。
 - 已知會紅：`engine/ailments.test.ts` 若有列舉 `AILMENT_IDS` 的字面值，加上 `forget`（意圖不變），列進報告。
+- **B9 實作修正**（原計畫漏列）：`engine/ailments.test.ts` 沒有列舉，不用改；實際會紅而且照改的是 `render/chipIcons.test.ts`（「每個異常都有已發布的小圖示」→ 只有 `AILMENT_ICON_IDS` 的才有，`forget` 是唯一等 E1c 的）、`ui2/rarity.test.ts`（異常色從七種變八種、`T.ailment` 多一個「遺忘」）、`render/ailmentStyle.test.ts`（`AILMENT_SEVERITY` 加 `forget`，排在睡眠之後）、`data/monsters.test.ts`（允許清單加 `forget`、`tpDrain`、`vsPoisoned`、`drainPct`、`dispel`）；`src/styles/_starlantern-ui.scss` 的 `$slx-ailment` 也要加 `forget`（`rarity.test.ts` 要求和 `AILMENT_FILL` 同一組）。退回文字的寫法是 `render/chipIcons.ts` 的 `ailmentIconUrls`，`BattleView` 與 `partyBar` 都改用它。美術工具 PR 定的 `#8FD9B6` 和既有的機制色太近（CIEDE2000：`beat` 9.5、`expose` 12.9、`veil` 13.3，門檻 `CHIP_DE = 15`）；控制者裁定改用 `scripts/starlantern-chip-colour.mjs` 選出的 **`#66B87E`**（spec §0 第 19 條），`rarity.test.ts` 另釘這個值。
 
 - [ ] **Step 1**：`attacks instead of casting`、`items and ultimates still work`、`cure clears forget`、`Bobby's first aid still cures in its old order`、`a boss halves it`、`tp never below zero`、`only against the poisoned`、`moves buffs and leaves debuffs, auras and wards`、`an ailment without an icon shows its name`。
 - [ ] **Step 2–5**：e2e 必跑；commit：`feat(starlantern): forget, TP thieves, poison hunters and buff thieves`。
@@ -567,6 +568,7 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 - Modify：`data/enemies.roster.ts`（每一隻照 spec §5 的「特性」欄補上機制欄位與技能）、`engine/scaling.ts`（`DEEP_TRAITS`：`bat` 伏擊、`beetle` 守護、`golem` 蓄力「重踏」；只在 `encounterTable` 回傳新表時套用：`scaleEnemy` 收一個 `deep: boolean`，由呼叫端依 `isRosterTable(region, depth)` 傳）、`data/monsters.ts`。
 - Test：`data/monsters.test.ts`、`engine/scaling.test.ts`。
 
+- **B11 實作修正**（原計畫漏列）：§5 有幾條特性不是任何一個 M 代號能表達的，引擎要加小規則才做得到，所以本任務也改 `engine/types.ts`、`engine/battle.ts`、`engine/skills.ts`、`engine/foes.ts`、`engine/combatant.ts`、`data/text.zh-TW.ts`：`EnemySkill.every`、`needs`、`windupRounds`／`windupAllies`／`fragile`（音樂盒）、`EnemyDef.dodgeUp`（金箔拾憶鼠）、`onAllyFall`（騎士殘影）、`buff.stackTo`（白色寂靜）、`damage.hoardPct`（金庫之龍）、`restore.hpPct`（歸途之光，B10 先加）；`DEEP_TRAITS` 由 `meetEnemy` 依 `isRosterTable`（放在 `engine/scaling.ts`）傳 `deep`。祭典的燈籠、行列的影子、灰枯的孢子莢不新增敵人 id，分別用提燈幽影、走失的影子、孢子蛾。`every summon names a roster foe…` 也接受舊的一般怪（泥沼母體照 spec §5.4 召喚苔蘚史萊姆＝`slime`），只要求不是頭目、守關者或部件。測試另加在 `engine/foes.test.ts`、`engine/mechanics/foeWords.test.ts`。
 - [ ] **Step 1**：`every trait is implemented`（spec §5 每一列的機制代號 → 該定義有對應欄位或技能；表寫在測試裡）；`every summon names a roster foe that summons nothing deeper than one level`；`deep traits only on a roster table`（舊表與 nothing-live 下 `bat`、`beetle`、`golem` 逐欄相同）。
 - [ ] **Step 2–5**：commit：`feat(starlantern): every roster foe fights the way the roster says`。
 
@@ -585,6 +587,18 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
   - 金幣與素材賣價沒有等價檢查（招牌素材依帶定價，深層錢包會變厚；`economy.test.ts` 在 L 任務重跑，門檻不放寬）。
 - [ ] **Step 2**：`ROSTER_BANDS=1` 跑一次（定義都查得到，不需要上線）。紅的格子：只調新物種自己的數字（四輪為限），每一輪的表存 SDD `bands-22.md`。22j 在 L 任務才是必過（這裡記錄即可）。
 - [ ] **Step 3**：全套（不含選擇性帶）、tsc、閘門 identical（只調名冊數字不會動到舊表）。
+- **B12 判法（控制者 2026-10-26 裁定，B2 審查 2026-10-27 修正）**：參考組或舊表本身在那個深度達不到絕對門檻的格子（只看算出來的 `!inBand`，不再寫死第 4 層），改和舊值比（勝率 ≥ 舊值 − 0.10、hpLoss ≤ 舊值 + 0.08）；改判的格子在 22a、22c、22d、22h 逐一列名釘住；22c、22d 在表還是舊表時改判格只報告。22i 第 28 層以後的勝率留給 L（沒有調過的期望隊伍），+`ENHANCE_MAX` 兩回合照樣檢查。B2 確認審查（2026-10-27）：雙重詠唱的第二次施放從裡面也不復活人；被吞之前選好的復活在輪到她時改成普攻吞她的敵人、不付 TP；影之行列的加入與祭典的點燈都是每回合 0.5（技能機率，屬調整範圍）。B12 只調形狀、技能機率與威力、召喚次數；spec §5 定的機制參數是設計，只在 L 任務以記錄的裁定改（B2 審查第 2 條，已把 B12 改過的六個改回）。細節見 spec §0 第 19 條。
+- **留給 L 的第 22 項驗收（B2 審查修正後的數字，`ROSTER_BANDS=1` 全部上線量；L 任務上線前這些都要綠）**：
+  - 22a，參考在門檻內、照絕對門檻與 ±0.08 判（B2 審查第 1 條補上的十二格在前，括號是參考組的 hpLoss）：
+    - 第 4 層：凍結的參拜者 霜凍 hpLoss .000（蜥蜴 .105）、遺信紙蛾 .103（蝙蝠 .271）、熔爐犬 熾焰 .062（蜥蜴 .237）、沙海蠍 熾焰 .106（.237）、灰衣弔者 熾焰 .041（冰晶精靈 .130）、孢子蛾 腐毒 .150（蝙蝠 .271）、鏡中竊影 暗影 .084（蜥蜴 .216）、帷幕潛行者 暗影 .120（.216）、敲門的影子 暗影 .085（.216）、錫兵殘影 .313（石像 .419）、號令機 鋼鐵 .088（冰晶精靈 .103）、攻城蟹 鋼鐵 hpLoss .453、勝率 .92（上限 .45）；塵封木箱 .260（蜥蜴 .109，比參考重 .15）。
+    - 其他深度：霧雙子 10 .020（蝙蝠 .279）、映月鴉 10 .088（蜥蜴 .185）、古城衛像 16 .095、燭芯之影 25 .457（上限 .45）、無名的提燈人 25 比暮影法師輕 .138。
+  - 22b（頭目和同格燈喰之獸的勝率差 ≤ 0.10）：要塞巨像 鋼鐵 20 .500／.813；白色寂靜 冰凍 25 .750／.375；金庫之龍 暗影 25 .500／.250；灰枯 腐毒 25 0／.188；永凍之守 冰凍 20 1.000／.875；無面之主 暗影 20 .813／.938；蜃樓之城 熾焰 30、迷宮的裂口 冰凍 30、影之行列 暗影 30 各 0／.125。第 16 項：停擺的鐘心 45 兩人 .15 對全隊 0。
+  - 22f（歪隊 ≥ 燈喰之獸 − 0.10）：飽食之獸 25 無補師 .1／.3、無坦 .4／.6；古城執政像 20 無坦 .6／.9；蜃樓之城 15 無補師 .7、全物理 .8（燈喰 1.0）；影之行列 15 全物理 .6、無補師 .8（燈喰 1.0）；迷宮的裂口 15 全物理 .8；灰枯 10 全物理 .6（燈喰 1.0）。
+  - 22i：撞門的巨影 鋼鐵 8 .50（門檻 .6；13 層 .833 過）。第 28 層以後的六格（燈底之巢 28、53，不存在的月亮 33，鐘樓的守門人 38，倒下的機兵 43，鎮魂指揮者 48）先要有那個深度調過的期望隊伍；它們的 +`ENHANCE_MAX` 兩回合檢查已過（平均 6.5–16.7 回合）。
+  - 22g（只報告，提案 50–70%）：拾憶鼠第 4、9 層 100%，金箔拾憶鼠第 25、30 層 0%（機制數字照 spec，只能調形狀與機率）。
+  - 22j：寫好但沒跑（`BANDS=1`），L1 跑並必過。
+  - 全部上線的表（22c、22d 的 all live 報告列）：腐毒 25 .580、鋼鐵 25 .677、冰凍 25 .719；本道 20 層歪隊 .66–.81：地區或本帶上線時照 22c、22d 的判法必過。
+- **B12 實作紀錄**：四輪之後 22a、22b（冰凍、暗影、鋼鐵三組）、22c、22d、22f、22h、22i 仍有紅格，22g 只報告（拾憶鼠 100%、金箔拾憶鼠 0%，都在提案的 50–70% 之外）；分類與數字見 spec §0 第 19 條與 SDD `bands-22.md`。另：多部位頭目的部件改排在前面（`bossFor`，spec §0 第 19 條；**取代計畫裁定 11 的順序**，控制者 2026-10-26 核可：第一隻是普攻預設打到的那一隻，「先拆部件」就是這場的教學，模擬的玩家也照這個順序打），所以 `data/monsters.test.ts` 與 `engine/game.test.ts` 的 `bossFor` 期望值跟著改；22j 寫好了但本 PR 沒有跑（要整套噩夢與地獄的頭目格，留給 L1）。
 - [ ] **Step 4**：收尾 G，commit：`test(starlantern): band 22, the roster against the lantern-eater and its own kin`。
 
 **PR B2 收尾**：全新脈絡審查（重點：遺忘不影響既有異常順序；遲滯與吞入不失去回合；22 帶不 import 凍結檔）。
@@ -719,7 +733,7 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 
 **Files:** `public/assets/games/starlantern/{enemy,icon,gear,ui}/`、manifest、registry、`data/monsters.ts`（`ROSTER_ART`）、`render/artPaths.ts`（`AILMENT_ICON_IDS` 加 `forget`）、`render/artPaths.test.ts`（722 → 769，註解寫算式「722 + 18 敵人 + 18 圖示 + 5×2 專屬 + 1 遺忘」；若發布前總數不是 722，以實際值重算）。
 
-- [ ] **Step 1**：`publish --batch r1`（R0 已在 PR D 發布，裁定 26–27）；B2 合併後 `approve --batch forget --review <紀錄>`、`publish --batch forget`，同一個 commit 在 `AILMENT_ICON_IDS` 加 `forget`（裁定 27；B9 的 `AILMENT_FILL.forget` 是 `#8FD9B6`）。
+- [ ] **Step 1**：`publish --batch r1`（R0 已在 PR D 發布，裁定 26–27）；B2 合併後 `approve --batch forget --review <紀錄>`、`publish --batch forget`，同一個 commit 在 `AILMENT_ICON_IDS` 加 `forget`（裁定 27；B9 的 `AILMENT_FILL.forget` 是 `#66B87E`，不是圖的 `#8FD9B6`：發布前在審核頁把圖示放在 `#66B87E` 的字前面看一次，兩者讀起來是同一個遺忘；不改登錄表）。
 - [ ] **Step 2**：`rtk proxy python -m pytest art-factory/starlantern/tools -q`、vitest 全套（`published.test.ts`、`artPaths.test.ts`、`data/monsters.test.ts` 的 `every art id is published`、`gearArt.test.ts`）、tsc、閘門 identical（只有 `ROSTER_ART`，沒有上線）、e2e。
 - [ ] **Step 3**：收尾 G，commit：`feat(art): the first eighteen roster foes, their materials and uniques`。
 

@@ -57,7 +57,7 @@ export const enemyLevelAt = (depth: number): number =>
 /** The deep road's extra multiplier on an enemy's hp, atk and mag: 1 up to DEEP_ENEMIES.fromDepth, then 1 + DEEP_ENEMIES.power. */
 export const deepPower = (depth: number): number => (depth <= DEEP_ENEMIES.fromDepth ? 1 : 1 + DEEP_ENEMIES.power);
 
-function growth(def: EnemyDef, depth: number): Partial<Record<StatKey, number>> {
+export function growth(def: EnemyDef, depth: number): Partial<Record<StatKey, number>> {
   const home = homeLevel(def);
   const lv = Math.max(home, enemyLevelAt(depth));
   if (lv === home) return {};
@@ -168,6 +168,16 @@ function ridden(skill: EnemySkill, region: RegionId, tier: TierDef): EnemySkill 
 }
 
 /**
+ * Roster plan B11 (spec §5.8): the three old foes with no skill of their own, as a roster table meets them: the bat
+ * ambushes (M14), the beetle guards (M2), the golem winds up a stomp on a row (M1).
+ */
+export const DEEP_TRAITS: Record<string, (d: EnemyDef) => EnemyDef> = {
+  bat: (d) => ({ ...d, opener: 'ambush' }),
+  beetle: (d) => ({ ...d, skills: [...d.skills, { name: '甲殼守護', chance: 0.25, target: 'ally', effects: [{ kind: 'cover', turns: 2 }] }] }),
+  golem: (d) => ({ ...d, skills: [...d.skills, { name: '重踏', chance: 0.2, target: 'row', windup: '高舉雙臂', effects: [{ kind: 'damage', power: 130, element: 'phys', scale: 'atk', melee: true }] }] }),
+};
+
+/**
  * A monster as met at this depth, in this region, possibly as an elite, under a run condition (default: none).
  * It carries the secondaries of its depth and region (`sec`), and its stats pay for them last (stats.compensation).
  * With a difficulty `tier` (data/difficulty.ts; null for Normal, which takes none of this path): hp and atk/mag are
@@ -176,9 +186,13 @@ function ridden(skill: EnemySkill, region: RegionId, tier: TierDef): EnemySkill 
  * `max(chance, min(chanceCap, chance x chanceMul))` (difficulty plan ruling 3); exp and gold are rounded once (ruling 9).
  * With `affixes` (data/affixes.ts; Task 3): their HP (a boss's `bossHp`) and speed multipliers right after the tier's, and
  * their skills first, at their own chance (ruling 4); none, or an empty list, takes none of this path.
+ * With `deep` (roster plan B11: the fight's table is a roster table, data/monsters.ts isRosterTable), an old foe of
+ * DEEP_TRAITS takes its deep trait first.
  * Returns a new definition; `def` is untouched.
  */
-export function scaleEnemy(def: EnemyDef, depth: number, region: RegionDef, elite: boolean, condition: ConditionDef = CONDITIONS.plain, tier: TierDef | null = null, affixes?: readonly AffixId[]): EnemyDef {
+export function scaleEnemy(base: EnemyDef, depth: number, region: RegionDef, elite: boolean, condition: ConditionDef = CONDITIONS.plain, tier: TierDef | null = null, affixes?: readonly AffixId[], deep = false): EnemyDef {
+  // Roster plan B11 (spec §5.8): an old foe met from a roster table brings its deep trait; never otherwise.
+  const def = deep && DEEP_TRAITS[base.id] ? DEEP_TRAITS[base.id](base) : base;
   let stats = mul({ ...def.stats }, growth(def, depth));
   if (region.trait && TRAIT[region.trait]) stats = mul(stats, TRAIT[region.trait]!);
   if (elite) stats = mul(stats, ELITE);
@@ -209,9 +223,10 @@ export function scaleEnemy(def: EnemyDef, depth: number, region: RegionDef, elit
     name: `${elite && def.rank !== 'warden' ? '★' : ''}${name}`,
     stats,
     sec,
-    // A named story foe keeps its own elements: the region's belong to its monsters.
-    weak: regional && !def.story ? [...region.weak] : [...def.weak],
-    resist: regional && !early && !def.story ? [...region.resist] : [...def.resist],
+    // A named story foe keeps its own elements: the region's belong to its monsters. So does a foe whose weakness turns
+    // (roster plan B7, M5).
+    weak: regional && !def.story && !def.prism ? [...region.weak] : [...def.weak],
+    resist: regional && !early && !def.story && !def.prism ? [...region.resist] : [...def.resist],
     skills: lead ? [...lead, ...own] : own,
     // With a tier, one rounding (ruling 9); without, the line as it was.
     exp: tier ? Math.round(def.exp * reward * condition.expMul * tier.reward) : Math.round(def.exp * reward * condition.expMul),
@@ -295,6 +310,12 @@ export function encounterTable(region: RegionId, depth: number): string[][] {
 export function legacyEncounterTable(region: RegionId, depth: number): string[][] {
   if (region === 'mainline') return FLOORS[terrainOf(region, depth) - 1].encounters;
   return FLOORS.filter((f) => f.id <= depth).flatMap((f) => f.encounters);
+}
+
+/** Roster plan B11: whether `encounterTable` gives a roster table here (never while nothing is live): the old foes' deep traits come with it. */
+export function isRosterTable(region: RegionId, depth: number): boolean {
+  const legacy = legacyEncounterTable(region, depth);
+  return rosterTable(region, depth, legacy) !== legacy;
 }
 
 export function encounterGroup(region: RegionId, depth: number, rng: Rng): string[] {

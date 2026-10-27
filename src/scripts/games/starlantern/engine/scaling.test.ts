@@ -13,7 +13,7 @@ import { DEEP_ENEMIES, deepPower, enemyLevelAt, homeLevel, BOSS_PARTY_SCALE, DEP
 import { constRng, fullParty, withRosterLive } from './testing';
 import { TIERS, type DepthFactors, type TierDef } from '../data/difficulty';
 import { AFFIXES } from '../data/affixes';
-import { encounterTable, legacyEncounterTable, rewardGrowth } from './scaling';
+import { encounterTable, isRosterTable, legacyEncounterTable, rewardGrowth } from './scaling';
 
 const MAIN = REGIONS.mainline;
 const wolf = ENEMIES.wolf;
@@ -656,5 +656,39 @@ describe('a boss part grows from the boss home (roster plan B5)', () => {
     }
     // An ordinary foe and a warden keep the third floor's home.
     expect(homeLevel(ENEMIES['false-moon'])).toBe(homeLevel(ENEMIES.golem));
+  });
+});
+
+describe('deep traits of the old foes (roster plan B11, spec §5.8)', () => {
+  const OLD = ['bat', 'beetle', 'golem'];
+
+  it('deep traits only on a roster table', () => {
+    // Nothing live: no table is a roster table, and the three meet as they always have.
+    for (const region of Object.keys(REGIONS) as (keyof typeof REGIONS)[]) for (let depth = 1; depth <= 50; depth++) expect(isRosterTable(region, depth), `${region} ${depth}`).toBe(false);
+    for (const id of OLD) {
+      expect(scaleEnemy(ENEMIES[id], 12, REGIONS.mainline, false, CONDITIONS.plain, null, undefined, false)).toEqual(scaleEnemy(ENEMIES[id], 12, REGIONS.mainline, false));
+    }
+    const plain = createBattle({ party: fullParty(LEGACY_LINEUP), enemyIds: OLD, inventory: {}, revealed: {}, scale: { depth: 12, region: 'mainline' } });
+    expect(plain.enemies.some((c) => c.ambush)).toBe(false);
+    expect(plain.enemyDefs!.e2.skills).toEqual(scaleEnemy(ENEMIES.golem, 12, REGIONS.mainline, false).skills);
+    // The traits themselves.
+    expect(scaleEnemy(ENEMIES.bat, 12, REGIONS.mainline, false, CONDITIONS.plain, null, undefined, true).opener).toBe('ambush');
+    expect(scaleEnemy(ENEMIES.beetle, 12, REGIONS.mainline, false, CONDITIONS.plain, null, undefined, true).skills.some((k) => k.target === 'ally' && k.effects.some((e) => e.kind === 'cover'))).toBe(true);
+    expect(scaleEnemy(ENEMIES.golem, 12, REGIONS.mainline, false, CONDITIONS.plain, null, undefined, true).skills.find((k) => k.name === '重踏')).toMatchObject({ target: 'row', windup: '高舉雙臂' });
+    // A foe without one is the same either way.
+    expect(scaleEnemy(ENEMIES.slime, 12, REGIONS.mainline, false, CONDITIONS.plain, null, undefined, true)).toEqual(scaleEnemy(ENEMIES.slime, 12, REGIONS.mainline, false));
+  });
+
+  it('once the band is live, the old foes met there bring them', () => {
+    withRosterLive(Object.keys(ENEMIES).filter((id) => !LEGACY_ENEMY_IDS.includes(id)), () => {
+      expect(isRosterTable('mainline', 12)).toBe(true);
+      expect(isRosterTable('mainline', 3)).toBe(false);   // the first three depths never change
+      const deep = createBattle({ party: fullParty(LEGACY_LINEUP), enemyIds: OLD, inventory: {}, revealed: {}, scale: { depth: 12, region: 'mainline' } });
+      expect(deep.enemies[0].ambush).toBe(true);
+      expect(deep.enemyDefs!.e1.skills.some((k) => k.effects.some((e) => e.kind === 'cover'))).toBe(true);
+      expect(deep.enemyDefs!.e2.skills.some((k) => k.name === '重踏')).toBe(true);
+      const shallow = createBattle({ party: fullParty(LEGACY_LINEUP), enemyIds: OLD, inventory: {}, revealed: {}, scale: { depth: 3, region: 'mainline' } });
+      expect(shallow.enemies[0].ambush).toBeUndefined();
+    });
   });
 });
