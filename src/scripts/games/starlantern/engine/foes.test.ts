@@ -1423,6 +1423,29 @@ describe('roster plan B2 review', () => {
     expect(resolveRound(out, { selene: { kind: 'skill', skill: 'rebirth', target: 'noel' }, scarlet: { kind: 'defend' } }, constRng(0.5)).party[1].alive).toBe(true);
   });
 
+  it('4b. nor does a twin-cast second cast; a raise chosen before she is swallowed is a plain blow on the engulfer, its TP kept', () => {
+    const twin = { rebirth: [{ id: 'twin-cast' as const, tier: 'legendary' as const }] };
+    const gulp: EnemySkill = { name: '吞入', chance: 1, target: 'enemy', effects: [hit(10), { kind: 'engulf' }] };
+    // Inside, with 雙重詠唱 on the raise (B2 confirmation review item 1).
+    const inside = makeBattle([P('selene', { tp: 50, max: { hp: 1000, tp: 50, mag: 50 } as never, engulfed: 'e0', runes: twin }), P('noel', { alive: false, hp: 0 }), P('scarlet', { max: { hp: 1000 } as never })],
+      [E('e0', { max: { hp: 100000 } as never, gulp: { key: 'selene', until: 9, taken: 0 } })]);
+    inside.intents = { e0: { kind: 'attack', target: 'scarlet' } };
+    const r = resolveRound(inside, { selene: { kind: 'skill', skill: 'rebirth', target: 'noel' }, scarlet: { kind: 'defend' } }, constRng(0.5));
+    expect(r.party[1].alive).toBe(false);
+    // Chosen outside, swallowed before her turn, with and without the rune (item 2): no TP spent, a plain blow on the maw.
+    for (const runes of [undefined, twin]) {
+      const s = makeBattle([P('selene', { tp: 50, max: { hp: 1000, tp: 50, mag: 50, spd: 1 } as never, ...(runes ? { runes } : {}) }), P('noel', { alive: false, hp: 0 }), P('scarlet', { max: { hp: 1000, spd: 1 } as never })],
+        [E('e0', { max: { hp: 100000, spd: 999 } as never })], { enemyDefs: { e0: def([gulp]) } });
+      s.intents = { e0: { kind: 'enemy-skill', index: 0, target: 'selene' } };
+      const m = resolveRound(s, { selene: { kind: 'skill', skill: 'rebirth', target: 'noel' }, scarlet: { kind: 'defend' } }, constRng(0.5));
+      expect(m.party[0].engulfed).toBe('e0');
+      expect(m.party[1].alive).toBe(false);
+      expect(m.party[0].tp).toBe(50);
+      expect(acted(m, 'selene')).toEqual(['攻擊']);
+      expect(m.log.some((e) => e.type === 'damage' && e.target === 'e0')).toBe(true);
+    }
+  });
+
   it('5. a borrowed blow never names, nor goes back at, a lender inside a foe or veiled', () => {
     const mirror: EnemySkill = { name: '鏡擊', chance: 1, target: 'enemy', effects: [{ kind: 'mirror', cap: 150 }] };
     for (const hidden of [{ engulfed: 'e1' }, { veil: 2 }] as Partial<Combatant>[]) {

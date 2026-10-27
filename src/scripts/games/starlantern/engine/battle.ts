@@ -662,6 +662,9 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
       if (actor.ranks && skillRank(actor.ranks, act.skill) === 0 && !isInnate(actor.defId, act.skill)) { s.log.push({ type: 'no-skill', actor: actor.key }); return null; }
       let def = skillFor(actor, act.skill);
       if (!def || def.passive) return null;
+      // A raise chosen before she was swallowed has no one to reach from inside: no TP spent, a plain blow on the foe that
+      // holds her, as a forgotten skill is (B2 confirmation review item 2).
+      if (def.target === 'deadAlly' && insideBlow(s, actor, physical)) return null;
       // The abyss capstones grow with the fight's depth, after the tree and the worn powers have had their say.
       def = abyssDef(s, def);
       // Then the caster's mechanic (Noel's heat): the skill as she casts it now, at the TP she pays now.
@@ -707,6 +710,7 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
       // The hero only: a companion's last plain skill, this round's or the last's, at 70% for the TP she paid.
       const rec = actor.defId === 'hero' ? (act.rec ?? echoOf(s)) : null;
       if (!rec) return null;
+      if (rec.def.target === 'deadAlly' && insideBlow(s, actor, physical)) return null;   // as a raise from inside, above
       if (actor.tp < rec.cost) { s.log.push({ type: 'no-tp', actor: actor.key }); return null; }
       actor.tp -= rec.cost;
       ctx.paid = rec.cost;   // what 回氣 may give back (plan 8h ruling 11c)
@@ -815,7 +819,7 @@ function twinCast(s: BattleState, actor: Combatant, cast: SkillDef, raw: SkillDe
   const one = (t: Combatant | undefined): Combatant[] => (t ? [t] : []);
   const targets = def.target === 'enemy' ? one(first[0]?.alive ? first[0] : choosable(s, actor, 'foe')[0])
     : def.target === 'ally' ? one(first[0]?.alive ? first[0] : choosable(s, actor, 'ally').sort((a, b) => a.hp / a.max.hp - b.hp / b.max.hp)[0])
-      : def.target === 'deadAlly' ? one(allies.find((c) => !c.alive))
+      : def.target === 'deadAlly' ? one(choosable(s, actor, 'fallen')[0])   // none from inside a foe (B2 confirmation review item 1)
         : resolveTargets(s, actor, def.target, undefined, rng);
   if (!targets.length) return;
   s.log.push(again);
@@ -905,6 +909,15 @@ function forgotten(actor: Combatant, act: Action | EnemyAction): Action | EnemyA
   if (act.kind === 'skill' || act.kind === 'echo') return { kind: 'attack', target: act.target ?? '' };
   if (act.kind === 'enemy-skill') { breakCharge(actor); return { kind: 'attack', target: act.target }; }
   return act;
+}
+
+/** B2 confirmation review item 2: a member inside a foe strikes it plainly instead of a skill that cannot reach anyone; false otherwise. */
+function insideBlow(s: BattleState, actor: Combatant, physical: (t: Combatant) => void): boolean {
+  const holder = actor.engulfed ? s.enemies.find((e) => e.key === actor.engulfed && e.alive) : undefined;
+  if (!holder) return false;
+  s.log.push({ type: 'act', actor: actor.key, label: '攻擊' });
+  physical(holder);
+  return true;
 }
 
 /** Roster plan B11: a hit that grows with what its foe holds stolen, +1% a gold up to `hoardPct`; any other effect as it is. */
