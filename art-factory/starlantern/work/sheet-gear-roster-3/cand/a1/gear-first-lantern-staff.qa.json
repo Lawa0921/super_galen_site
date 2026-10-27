@@ -1,0 +1,34 @@
+{
+  "pass": false,
+  "reasons": [
+    "subject too light"
+  ],
+  "warnings": [],
+  "residue": 0,
+  "semi": 0,
+  "edge": 0,
+  "holes": 0,
+  "magenta_spill": 0,
+  "key_tint_inside": 0,
+  "subject": {
+    "long": 22,
+    "short": 21,
+    "mass": 0.244,
+    "box": [
+      2,
+      2,
+      23,
+      24
+    ],
+    "centre_off": 0.5
+  },
+  "block": 20.091,
+  "scale": 20.091,
+  "size": [
+    26,
+    26
+  ],
+  "spec": "roster-gear:909b3e0e50cc",
+  "bright_key": 0,
+  "erased": 0
+}

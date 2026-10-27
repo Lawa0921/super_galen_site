@@ -1,0 +1,42 @@
+{
+  "assets": {
+    "enemy-forgotten-festival": {
+      "final": "art-factory/starlantern/work/enemy-forgotten-festival/cand/a1/enemy-forgotten-festival.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-forgotten-festival\\enemy-forgotten-festival-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 9,
+        "magenta_spill": 0,
+        "key_tint_inside": 2,
+        "block": 7,
+        "size": [
+          162,
+          154
+        ],
+        "bright_key": 0,
+        "height": 152,
+        "width": 160,
+        "colours": 15706,
+        "lum": [
+          0.027,
+          0.922,
+          0.509
+        ],
+        "erased": 6,
+        "palette_over": true,
+        "spec": "roster-sprite:2e0d0bc9e5f1"
+      },
+      "status": "qa_passed",
+      "kind": "roster-sprite",
+      "roster_class": "boss",
+      "mainline": true
+    }
+  }
+}
