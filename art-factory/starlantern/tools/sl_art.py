@@ -420,10 +420,33 @@ def roster_key_tint_count(img, band=SPILL_BAND):
     return int((inside & (_dark_magenta(rgb) | _magenta_tint(rgb) | _deep_key(rgb))).sum())
 
 
+BRIGHT_KEY_G_MAX = 20        # roster bright key (R1 review round 2, controller 2026-10-27): almost no green ...
+BRIGHT_KEY_SAT_MIN = 0.8     # ... saturated ...
+BRIGHT_KEY_RB_MIN = 120      # ... the brighter of red and blue at least this (visible pink at the game's 3x) ...
+BRIGHT_KEY_HUE = (295, 315)  # ... and a hue on the key's own 300 (silent-bell a5: 301, 307; tin-soldier's violet 289 is art)
+BRIGHT_KEY_MAX = 0           # ... none anywhere on the sprite, outline band included
+
+
+def _bright_key(rgb):
+    c = rgb.astype(np.float32); r, g, b = c[..., 0], c[..., 1], c[..., 2]
+    mx = np.maximum(np.maximum(r, b), g); mn = np.minimum(np.minimum(r, b), g); sat = (mx - mn) / np.maximum(mx, 1)
+    d = np.maximum(np.maximum(r, b) - g, 1e-6); hue = np.where(r >= b, (60 * (g - b) / d) % 360, 240 + 60 * (r - g) / d)
+    return ((g <= BRIGHT_KEY_G_MAX) & (sat >= BRIGHT_KEY_SAT_MIN) & (np.maximum(r, b) >= BRIGHT_KEY_RB_MIN)
+            & (hue >= BRIGHT_KEY_HUE[0]) & (hue <= BRIGHT_KEY_HUE[1]))
+
+
+def bright_key_count(img):
+    """Opaque pixels anywhere on the sprite that are the key itself, barely darkened (_bright_key)."""
+    arr = np.asarray(img.convert('RGBA'))
+    return int(((arr[..., 3] == 255) & _bright_key(arr[..., :3])).sum())
+
+
 def roster_key_tint_gate(qa, final):
-    """The roster's key tint gate: key_tint_inside counted with _deep_key, over KEY_TINT_INSIDE_MAX is magenta residue."""
+    """The roster's key tint gate: key_tint_inside counted with _deep_key (over KEY_TINT_INSIDE_MAX), and bright key
+    anywhere (over BRIGHT_KEY_MAX): either is magenta residue."""
     qa['key_tint_inside'] = roster_key_tint_count(final)
-    if qa['key_tint_inside'] > KEY_TINT_INSIDE_MAX:
+    qa['bright_key'] = bright_key_count(final)
+    if qa['key_tint_inside'] > KEY_TINT_INSIDE_MAX or qa['bright_key'] > BRIGHT_KEY_MAX:
         if 'magenta residue' not in qa['reasons']: qa['reasons'].append('magenta residue')
         qa['pass'] = False
 
@@ -1307,22 +1330,24 @@ CUTOUT_MARGIN, CUTOUT_FRINGE = 70, 90   # cutout()'s reach, mirrored so the rost
 ICON_HEIGHT = 32         # roster ruling 23: the material icons follow 5d's actual output (icon-blaze-core 33 x 35) ...
 ICON_BOX = 36            # ... so the final canvas fits a 36 x 36 box
 ROSTER_SPRITE_RULES = ('block downscale to the class height; alpha QA (residue, semi alpha, raw-canvas cut, spill, key tint '
-                       'with the key darkened in a crack, _deep_key); '
+                       'with the key darkened in a crack, _deep_key; bright key anywhere, _bright_key); '
                        'speckless subject height inside the class band, swarm width cap; opaque colours over PALETTE_MAX recorded, never failed; '
                        'luminance p5-p95 spread >= LUM_RANGE_MIN, main-road mean >= LUM_MEAN_MIN; enclosed pockets of any size '
                        'whose sampled raw is not the key count as erased, a dark key blend exempt only within KEY_BLEND_REACH 4-connected '
                        'sampled px of pure key in the same pocket')
 ROSTER_ICON_RULES = ('block downscale to ICON_HEIGHT, or to fit a wide subject inside ICON_BOX with its pad; alpha QA with spill '
-                     'and key tint (with _deep_key); final canvas inside ICON_BOX; erased interior as the roster sprites')
+                     'and key tint (with _deep_key and _bright_key); final canvas inside ICON_BOX; erased interior as the roster sprites')
 SPEC_INPUTS['roster-sprite'] = ('ROSTER_HEIGHT', 'ROSTER_HEIGHT_BAND', 'ROSTER_SWARM_MAX_W', 'PALETTE_MAX', 'LUM_RANGE_MIN',
                                 'LUM_MEAN_MIN', 'LUM_PCT', 'ROSTER_ERASED_MAX', 'KEY_BLEND_G_MAX', 'KEY_BLEND_STEP', 'KEY_NEAR', 'KEY_BLEND_REACH',
                                 'CUTOUT_MARGIN', 'CUTOUT_FRINGE', 'SPECK_MAX', 'MAGENTA', 'MAGENTA_SPILL_MAX',
                                 'KEY_TINT_INSIDE_MAX', 'SPILL_HUE', 'SPILL_STEP', 'SPILL_BAND', 'STRONG_DEFRINGE', '_SHIFTS',
                                 'DEEP_KEY_G_MAX', 'DEEP_KEY_RB_MIN', 'DEEP_KEY_SAT_MIN', 'DEEP_KEY_HUE',
+                                'BRIGHT_KEY_G_MAX', 'BRIGHT_KEY_SAT_MIN', 'BRIGHT_KEY_RB_MIN', 'BRIGHT_KEY_HUE', 'BRIGHT_KEY_MAX',
                                 'ROSTER_SPRITE_RULES')
 SPEC_INPUTS['roster-icon'] = ('ICON_HEIGHT', 'ICON_BOX', 'ROSTER_ERASED_MAX', 'KEY_BLEND_G_MAX', 'KEY_BLEND_STEP', 'KEY_NEAR', 'KEY_BLEND_REACH',
                               'CUTOUT_MARGIN', 'CUTOUT_FRINGE', 'SPECK_MAX', 'MAGENTA', 'MAGENTA_SPILL_MAX', 'KEY_TINT_INSIDE_MAX', 'SPILL_HUE',
-                              'SPILL_STEP', 'SPILL_BAND', 'STRONG_DEFRINGE', '_SHIFTS', 'DEEP_KEY_G_MAX', 'DEEP_KEY_RB_MIN', 'DEEP_KEY_SAT_MIN', 'DEEP_KEY_HUE', 'ROSTER_ICON_RULES')
+                              'SPILL_STEP', 'SPILL_BAND', 'STRONG_DEFRINGE', '_SHIFTS', 'DEEP_KEY_G_MAX', 'DEEP_KEY_RB_MIN', 'DEEP_KEY_SAT_MIN', 'DEEP_KEY_HUE',
+                                'BRIGHT_KEY_G_MAX', 'BRIGHT_KEY_SAT_MIN', 'BRIGHT_KEY_RB_MIN', 'BRIGHT_KEY_HUE', 'BRIGHT_KEY_MAX', 'ROSTER_ICON_RULES')
 
 
 def _opaque(final):
@@ -1455,9 +1480,10 @@ def process_roster_icon(reg, aid, cell, workdir, raw):
 
 
 ROSTER_GEAR_RULES = ('gear-cell (5d sizes, mass and spill) plus the erased interior of the roster sprites and the key tint '
-                     'with _deep_key, on each final')
+                     'with _deep_key and _bright_key, on each final')
 SPEC_INPUTS['roster-gear'] = SPEC_INPUTS['gear-cell'] + ('ROSTER_ERASED_MAX', 'KEY_BLEND_G_MAX', 'KEY_BLEND_STEP', 'KEY_NEAR', 'KEY_BLEND_REACH',
-                                                       'CUTOUT_MARGIN', 'CUTOUT_FRINGE', 'DEEP_KEY_G_MAX', 'DEEP_KEY_RB_MIN', 'DEEP_KEY_SAT_MIN', 'DEEP_KEY_HUE', 'ROSTER_GEAR_RULES')
+                                                       'CUTOUT_MARGIN', 'CUTOUT_FRINGE', 'DEEP_KEY_G_MAX', 'DEEP_KEY_RB_MIN', 'DEEP_KEY_SAT_MIN', 'DEEP_KEY_HUE',
+                                'BRIGHT_KEY_G_MAX', 'BRIGHT_KEY_SAT_MIN', 'BRIGHT_KEY_RB_MIN', 'BRIGHT_KEY_HUE', 'BRIGHT_KEY_MAX', 'ROSTER_GEAR_RULES')
 
 
 def process_roster_gear_cell(reg, gid, cell, workdir, raw, slot=None, kind=None, large=GEAR_LARGE, icon=GEAR_ICON):

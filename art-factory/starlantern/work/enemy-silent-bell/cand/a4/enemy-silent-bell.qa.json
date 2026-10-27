@@ -1,6 +1,8 @@
 {
-  "pass": true,
-  "reasons": [],
+  "pass": false,
+  "reasons": [
+    "magenta residue"
+  ],
   "warnings": [
     "enclosed holes"
   ],
@@ -15,6 +17,7 @@
     136,
     154
   ],
+  "bright_key": 1,
   "height": 152,
   "width": 134,
   "colours": 9758,
@@ -25,5 +28,5 @@
   ],
   "erased": 2,
   "palette_over": true,
-  "spec": "roster-sprite:439d4a4b14f9"
+  "spec": "roster-sprite:2e0d0bc9e5f1"
 }

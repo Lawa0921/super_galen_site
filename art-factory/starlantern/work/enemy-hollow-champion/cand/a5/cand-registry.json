@@ -22,6 +22,7 @@
           116,
           156
         ],
+        "bright_key": 0,
         "height": 154,
         "width": 113,
         "colours": 9129,
@@ -32,7 +33,7 @@
         ],
         "erased": 12,
         "palette_over": true,
-        "spec": "roster-sprite:439d4a4b14f9"
+        "spec": "roster-sprite:2e0d0bc9e5f1"
       },
       "status": "qa_failed",
       "kind": "roster-sprite",

@@ -1821,3 +1821,39 @@ def test_the_deep_key_thresholds_are_in_the_roster_stamps_only():
         for name in ('DEEP_KEY_G_MAX', 'DEEP_KEY_RB_MIN', 'DEEP_KEY_SAT_MIN'): assert name in A.SPEC_INPUTS[kind], (kind, name)
     for kind in ('gear-cell', 'nine-slice', 'skill-cell'): assert 'DEEP_KEY_G_MAX' not in A.SPEC_INPUTS[kind], kind
     assert A.qa_spec('roster-sprite') != 'roster-sprite:eb659ec2b82c'
+
+
+# --- controller ruling 2026-10-27 (R1 review round 2): bright key anywhere on a roster sprite, limit 0 ------------------------
+SILENT_BELL_A5 = Path(__file__).resolve().parents[1] / 'work/enemy-silent-bell/cand/a5/enemy-silent-bell.png'
+TIN_SOLDIER = Path(__file__).resolve().parents[1] / 'work/enemy-tin-soldier/enemy-tin-soldier.png'
+
+
+def test_bright_key_fails_silent_bell_a5_and_passes_tin_soldier():
+    """Round 2: silent-bell a5 kept two near-key pixels in its top chain, (143,1,141) at (53,20) and (141,3,124) at (54,20),
+    3 px deep, a pink line at the game's 3x. tin-soldier's (126,1,153) at (42,56) is just as deep but violet shading (hue
+    289). Bright key: G <= BRIGHT_KEY_G_MAX, saturation >= BRIGHT_KEY_SAT_MIN, max(R, B) >= BRIGHT_KEY_RB_MIN, hue in
+    BRIGHT_KEY_HUE, anywhere on the sprite; more than BRIGHT_KEY_MAX (0) is magenta residue."""
+    a5 = Image.open(SILENT_BELL_A5).convert('RGBA'); px = a5.load()
+    assert px[53, 20][:3] == (143, 1, 141) and px[54, 20][:3] == (141, 3, 124)
+    assert A.bright_key_count(a5) == 2
+    q = {'reasons': [], 'pass': True}; A.roster_key_tint_gate(q, a5)
+    assert q['bright_key'] == 2 and 'magenta residue' in q['reasons'] and not q['pass'], q
+    tin = Image.open(TIN_SOLDIER).convert('RGBA')
+    assert tin.load()[42, 56][:3] == (126, 1, 153) and A.bright_key_count(tin) == 0
+    q = {'reasons': [], 'pass': True}; A.roster_key_tint_gate(q, tin)
+    assert q['bright_key'] == 0 and q['pass'], q
+    assert (A.BRIGHT_KEY_G_MAX, A.BRIGHT_KEY_SAT_MIN, A.BRIGHT_KEY_RB_MIN, A.BRIGHT_KEY_HUE, A.BRIGHT_KEY_MAX) == (20, 0.8, 120, (295, 315), 0)
+
+
+def test_bright_key_counts_the_outline_band_too_and_keeps_dark_and_off_hue_pixels():
+    on_edge = _subject([(2, 8)], (143, 1, 141))                           # touching transparency
+    assert A.bright_key_count(on_edge) == 1
+    for c in ((99, 3, 89), (126, 1, 153), (157, 14, 96), (68, 8, 77), (143, 30, 141)):   # dark, violet, red, outline, green
+        assert A.bright_key_count(_subject([(10, 10)], c)) == 0, c
+
+
+def test_the_bright_key_thresholds_are_in_the_roster_stamps():
+    for kind in ('roster-sprite', 'roster-icon', 'roster-gear'):
+        for name in ('BRIGHT_KEY_G_MAX', 'BRIGHT_KEY_SAT_MIN', 'BRIGHT_KEY_RB_MIN', 'BRIGHT_KEY_HUE', 'BRIGHT_KEY_MAX'):
+            assert name in A.SPEC_INPUTS[kind], (kind, name)
+    assert A.qa_spec('roster-sprite') != 'roster-sprite:439d4a4b14f9'

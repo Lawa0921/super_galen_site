@@ -36212,6 +36212,7 @@
           76,
           65
         ],
+        "bright_key": 0,
         "height": 63,
         "width": 74,
         "colours": 2187,
@@ -36222,7 +36223,7 @@
         ],
         "erased": 0,
         "palette_over": true,
-        "spec": "roster-sprite:439d4a4b14f9"
+        "spec": "roster-sprite:2e0d0bc9e5f1"
       },
       "status": "published",
       "kind": "roster-sprite",
@@ -36260,6 +36261,7 @@
           53,
           68
         ],
+        "bright_key": 0,
         "height": 66,
         "width": 51,
         "colours": 1837,
@@ -36270,7 +36272,7 @@
         ],
         "erased": 0,
         "palette_over": true,
-        "spec": "roster-sprite:439d4a4b14f9"
+        "spec": "roster-sprite:2e0d0bc9e5f1"
       },
       "status": "published",
       "kind": "roster-sprite",
@@ -36306,6 +36308,7 @@
           81,
           97
         ],
+        "bright_key": 0,
         "height": 95,
         "width": 79,
         "colours": 3319,
@@ -36316,7 +36319,7 @@
         ],
         "erased": 0,
         "palette_over": true,
-        "spec": "roster-sprite:439d4a4b14f9"
+        "spec": "roster-sprite:2e0d0bc9e5f1"
       },
       "status": "published",
       "kind": "roster-sprite",
@@ -36354,6 +36357,7 @@
           152,
           154
         ],
+        "bright_key": 0,
         "height": 151,
         "width": 150,
         "colours": 13334,
@@ -36364,7 +36368,7 @@
         ],
         "erased": 8,
         "palette_over": true,
-        "spec": "roster-sprite:439d4a4b14f9"
+        "spec": "roster-sprite:2e0d0bc9e5f1"
       },
       "status": "published",
       "kind": "roster-sprite",
@@ -36400,8 +36404,9 @@
           34,
           33
         ],
+        "bright_key": 0,
         "erased": 0,
-        "spec": "roster-icon:cca9a3960b22"
+        "spec": "roster-icon:ed1986056114"
       },
       "status": "published",
       "kind": "roster-icon",
@@ -36431,8 +36436,9 @@
           29,
           33
         ],
+        "bright_key": 0,
         "erased": 1,
-        "spec": "roster-icon:cca9a3960b22"
+        "spec": "roster-icon:ed1986056114"
       },
       "status": "published",
       "kind": "roster-icon",
@@ -36460,8 +36466,9 @@
           31,
           32
         ],
+        "bright_key": 0,
         "erased": 0,
-        "spec": "roster-icon:cca9a3960b22"
+        "spec": "roster-icon:ed1986056114"
       },
       "status": "published",
       "kind": "roster-icon",
@@ -36489,8 +36496,9 @@
           33,
           36
         ],
+        "bright_key": 0,
         "erased": 0,
-        "spec": "roster-icon:cca9a3960b22"
+        "spec": "roster-icon:ed1986056114"
       },
       "status": "published",
       "kind": "roster-icon",
@@ -36520,8 +36528,9 @@
           33,
           36
         ],
+        "bright_key": 0,
         "erased": 3,
-        "spec": "roster-icon:cca9a3960b22"
+        "spec": "roster-icon:ed1986056114"
       },
       "status": "published",
       "kind": "roster-icon",
@@ -36549,8 +36558,9 @@
           24,
           34
         ],
+        "bright_key": 0,
         "erased": 0,
-        "spec": "roster-icon:cca9a3960b22"
+        "spec": "roster-icon:ed1986056114"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -36578,8 +36588,9 @@
           33,
           31
         ],
+        "bright_key": 0,
         "erased": 0,
-        "spec": "roster-icon:cca9a3960b22"
+        "spec": "roster-icon:ed1986056114"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -36605,8 +36616,9 @@
           30,
           36
         ],
+        "bright_key": 0,
         "erased": 0,
-        "spec": "roster-icon:cca9a3960b22"
+        "spec": "roster-icon:ed1986056114"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -36634,8 +36646,9 @@
           32,
           33
         ],
+        "bright_key": 0,
         "erased": 0,
-        "spec": "roster-icon:cca9a3960b22"
+        "spec": "roster-icon:ed1986056114"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -36661,8 +36674,9 @@
           30,
           33
         ],
+        "bright_key": 0,
         "erased": 0,
-        "spec": "roster-icon:cca9a3960b22"
+        "spec": "roster-icon:ed1986056114"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -36688,8 +36702,9 @@
           33,
           27
         ],
+        "bright_key": 0,
         "erased": 0,
-        "spec": "roster-icon:cca9a3960b22"
+        "spec": "roster-icon:ed1986056114"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -36715,8 +36730,9 @@
           35,
           32
         ],
+        "bright_key": 0,
         "erased": 0,
-        "spec": "roster-icon:cca9a3960b22"
+        "spec": "roster-icon:ed1986056114"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -36742,8 +36758,9 @@
           32,
           36
         ],
+        "bright_key": 0,
         "erased": 0,
-        "spec": "roster-icon:cca9a3960b22"
+        "spec": "roster-icon:ed1986056114"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -36771,8 +36788,9 @@
           34,
           28
         ],
+        "bright_key": 0,
         "erased": 4,
-        "spec": "roster-icon:cca9a3960b22"
+        "spec": "roster-icon:ed1986056114"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -36798,8 +36816,9 @@
           33,
           29
         ],
+        "bright_key": 0,
         "erased": 0,
-        "spec": "roster-icon:cca9a3960b22"
+        "spec": "roster-icon:ed1986056114"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -36825,8 +36844,9 @@
           31,
           36
         ],
+        "bright_key": 0,
         "erased": 0,
-        "spec": "roster-icon:cca9a3960b22"
+        "spec": "roster-icon:ed1986056114"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -36852,8 +36872,9 @@
           30,
           34
         ],
+        "bright_key": 0,
         "erased": 0,
-        "spec": "roster-icon:cca9a3960b22"
+        "spec": "roster-icon:ed1986056114"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -36879,8 +36900,9 @@
           21,
           33
         ],
+        "bright_key": 0,
         "erased": 0,
-        "spec": "roster-icon:cca9a3960b22"
+        "spec": "roster-icon:ed1986056114"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -36963,7 +36985,8 @@
           64,
           64
         ],
-        "spec": "roster-gear:fc11a58a21f2",
+        "spec": "roster-gear:909b3e0e50cc",
+        "bright_key": 0,
         "erased": 0
       },
       "status": "published",
@@ -37010,7 +37033,8 @@
           26,
           26
         ],
-        "spec": "roster-gear:fc11a58a21f2",
+        "spec": "roster-gear:909b3e0e50cc",
+        "bright_key": 0,
         "erased": 0
       },
       "status": "published",
@@ -37059,7 +37083,8 @@
           64,
           64
         ],
-        "spec": "roster-gear:fc11a58a21f2",
+        "spec": "roster-gear:909b3e0e50cc",
+        "bright_key": 0,
         "erased": 2
       },
       "status": "published",
@@ -37109,7 +37134,8 @@
           26,
           26
         ],
-        "spec": "roster-gear:fc11a58a21f2",
+        "spec": "roster-gear:909b3e0e50cc",
+        "bright_key": 0,
         "erased": 0
       },
       "status": "published",
@@ -37159,7 +37185,8 @@
           64,
           64
         ],
-        "spec": "roster-gear:fc11a58a21f2",
+        "spec": "roster-gear:909b3e0e50cc",
+        "bright_key": 0,
         "erased": 1
       },
       "status": "qa_passed",
@@ -37204,7 +37231,8 @@
           26,
           26
         ],
-        "spec": "roster-gear:fc11a58a21f2",
+        "spec": "roster-gear:909b3e0e50cc",
+        "bright_key": 0,
         "erased": 0
       },
       "status": "qa_passed",
@@ -37249,7 +37277,8 @@
           64,
           64
         ],
-        "spec": "roster-gear:fc11a58a21f2",
+        "spec": "roster-gear:909b3e0e50cc",
+        "bright_key": 0,
         "erased": 0
       },
       "status": "qa_passed",
@@ -37295,7 +37324,8 @@
           26,
           26
         ],
-        "spec": "roster-gear:fc11a58a21f2",
+        "spec": "roster-gear:909b3e0e50cc",
+        "bright_key": 0,
         "erased": 0
       },
       "status": "qa_passed",
@@ -37341,7 +37371,8 @@
           64,
           64
         ],
-        "spec": "roster-gear:fc11a58a21f2",
+        "spec": "roster-gear:909b3e0e50cc",
+        "bright_key": 0,
         "erased": 0
       },
       "status": "qa_passed",
@@ -37386,7 +37417,8 @@
           26,
           26
         ],
-        "spec": "roster-gear:fc11a58a21f2",
+        "spec": "roster-gear:909b3e0e50cc",
+        "bright_key": 0,
         "erased": 0
       },
       "status": "qa_passed",
@@ -37418,6 +37450,7 @@
           53,
           53
         ],
+        "bright_key": 0,
         "height": 51,
         "width": 51,
         "colours": 1695,
@@ -37428,7 +37461,7 @@
         ],
         "erased": 0,
         "palette_over": true,
-        "spec": "roster-sprite:439d4a4b14f9"
+        "spec": "roster-sprite:2e0d0bc9e5f1"
       },
       "status": "published",
       "kind": "roster-sprite",
@@ -37478,6 +37511,7 @@
           59,
           65
         ],
+        "bright_key": 0,
         "height": 63,
         "width": 57,
         "colours": 1586,
@@ -37488,7 +37522,7 @@
         ],
         "erased": 0,
         "palette_over": true,
-        "spec": "roster-sprite:439d4a4b14f9"
+        "spec": "roster-sprite:2e0d0bc9e5f1"
       },
       "status": "qa_passed",
       "kind": "roster-sprite",
@@ -37516,6 +37550,7 @@
           62,
           76
         ],
+        "bright_key": 0,
         "height": 74,
         "width": 60,
         "colours": 2106,
@@ -37526,7 +37561,7 @@
         ],
         "erased": 0,
         "palette_over": true,
-        "spec": "roster-sprite:439d4a4b14f9"
+        "spec": "roster-sprite:2e0d0bc9e5f1"
       },
       "status": "qa_passed",
       "kind": "roster-sprite",
@@ -37554,6 +37589,7 @@
           69,
           65
         ],
+        "bright_key": 0,
         "height": 63,
         "width": 67,
         "colours": 2987,
@@ -37564,7 +37600,7 @@
         ],
         "erased": 0,
         "palette_over": true,
-        "spec": "roster-sprite:439d4a4b14f9"
+        "spec": "roster-sprite:2e0d0bc9e5f1"
       },
       "status": "qa_passed",
       "kind": "roster-sprite",
@@ -37592,6 +37628,7 @@
           61,
           66
         ],
+        "bright_key": 0,
         "height": 64,
         "width": 59,
         "colours": 1329,
@@ -37602,7 +37639,7 @@
         ],
         "erased": 0,
         "palette_over": true,
-        "spec": "roster-sprite:439d4a4b14f9"
+        "spec": "roster-sprite:2e0d0bc9e5f1"
       },
       "status": "qa_passed",
       "kind": "roster-sprite",
@@ -37630,6 +37667,7 @@
           65,
           66
         ],
+        "bright_key": 0,
         "height": 64,
         "width": 63,
         "colours": 1626,
@@ -37640,7 +37678,7 @@
         ],
         "erased": 0,
         "palette_over": true,
-        "spec": "roster-sprite:439d4a4b14f9"
+        "spec": "roster-sprite:2e0d0bc9e5f1"
       },
       "status": "qa_passed",
       "kind": "roster-sprite",
@@ -37670,6 +37708,7 @@
           44,
           66
         ],
+        "bright_key": 0,
         "height": 64,
         "width": 42,
         "colours": 1117,
@@ -37680,7 +37719,7 @@
         ],
         "erased": 0,
         "palette_over": true,
-        "spec": "roster-sprite:439d4a4b14f9"
+        "spec": "roster-sprite:2e0d0bc9e5f1"
       },
       "status": "qa_passed",
       "kind": "roster-sprite",
@@ -37710,6 +37749,7 @@
           51,
           55
         ],
+        "bright_key": 0,
         "height": 53,
         "width": 49,
         "colours": 1161,
@@ -37720,7 +37760,7 @@
         ],
         "erased": 1,
         "palette_over": true,
-        "spec": "roster-sprite:439d4a4b14f9"
+        "spec": "roster-sprite:2e0d0bc9e5f1"
       },
       "status": "qa_passed",
       "kind": "roster-sprite",
@@ -37748,6 +37788,7 @@
           94,
           67
         ],
+        "bright_key": 0,
         "height": 64,
         "width": 92,
         "colours": 2947,
@@ -37758,7 +37799,7 @@
         ],
         "erased": 0,
         "palette_over": true,
-        "spec": "roster-sprite:439d4a4b14f9"
+        "spec": "roster-sprite:2e0d0bc9e5f1"
       },
       "status": "qa_passed",
       "kind": "roster-sprite",
@@ -37786,6 +37827,7 @@
           76,
           78
         ],
+        "bright_key": 0,
         "height": 76,
         "width": 74,
         "colours": 2955,
@@ -37796,7 +37838,7 @@
         ],
         "erased": 0,
         "palette_over": true,
-        "spec": "roster-sprite:439d4a4b14f9"
+        "spec": "roster-sprite:2e0d0bc9e5f1"
       },
       "status": "qa_passed",
       "kind": "roster-sprite",
@@ -37826,6 +37868,7 @@
           74,
           64
         ],
+        "bright_key": 0,
         "height": 62,
         "width": 72,
         "colours": 2727,
@@ -37836,7 +37879,7 @@
         ],
         "erased": 1,
         "palette_over": true,
-        "spec": "roster-sprite:439d4a4b14f9"
+        "spec": "roster-sprite:2e0d0bc9e5f1"
       },
       "status": "qa_passed",
       "kind": "roster-sprite",
@@ -37866,6 +37909,7 @@
           67,
           101
         ],
+        "bright_key": 0,
         "height": 99,
         "width": 65,
         "colours": 4148,
@@ -37876,7 +37920,7 @@
         ],
         "erased": 3,
         "palette_over": true,
-        "spec": "roster-sprite:439d4a4b14f9"
+        "spec": "roster-sprite:2e0d0bc9e5f1"
       },
       "status": "qa_passed",
       "kind": "roster-sprite",
@@ -37928,6 +37972,7 @@
           137,
           154
         ],
+        "bright_key": 0,
         "height": 152,
         "width": 135,
         "colours": 8724,
@@ -37938,7 +37983,7 @@
         ],
         "erased": 1,
         "palette_over": true,
-        "spec": "roster-sprite:439d4a4b14f9"
+        "spec": "roster-sprite:2e0d0bc9e5f1"
       },
       "status": "qa_passed",
       "kind": "roster-sprite",
@@ -37984,6 +38029,7 @@
           156,
           155
         ],
+        "bright_key": 0,
         "height": 153,
         "width": 154,
         "colours": 13528,
@@ -37994,7 +38040,7 @@
         ],
         "erased": 5,
         "palette_over": true,
-        "spec": "roster-sprite:439d4a4b14f9"
+        "spec": "roster-sprite:2e0d0bc9e5f1"
       },
       "status": "qa_passed",
       "kind": "roster-sprite",

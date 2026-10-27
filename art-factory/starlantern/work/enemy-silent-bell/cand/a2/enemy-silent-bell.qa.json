@@ -2,7 +2,8 @@
   "pass": false,
   "reasons": [
     "subject cut by the canvas edge",
-    "interior erased"
+    "interior erased",
+    "magenta residue"
   ],
   "warnings": [
     "enclosed holes"
@@ -18,6 +19,7 @@
     151,
     145
   ],
+  "bright_key": 1,
   "height": 143,
   "width": 149,
   "colours": 11039,
@@ -28,5 +30,5 @@
   ],
   "erased": 14,
   "palette_over": true,
-  "spec": "roster-sprite:439d4a4b14f9"
+  "spec": "roster-sprite:2e0d0bc9e5f1"
 }

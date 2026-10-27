@@ -31,7 +31,8 @@
           64,
           64
         ],
-        "spec": "roster-gear:fc11a58a21f2",
+        "spec": "roster-gear:909b3e0e50cc",
+        "bright_key": 0,
         "erased": 0
       },
       "status": "qa_passed",
@@ -73,7 +74,8 @@
           26,
           26
         ],
-        "spec": "roster-gear:fc11a58a21f2",
+        "spec": "roster-gear:909b3e0e50cc",
+        "bright_key": 0,
         "erased": 0
       },
       "status": "qa_passed",
@@ -117,7 +119,8 @@
           64,
           64
         ],
-        "spec": "roster-gear:fc11a58a21f2",
+        "spec": "roster-gear:909b3e0e50cc",
+        "bright_key": 0,
         "erased": 2
       },
       "status": "qa_passed",
@@ -162,7 +165,8 @@
           26,
           26
         ],
-        "spec": "roster-gear:fc11a58a21f2",
+        "spec": "roster-gear:909b3e0e50cc",
+        "bright_key": 0,
         "erased": 0
       },
       "status": "qa_passed",
@@ -207,7 +211,8 @@
           64,
           64
         ],
-        "spec": "roster-gear:fc11a58a21f2",
+        "spec": "roster-gear:909b3e0e50cc",
+        "bright_key": 0,
         "erased": 1
       },
       "status": "qa_passed",
@@ -249,7 +254,8 @@
           26,
           26
         ],
-        "spec": "roster-gear:fc11a58a21f2",
+        "spec": "roster-gear:909b3e0e50cc",
+        "bright_key": 0,
         "erased": 0
       },
       "status": "qa_passed",
@@ -291,7 +297,8 @@
           64,
           64
         ],
-        "spec": "roster-gear:fc11a58a21f2",
+        "spec": "roster-gear:909b3e0e50cc",
+        "bright_key": 0,
         "erased": 0
       },
       "status": "qa_passed",
@@ -334,7 +341,8 @@
           26,
           26
         ],
-        "spec": "roster-gear:fc11a58a21f2",
+        "spec": "roster-gear:909b3e0e50cc",
+        "bright_key": 0,
         "erased": 0
       },
       "status": "qa_passed",
@@ -377,7 +385,8 @@
           64,
           64
         ],
-        "spec": "roster-gear:fc11a58a21f2",
+        "spec": "roster-gear:909b3e0e50cc",
+        "bright_key": 0,
         "erased": 0
       },
       "status": "qa_passed",
@@ -419,7 +428,8 @@
           26,
           26
         ],
-        "spec": "roster-gear:fc11a58a21f2",
+        "spec": "roster-gear:909b3e0e50cc",
+        "bright_key": 0,
         "erased": 0
       },
       "status": "qa_passed",

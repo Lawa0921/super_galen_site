@@ -6,7 +6,8 @@
       "qa": {
         "pass": false,
         "reasons": [
-          "interior erased"
+          "interior erased",
+          "magenta residue"
         ],
         "warnings": [
           "enclosed holes"
@@ -22,6 +23,7 @@
           151,
           156
         ],
+        "bright_key": 1,
         "height": 154,
         "width": 149,
         "colours": 11726,
@@ -32,7 +34,7 @@
         ],
         "erased": 12,
         "palette_over": true,
-        "spec": "roster-sprite:439d4a4b14f9"
+        "spec": "roster-sprite:2e0d0bc9e5f1"
       },
       "status": "qa_failed",
       "kind": "roster-sprite",
