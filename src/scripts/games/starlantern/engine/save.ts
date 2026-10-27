@@ -1,5 +1,6 @@
 import { CHARACTER_IDS } from '../data/characters';
 import { EQUIPMENT } from '../data/equipment';
+import { ENEMIES } from '../data/enemies';
 import { ENHANCE_MAX } from '../data/forge';
 import { AFFIXES, RARITIES, SETS, SPECIALS, STARLIT_RARITIES } from '../data/gear';
 import { REGIONS } from '../data/regions';
@@ -105,6 +106,8 @@ function isItem(v: unknown): v is ItemInstance {
   if (v.junk !== undefined && typeof v.junk !== 'boolean') return false;
   // Plan 5g: a starlit flag is only ever true, and only on a legendary, unique or set special item.
   if (v.starlit !== undefined && !(v.starlit === true && v.special !== undefined && STARLIT_RARITIES.includes(v.rarity as never))) return false;
+  // Roster plan Task C1: an inscription names an ordinary roster species (one with an inscription key), never on a special piece.
+  if (v.inscription !== undefined && !(typeof v.inscription === 'string' && has(ENEMIES, v.inscription) && !!ENEMIES[v.inscription].inscribe && v.special === undefined)) return false;
   if (!Array.isArray(v.affixes)) return false;
   if (v.locked !== undefined && !(Number.isInteger(v.locked) && (v.locked as number) >= 0 && (v.locked as number) < v.affixes.length)) return false;
   return v.affixes.every((a) => isObj(a) && has(AFFIXES, a.key) && Number.isFinite(a.value) && Math.abs(a.value as number) <= MAX_AFFIX);

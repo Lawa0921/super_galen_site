@@ -1,11 +1,12 @@
 import { CONDITIONS, type ConditionId } from '../../data/conditions';
-import { SETS, SPECIALS, STARLIT_RARITIES, generalLegendaries, regionSpecials, type SpecialDef } from '../../data/gear';
+import { AFFIXES, SETS, SPECIALS, STARLIT_RARITIES, generalLegendaries, regionSpecials, type SpecialDef } from '../../data/gear';
+import { ENEMIES } from '../../data/enemies';
 import type { RegionId } from '../../data/regions';
 import { depthLevel } from '../levels';
 import type { Run } from '../dungeon/run';
 import { mulberry32, pick, type Rng } from '../rng';
 import type { ItemInstance, Pos } from '../types';
-import { itemLevel, rollItem, starlitItem, tierItemLevel, type DropSource } from './item';
+import { itemLevel, itemSlot, rollItem, rollValue, starlitItem, tierItemLevel, type DropSource } from './item';
 import { tierOf, type TierDef } from '../../data/difficulty';
 import type { Difficulty } from '../battle';
 
@@ -186,4 +187,34 @@ export function lootRng(run: Run): Rng {
 /** Whether the chest at `at` on `depth` holds gear: fixed by the run seed, the depth and the spot; changes nothing. */
 export function chestHasGear(run: Run, depth: number, at: Pos): boolean {
   return mix(mix(mix(run.seed ^ 0x3c6ef372, depth), at.x), at.y) / 2 ** 32 < GEAR_CHANCE.chest;
+}
+
+/**
+ * Roster plan Task C1 (spec §7.5): the salt of the trophy stream, SHA-256's second round constant (all eight initial words
+ * and the first round constant, WARDEN_SALT, are in use).
+ */
+export const TROPHY_SALT = 0x71374491;
+
+/**
+ * A fresh rng for one trophy draw of this run (spec §7.5): a roster species' inscription, or a roster boss's or warden's
+ * own unique. Drawn only after the loot stream is done with the piece, so no `lootRng` draw ever moves.
+ */
+export function trophyRng(run: Run): Rng {
+  return mulberry32(mix(run.seed ^ TROPHY_SALT, run.trophyDraws++));
+}
+
+/**
+ * Roster plan ruling 16 (spec §7.2): the piece with one affix turned into `species`' inscription key, its value rolled in
+ * the same range a drop of that rarity and item level rolls (`rng`, the trophy draw the chance came from). The count and
+ * the ranges never change: a piece with no affix, a slot that cannot take the key, or one that already carries it keeps
+ * its affixes and only takes the mark.
+ */
+export function inscribe(it: ItemInstance, species: string, rng: Rng): ItemInstance {
+  const key = ENEMIES[species]?.inscribe;
+  if (!key) throw new Error(`no inscription: ${species}`);
+  const out: ItemInstance = { ...it, affixes: it.affixes.map((a) => ({ ...a })), inscription: species };
+  if (!out.affixes.length || !AFFIXES[key].slots.includes(itemSlot(it)) || out.affixes.some((a) => a.key === key)) return out;
+  const i = Math.floor(rng() * out.affixes.length);
+  out.affixes[i] = { key, value: rollValue(rng, key, it.ilvl, it.rarity) };
+  return out;
 }

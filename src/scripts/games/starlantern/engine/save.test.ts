@@ -1538,3 +1538,30 @@ describe('bond scenes and the story they need (bond review fix)', () => {
     expect(status(g)).toBe('corrupt');
   });
 });
+
+describe('an inscription in the save (roster plan Task C1)', () => {
+  const inscribed = <T,>(uid: number, inscription: T) => ({ ...plainItem('iron-sword', uid), rarity: 'magic' as const, affixes: [{ key: 'sleepRes' as const, value: 6 }], inscription });
+  it('the save keeps an inscription and refuses an unknown one', () => {
+    const st = memoryStorage();
+    const g = newGame();
+    g.bag = [inscribed(1, 'paper-moth')];
+    g.nextUid = 2;
+    expect(saveGame(st, g)).toBe(true);
+    const r = loadGame(st);
+    expect(r).toEqual({ status: 'ok', state: g });
+    expect(r.status === 'ok' && r.state.bag[0].inscription).toBe('paper-moth');
+    // Only an ordinary species' id: not an unknown one, not a boss, not a legacy foe (they have no inscription), not a special piece.
+    const cases: [string, Record<string, unknown>][] = [
+      ['unknown id', inscribed(1, 'no-such-moth')],
+      ['a boss', inscribed(1, 'fog-warden')],
+      ['a legacy foe', inscribed(1, 'slime')],
+      ['not a string', inscribed(1, 3)],
+      ['on a special piece', { ...plainItem('thorn-spear', 1), rarity: 'legendary', ilvl: 20, special: 'lg-chizuru', affixes: [{ key: 'atk', value: 11 }], inscription: 'paper-moth' }],
+    ];
+    for (const [name, item] of cases) {
+      const raw = JSON.parse(JSON.stringify({ ...newGame(), nextUid: 2 }));
+      raw.bag = [item];
+      expect(loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(raw) })).status, name).toBe('corrupt');
+    }
+  });
+});

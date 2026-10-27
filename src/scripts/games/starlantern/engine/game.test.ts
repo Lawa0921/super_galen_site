@@ -15,7 +15,7 @@ import { rollPortals, validPortals } from './portals';
 import { DELTA, posKey, tileAt, type Dir } from './map';
 import { floorOf, type Portal } from './dungeon/run';
 import { capacity, carried, weightOf } from '../data/weights';
-import type { CharacterId, ItemInstance, Pos } from './types';
+import type { CharacterId, EnemyDef, ItemInstance, Pos } from './types';
 import { ENEMIES } from '../data/enemies';
 import { CHARACTERS } from '../data/characters';
 import { handbook } from './story/handbook';
@@ -6585,5 +6585,63 @@ describe('wardens on the map and bosses by depth (roster plan B5)', () => {
       expect(g.map().tiles[room.at.y][room.at.x]).toBe('floor');
       expect(wardenAt(g)).toBeUndefined();
     });
+  });
+});
+
+describe('the trophy stream in a fight (roster plan Task C1)', () => {
+  /** `ids` met as an ordinary fight on depth 1 of a game on `seed`, beaten at once; its gear and the draws it took. */
+  const fightOf = (ids: string[], seed: number) => {
+    const g = inMap(1, mulberry32(seed));
+    (g as unknown as { startBattle: (e: string[], b: boolean) => void }).startBattle(ids, false);
+    const at = { loot: g.run!.lootDraws, trophy: g.run!.trophyDraws };
+    const end = killAll(g);
+    return { g, end, gear: [...end.gear, ...end.gearLeft], loot: g.run!.lootDraws - at.loot, trophy: g.run!.trophyDraws - at.trophy };
+  };
+  /** What the loot stream decided of a piece: everything but the affixes' keys and values. */
+  const lootOf = (it: ItemInstance) => ({ uid: it.uid, base: it.base, rarity: it.rarity, ilvl: it.ilvl, special: it.special, n: it.affixes.length });
+  const moths = ['paper-moth', 'paper-moth', 'paper-moth'];
+
+  it('trophy draws never move a lootRng draw', () => {
+    const saved = GEAR_CHANCE.monster;
+    const def = ENEMIES['paper-moth'] as { inscribe?: EnemyDef['inscribe'] };
+    const key = def.inscribe;
+    let marks = 0;
+    try {
+      GEAR_CHANCE.monster = 1;
+      for (let seed = 1; seed <= 12; seed++) {
+        const on = fightOf(moths, seed);
+        delete def.inscribe;
+        let off: ReturnType<typeof fightOf>;
+        try { off = fightOf(moths, seed); } finally { def.inscribe = key; }
+        expect(on.loot, String(seed)).toBe(3);
+        expect(off.loot, String(seed)).toBe(3);
+        expect(on.trophy, String(seed)).toBe(3);   // one trophy draw per piece a species of the roster dropped
+        expect(off.trophy, String(seed)).toBe(0);
+        expect(on.gear.map(lootOf), String(seed)).toEqual(off.gear.map(lootOf));
+        expect(on.g.state.gold + on.g.run!.loot.gold).toBe(off.g.state.gold + off.g.run!.loot.gold);
+        marks += on.gear.filter((it) => it.inscription === 'paper-moth').length;
+      }
+    } finally {
+      GEAR_CHANCE.monster = saved;
+    }
+    // About a quarter of the 36 pieces carry the mark.
+    expect(marks).toBeGreaterThan(2);
+    expect(marks).toBeLessThan(20);
+  });
+
+  it('legacy foes never inscribe', () => {
+    const saved = GEAR_CHANCE.monster;
+    try {
+      GEAR_CHANCE.monster = 1;
+      for (let seed = 1; seed <= 6; seed++) {
+        const f = fightOf(['slime', 'bat', 'wolf'], seed);
+        expect(f.gear).toHaveLength(3);
+        expect(f.trophy).toBe(0);
+        expect(f.g.run!.trophyDraws).toBe(0);
+        expect(f.gear.every((it) => it.inscription === undefined)).toBe(true);
+      }
+    } finally {
+      GEAR_CHANCE.monster = saved;
+    }
   });
 });

@@ -18,7 +18,9 @@ import { ALTAR_STAT_CAP_PCT, altarAt, altarHpLoss, eliteGroup, FOUNTAIN_PCT, POI
 import { EQUIPMENT } from '../data/equipment';
 import { SPECIALS } from '../data/gear';
 import { applyAutoJunk, BAG_SIZE, mintUid } from './loot/bag';
-import { chestHasGear, GEAR_CHANCE, lootRng, rollBossGear, rollGear, rollRareMaterial, type DropCtx } from './loot/drops';
+import { chestHasGear, GEAR_CHANCE, inscribe, lootRng, rollBossGear, rollGear, rollRareMaterial, trophyRng, type DropCtx } from './loot/drops';
+import { ENEMIES } from '../data/enemies';
+import { INSCRIBE_CHANCE } from '../data/forge';
 import { itemWeight, type DropSource } from './loot/item';
 import { grantRune, rollRune, runeRng, spotRuneRng } from './loot/runes';
 import { RUNE_DROP } from '../data/runeEconomy';
@@ -853,9 +855,19 @@ export class Game {
       if (b.survive && b.enemies[i].alive) continue;
       if (b.enemies[i].left || b.enemies[i].summoned) continue;   // it takes no loot draw (roster plan B1)
       const rng = lootRng(run);
-      if (rng() < GEAR_CHANCE.monster) gear.push(rollGear(rng, this.dropCtx('monster', tier)));
+      if (rng() < GEAR_CHANCE.monster) gear.push(this.inscribed(rollGear(rng, this.dropCtx('monster', tier)), b.enemies[i].defId));
     }
     return { gear, rare };
+  }
+
+  /**
+   * Roster plan Task C1 (spec §7.2, ruling 16): a piece a roster species dropped, once its loot draw is done, takes one
+   * trophy draw and, on INSCRIBE_CHANCE, the species' inscription. A legacy foe, or a special piece, draws nothing.
+   */
+  private inscribed(it: ItemInstance, species: string): ItemInstance {
+    if (it.special || !ENEMIES[species]?.inscribe) return it;
+    const t = trophyRng(this.run!);
+    return t() < INSCRIBE_CHANCE ? inscribe(it, species, t) : it;
   }
 
   /**
