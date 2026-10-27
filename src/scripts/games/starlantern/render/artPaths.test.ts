@@ -41,8 +41,9 @@ describe('artPaths', () => {
     // + faces wave 4 (affinity plan Task A; user approval 2026-10-24 「可以，照這風格」): nine blush, both Rin looks' averted,
     //   Sylvie's unguarded, Noel's smug, Bobby's excited = 722
     // + roster R0 (使用者 2026-10-26：核可，照這個畫風做下去): 5 foes, 5 material icons, 2 own uniques x 2 = 736
-    expect(urls).toHaveLength(736);
-    expect(new Set(urls).size).toBe(736);
+    // + roster R1 (independent review 2026-10-27): 13 foes, 13 material icons, 3 own uniques x 2 = 768
+    expect(urls).toHaveLength(768);
+    expect(new Set(urls).size).toBe(768);
     for (const id of Object.keys(SKILLS)) {
       expect(urls, id).not.toContain(art.icon(id));
       for (const px of SKILL_ICON_SIZES) expect(urls, id).toContain(art.skillIcon(id, px));

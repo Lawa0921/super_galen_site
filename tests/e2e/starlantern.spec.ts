@@ -2403,7 +2403,8 @@ test.describe('starlantern', () => {
     // Sylvie's unguarded, Noel's smug, Bobby's excited = 722
     // + roster R0 (roster plan PR D; user approval 2026-10-26 「核可，照這個畫風做下去」): 5 foes, 5 material icons, 2 own
     // uniques x 2 = 736
-    expect(manifest.length).toBe(736);
+    // + roster R1 (independent review 2026-10-27): 13 foes, 13 material icons, 3 own uniques x 2 = 768
+    expect(manifest.length).toBe(768);
     // Every file the manifest lists answers 200.
     for (const u of manifest) expect((await page.request.get(u)).status(), u).toBe(200);
     // Walk the screens that show the new art (equipment, shop, forge, portal codex) with every sample piece in the bag.
