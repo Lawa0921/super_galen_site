@@ -93,6 +93,65 @@ def test_registry_publish_requires_approval_and_writes_manifest(tmp_path):
     assert A.Registry(tmp_path / 'registry.json').get('enemy-slime')['status'] == 'published'
 
 
+def test_registry_save_interrupted_mid_write_leaves_the_old_registry_whole(tmp_path, monkeypatch):
+    """R2 (2026-10-27): a gen driver read registry.json while a pick was rewriting it and crashed on half a file. A save
+    writes a temp file and swaps it in, so the registry on disk is always the old whole file or the new whole file."""
+    path = tmp_path / 'registry.json'
+    reg = A.Registry(path); reg.set('a', status='qa_passed')
+    before = path.read_text(encoding='utf-8')
+    real = Path.write_text
+
+    def torn(self, text, *a, **k):   # the process dies halfway through writing
+        real(self, text[:len(text) // 2], *a, **k); raise OSError('killed mid-write')
+    monkeypatch.setattr(Path, 'write_text', torn)
+    with pytest.raises(OSError):
+        reg.set('b', status='qa_failed')
+    monkeypatch.setattr(Path, 'write_text', real)
+    assert path.read_text(encoding='utf-8') == before
+    assert A.Registry(path).get('a')['status'] == 'qa_passed'
+    assert [p.name for p in tmp_path.iterdir()] == ['registry.json']   # no temp file left behind
+
+
+def test_registry_read_retries_a_half_written_file(tmp_path):
+    """A reader that meets a half-written registry (a writer that is not atomic, or a file still being copied) waits and
+    reads again instead of crashing; a registry that stays broken still raises."""
+    import threading
+    path = tmp_path / 'registry.json'
+    path.write_text('{"assets": {"a": {"sta', encoding='utf-8')
+    threading.Timer(0.3, lambda: path.write_text(json.dumps({'assets': {'a': {'status': 'qa_passed'}}}), encoding='utf-8')).start()
+    assert A.Registry(path).get('a')['status'] == 'qa_passed'
+    path.write_text('{"assets": ', encoding='utf-8')
+    with pytest.raises(json.JSONDecodeError):
+        A.Registry(path, retry_for=0.2)
+
+
+def test_registry_concurrent_reads_never_see_a_torn_file(tmp_path):
+    """A writer saving a large registry over and over while a reader keeps loading it: every read is a whole registry."""
+    import threading
+    path = tmp_path / 'registry.json'
+    reg = A.Registry(path)
+    reg.data['assets'] = {f'id-{i}': {'status': 'qa_passed', 'qa': {'reasons': [], 'n': i, 'pad': 'x' * 200}} for i in range(3000)}
+    reg._save()
+    errors, stop = [], threading.Event()
+
+    def writer():
+        for k in range(30):
+            reg.data['assets']['id-0']['qa']['n'] = k; reg._save()
+        stop.set()
+    t = threading.Thread(target=writer); t.start()
+    reads = 0
+    while not stop.is_set():
+        try:
+            d = json.loads(path.read_text(encoding='utf-8')); assert len(d['assets']) == 3000; reads += 1
+        except (json.JSONDecodeError, AssertionError) as e:
+            errors.append(repr(e)[:80])
+        except PermissionError:   # Windows: the file is being swapped in this instant; a real reader retries
+            pass
+    t.join()
+    assert not errors, errors[:3]
+    assert reads > 0
+
+
 def test_approve_refuses_assets_that_failed_qa(tmp_path):
     reg = A.Registry(tmp_path / 'r.json'); reg.set('x', status='qa_failed')
     with pytest.raises(PermissionError):

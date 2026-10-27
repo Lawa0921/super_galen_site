@@ -581,14 +581,43 @@ def _roster(entry):
     return str(entry.get('batch', '')).startswith(ROSTER_BATCH)
 
 
+def _swap_in(tmp, path, retry_for=10.0):
+    """os.replace with retries: on Windows the swap is refused while another process has the file open for reading."""
+    import os, time
+    end = time.monotonic() + retry_for
+    while True:
+        try:
+            os.replace(tmp, path); return
+        except PermissionError:
+            if time.monotonic() > end: raise
+            time.sleep(0.05)
+
+
 class Registry:
-    def __init__(self, path):
+    """registry.json. Concurrent tools share it (R2, 2026-10-27: a gen driver crashed reading it while a pick rewrote it):
+    a save writes a temp file beside it and swaps it in (never a half-written registry on disk), and a read that meets a
+    file it cannot parse or open waits and reads again for up to `retry_for` seconds before raising."""
+    def __init__(self, path, retry_for=10.0):
+        import time
         self.path = Path(path)
-        self.data = json.loads(self.path.read_text(encoding='utf-8')) if self.path.exists() else {'assets': {}}
+        end = time.monotonic() + retry_for
+        while True:
+            try:
+                self.data = json.loads(self.path.read_text(encoding='utf-8')) if self.path.exists() else {'assets': {}}
+                return
+            except (json.JSONDecodeError, PermissionError):
+                if time.monotonic() > end: raise
+                time.sleep(0.05)
 
     def _save(self):
+        import os
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.path.write_text(json.dumps(self.data, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
+        tmp = self.path.with_name(f'{self.path.name}.{os.getpid()}.saving')
+        try:
+            tmp.write_text(json.dumps(self.data, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
+            _swap_in(tmp, self.path)
+        finally:
+            if tmp.exists(): tmp.unlink()
 
     def get(self, aid):
         return self.data['assets'][aid]
