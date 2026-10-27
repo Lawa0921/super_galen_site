@@ -4,10 +4,8 @@
       "final": "art-factory/starlantern/work/enemy-root-hound/cand/a1/enemy-root-hound.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-root-hound\\enemy-root-hound-a1.png",
       "qa": {
-        "pass": false,
-        "reasons": [
-          "too many colours"
-        ],
+        "pass": true,
+        "reasons": [],
         "warnings": [
           "enclosed holes"
         ],
@@ -22,6 +20,7 @@
           76,
           65
         ],
+        "bright_key": 0,
         "height": 63,
         "width": 74,
         "colours": 1975,
@@ -31,9 +30,10 @@
           0.525
         ],
         "erased": 0,
-        "spec": "roster-sprite:d5d24a1a03ef"
+        "palette_over": true,
+        "spec": "roster-sprite:2e0d0bc9e5f1"
       },
-      "status": "qa_failed",
+      "status": "qa_passed",
       "kind": "roster-sprite",
       "roster_class": "normal",
       "mainline": true

@@ -1,0 +1,40 @@
+{
+  "assets": {
+    "enemy-tin-soldier": {
+      "final": "art-factory/starlantern/work/enemy-tin-soldier/cand/a1/enemy-tin-soldier.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-tin-soldier\\enemy-tin-soldier-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 1,
+        "block": 15,
+        "size": [
+          62,
+          76
+        ],
+        "bright_key": 0,
+        "height": 74,
+        "width": 60,
+        "colours": 2106,
+        "lum": [
+          0.053,
+          0.932,
+          0.558
+        ],
+        "erased": 0,
+        "palette_over": true,
+        "spec": "roster-sprite:2e0d0bc9e5f1"
+      },
+      "status": "qa_passed",
+      "kind": "roster-sprite",
+      "roster_class": "heavy",
+      "mainline": true
+    }
+  }
+}

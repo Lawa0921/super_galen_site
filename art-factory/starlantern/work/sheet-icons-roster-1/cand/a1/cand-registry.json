@@ -18,7 +18,9 @@
           34,
           33
         ],
-        "spec": "roster-icon:a233355facd3"
+        "bright_key": 0,
+        "erased": 0,
+        "spec": "roster-icon:ed1986056114"
       },
       "status": "qa_passed",
       "kind": "roster-icon"
@@ -43,7 +45,9 @@
           29,
           33
         ],
-        "spec": "roster-icon:a233355facd3"
+        "bright_key": 0,
+        "erased": 1,
+        "spec": "roster-icon:ed1986056114"
       },
       "status": "qa_passed",
       "kind": "roster-icon"
@@ -66,7 +70,9 @@
           31,
           32
         ],
-        "spec": "roster-icon:a233355facd3"
+        "bright_key": 0,
+        "erased": 0,
+        "spec": "roster-icon:ed1986056114"
       },
       "status": "qa_passed",
       "kind": "roster-icon"
@@ -89,7 +95,9 @@
           33,
           36
         ],
-        "spec": "roster-icon:a233355facd3"
+        "bright_key": 0,
+        "erased": 0,
+        "spec": "roster-icon:ed1986056114"
       },
       "status": "qa_passed",
       "kind": "roster-icon"
@@ -114,7 +122,9 @@
           33,
           36
         ],
-        "spec": "roster-icon:a233355facd3"
+        "bright_key": 0,
+        "erased": 3,
+        "spec": "roster-icon:ed1986056114"
       },
       "status": "qa_passed",
       "kind": "roster-icon"
@@ -137,7 +147,9 @@
           24,
           34
         ],
-        "spec": "roster-icon:a233355facd3"
+        "bright_key": 0,
+        "erased": 0,
+        "spec": "roster-icon:ed1986056114"
       },
       "status": "qa_passed",
       "kind": "roster-icon"
@@ -162,7 +174,9 @@
           33,
           31
         ],
-        "spec": "roster-icon:a233355facd3"
+        "bright_key": 0,
+        "erased": 0,
+        "spec": "roster-icon:ed1986056114"
       },
       "status": "qa_passed",
       "kind": "roster-icon"
@@ -185,7 +199,9 @@
           30,
           36
         ],
-        "spec": "roster-icon:a233355facd3"
+        "bright_key": 0,
+        "erased": 0,
+        "spec": "roster-icon:ed1986056114"
       },
       "status": "qa_passed",
       "kind": "roster-icon"
@@ -210,7 +226,9 @@
           32,
           33
         ],
-        "spec": "roster-icon:a233355facd3"
+        "bright_key": 0,
+        "erased": 0,
+        "spec": "roster-icon:ed1986056114"
       },
       "status": "qa_passed",
       "kind": "roster-icon"
@@ -233,7 +251,9 @@
           30,
           33
         ],
-        "spec": "roster-icon:a233355facd3"
+        "bright_key": 0,
+        "erased": 0,
+        "spec": "roster-icon:ed1986056114"
       },
       "status": "qa_passed",
       "kind": "roster-icon"
@@ -256,7 +276,9 @@
           33,
           27
         ],
-        "spec": "roster-icon:a233355facd3"
+        "bright_key": 0,
+        "erased": 0,
+        "spec": "roster-icon:ed1986056114"
       },
       "status": "qa_passed",
       "kind": "roster-icon"
@@ -279,7 +301,9 @@
           35,
           32
         ],
-        "spec": "roster-icon:a233355facd3"
+        "bright_key": 0,
+        "erased": 0,
+        "spec": "roster-icon:ed1986056114"
       },
       "status": "qa_passed",
       "kind": "roster-icon"
@@ -302,7 +326,9 @@
           32,
           36
         ],
-        "spec": "roster-icon:a233355facd3"
+        "bright_key": 0,
+        "erased": 0,
+        "spec": "roster-icon:ed1986056114"
       },
       "status": "qa_passed",
       "kind": "roster-icon"
@@ -327,7 +353,9 @@
           34,
           28
         ],
-        "spec": "roster-icon:a233355facd3"
+        "bright_key": 0,
+        "erased": 4,
+        "spec": "roster-icon:ed1986056114"
       },
       "status": "qa_passed",
       "kind": "roster-icon"
@@ -344,13 +372,15 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
-        "key_tint_inside": 0,
+        "key_tint_inside": 1,
         "block": 7,
         "size": [
           33,
           29
         ],
-        "spec": "roster-icon:a233355facd3"
+        "bright_key": 0,
+        "erased": 0,
+        "spec": "roster-icon:ed1986056114"
       },
       "status": "qa_passed",
       "kind": "roster-icon"
@@ -359,8 +389,10 @@
       "final": "art-factory/starlantern/work/sheet-icons-roster-1/cand/a1/icon-silent-bronze.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-1\\sheet-icons-roster-1-a1.png",
       "qa": {
-        "pass": true,
-        "reasons": [],
+        "pass": false,
+        "reasons": [
+          "interior erased"
+        ],
         "warnings": [
           "enclosed holes"
         ],
@@ -375,9 +407,11 @@
           28,
           32
         ],
-        "spec": "roster-icon:a233355facd3"
+        "bright_key": 0,
+        "erased": 38,
+        "spec": "roster-icon:ed1986056114"
       },
-      "status": "qa_passed",
+      "status": "qa_failed",
       "kind": "roster-icon"
     },
     "icon-hundred-hilts": {
@@ -398,7 +432,9 @@
           30,
           34
         ],
-        "spec": "roster-icon:a233355facd3"
+        "bright_key": 0,
+        "erased": 0,
+        "spec": "roster-icon:ed1986056114"
       },
       "status": "qa_passed",
       "kind": "roster-icon"
@@ -421,7 +457,9 @@
           21,
           33
         ],
-        "spec": "roster-icon:a233355facd3"
+        "bright_key": 0,
+        "erased": 0,
+        "spec": "roster-icon:ed1986056114"
       },
       "status": "qa_passed",
       "kind": "roster-icon"

@@ -4,10 +4,8 @@
       "final": "art-factory/starlantern/work/enemy-paper-moth/cand/a3/enemy-paper-moth.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-paper-moth\\enemy-paper-moth-a3.png",
       "qa": {
-        "pass": false,
-        "reasons": [
-          "too many colours"
-        ],
+        "pass": true,
+        "reasons": [],
         "warnings": [],
         "residue": 0,
         "semi": 0,
@@ -20,6 +18,7 @@
           53,
           53
         ],
+        "bright_key": 0,
         "height": 51,
         "width": 51,
         "colours": 1695,
@@ -29,9 +28,10 @@
           0.607
         ],
         "erased": 0,
-        "spec": "roster-sprite:d5d24a1a03ef"
+        "palette_over": true,
+        "spec": "roster-sprite:2e0d0bc9e5f1"
       },
-      "status": "qa_failed",
+      "status": "qa_passed",
       "kind": "roster-sprite",
       "roster_class": "swarm",
       "mainline": true

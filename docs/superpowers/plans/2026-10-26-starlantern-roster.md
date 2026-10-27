@@ -830,3 +830,10 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 - [ ] 每個地區第 5 層頭目、腐毒的吞入（被吞的人仍能行動）、鍛造屋製作一件專屬獨特（先打倒）、銘刻一次；三個專案；commit：`test(starlantern): e2e smoke across the whole roster`。
 
 **計畫收尾**：控制者派全新脈絡的審查者看整個名冊（照 `review-pr` skill）；回報使用者：PR 清單、`allArtUrls` 總數、22 帶與難度帶的結果、寶物怪擊殺率、審核頁網址。
+
+---
+
+# 後續（名冊之後的獨立修正）
+
+### Task F1：舊 5d 敵人 `bat.png` 的洋紅邊
+- [ ] R1 獨立審核（2026-10-26）看到已核准的舊敵人 `public/assets/games/starlantern/enemy/bat.png` 也有洋紅邊。這不在名冊的範圍內，所以本次不改（控制者 2026-10-26 裁定）。名冊收尾之後另開一個修正：先用名冊的 `roster_key_tint_count`（含 `_deep_key`）與 `magenta_spill_count` 量化，再決定重做或重新去背。重做要走「重做 → QA → 審核 → 重新發布」，並且同步改 `allArtUrls` 與 manifest。

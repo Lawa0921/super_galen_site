@@ -57,7 +57,8 @@ describe('roster switches (roster plan Task A1, spec §11.1)', () => {
     // Drawn exactly when the registry has its sprite published (R0 since PR D); never listed while nothing is live.
     expect(fresh.filter(artEnemy).sort()).toEqual(fresh.filter((id) => publishedArt(`enemy-${id}`)).sort());
     for (const id of ['paper-moth', 'root-hound', 'bell-watcher', 'false-moon', 'fog-warden']) expect(artEnemy(id), id).toBe(true);
-    expect(artEnemy('lamp-wight')).toBe(false);   // R1: drawn on the R0 sheets, not published
+    expect(artEnemy('lamp-wight')).toBe(true);           // R1: published in E1 (independent review 2026-10-27)
+    expect(artEnemy('old-city-sentinel')).toBe(false);   // R2: not drawn yet
     expect(listedEnemy('no-such-foe')).toBe(false);
   });
 });
@@ -393,7 +394,8 @@ describe('roster materials and own uniques (roster plan Task A3, spec §7)', () 
       expect(artSpecial(s.id), s.id).toBe(!s.owner || (publishedArt(`gear-${s.id}`) && publishedArt(`gear-${s.id}-large`)));
     }
     expect(artMaterial('faded-letter') && artSpecial('fog-halberd')).toBe(true);     // R0's, published in PR D
-    expect(artMaterial('wight-wick') || artSpecial('silent-chime')).toBe(false);     // R1's, waiting
+    expect(artMaterial('wight-wick') && artSpecial('silent-chime')).toBe(true);      // R1's, published in E1
+    expect(artMaterial('marble-shard') || artSpecial('archon-crown')).toBe(false);   // R2's, waiting
   });
 });
 

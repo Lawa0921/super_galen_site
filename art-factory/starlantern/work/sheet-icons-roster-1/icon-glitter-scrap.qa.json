@@ -7,12 +7,13 @@
   "edge": 0,
   "holes": 0,
   "magenta_spill": 0,
-  "key_tint_inside": 0,
+  "key_tint_inside": 1,
   "block": 7,
   "size": [
     33,
     29
   ],
+  "bright_key": 0,
   "erased": 0,
-  "spec": "roster-icon:bbdd3c548030"
+  "spec": "roster-icon:ed1986056114"
 }

@@ -18,7 +18,9 @@ const LEGACY = new Set(LEGACY_ENEMY_IDS);
  * art). Only an art batch's publish commit adds to it.
  */
 export const ROSTER_ART: ReadonlySet<string> = new Set<string>([
-  'paper-moth', 'root-hound', 'bell-watcher', 'false-moon', 'fog-warden',
+  'paper-moth', 'root-hound', 'bell-watcher', 'false-moon', 'fog-warden', 'lamp-wight', 'tin-soldier', 'dust-mimic',
+  'market-ghost', 'tongueless-bell', 'hollow-hunter', 'mist-twin', 'moon-crow', 'sleepwalker', 'hoarder',
+  'silent-bell', 'hollow-champion', 'bell-warden',
 ]);
 /**
  * Roster ids met in the encounter tables, the boss table, warden rooms and the bestiary. Only a go-live commit adds to it,

@@ -1,6 +1,8 @@
 {
-  "pass": true,
-  "reasons": [],
+  "pass": false,
+  "reasons": [
+    "interior erased"
+  ],
   "warnings": [
     "enclosed holes"
   ],
@@ -15,5 +17,7 @@
     28,
     32
   ],
-  "spec": "roster-icon:a233355facd3"
+  "bright_key": 0,
+  "erased": 38,
+  "spec": "roster-icon:ed1986056114"
 }

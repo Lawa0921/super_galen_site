@@ -1,8 +1,6 @@
 {
-  "pass": false,
-  "reasons": [
-    "too many colours"
-  ],
+  "pass": true,
+  "reasons": [],
   "warnings": [
     "enclosed holes"
   ],
@@ -17,6 +15,7 @@
     89,
     101
   ],
+  "bright_key": 0,
   "height": 99,
   "width": 87,
   "colours": 3608,
@@ -25,6 +24,7 @@
     0.98,
     0.638
   ],
-  "erased": 0,
-  "spec": "roster-sprite:d5d24a1a03ef"
+  "erased": 4,
+  "palette_over": true,
+  "spec": "roster-sprite:2e0d0bc9e5f1"
 }
