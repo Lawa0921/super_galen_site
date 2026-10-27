@@ -20,8 +20,9 @@ const STAT: Record<StatKey, string> = { hp: 'HP', tp: 'TP', atk: '攻擊', def: 
 /** The battle log's line when an ailment takes hold (a boss's freeze reads as the chill it became). */
 const STATUS_LINE: Record<AilmentShown, string> = {
   poison: '中毒了', sleep: '睡著了', burn: '燒起來了', freeze: '被凍住了', chill: '的動作變慢了', shock: '觸電了', bleed: '開始流血了',
+  forget: '一時想不起招式了',
 };
-const AILMENT_NAME: Record<AilmentShown, string> = { poison: '中毒', sleep: '睡眠', burn: '灼燒', freeze: '凍結', chill: '冰緩', shock: '感電', bleed: '流血' };
+const AILMENT_NAME: Record<AilmentShown, string> = { poison: '中毒', sleep: '睡眠', burn: '灼燒', freeze: '凍結', chill: '冰緩', shock: '感電', bleed: '流血', forget: '遺忘' };
 /** A rune refused or greyed for one already on the skill: the same one, or one of its group (T.rune.why and T.rune.fail). */
 const RUNE_SAME = (name: string) => `同一招不能裝兩個${name}`;
 const RUNE_GROUP = (name: string) => `已有同類符文：${name}`;
@@ -189,6 +190,8 @@ export const T = {
       disguise: '寶箱？',
       /** M19: a decoy's name beside its foe's. */
       decoy: (name: string) => `${name}的幻影`,
+      /** Roster plan B10 (M23): the intent of a foe still in ice. */
+      encased: '冰封中',
       /** Roster plan B6: after a guard's (M2) or a hunt's (M24) skill name in its intent. */
       guardTag: '（守護）',
       huntTag: '（宣告）',
@@ -196,6 +199,14 @@ export const T = {
       word: {
         winding: '蓄力', guarding: '守護', guarded: '受守護', stolen: (n: number) => `偷走 ${n} 金`, shared: '同心',
         flee: (n: number) => `溜走${n}`, hunted: '被宣告',
+        /** Roster plan B7: a turning weakness now (M5), an adaptation in force (M16); `el` is the element's name. */
+        weak: (el: string) => `弱${el}`, adapted: (el: string) => `抗${el}`,
+        /** Roster plan B8 (M7): a body its parts shield. */
+        cut: '減傷',
+        /** Roster plan B9 (M17): the TP a thief has drained this fight. */
+        drained: (n: number) => `吸走${n}TP`,
+        /** Roster plan B10: a foe in ice (M23), a banner's bearer (M26), a foe holding a member and the member inside (M28). */
+        encased: '冰封', rally: '鼓舞', holding: '吞著人', engulfed: '被吞入',
       },
     },
     /** The part of the gold a felled thief gave back (roster plan B3, M13), already counted in the gold line. */
@@ -281,6 +292,19 @@ export const T = {
       return: (who: string, _other: string, n: number) => `${who}偷走的 ${n} 金回到背包了！`,
       /** B1 review item 4: a decoy leaves with its foe. */
       vanish: (who: string) => `${who}跟著散去了。`,
+      /** Roster plan B7: a foe enters its next stage (M8); a foe adapts to what struck it (M16). */
+      stage: (who: string) => `${who}的樣子變了！`,
+      adapt: (who: string) => `${who}適應了這一擊的屬性！`,
+      /** Roster plan B9: a TP thief's take (M17); a buff thief's (M15). */
+      drain: (who: string, other: string, n: number) => `${who}吸走了${other}的 ${n} TP！`,
+      dispel: (who: string, other: string) => `${who}把${other}身上的增益搶走了！`,
+      /** Roster plan B10: a mend shorted (M21), ice melted (M23), a member swallowed and let out (M28). */
+      short: (who: string) => `${who}短路了，這回合沒能修復！`,
+      thaw: (who: string) => `${who}身上的冰化開了！`,
+      engulf: (who: string, other: string) => `${who}把${other}吞了下去！`,
+      spit: (who: string, other: string) => `${who}把${other}吐了出來！`,
+      /** Roster plan B11: a fragile song cut short by a hit. */
+      break: (who: string) => `${who}的演奏被打斷了！`,
     },
     heal: (who: string, n: number) => `${who} 回復 ${n} HP`,
     tp: (who: string, n: number) => `${who} 回復 ${n} TP`,
@@ -316,6 +340,8 @@ export const T = {
         stolen: (n: number) => `偷走了 ${n} 金，打倒就會還回來`,
         flee: (n: number) => `再 ${n} 回合就會溜走`,
         shared: (mate: string) => `和${mate}同心：受到的傷害兩隻平分`,
+        /** Roster plan B8 (M7): a body behind its parts or guards. */
+        cut: (pct: number) => `有東西護著牠：只受 ${pct}% 傷害，先打倒護著牠的`,
       },
     },
     memory: {

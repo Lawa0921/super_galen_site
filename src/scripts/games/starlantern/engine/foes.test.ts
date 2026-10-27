@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { BOSS_GROUP_CAP, ROW_MAX, createBattle, intentLabel, planEnemies, resolveRound, rewards, turnOrder, type Action, type BattleState } from './battle';
-import { guardTargets } from './foes';
+import { BOSS_GROUP_CAP, ROW_MAX, createBattle, intentLabel, planEnemies, resolveRound, rewards, skillsOf, turnOrder, type Action, type BattleState } from './battle';
+import { scaleEnemy } from './scaling';
+import { REGIONS } from '../data/regions';
+import { choosable, guardTargets, syncParts, syncRallies } from './foes';
 import { constRng, fullParty, makeBattle, makeCombatant, withRosterLive } from './testing';
 import { LEGACY_LINEUP, activeIds } from './party';
 import { wardenGroup } from '../data/monsters';
@@ -9,7 +11,8 @@ import { applyEffect } from './skills';
 import { T } from '../data/text.zh-TW';
 import { ENEMIES } from '../data/enemies';
 import type { Effect, EnemyDef, EnemySkill } from './types';
-import type { Combatant } from './combatant';
+import { stat, type BattleEvent, type Combatant } from './combatant';
+import { AILMENT_IDS, ailmentChance, ailmentChips, cureAilments } from './ailments';
 
 /** Roster plan B2–B4 (spec §6.2): the foes' mechanics, each named as the spec's test duties name it. */
 
@@ -725,5 +728,745 @@ describe('roster plan B1 review', () => {
     } finally {
       (ENEMIES as Record<string, EnemyDef>).slime = was;
     }
+  });
+});
+
+describe('M5 a turning weakness (roster plan B7)', () => {
+  const crow = () => createBattle({ party: fullParty(LEGACY_LINEUP), enemyIds: ['moon-crow'], inventory: {}, revealed: {} });
+
+  it('cycles through all four elements', () => {
+    expect(ENEMIES['moon-crow'].prism).toBe('cycle');
+    let s = crow();
+    for (const c of s.party) { c.max = { ...c.max, hp: 99999 }; c.hp = 99999; }
+    s.enemies[0].max = { ...s.enemies[0].max, hp: 99999 };
+    s.enemies[0].hp = 99999;
+    const seen = [s.enemies[0].weak];
+    for (let i = 0; i < 4; i++) {
+      s = resolveRound(s, defend(s), constRng(0.5));
+      seen.push(s.enemies[0].weak);   // planned for the next round, so it shows before the party chooses
+    }
+    expect(seen).toEqual([['phys'], ['fire'], ['ice'], ['thunder'], ['phys']]);
+    expect(s.enemies[0].resist).toEqual([]);
+  });
+
+  it('a region does not override a prism', () => {
+    const blaze = scaleEnemy(ENEMIES['moon-crow'], 8, REGIONS.blaze, false);
+    expect([blaze.weak, blaze.resist]).toEqual([[], []]);
+    // An ordinary foe takes the region's, as ever.
+    expect(scaleEnemy(ENEMIES['paper-moth'], 8, REGIONS.blaze, false).weak).toEqual([...REGIONS.blaze.weak]);
+  });
+
+  it('a prism foe writes no revealed weakness', () => {
+    const s = crow();
+    const hero = s.party[0];
+    const ctx = { rng: constRng(0.5), itemBoost: false, revealed: s.revealed, log: s.log, battle: s };
+    applyEffect(hero, s.enemies[0], { kind: 'damage', power: 10, element: 'fire', scale: 'mag', melee: false }, ctx);
+    applyEffect(hero, s.enemies[0], { kind: 'appraise' }, ctx);
+    expect(s.revealed['moon-crow']).toBeUndefined();
+    // Any other foe tells it as before.
+    const plain = createBattle({ party: fullParty(LEGACY_LINEUP), enemyIds: ['slime'], inventory: {}, revealed: {} });
+    applyEffect(hero, plain.enemies[0], { kind: 'damage', power: 10, element: 'fire', scale: 'mag', melee: false }, { ...ctx, revealed: plain.revealed, battle: plain });
+    expect(plain.revealed.slime).toEqual(['fire']);
+  });
+});
+
+describe('M16 adapt (roster plan B7)', () => {
+  const crystal = (over: Partial<Combatant> = {}) =>
+    makeBattle([P('scarlet', { max: { mag: 40, tp: 99 } as never, tp: 99 })], [E('e0', { adapt: 3, weak: ['fire'], max: { hp: 9999 } as never, ...over })], { enemyDefs: { e0: def([], { adapt: 3, weak: ['fire'] }) } });
+  const cast = (skill: string): Record<string, Action> => ({ scarlet: { kind: 'skill', skill, target: 'e0' } });
+
+  it('adapts to the first element', () => {
+    expect(ENEMIES['sorrow-crystal'].adapt).toBe(3);
+    const r = resolveRound(crystal(), cast('fire-star'), constRng(0.5));
+    // The first fire landed as a weakness; now fire is its resistance and no weakness.
+    expect(r.log.find((e) => e.type === 'damage' && e.target === 'e0')).toMatchObject({ mult: 1.5 });
+    expect(r.enemies[0].resist).toEqual(['fire']);
+    expect(r.enemies[0].weak).toEqual([]);
+    expect(r.log).toContainEqual({ type: 'foe', actor: 'e0', cue: 'adapt' });
+    // The next element finds it as it was: only the first one counts.
+    const r2 = resolveRound(r, cast('ice-star'), constRng(0.5));
+    expect(r2.enemies[0].resist).toEqual(['fire']);
+    expect(r2.log.find((e) => e.type === 'damage' && e.target === 'e0')).toMatchObject({ mult: 1 });
+  });
+
+  it('adaptation expires', () => {
+    let s = resolveRound(crystal(), cast('fire-star'), constRng(0.5));
+    s = resolveRound(s, defend(s), constRng(0.5));
+    expect(s.enemies[0].resist).toEqual(['fire']);
+    s = resolveRound(s, defend(s), constRng(0.5));
+    expect([s.enemies[0].resist, s.enemies[0].weak]).toEqual([[], ['fire']]);
+    // Once a fight: fire lands as a weakness again, and it does not adapt a second time.
+    s = resolveRound(s, cast('fire-star'), constRng(0.5));
+    expect(s.enemies[0].resist).toEqual([]);
+    expect(s.log.find((e) => e.type === 'damage' && e.target === 'e0')).toMatchObject({ mult: 1.5 });
+  });
+});
+
+describe('M8 stages (roster plan B7)', () => {
+  const blow = (name: string): EnemySkill => ({ name, chance: 1, target: 'enemy', effects: [hit(50)] });
+  const staged = () => makeBattle([P('scarlet', { max: { hp: 9999 } as never })], [E('e0', { max: { hp: 100 } as never })],
+    { enemyDefs: { e0: def([blow('一階')], { stages: [{ below: 50, skills: [blow('二階')], weak: ['ice'] }] }) } });
+
+  it('switches under its threshold', () => {
+    const s = staged();
+    s.enemies[0].hp = 60;
+    planEnemies(s, constRng(0.5));
+    expect(intentLabel(s, 'e0')).toBe('一階 → scarlet');
+    s.enemies[0].hp = 50;
+    planEnemies(s, constRng(0.5));
+    expect(intentLabel(s, 'e0')).toBe('二階 → scarlet');
+    expect(s.enemies[0]).toMatchObject({ stage: 0, weak: ['ice'] });
+    expect(s.log).toContainEqual({ type: 'foe', actor: 'e0', cue: 'stage' });
+    const r = resolveRound(s, defend(s), constRng(0.5));
+    expect(acted(r, 'e0')).toEqual(['二階']);
+  });
+
+  it('never switches back after healing', () => {
+    const s = staged();
+    s.enemies[0].hp = 40;
+    planEnemies(s, constRng(0.5));
+    s.enemies[0].hp = 100;
+    const r = resolveRound(s, defend(s), constRng(0.5));
+    expect(r.enemies[0].stage).toBe(0);
+    expect(acted(r, 'e0')).toEqual(['二階']);
+    expect(intentLabel(r, 'e0')).toBe('二階 → scarlet');
+  });
+
+  it('the false moon turns between bright and eclipse every two rounds', () => {
+    const moon = ENEMIES['false-moon'];
+    expect(moon.stageEvery).toBe(2);
+    let s = createBattle({ party: fullParty(LEGACY_LINEUP), enemyIds: ['false-moon'], inventory: {}, revealed: {} });
+    for (const c of s.party) { c.max = { ...c.max, hp: 99999 }; c.hp = 99999; }
+    const lists: string[][] = [];
+    for (let i = 0; i < 6; i++) {
+      s = resolveRound(s, defend(s), mulberry32(i + 1));
+      lists.push(skillsOf(s, s.enemies[0]).map((k) => k.name));   // the list its next round is drawn from
+    }
+    const bright = moon.skills.map((k) => k.name), eclipse = moon.stages![0].skills.map((k) => k.name);
+    // Rounds 2..7: bright (2), eclipse (3, 4), bright (5, 6), eclipse (7).
+    expect(lists).toEqual([bright, eclipse, eclipse, bright, bright, eclipse]);
+    expect(bright.some((n) => n.includes('月明'))).toBe(true);
+    expect(eclipse.some((n) => n.includes('月蝕'))).toBe(true);
+  });
+});
+
+describe('M6 a borrowed blow (roster plan B8)', () => {
+  const mirror = (cap: number): EnemySkill => ({ name: '借來的招式', chance: 1, target: 'enemy', effects: [{ kind: 'mirror', cap }] });
+  const field = (cap: number, rec?: BattleState['lastPartyHit']) => {
+    const s = makeBattle([P('scarlet', { max: { hp: 9999 } as never }), P('noel', { max: { hp: 9999 } as never })], [E('e0', { mirrors: true, max: { atk: 40, mag: 40 } as never })],
+      { enemyDefs: { e0: def([mirror(cap)]) }, ...(rec ? { lastPartyHit: rec } : {}) });
+    s.intents = { e0: { kind: 'enemy-skill', index: 0, target: 'scarlet' } };
+    return s;
+  };
+  const blowOn = (s: BattleState, key: string) => s.log.find((e) => e.type === 'damage' && e.target === key) as { amount: number; element: string } | undefined;
+
+  it('returns the last element at most cap', () => {
+    const rec = { by: 'noel', element: 'fire' as const, power: 140 };
+    const r = resolveRound(field(999, rec), defend(field(999, rec)), constRng(0.5));
+    // It struck back at the one who cast it (noel, not the scarlet it drew), in her element.
+    expect(acted(r, 'e0')).toEqual(['借來的招式']);
+    expect(blowOn(r, 'scarlet')).toBeUndefined();
+    expect(blowOn(r, 'noel')?.element).toBe('fire');
+    const capped = resolveRound(field(50, rec), defend(field(50, rec)), constRng(0.5));
+    const at140 = resolveRound(field(140, rec), defend(field(140, rec)), constRng(0.5));
+    expect(blowOn(capped, 'noel')!.amount).toBeLessThan(blowOn(r, 'noel')!.amount);
+    expect(blowOn(at140, 'noel')!.amount).toBe(blowOn(r, 'noel')!.amount);
+  });
+
+  it('remembers the last blow the party landed', () => {
+    const s = field(999);
+    s.party[0].tp = 50;
+    const r = resolveRound(s, { scarlet: { kind: 'skill', skill: 'ice-star', target: 'e0' }, noel: { kind: 'defend' } }, constRng(0.5));
+    expect(r.lastPartyHit).toMatchObject({ by: 'scarlet', element: 'ice' });
+    // A fight with no foe that borrows keeps no record.
+    const plain = makeBattle([P('scarlet', { tp: 50 })], [E('e0', { max: { hp: 9999 } as never })]);
+    const r2 = resolveRound(plain, { scarlet: { kind: 'skill', skill: 'ice-star', target: 'e0' } }, constRng(0.5));
+    expect(r2.lastPartyHit).toBeUndefined();
+  });
+
+  it('without a record it is an attack', () => {
+    const r = resolveRound(field(999), defend(field(999)), constRng(0.5));
+    expect(acted(r, 'e0')).toEqual(['攻擊']);
+    expect(blowOn(r, 'scarlet')?.element).toBe('phys');
+    // Nor when the one who cast it is down.
+    const gone = field(999, { by: 'noel', element: 'fire', power: 140 });
+    gone.party[1].alive = false;
+    gone.party[1].hp = 0;
+    expect(acted(resolveRound(gone, defend(gone), constRng(0.5)), 'e0')).toEqual(['攻擊']);
+  });
+});
+
+describe('M7 parts (roster plan B8)', () => {
+  const body = (handUp: boolean) => {
+    const s = makeBattle([P('scarlet', { max: { atk: 60 } as never })], [E('e0', { max: { hp: 9999 } as never }), E('e1', { defId: 'archon-hand', alive: handUp, hp: handUp ? 100 : 0 })],
+      { enemyDefs: { e0: def([], { parts: { cutPct: 50 } }), e1: def([], { rank: 'part' }) } });
+    syncParts(s, (c) => s.enemyDefs![c.key]);
+    return s;
+  };
+  const dealt = (s: BattleState) => (s.log.find((e) => e.type === 'damage' && e.target === 'e0') as { amount: number }).amount;
+
+  it('half while a part stands', () => {
+    const up = body(true), down = body(false);
+    expect(up.enemies[0].cut).toBe(50);
+    expect(down.enemies[0].cut).toBeUndefined();
+    const a = dealt(resolveRound(up, { scarlet: { kind: 'attack', target: 'e0' } }, constRng(0.5)));
+    const b = dealt(resolveRound(down, { scarlet: { kind: 'attack', target: 'e0' } }, constRng(0.5)));
+    expect(a).toBe(Math.floor(b / 2));
+    // The part itself takes its blows whole.
+    const onHand = resolveRound(body(true), { scarlet: { kind: 'attack', target: 'e1' } }, constRng(0.5));
+    expect(onHand.log.some((e) => e.type === 'damage' && e.target === 'e1')).toBe(true);
+  });
+
+  it('drops with the last part', () => {
+    const s = body(true);
+    s.enemies[1].hp = 1;
+    const r = resolveRound(s, { scarlet: { kind: 'attack', target: 'e1' } }, constRng(0.5));
+    expect(r.enemies[1].alive).toBe(false);
+    expect(r.enemies[0].cut).toBeUndefined();
+    // The real bodies: the archon's hands and the sovereign's pillars.
+    expect(ENEMIES['old-city-archon'].parts).toEqual({ cutPct: 50 });
+    expect(ENEMIES['rime-sovereign'].parts).toEqual({ cutPct: 50 });
+  });
+});
+
+describe('M18 mimic (roster plan B8)', () => {
+  const shadow = (ids: Parameters<typeof fullParty>[0]) => createBattle({ party: fullParty(ids), enemyIds: ['lost-shadow'], inventory: {}, revealed: {} });
+
+  it('copies the strongest member', () => {
+    expect(ENEMIES['lost-shadow'].mimic).toBe(60);
+    const s = shadow(LEGACY_LINEUP);
+    const top = s.party.reduce((a, b) => (b.max.atk > a.max.atk ? b : a));
+    // A full party: no other multiplier at its home depth.
+    expect(s.enemies[0].max.atk).toBe(Math.round(top.max.atk * 0.6));
+    expect(s.enemies[0].max.mag).toBe(Math.round(top.max.mag * 0.6));
+    expect(s.enemies[0].max.hp).toBe(ENEMIES['lost-shadow'].stats.hp);
+  });
+
+  it('scales with party size', () => {
+    const solo = shadow(['hero']);
+    const k = solo.partyScale!;
+    expect(k).toBeLessThan(1);
+    expect(solo.enemies[0].max.atk).toBe(Math.round(solo.party[0].max.atk * 0.6 * k));
+    // And at depth, as every foe grows, so does the copy's multiplier (an elite's, a depth's power), never its growth.
+    const deep = createBattle({ party: fullParty(LEGACY_LINEUP), enemyIds: ['lost-shadow'], inventory: {}, revealed: {}, scale: { depth: 20, region: 'mainline', elite: 'lost-shadow' } });
+    const top = deep.party.reduce((a, b) => (b.max.atk > a.max.atk ? b : a));
+    expect(deep.enemies[0].max.atk).toBeGreaterThan(Math.round(top.max.atk * 0.6));
+  });
+});
+
+describe('M9 forget (roster plan B9)', () => {
+  const lost = (over: Partial<Combatant> = {}) =>
+    makeBattle([P('scarlet', { forget: true, tp: 50, max: { hp: 9999, tp: 50 } as never, ...over })], [E('e0', { max: { hp: 9999 } as never })], { inventory: { potion: 1 } });
+
+  it('attacks instead of casting', () => {
+    const r = resolveRound(lost(), { scarlet: { kind: 'skill', skill: 'fire-star', target: 'e0' } }, constRng(0.5));
+    expect(acted(r, 'scarlet')).toEqual(['攻擊']);
+    expect(r.log.find((e) => e.type === 'damage' && e.target === 'e0')).toMatchObject({ element: 'phys' });
+    expect(r.party[0].tp).toBe(50);   // nothing was paid
+    // It lasts her one turn.
+    expect(r.party[0].forget).toBeUndefined();
+    const r2 = resolveRound(r, { scarlet: { kind: 'skill', skill: 'fire-star', target: 'e0' } }, constRng(0.5));
+    expect(acted(r2, 'scarlet')).toEqual(['火之星彈']);
+  });
+
+  it('items and ultimates still work', () => {
+    const item = resolveRound(lost({ hp: 10 }), { scarlet: { kind: 'item', item: 'potion', target: 'scarlet' } }, constRng(0.5));
+    expect(acted(item, 'scarlet')).toEqual(['回復藥']);
+    const ult = resolveRound(lost({ limit: 100 }), { scarlet: { kind: 'ultimate', target: 'e0' } }, constRng(0.5));
+    expect(ult.log.some((e) => e.type === 'act' && e.actor === 'scarlet' && e.ultimate)).toBe(true);
+    const guard = resolveRound(lost(), { scarlet: { kind: 'defend' } }, constRng(0.5));
+    expect(acted(guard, 'scarlet')).toEqual(['防禦']);
+  });
+
+  it('a foe that forgets attacks plainly too', () => {
+    const s = makeBattle([P('scarlet', { max: { hp: 9999 } as never })], [E('e0', { forget: true })], { enemyDefs: { e0: def([{ name: '大招', chance: 1, target: 'enemies', effects: [hit(300)] }]) } });
+    s.intents = { e0: { kind: 'enemy-skill', index: 0 } };
+    expect(acted(resolveRound(s, defend(s), constRng(0.5)), 'e0')).toEqual(['攻擊']);
+  });
+
+  it('cure clears forget', () => {
+    const s = lost();
+    const ctx = { rng: constRng(0.5), itemBoost: false, revealed: {}, log: [], battle: s };
+    applyEffect(s.party[0], s.party[0], { kind: 'cure' }, ctx);
+    expect(s.party[0].forget).toBeUndefined();
+    expect(ailmentChips(lost().party[0])).toEqual([{ id: 'forget' }]);
+  });
+
+  it("Bobby's first aid still cures in its old order", () => {
+    expect(AILMENT_IDS).toEqual(['poison', 'burn', 'bleed', 'shock', 'freeze', 'sleep', 'forget']);
+    // A cure of the old six leaves a forget alone; the whole list takes it.
+    const c = P('bobby', { forget: true, poison: true });
+    cureAilments(c, AILMENT_IDS.slice(0, 6));
+    expect([c.poison, c.forget]).toEqual([false, true]);
+    cureAilments(c, AILMENT_IDS);
+    expect(c.forget).toBeUndefined();
+  });
+
+  it('a boss halves it, and sleepRes resists it', () => {
+    expect(ailmentChance(E('e0', { boss: true }), 'forget', 0.5)).toBeCloseTo(0.25, 12);
+    expect(ailmentChance(P('noel', { x: { sleepRes: 40 } }), 'forget', 0.5)).toBeCloseTo(0.3, 12);
+    // It lands with one draw, and logs as an ailment.
+    const s = lost({ forget: undefined });
+    const ctx = { rng: constRng(0), itemBoost: false, revealed: {}, log: [] as BattleEvent[], battle: s };
+    applyEffect(s.enemies[0], s.party[0], { kind: 'inflict', status: 'forget', chance: 0.5 }, ctx);
+    expect(s.party[0].forget).toBe(true);
+    expect(ctx.log).toContainEqual({ type: 'status', target: 'scarlet', status: 'forget' });
+  });
+});
+
+describe('M17 TP thieves (roster plan B9)', () => {
+  it('tp never below zero', () => {
+    const s = makeBattle([P('scarlet', { tp: 5, max: { hp: 9999 } as never })], [E('e0')], { enemyDefs: { e0: def([{ name: '汲取', chance: 1, target: 'enemy', effects: [{ ...hit(50), tpDrain: 15 } as Effect] }]) } });
+    s.intents = { e0: { kind: 'enemy-skill', index: 0, target: 'scarlet' } };
+    const r = resolveRound(s, defend(s), constRng(0.5));
+    expect(r.party[0].tp).toBe(0);
+    expect(r.enemies[0].drained).toBe(5);
+    expect(r.log).toContainEqual({ type: 'foe', actor: 'e0', cue: 'drain', target: 'scarlet', amount: 5 });
+    // A full pool loses the whole share.
+    const full = makeBattle([P('scarlet', { tp: 40, max: { hp: 9999, tp: 40 } as never })], [E('e0')], { enemyDefs: s.enemyDefs });
+    full.intents = s.intents;
+    expect(resolveRound(full, defend(full), constRng(0.5)).party[0].tp).toBe(25);
+  });
+});
+
+describe('M25 poison hunters (roster plan B9)', () => {
+  it('only against the poisoned', () => {
+    const sting = (poisoned: boolean) => {
+      const s = makeBattle([P('scarlet', { poison: poisoned, max: { hp: 9999 } as never })], [E('e0')], { enemyDefs: { e0: def([{ name: '毒針', chance: 1, target: 'enemy', effects: [{ ...hit(100), vsPoisoned: 50 } as Effect] }]) } });
+      s.intents = { e0: { kind: 'enemy-skill', index: 0, target: 'scarlet' } };
+      return (resolveRound(s, { scarlet: { kind: 'attack', target: 'e0' } }, constRng(0.5)).log.find((e) => e.type === 'damage' && e.target === 'scarlet') as { amount: number }).amount;
+    };
+    const plain = sting(false), poisoned = sting(true);
+    expect(Math.abs(poisoned / plain - 1.5)).toBeLessThan(0.05);
+    expect(ENEMIES['sand-scorpion'].skills.some((k) => k.effects.some((e) => e.kind === 'damage' && e.vsPoisoned === 50))).toBe(true);
+  });
+});
+
+describe('M15 buff thieves (roster plan B9)', () => {
+  it('moves buffs and leaves debuffs, auras and wards', () => {
+    const m = P('scarlet', {
+      buffs: [{ stat: 'atk', pct: 30, turns: 3, src: 'noel' }, { stat: 'def', pct: -20, turns: 2 }, { stat: 'spd', pct: 10, turns: 1 }],
+      auras: [{ stat: 'res', pct: 15, turns: 0 }], ward: { def: 20, res: 20, src: 'chizuru' },
+    });
+    const foe = E('e0', { buffs: [{ stat: 'atk', pct: 10, turns: 1 }] });
+    const log: BattleEvent[] = [];
+    applyEffect(foe, m, { kind: 'dispel' }, { rng: constRng(0.5), itemBoost: false, revealed: {}, log });
+    // Her debuff stays; her aura and the barrier's ward are not buffs.
+    expect(m.buffs).toEqual([{ stat: 'def', pct: -20, turns: 2 }]);
+    expect(m.auras).toEqual([{ stat: 'res', pct: 15, turns: 0 }]);
+    expect(m.ward).toEqual({ def: 20, res: 20, src: 'chizuru' });
+    // The foe has them now as its own (the stronger atk replacing its weaker one), for the rounds they had left.
+    expect(foe.buffs).toEqual([{ stat: 'atk', pct: 30, turns: 3, src: 'e0' }, { stat: 'spd', pct: 10, turns: 1, src: 'e0' }]);
+    expect(log).toContainEqual({ type: 'foe', actor: 'e0', cue: 'dispel', target: 'scarlet' });
+    // Nothing to take: nothing happens, and nothing is said.
+    const bare = P('noel');
+    const quiet: BattleEvent[] = [];
+    applyEffect(foe, bare, { kind: 'dispel' }, { rng: constRng(0.5), itemBoost: false, revealed: {}, log: quiet });
+    expect(quiet).toEqual([]);
+  });
+});
+
+describe('M21 mend (roster plan B10)', () => {
+  const machine = () => makeBattle([P('scarlet', { tp: 50, max: { hp: 9999, mag: 1 } as never })], [E('e0', { hp: 50, max: { hp: 100 } as never, mend: { pct: 12, stopBy: 'thunder' } })],
+    { enemyDefs: { e0: def([], { mend: { pct: 12, stopBy: 'thunder' } }) } });
+
+  it('mends at the round end', () => {
+    const r = resolveRound(machine(), defend(machine()), constRng(0.5));
+    expect(r.enemies[0].hp).toBe(62);
+    expect(r.log).toContainEqual({ type: 'heal', target: 'e0', amount: 12 });
+    // Never past its max.
+    const near = machine();
+    near.enemies[0].hp = 95;
+    expect(resolveRound(near, defend(near), constRng(0.5)).enemies[0].hp).toBe(100);
+  });
+
+  it('stops on its element', () => {
+    const s = machine();
+    const r = resolveRound(s, { scarlet: { kind: 'skill', skill: 'thunder-star', target: 'e0' } }, constRng(0.5));
+    const after = r.enemies[0].hp;
+    expect(r.log.some((e) => e.type === 'heal' && e.target === 'e0')).toBe(false);
+    expect(r.log).toContainEqual({ type: 'foe', actor: 'e0', cue: 'short' });
+    // Another element does not stop it.
+    const f = resolveRound(machine(), { scarlet: { kind: 'skill', skill: 'fire-star', target: 'e0' } }, constRng(0.5));
+    expect(f.log.some((e) => e.type === 'heal' && e.target === 'e0')).toBe(true);
+    // And the next round it mends again.
+    const r2 = resolveRound(r, defend(r), constRng(0.5));
+    expect(r2.enemies[0].hp).toBe(after + 12);
+    expect(ENEMIES['ancestor-automaton'].mend).toEqual({ pct: 12, stopBy: 'thunder' });
+  });
+});
+
+describe('M23 encased (roster plan B10)', () => {
+  const pilgrim = () => {
+    const was = ENEMIES.slime;
+    try {
+      (ENEMIES as Record<string, EnemyDef>).slime = { ...was, opener: 'encased' };
+      return createBattle({ party: fullParty(LEGACY_LINEUP), enemyIds: ['slime'], inventory: {}, revealed: {} });
+    } finally {
+      (ENEMIES as Record<string, EnemyDef>).slime = was;
+    }
+  };
+
+  it('opens encased: hard to hurt, and it does not act', () => {
+    const s = pilgrim();
+    const e = s.enemies[0];
+    expect(e.encased).toBe(true);
+    expect(stat(e, 'def')).toBe(Math.floor(e.max.def * 2.5));
+    expect(stat(e, 'res')).toBe(Math.floor(e.max.res * 2.5));
+    planEnemies(s, constRng(0.5));
+    expect(s.intents!.e0).toBeUndefined();
+    expect(intentLabel(s, 'e0')).toBe(T.battle.foe.encased);
+    const r = resolveRound(s, defend(s), constRng(0.5));
+    expect(acted(r, 'e0')).toEqual([]);
+  });
+
+  it('fire thaws', () => {
+    const s = pilgrim();
+    const hero = s.party[0];
+    const ctx = { rng: constRng(0.5), itemBoost: false, revealed: {}, log: s.log, battle: s };
+    applyEffect(hero, s.enemies[0], { kind: 'damage', power: 10, element: 'ice', scale: 'mag', melee: false }, ctx);
+    expect(s.enemies[0].encased).toBe(true);
+    applyEffect(hero, s.enemies[0], { kind: 'damage', power: 10, element: 'fire', scale: 'mag', melee: false }, ctx);
+    expect(s.enemies[0].encased).toBeUndefined();
+    expect(s.log).toContainEqual({ type: 'foe', actor: 'e0', cue: 'thaw' });
+  });
+
+  it('thaws by round three', () => {
+    let s = pilgrim();
+    for (const c of s.party) { c.max = { ...c.max, hp: 99999 }; c.hp = 99999; }
+    s = resolveRound(s, defend(s), constRng(0.5));
+    expect(s.enemies[0].encased).toBe(true);
+    s = resolveRound(s, defend(s), constRng(0.5));
+    expect(s.enemies[0].encased).toBeUndefined();
+    expect(s.intents!.e0).toBeDefined();
+    s = resolveRound(s, defend(s), constRng(0.5));
+    expect(acted(s, 'e0').length).toBe(1);
+    expect(ENEMIES['frozen-pilgrim'].opener).toBe('encased');
+  });
+});
+
+describe('M26 rally (roster plan B10)', () => {
+  it('the rally goes with its bearer', () => {
+    const s = makeBattle([P('scarlet', { max: { hp: 9999, atk: 999 } as never })], [E('e0', { hp: 1 }), E('e1', { max: { hp: 9999, atk: 100 } as never })],
+      { enemyDefs: { e0: def([], { rally: { atk: 20 } }), e1: def([]) } });
+    syncRallies(s, (c) => s.enemyDefs![c.key]);
+    expect(stat(s.enemies[1], 'atk')).toBe(120);
+    expect(stat(s.enemies[0], 'atk')).toBe(s.enemies[0].max.atk);   // the bearer's own banner is for the others
+    const r = resolveRound(s, { scarlet: { kind: 'attack', target: 'e0' } }, constRng(0.5));
+    expect(r.enemies[0].alive).toBe(false);
+    expect(r.enemies[1].auras).toBeUndefined();
+    expect(stat(r.enemies[1], 'atk')).toBe(100);
+    // A fight with no banner carries no aura at all.
+    const plain = makeBattle([P('scarlet')], [E('e0'), E('e1')]);
+    syncRallies(plain, () => ENEMIES.slime);
+    expect(plain.enemies.every((e) => e.auras === undefined)).toBe(true);
+  });
+
+  it('a throng grows with its kin', () => {
+    const s = makeBattle([P('scarlet')], [E('e0', { defId: 'shadow-parade' }), E('e1', { defId: 'lost-shadow' }), E('e2', { defId: 'lost-shadow' })],
+      { enemyDefs: { e0: def([], { throng: { id: 'lost-shadow', per: { atk: 15 } } }), e1: def([]), e2: def([]) } });
+    syncRallies(s, (c) => s.enemyDefs![c.key]);
+    expect(s.enemies[0].auras).toEqual([{ stat: 'atk', pct: 30, turns: 0, src: 'e0' }]);
+    s.enemies[2].alive = false;
+    syncRallies(s, (c) => s.enemyDefs![c.key]);
+    expect(s.enemies[0].auras).toEqual([{ stat: 'atk', pct: 15, turns: 0, src: 'e0' }]);
+  });
+});
+
+describe('M27 stall (roster plan B10)', () => {
+  const stall: EnemySkill = { name: '遲滯', chance: 1, target: 'enemy', effects: [{ kind: 'delay' }, { kind: 'buff', stat: 'spd', pct: -30, turns: 2 }] };
+  const clock = () => makeBattle([P('scarlet', { max: { hp: 9999 } as never }), P('noel', { max: { hp: 9999 } as never })], [E('e0', { max: { hp: 9999 } as never })], { enemyDefs: { e0: def([stall]) } });
+
+  it('never delays one member twice in a row', () => {
+    let s = clock();
+    const hit: string[] = [];
+    for (let i = 0; i < 6; i++) {
+      s = resolveRound(s, defend(s), constRng(0.1));
+      hit.push(s.party.find((c) => c.delay === s.round + 1)!.key);
+    }
+    for (let i = 1; i < hit.length; i++) expect(hit[i]).not.toBe(hit[i - 1]);
+    // Even a taunt that sends the blow to the same member again leaves her undelayed this time.
+    const t = clock();
+    t.party[0].delayedBy = 'e0';
+    t.party[0].taunt = 3;
+    t.intents = { e0: { kind: 'enemy-skill', index: 0, target: 'scarlet' } };
+    const r = resolveRound(t, defend(t), constRng(0.5));
+    expect(r.party[0].delay).toBeUndefined();
+  });
+
+  it('a delay never skips a turn', () => {
+    let s = clock();
+    s = resolveRound(s, defend(s), constRng(0.1));
+    const slowed = s.party.find((c) => c.delay === s.round + 1)!;
+    expect(stat(slowed, 'spd')).toBeLessThan(slowed.max.spd);   // slower through the next round
+    const order: string[] = [];
+    const acts: Record<string, Action> = { scarlet: { kind: 'attack', target: 'e0' }, noel: { kind: 'attack', target: 'e0' } };
+    const r = resolveRound(s, acts, constRng(0.5));
+    for (const e of r.log) if (e.type === 'act') order.push(e.actor);
+    // She still acts, and last of the party.
+    expect(order).toContain(slowed.key);
+    expect(order.filter((k) => k !== 'e0').at(-1)).toBe(slowed.key);
+  });
+});
+
+describe('M28 engulf (roster plan B10)', () => {
+  const gulp: EnemySkill = { name: '吞入', chance: 1, target: 'enemy', effects: [hit(10), { kind: 'engulf' }] };
+  const maw = (n = 2) => {
+    const party = [P('scarlet', { max: { hp: 9999, atk: 50 } as never }), P('noel', { max: { hp: 9999 } as never }), P('chizuru', { max: { hp: 9999 } as never })].slice(0, n);
+    return makeBattle(party, [E('e0', { max: { hp: 10000 } as never }), E('e1', { max: { hp: 9999 } as never })], { enemyDefs: { e0: def([gulp]), e1: def([]) } });
+  };
+  const swallowed = (n = 2) => {
+    const s = maw(n);
+    s.intents = { e0: { kind: 'enemy-skill', index: 0, target: 'scarlet' }, e1: { kind: 'attack', target: 'noel' } };
+    return resolveRound(s, defend(s), constRng(0.5));
+  };
+
+  it('swallows one member, and foes cannot reach her inside', () => {
+    const r = swallowed();
+    expect(r.party[0].engulfed).toBe('e0');
+    expect(r.enemies[0].gulp).toMatchObject({ key: 'scarlet', until: 2 });
+    expect(r.log).toContainEqual({ type: 'foe', actor: 'e0', cue: 'engulf', target: 'scarlet' });
+    // Next round every blow goes to the one outside.
+    r.intents = { e1: { kind: 'attack', target: 'scarlet' } };
+    const r2 = resolveRound(r, { noel: { kind: 'defend' } }, constRng(0.5));
+    expect(hitsOn(r2, 'scarlet')).toBe(0);
+    expect(hitsOn(r2, 'noel')).toBeGreaterThan(0);
+  });
+
+  it('an engulfed member still acts, on the engulfer only', () => {
+    const r = swallowed(3);
+    const before = r.enemies[0].hp;
+    const r2 = resolveRound(r, { scarlet: { kind: 'attack', target: 'e1' }, noel: { kind: 'defend' }, chizuru: { kind: 'defend' } }, constRng(0.5));
+    expect(acted(r2, 'scarlet')).toEqual(['攻擊']);
+    expect(hitsOn(r2, 'e1')).toBe(0);
+    expect(r2.enemies[0].hp).toBeLessThan(before);
+    // From inside, half again as hard.
+    const out = maw(3);
+    const plainHit = resolveRound(out, { scarlet: { kind: 'attack', target: 'e0' }, noel: { kind: 'defend' }, chizuru: { kind: 'defend' } }, constRng(0.5));
+    const inside = (r2.log.find((e) => e.type === 'damage' && e.target === 'e0') as { amount: number }).amount;
+    const outside = (plainHit.log.find((e) => e.type === 'damage' && e.target === 'e0') as { amount: number }).amount;
+    expect(Math.abs(inside / outside - 1.5)).toBeLessThan(0.05);
+    // What she may pick: the engulfer, and of allies herself.
+    expect(choosable(r, r.party[0], 'foe').map((c) => c.key)).toEqual(['e0']);
+    expect(choosable(r, r.party[0], 'ally').map((c) => c.key)).toEqual(['scarlet']);
+  });
+
+  it('released by damage', () => {
+    const r = swallowed(3);
+    r.party[1].max = { ...r.party[1].max, atk: 3000 };
+    const r2 = resolveRound(r, { scarlet: { kind: 'defend' }, noel: { kind: 'attack', target: 'e0' }, chizuru: { kind: 'defend' } }, constRng(0.5));
+    expect(r2.party[0].engulfed).toBeUndefined();
+    expect(r2.enemies[0].gulp?.key).not.toBe('scarlet');   // (free again, it may take another later in the round)
+    expect(r2.log).toContainEqual({ type: 'foe', actor: 'e0', cue: 'spit', target: 'scarlet' });
+  });
+
+  it('released after a round, poisoned by the round inside', () => {
+    const r = swallowed();
+    expect(r.party[0].engulfed).toBe('e0');   // still in at the end of the round she went in
+    const r2 = resolveRound(r, { scarlet: { kind: 'defend' }, noel: { kind: 'defend' } }, constRng(0.5));
+    expect(r2.log.some((e) => e.type === 'poison-tick' && e.target === 'scarlet')).toBe(true);
+    expect(r2.party[0].engulfed).toBeUndefined();
+    expect(r2.log).toContainEqual({ type: 'foe', actor: 'e0', cue: 'spit', target: 'scarlet' });
+    // And the engulfer falling lets her out at once.
+    const r3 = swallowed();
+    r3.enemies[0].hp = 1;
+    const r4 = resolveRound(r3, { scarlet: { kind: 'attack', target: 'e0' }, noel: { kind: 'defend' } }, constRng(0.5));
+    expect(r4.enemies[0].alive).toBe(false);
+    expect(r4.party[0].engulfed).toBeUndefined();
+  });
+
+  it('never engulfs the last standing', () => {
+    const s = maw(2);
+    s.party[1].alive = false;
+    s.party[1].hp = 0;
+    s.intents = { e0: { kind: 'enemy-skill', index: 0, target: 'scarlet' } };
+    const r = resolveRound(s, { scarlet: { kind: 'defend' } }, constRng(0.5));
+    expect(r.party[0].engulfed).toBeUndefined();
+    // Nor a second one while it holds one.
+    const two = swallowed(3);
+    two.intents = { e0: { kind: 'enemy-skill', index: 0, target: 'noel' } };
+    const r2 = resolveRound(two, defend(two), constRng(0.5));
+    expect(r2.party[1].engulfed).toBeUndefined();
+  });
+
+  it('no ally can heal the engulfed', () => {
+    const r = swallowed(3);
+    r.party[0].hp = 100;
+    const healer = r.party[1];
+    healer.tp = 50;
+    expect(choosable(r, healer, 'ally').map((c) => c.key)).toEqual(['noel', 'chizuru']);
+    const r2 = resolveRound(r, { scarlet: { kind: 'defend' }, noel: { kind: 'skill', skill: 'moonlight', target: 'scarlet' }, chizuru: { kind: 'defend' } }, constRng(0.5));
+    expect(r2.log.some((e) => e.type === 'heal' && e.target === 'scarlet')).toBe(false);
+    // An item reaches her.
+    expect(choosable(r, healer, 'ally', true).map((c) => c.key)).toEqual(['scarlet', 'noel', 'chizuru']);
+  });
+});
+
+describe('roster plan B11: the traits that needed one more rule', () => {
+  it('a skill every N rounds comes on those rounds only, and its draw holds on the others', () => {
+    const swing: EnemySkill = { name: '沙暴', chance: 1, target: 'enemies', every: 2, effects: [hit(10)] };
+    const s = makeBattle([P('scarlet', { max: { hp: 9999 } as never })], [E('e0')], { enemyDefs: { e0: def([swing]) } });
+    let r = s;
+    const names: string[][] = [];
+    for (let i = 0; i < 4; i++) { r = resolveRound(r, defend(r), constRng(0.5)); names.push(acted(r, 'e0')); }
+    expect(names).toEqual([['攻擊'], ['沙暴'], ['攻擊'], ['沙暴']]);
+    // Passed over, it still drew for its chance.
+    const a = counted(), b = counted();
+    planEnemies(makeBattle([P('scarlet')], [E('e0')], { enemyDefs: { e0: def([swing]) } }), a.rng);   // plans round 1: passed over
+    planEnemies(makeBattle([P('scarlet')], [E('e0')], { enemyDefs: { e0: def([{ ...swing, chance: 0 }]) } }), b.rng);
+    expect(a.n).toBe(b.n);
+  });
+
+  it('a wound-up skill that comes every N rounds lands the round after, off its beat', () => {
+    const dive: EnemySkill = { name: '吞沒', chance: 1, target: 'enemies', every: 3, windup: '深潛', effects: [hit(10)] };
+    let s = makeBattle([P('scarlet', { max: { hp: 9999 } as never })], [E('e0')], { enemyDefs: { e0: def([dive]) } });
+    const names: string[][] = [];
+    for (let i = 0; i < 4; i++) { s = resolveRound(s, defend(s), constRng(0.5)); names.push(acted(s, 'e0')); }
+    expect(names).toEqual([['攻擊'], ['攻擊'], ['深潛'], ['吞沒']]);
+  });
+
+  it('a skill that needs its kin waits for them', () => {
+    const fire: EnemySkill = { name: '祭典之火', chance: 1, target: 'enemies', needs: { id: 'lamp-wight', n: 2 }, effects: [hit(10)] };
+    const lit = (n: number) => makeBattle([P('scarlet', { max: { hp: 9999 } as never })], [E('e0'), ...Array.from({ length: n }, (_, i) => E(`e${i + 1}`, { defId: 'lamp-wight' }))],
+      { enemyDefs: { e0: def([fire]), ...Object.fromEntries(Array.from({ length: n }, (_, i) => [`e${i + 1}`, def([])])) } });
+    expect(acted(resolveRound(lit(1), defend(lit(1)), constRng(0.5)), 'e0')).toEqual(['攻擊']);
+    expect(acted(resolveRound(lit(2), defend(lit(2)), constRng(0.5)), 'e0')).toEqual(['祭典之火']);
+  });
+
+  describe('the music box plays for two rounds', () => {
+    const play: EnemySkill = { name: '搖籃曲', chance: 1, target: 'enemies', windup: '演奏', windupRounds: 2, fragile: true,
+      windupAllies: [{ kind: 'restore', hpPct: 10 }], effects: [{ kind: 'inflict', status: 'sleep', chance: 1 }] };
+    const box = () => makeBattle([P('scarlet', { max: { hp: 9999 } as never })], [E('e0'), E('e1', { hp: 50 })], { enemyDefs: { e0: def([play]), e1: def([]) } });
+
+    it('two turns of playing mend its kin, then the row sleeps', () => {
+      let s = box();
+      s = resolveRound(s, defend(s), constRng(0.5));
+      expect(acted(s, 'e0')).toEqual(['演奏']);
+      expect(s.enemies[1].hp).toBe(60);
+      expect(intentLabel(s, 'e0')).toBe(T.battle.foe.windup('搖籃曲'));
+      s = resolveRound(s, defend(s), constRng(0.5));
+      expect(acted(s, 'e0')).toEqual(['演奏']);
+      expect(s.enemies[1].hp).toBe(70);
+      s = resolveRound(s, defend(s), constRng(0.5));
+      expect(acted(s, 'e0')).toEqual(['搖籃曲']);
+      expect(s.log).toContainEqual({ type: 'status', target: 'scarlet', status: 'sleep' });
+      expect(s.enemies[0].windLeft).toBeUndefined();
+    });
+
+    it('a landed hit breaks the song', () => {
+      let s = box();
+      s = resolveRound(s, defend(s), constRng(0.5));
+      s = resolveRound(s, { scarlet: { kind: 'attack', target: 'e0' } }, constRng(0.5));
+      expect(s.enemies[0].winding).toBeUndefined();
+      expect(s.log).toContainEqual({ type: 'foe', actor: 'e0', cue: 'break' });
+      s = resolveRound(s, defend(s), constRng(0.5));
+      expect(acted(s, 'e0')).toEqual(['演奏']);   // it starts over
+    });
+  });
+
+  it('each blow makes the gilded hoarder harder to hit', () => {
+    const s = makeBattle([P('scarlet', { max: { atk: 1 } as never })], [E('e0', { dodgeUp: 10, max: { hp: 9999 } as never })]);
+    const r = resolveRound(s, { scarlet: { kind: 'attack', target: 'e0' } }, constRng(0.5));
+    expect(r.enemies[0].x.evasion).toBe(10);
+    const r2 = resolveRound(r, { scarlet: { kind: 'attack', target: 'e0' } }, constRng(0.5));
+    expect(r2.enemies[0].x.evasion).toBe(20);
+    expect(ENEMIES['gilded-hoarder'].dodgeUp).toBe(10);
+  });
+
+  it('the fallen knight steels itself as an ally falls', () => {
+    const steel = { name: '騎士的誓言', effects: [{ kind: 'buff', stat: 'def', pct: 30, turns: 3 } as Effect] };
+    const s = makeBattle([P('scarlet', { max: { atk: 999 } as never })], [E('e0', { max: { hp: 9999 } as never }), E('e1', { hp: 1 })],
+      { enemyDefs: { e0: def([], { onAllyFall: steel }), e1: def([]) } });
+    const r = resolveRound(s, { scarlet: { kind: 'attack', target: 'e1' } }, constRng(0.5));
+    expect(acted(r, 'e0')).toContain('騎士的誓言');
+    expect(r.enemies[0].buffs.some((b) => b.stat === 'def' && b.pct === 30)).toBe(true);
+    // Once for each fall.
+    const r2 = resolveRound(r, defend(r), constRng(0.5));
+    expect(acted(r2, 'e0')).not.toContain('騎士的誓言');
+    expect(ENEMIES['fallen-knight'].onAllyFall).toBeDefined();
+  });
+
+  it('the white silence slows the party a little more each time, to its floor', () => {
+    const hush: Effect = { kind: 'buff', stat: 'spd', pct: -10, turns: 3, stackTo: -30 };
+    const m = P('scarlet');
+    const ctx = { rng: constRng(0.5), itemBoost: false, revealed: {}, log: [] as BattleEvent[] };
+    for (const want of [-10, -20, -30, -30]) {
+      applyEffect(E('e0'), m, hush, ctx);
+      expect(m.buffs.find((b) => b.stat === 'spd')!.pct).toBe(want);
+    }
+  });
+
+  it("the vault dragon's breath grows with what it stole", () => {
+    const breath: EnemySkill = { name: '金幣吐息', chance: 1, target: 'enemy', effects: [{ ...hit(100), hoardPct: 100 } as Effect] };
+    const blow = (stolen: number) => {
+      const s = makeBattle([P('scarlet', { max: { hp: 9999 } as never })], [E('e0', { stolen })], { enemyDefs: { e0: def([breath]) } });
+      s.intents = { e0: { kind: 'enemy-skill', index: 0, target: 'scarlet' } };
+      return (resolveRound(s, defend(s), constRng(0.5)).log.find((e) => e.type === 'damage' && e.target === 'scarlet') as { amount: number }).amount;
+    };
+    expect(blow(50) / blow(0)).toBeCloseTo(1.5, 1);
+    expect(blow(500)).toBe(blow(100));   // up to +100%
+  });
+});
+
+describe('roster plan B2 review', () => {
+  it('4. from inside a foe a member raises no one: her own skills reach herself and the engulfer only', () => {
+    const s = makeBattle([P('selene', { tp: 50, max: { hp: 1000, tp: 50, mag: 50 } as never, engulfed: 'e0' }), P('noel', { alive: false, hp: 0 }), P('scarlet', { max: { hp: 1000 } as never })],
+      [E('e0', { max: { hp: 100000 } as never, gulp: { key: 'selene', until: 9, taken: 0 } })]);
+    s.intents = { e0: { kind: 'attack', target: 'scarlet' } };
+    const r = resolveRound(s, { selene: { kind: 'skill', skill: 'rebirth', target: 'noel' }, scarlet: { kind: 'defend' } }, constRng(0.5));
+    expect(r.party[1].alive).toBe(false);
+    expect(choosable(s, s.party[0], 'fallen')).toEqual([]);
+    // Outside, she raises her as ever.
+    const out = makeBattle([P('selene', { tp: 50, max: { hp: 1000, tp: 50, mag: 50 } as never }), P('noel', { alive: false, hp: 0 }), P('scarlet', { max: { hp: 1000 } as never })], [E('e0', { max: { hp: 100000 } as never })]);
+    expect(choosable(out, out.party[0], 'fallen').map((c) => c.key)).toEqual(['noel']);
+    out.intents = { e0: { kind: 'attack', target: 'scarlet' } };
+    expect(resolveRound(out, { selene: { kind: 'skill', skill: 'rebirth', target: 'noel' }, scarlet: { kind: 'defend' } }, constRng(0.5)).party[1].alive).toBe(true);
+  });
+
+  it('4b. nor does a twin-cast second cast; a raise chosen before she is swallowed is a plain blow on the engulfer, its TP kept', () => {
+    const twin = { rebirth: [{ id: 'twin-cast' as const, tier: 'legendary' as const }] };
+    const gulp: EnemySkill = { name: '吞入', chance: 1, target: 'enemy', effects: [hit(10), { kind: 'engulf' }] };
+    // Inside, with 雙重詠唱 on the raise (B2 confirmation review item 1).
+    const inside = makeBattle([P('selene', { tp: 50, max: { hp: 1000, tp: 50, mag: 50 } as never, engulfed: 'e0', runes: twin }), P('noel', { alive: false, hp: 0 }), P('scarlet', { max: { hp: 1000 } as never })],
+      [E('e0', { max: { hp: 100000 } as never, gulp: { key: 'selene', until: 9, taken: 0 } })]);
+    inside.intents = { e0: { kind: 'attack', target: 'scarlet' } };
+    const r = resolveRound(inside, { selene: { kind: 'skill', skill: 'rebirth', target: 'noel' }, scarlet: { kind: 'defend' } }, constRng(0.5));
+    expect(r.party[1].alive).toBe(false);
+    // Chosen outside, swallowed before her turn, with and without the rune (item 2): no TP spent, a plain blow on the maw.
+    for (const runes of [undefined, twin]) {
+      const s = makeBattle([P('selene', { tp: 50, max: { hp: 1000, tp: 50, mag: 50, spd: 1 } as never, ...(runes ? { runes } : {}) }), P('noel', { alive: false, hp: 0 }), P('scarlet', { max: { hp: 1000, spd: 1 } as never })],
+        [E('e0', { max: { hp: 100000, spd: 999 } as never })], { enemyDefs: { e0: def([gulp]) } });
+      s.intents = { e0: { kind: 'enemy-skill', index: 0, target: 'selene' } };
+      const m = resolveRound(s, { selene: { kind: 'skill', skill: 'rebirth', target: 'noel' }, scarlet: { kind: 'defend' } }, constRng(0.5));
+      expect(m.party[0].engulfed).toBe('e0');
+      expect(m.party[1].alive).toBe(false);
+      expect(m.party[0].tp).toBe(50);
+      expect(acted(m, 'selene')).toEqual(['攻擊']);
+      expect(m.log.some((e) => e.type === 'damage' && e.target === 'e0')).toBe(true);
+    }
+  });
+
+  it('5. a borrowed blow never names, nor goes back at, a lender inside a foe or veiled', () => {
+    const mirror: EnemySkill = { name: '鏡擊', chance: 1, target: 'enemy', effects: [{ kind: 'mirror', cap: 150 }] };
+    for (const hidden of [{ engulfed: 'e1' }, { veil: 2 }] as Partial<Combatant>[]) {
+      const holder = E('e1', { max: { hp: 100000 } as never, ...(hidden.engulfed ? { gulp: { key: 'scarlet', until: 9, taken: 0 } } : {}) });
+      const s = makeBattle([P('scarlet', { max: { hp: 1000 } as never, ...hidden }), P('noel', { max: { hp: 1000 } as never })], [E('e0', { mirrors: true }), holder],
+        { enemyDefs: { e0: def([mirror]), e1: def([]) }, lastPartyHit: { by: 'scarlet', element: 'fire', power: 120 } });
+      s.intents = { e0: { kind: 'enemy-skill', index: 0, target: 'noel' }, e1: { kind: 'attack', target: 'noel' } };
+      expect(intentLabel(s, 'e0')).toBe('鏡擊');
+      // (Her own action would end her veil, so she holds it this round.)
+      const r = resolveRound(s, { noel: { kind: 'defend' } }, constRng(0.5));
+      expect(acted(r, 'e0')).toEqual(['攻擊']);
+      expect(r.log.some((e) => e.type === 'damage' && e.target === 'scarlet')).toBe(false);
+    }
+  });
+
+  it('8. a stall a taunt sends back to the same member slows her still, but does not delay her', () => {
+    const stall: EnemySkill = { name: '遲滯', chance: 1, target: 'enemy', effects: [{ kind: 'delay' }, { kind: 'buff', stat: 'spd', pct: -30, turns: 2 }] };
+    const t = makeBattle([P('scarlet', { max: { hp: 9999 } as never, delayedBy: 'e0', taunt: 3 }), P('noel', { max: { hp: 9999 } as never })], [E('e0', { max: { hp: 9999 } as never })], { enemyDefs: { e0: def([stall]) } });
+    t.intents = { e0: { kind: 'enemy-skill', index: 0, target: 'scarlet' } };
+    const r = resolveRound(t, defend(t), constRng(0.5));
+    expect(r.party[0].delay).toBeUndefined();
+    expect(r.party[0].buffs).toContainEqual(expect.objectContaining({ stat: 'spd', pct: -30 }));
   });
 });

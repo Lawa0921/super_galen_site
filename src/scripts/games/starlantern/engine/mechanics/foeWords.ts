@@ -18,6 +18,15 @@ export const foeMarks: MechModule = {
     if (!e.alive) return [];
     const out: MechWord[] = [];
     if (e.winding !== undefined) out.push(plain(W.winding));
+    // Roster plan B7: a turning weakness as it stands (M5), an adaptation in force (M16).
+    if (e.prism) for (const el of e.weak) out.push(plain(W.weak(T.element[el])));
+    if (e.adapted && e.adapted.turns > 0) out.push(plain(W.adapted(T.element[e.adapted.el])));
+    if (e.cut !== undefined) out.push(plain(W.cut));   // a body behind its parts (roster plan B8, M7)
+    if (e.drained) out.push(plain(W.drained(e.drained)));   // what a TP thief took (roster plan B9, M17)
+    // Roster plan B10: in ice (M23), bearing a banner (M26), holding a member (M28).
+    if (e.encased) out.push(plain(W.encased));
+    if ((s.enemyDefs?.[e.key] ?? ENEMIES[e.defId])?.rally) out.push(plain(W.rally));
+    if (e.gulp) out.push(plain(W.holding));
     if (e.cover) out.push(plain(W.guarding));
     if (foeGuard(s, e) !== e) out.push(plain(W.guarded));
     if (e.stolen) out.push(plain(W.stolen(e.stolen)));
@@ -27,6 +36,10 @@ export const foeMarks: MechModule = {
     return out;
   },
   words(s: BattleState, c: Combatant): MechWord[] {
-    return c.side === 'party' && c.alive && c.hunted !== undefined && c.hunted > s.round ? [plain(W.hunted)] : [];
+    if (c.side !== 'party' || !c.alive) return [];
+    const out: MechWord[] = [];
+    if (c.hunted !== undefined && c.hunted > s.round) out.push(plain(W.hunted));
+    if (c.engulfed) out.push(plain(W.engulfed));   // inside a foe (roster plan B10, M28)
+    return out;
   },
 };

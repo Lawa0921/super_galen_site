@@ -57,3 +57,27 @@ describe('member words (roster plan B6)', () => {
     expect(texts(memberWords(s, s.party[1]))).toEqual([]);
   });
 });
+
+describe('foe words (roster plan B7–B11)', () => {
+  const W = T.battle.foe.word;
+
+  it('a turning weakness shows the weakness now; an adaptation shows its element while it lasts', () => {
+    const s = makeBattle([P('scarlet')], [E('e0', { prism: true, weak: ['ice'] }), E('e1', { adapted: { el: 'fire', turns: 2 } }), E('e2', { adapted: { el: 'fire', turns: 0 } })]);
+    expect(texts(foeWords(s, s.enemies[0]))).toEqual([W.weak(T.element.ice)]);
+    expect(texts(foeWords(s, s.enemies[1]))).toEqual([W.adapted(T.element.fire)]);
+    expect(texts(foeWords(s, s.enemies[2]))).toEqual([]);
+    expect([W.weak('冰'), W.adapted('火')]).toEqual(['弱冰', '抗火']);
+  });
+
+  it('a body behind its parts, a TP thief, a foe in ice, a banner, a maw holding someone', () => {
+    const s = makeBattle([P('scarlet', { engulfed: 'e4' })], [E('e0', { cut: 50 }), E('e1', { drained: 30 }), E('e2', { encased: true }), E('e3', { defId: 'banner-bearer' }),
+      E('e4', { gulp: { key: 'scarlet', until: 2, taken: 0 } })]);
+    expect(texts(foeWords(s, s.enemies[0]))).toEqual([W.cut]);
+    expect(texts(foeWords(s, s.enemies[1]))).toEqual([W.drained(30)]);
+    expect(texts(foeWords(s, s.enemies[2]))).toEqual([W.encased]);
+    expect(texts(foeWords(s, s.enemies[3]))).toEqual([W.rally]);
+    expect(ENEMIES['banner-bearer'].rally).toBeDefined();
+    expect(texts(foeWords(s, s.enemies[4]))).toEqual([W.holding]);
+    expect(texts(memberWords(s, s.party[0]))).toContain(W.engulfed);
+  });
+});
