@@ -837,3 +837,6 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 
 ### Task F1：舊 5d 敵人 `bat.png` 的洋紅邊
 - [ ] R1 獨立審核（2026-10-26）看到已核准的舊敵人 `public/assets/games/starlantern/enemy/bat.png` 也有洋紅邊。這不在名冊的範圍內，所以本次不改（控制者 2026-10-26 裁定）。名冊收尾之後另開一個修正：先用名冊的 `roster_key_tint_count`（含 `_deep_key`）與 `magenta_spill_count` 量化，再決定重做或重新去背。重做要走「重做 → QA → 審核 → 重新發布」，並且同步改 `allArtUrls` 與 manifest。
+
+### Task F2：大取樣塊的雜訊（R3、R4 生成前考慮）
+- [ ] R2 獨立審核（2026-10-27）指出：codex 原圖的主體遠大於目標美術像素，`process_roster_sprite` 以 11–18 的 block 中心取樣（例：`toppled-automaton` 11、`requiem-conductor` 11、`keeper-echo` 18；頭目約 8），在 `toppled-automaton`、`requiem-conductor`、`keeper-echo` 留下看得見的雜訊點。本次不改管線（控制者 2026-10-27 裁定）。R3、R4 生成前評估：prompt 要求主體在畫布裡畫得接近目標尺寸（block 收斂到約 8 以下，例如加「the sprite is small on the canvas, drawn with big chunky art pixels」之類的句子），或其他不產生新顏色、不放寬任何閘門的取樣方式；改了要先寫失敗的測試，QA 戳記隨之改變，已發布的 R0–R2 不重做。

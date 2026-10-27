@@ -1,30 +1,28 @@
 {
   "pass": true,
   "reasons": [],
-  "warnings": [
-    "enclosed holes"
-  ],
+  "warnings": [],
   "residue": 0,
   "semi": 0,
   "edge": 0,
-  "holes": 1,
+  "holes": 0,
   "magenta_spill": 0,
   "key_tint_inside": 0,
   "block": 11,
   "size": [
-    80,
+    76,
     101
   ],
   "bright_key": 0,
   "height": 99,
-  "width": 78,
-  "colours": 4805,
+  "width": 74,
+  "colours": 4616,
   "lum": [
-    0.128,
-    0.924,
-    0.588
+    0.156,
+    0.96,
+    0.649
   ],
-  "erased": 1,
+  "erased": 0,
   "palette_over": true,
   "spec": "roster-sprite:2e0d0bc9e5f1"
 }
