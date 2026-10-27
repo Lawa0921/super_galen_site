@@ -1,0 +1,185 @@
+// @vitest-environment node
+import { writeFileSync } from 'node:fs';
+import { describe, expect, it } from 'vitest';
+import { BESTIARY, type BestiaryText } from './bestiary.zh-TW';
+import { CHARACTERS, CHARACTER_IDS } from './characters';
+import { ENEMIES } from './enemies';
+import { LEGACY_ENEMY_IDS, ROSTER_LIVE } from './monsters';
+import { STAGES, type Stage, type StoryGate } from './story/scenes';
+import { withRosterLive } from '../engine/testing';
+import type { CharacterId } from '../engine/types';
+
+/**
+ * Roster plan Task C5 (spec §4.2, §10, ruling 20): the gates the bestiary's words must pass, written before a single entry
+ * is. Each L task's writing (W1–W7) fills BESTIARY; these keep what it writes from telling a secret before its scene.
+ */
+
+/** Where a word may first be said: a scene seen (a memory piece, or an act), or never. */
+type Reveal = { mem: [CharacterId, number] } | { scene: 'act3' | 'act4' | 'finale' } | 'never';
+/**
+ * The checked words and their earliest reveal. Copied, as data/monsters.test.ts's SECRET_WORDS is (A5), from the lore
+ * ledger's 揭露表 (docs/superpowers/story/starlantern-lore-ledger.md §3, :98-114) and data/story/story.test.ts:
+ * RIN_SECRET_TERMS (:428), SPOILERS (:457, :462) and REVEALED (:1009-1046), each word at its own piece; and ruling 20's
+ * (plan): no 道具店 or 露米亞 anywhere, 鐘守 never (I-10, I-167), 滿月 from mem:selene:2. When either source changes, so
+ * does this list.
+ */
+const WORDS: { re: RegExp; at: Reveal }[] = [
+  { re: /靜鐘會/, at: { scene: 'act3' } },
+  { re: /守燈人/, at: { scene: 'act4' } },
+  { re: /艾斯特拉/, at: { scene: 'act4' } },
+  { re: /燈喰之母/, at: { scene: 'finale' } },
+  { re: /燈鑰/, at: { mem: ['hero', 10] } },
+  { re: /代號|信物|刺客|派來殺|派去殺|去殺|要殺的人/, at: { mem: ['rin', 6] } },
+  { re: /道具店|露米亞/, at: 'never' },
+  { re: /鐘守/, at: 'never' },
+  { re: /滿月/, at: { mem: ['selene', 2] } },
+  // REVEALED, story.test.ts :1010-1046
+  { re: /洛恩/, at: { mem: ['selene', 5] } },
+  { re: /我想看見|新月/, at: { mem: ['selene', 5] } },
+  { re: /不在了/, at: { mem: ['chizuru', 4] } },
+  { re: /託付/, at: { mem: ['chizuru', 5] } },
+  { re: /團長|做決定的/, at: { mem: ['safira', 4] } },
+  { re: /[你妳]要繼續跳/, at: { mem: ['safira', 5] } },
+  { re: /林子|守林/, at: { mem: ['sylvie', 1] } },
+  { re: /帶出去/, at: { mem: ['sylvie', 4] } },
+  { re: /帶出來|種子|種下|空地|新綠|發芽/, at: { mem: ['sylvie', 5] } },
+  { re: /星火|燒掉/, at: { mem: ['noel', 3] } },
+  { re: /燒光|為薪|保護/, at: { mem: ['noel', 4] } },
+  { re: /商人/, at: { mem: ['noel', 5] } },
+  { re: /祖先/, at: { mem: ['bobby', 1] } },
+  { re: /一族|錯了/, at: { mem: ['bobby', 2] } },
+  { re: /構造圖|都能裝/, at: { mem: ['bobby', 3] } },
+  { re: /道歉|修好/, at: { mem: ['bobby', 4] } },
+  { re: /閥/, at: { mem: ['bobby', 5] } },
+  { re: /櫃檯|估價的本事|瓶罐/, at: { mem: ['liz', 1] } },
+  { re: /債|借據|賒/, at: { mem: ['liz', 2] } },
+  { re: /帽子|星燈|光柱/, at: { mem: ['liz', 3] } },
+  { re: /麵包.{0,4}焦|焦.{0,4}麵包|寶庫的門/, at: { mem: ['liz', 4] } },
+  { re: /爸爸|父親|歐里克|臉想起來/, at: { mem: ['liz', 5] } },
+  { re: /起誓|立誓|誓言/, at: { mem: ['scarlet', 1] } },
+  { re: /國家|王國/, at: { mem: ['scarlet', 2] } },
+  { re: /轉身|逃|號角/, at: { mem: ['scarlet', 3] } },
+  { re: /王城|公主|殿下/, at: { mem: ['scarlet', 4] } },
+  { re: /朋友|活下去|撤退|密道/, at: { mem: ['scarlet', 5] } },
+];
+
+/** The acts in the order they are told; seeing a later one means the earlier ones were seen. */
+const ACTS = ['act2', 'act3', 'act4', 'finale'] as const;
+const STAGE_OF: Record<(typeof ACTS)[number], Stage> = { act2: 'act2', act3: 'act3', act4: 'act4', finale: 'after' };
+
+/** The pieces of `c`'s chain a gate holds for sure: by `seen` memories, `pieces` or `full` (counted as every piece). */
+function piecesHeld(g: StoryGate | undefined, c: CharacterId): number {
+  if (!g) return 0;
+  if (g.full === c) return 99;
+  const seen = (g.seen ?? []).flatMap((id) => { const m = /^mem:([a-z]+):(\d+)$/.exec(id); return m && m[1] === c ? [Number(m[2])] : []; });
+  return Math.max(0, g.pieces?.[c] ?? 0, ...seen);
+}
+/** Whether a gate holds `act` for sure: it names that act's scene or a later one, or a stage at or past it. */
+function actHeld(g: StoryGate | undefined, act: (typeof ACTS)[number]): boolean {
+  if (!g) return false;
+  const k = ACTS.indexOf(act);
+  if ((g.seen ?? []).some((id) => ACTS.indexOf(id as (typeof ACTS)[number]) >= k)) return true;
+  return !!g.stage && STAGES.indexOf(g.stage) >= STAGES.indexOf(STAGE_OF[act]);
+}
+const opens = (g: StoryGate | undefined, at: Reveal): boolean =>
+  at === 'never' ? false : 'mem' in at ? piecesHeld(g, at.mem[0]) >= at.mem[1] : actHeld(g, at.scene);
+
+const COMPANIONS = CHARACTER_IDS.filter((c) => c !== 'hero');
+/** Plan ruling 20: handbook text, every line at most sixty characters. */
+const MAX_LEN = 60;
+
+/** Everything wrong with one entry (an empty list when it passes): the plan's W4 gates, line by line. */
+function problemsOf(id: string, e: BestiaryText): string[] {
+  const out: string[] = [];
+  const texts: { where: string; text: string; after?: StoryGate }[] = [
+    { where: 'trait', text: e.trait },
+    ...e.lines.map((l, i) => ({ where: `line ${i + 1}`, text: l.text, after: l.after })),
+  ];
+  if (!e.trait) out.push(`${id}: no trait`);
+  if (!e.lines.length) out.push(`${id}: no line`);
+  for (const { where, text, after } of texts) {
+    const at = `${id} ${where}`;
+    if (/…|‥|\.\.\./.test(text)) out.push(`${at}: an ellipsis (none in the handbook)`);
+    if (/[A-Za-z0-9Ａ-Ｚａ-ｚ０-９]/.test(text)) out.push(`${at}: a Latin letter or a digit`);
+    if (/[,.!?;:()"'<>[\]]/.test(text)) out.push(`${at}: half-width punctuation`);
+    if ([...text].length > MAX_LEN) out.push(`${at}: over ${MAX_LEN} characters`);
+    if (/精英/.test(text)) out.push(`${at}: 精英 (write 菁英)`);
+    for (const w of WORDS) if (w.re.test(text) && !opens(after, w.at)) out.push(`${at}: ${w.re.source} before its reveal`);
+    // A companion's name is hers to tell: only on a line behind one of her own memories (the remnant's line).
+    for (const c of COMPANIONS) if (text.includes(CHARACTERS[c].name) && piecesHeld(after, c) < 1) out.push(`${at}: ${CHARACTERS[c].name} without her memory`);
+  }
+  return out;
+}
+
+const entries = (): [string, BestiaryText][] => Object.entries(BESTIARY).filter((x): x is [string, BestiaryText] => !!x[1]);
+
+describe('the bestiary text and its gates (roster plan Task C5)', () => {
+  it('every live foe has an entry', () => {
+    // Nothing is live yet; from L1 on each go-live commit writes its foes' entries with it.
+    const missing = [...ROSTER_LIVE].filter((id) => !BESTIARY[id]);
+    expect(missing).toEqual([]);
+    // The check itself: a foe made live without an entry is caught.
+    withRosterLive(['paper-moth'], () => expect([...ROSTER_LIVE].filter((id) => !BESTIARY[id])).toEqual(BESTIARY['paper-moth'] ? [] : ['paper-moth']));
+  });
+
+  it('no entry for a foe that does not exist', () => {
+    for (const [id] of entries()) {
+      expect(ENEMIES[id], id).toBeDefined();
+      expect(LEGACY_ENEMY_IDS, id).not.toContain(id);
+    }
+  });
+
+  it('every gated word waits for its reveal', () => {
+    expect(entries().flatMap(([id, e]) => problemsOf(id, e))).toEqual([]);
+    // The gates themselves, on lines made to break them.
+    const one = (text: string, after?: StoryGate) => problemsOf('x', { trait: '先打旗手。', lines: [{ text, after }] });
+    expect(one('靜鐘會的巡守。')).toEqual(['x line 1: 靜鐘會 before its reveal']);
+    expect(one('靜鐘會的巡守。', { seen: ['act3'] })).toEqual([]);
+    expect(one('靜鐘會的巡守。', { seen: ['act4'] })).toEqual([]);   // a later act holds the earlier
+    expect(one('靜鐘會的巡守。', { stage: 'act3' })).toEqual([]);
+    expect(one('靜鐘會的巡守。', { seen: ['act2'] })).toHaveLength(1);
+    expect(one('守燈人走過。', { seen: ['act3'] })).toHaveLength(1);
+    expect(one('那裡有燈喰之母。', { stage: 'after' })).toEqual([]);
+    expect(one('那裡有燈喰之母。', { seen: ['act4'] })).toHaveLength(1);
+    expect(one('滿月照出明亮的結局。', { seen: ['mem:selene:2'] })).toEqual([]);
+    expect(one('滿月照出明亮的結局。', { seen: ['mem:selene:1'] })).toHaveLength(1);
+    expect(one('債要還的。', { pieces: { liz: 2 } })).toEqual([]);
+    expect(one('債要還的。', { full: 'liz' })).toEqual([]);
+    expect(one('債要還的。', { pieces: { liz: 1 } })).toHaveLength(1);
+    // Some words are never said, whatever the gate.
+    expect(one('道具店的門。', { full: 'liz' })).toHaveLength(1);
+    expect(one('鐘守的影子。', { stage: 'after' })).toHaveLength(1);
+  });
+
+  it("a remnant's last line stays a memory", () => {
+    const one = (text: string, after?: StoryGate) => problemsOf('x', { trait: '先打旗手。', lines: [{ text, after }] });
+    expect(one('莎菲拉記得的那個人不在這裡。')).toEqual(['x line 1: 莎菲拉 without her memory']);
+    expect(one('莎菲拉記得的那個人不在這裡。', { seen: ['mem:safira:1'] })).toEqual([]);
+    expect(one('莎菲拉記得的那個人不在這裡。', { seen: ['mem:selene:3'] })).toHaveLength(1);
+    // A trait has no gate at all, so no companion's name.
+    expect(problemsOf('x', { trait: '凜認得牠。', lines: [{ text: '一句。' }] })).toEqual(['x trait: 凜 without her memory']);
+  });
+
+  it("handbook text spends no 「……」, no Latin letters or digits, no line over sixty", () => {
+    const one = (text: string) => problemsOf('x', { trait: '先打旗手。', lines: [{ text }] });
+    expect(one('牠在等……')).toEqual(['x line 1: an ellipsis (none in the handbook)']);
+    expect(one('牠有三顆頭。')).toEqual([]);
+    expect(one('牠有3顆頭。')).toEqual(['x line 1: a Latin letter or a digit']);
+    expect(one('牠叫HP怪。')).toEqual(['x line 1: a Latin letter or a digit']);
+    expect(one('牠會飛, 也會叫。')).toEqual(['x line 1: half-width punctuation']);
+    expect(one('精英的那一隻。')).toEqual(['x line 1: 精英 (write 菁英)']);
+    expect(one('長'.repeat(60))).toEqual([]);
+    expect(one('長'.repeat(61))).toEqual([`x line 1: over ${MAX_LEN} characters`]);
+    expect(problemsOf('x', { trait: '', lines: [] })).toEqual(['x: no trait', 'x: no line']);
+  });
+
+  it('the read-aloud script (BESTIARY_DUMP, the W6 step)', () => {
+    const gate = (g?: StoryGate) => (g ? `（閘門：${JSON.stringify(g)}）` : '');
+    const md = ['# 圖鑑朗讀稿', '', ...entries().flatMap(([id, e]) => [
+      `## ${ENEMIES[id].name}（${id}）`, '', `- 特性：${e.trait}`, ...e.lines.map((l, i) => `- 第 ${i + 1} 句：${l.text}${gate(l.after)}`), '',
+    ])].join('\n');
+    expect(md.startsWith('# 圖鑑朗讀稿')).toBe(true);
+    const out = process.env.BESTIARY_DUMP;
+    if (out) writeFileSync(out, `${md}\n`, 'utf8');
+  });
+});

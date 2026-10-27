@@ -1,7 +1,24 @@
+import type { StoryGate } from './story/scenes';
+
 /**
  * The bestiary's words (roster plan Tasks C1, C5, C6; spec §7.2, §10): the two characters an inscribed piece is named
- * after, and (from C5) each roster foe's bestiary text and the page's own strings.
+ * after, each roster foe's bestiary text, and the page's own strings.
  */
+
+/** One line of a foe's entry; `after`, the story it waits for (engine/story/events.ts gateOpen). */
+export interface BestiaryLine { text: string; after?: StoryGate }
+/**
+ * A roster foe's entry (plan Task C5, the W steps): `trait`, how it fights, shown once seen; `lines[0]`, shown once felled;
+ * a story foe's later lines each behind their `after` (ruling 20). Handbook text: no 「……」, no Latin letters or digits,
+ * full-width punctuation, at most sixty characters a line (data/bestiary.test.ts).
+ */
+export interface BestiaryText { trait: string; lines: BestiaryLine[] }
+
+/**
+ * The entries, by enemy id. Empty until the go-live tasks: each L task writes its foes' entries in the commit that puts
+ * them live (every live foe must have one; data/bestiary.test.ts).
+ */
+export const BESTIARY: Partial<Record<string, BestiaryText>> = {};
 
 /**
  * Roster plan ruling 16: an inscribed piece is named 「〇〇・紙蛾銘」, after two characters of its species' name (the
