@@ -6,6 +6,7 @@ import type { RegionId } from '../data/regions';
 import type { Difficulty } from './battle';
 import type { Portal } from './dungeon/run';
 import type { AutoJunk } from './loot/bag';
+import type { Bestiary } from './bestiary';
 import { newParty, START_LINEUP } from './party';
 import { rollPortals } from './portals';
 import { mulberry32, type Rng } from './rng';
@@ -133,6 +134,11 @@ export interface GameState {
    * workshop visit of a player who already holds one. Absent: not yet.
    */
   runeTutorialSeen?: true;
+  /**
+   * Roster plan Task C3 (spec §10, ruling 17): each kind of foe seen and felled, by definition id (engine/bestiary.ts).
+   * Absent: nothing met yet. Unknown ids are dropped on load.
+   */
+  bestiary?: Bestiary;
 }
 
 /**

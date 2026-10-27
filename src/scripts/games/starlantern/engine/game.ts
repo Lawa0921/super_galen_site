@@ -20,6 +20,7 @@ import { SPECIALS } from '../data/gear';
 import { applyAutoJunk, BAG_SIZE, mintUid } from './loot/bag';
 import { chestHasGear, GEAR_CHANCE, inscribe, lootRng, ownUniqueOf, ownUniqueSwap, rollBossGear, rollGear, rollRareMaterial, trophyRng, type DropCtx } from './loot/drops';
 import { ENEMIES } from '../data/enemies';
+import { noteFelled, noteInscribed, noteSeen, speciesIn } from './bestiary';
 import { INSCRIBE_CHANCE } from '../data/forge';
 import { itemWeight, type DropSource } from './loot/item';
 import { grantRune, rollRune, runeRng, spotRuneRng } from './loot/runes';
@@ -141,6 +142,8 @@ export class Game {
   private eliteAt: Pos | null = null;
   /** Roster plan B5: the fight on `eliteAt` is a warden's (it pays as an elite but no memory piece, and its room goes). */
   private wardenFight = false;
+  /** Roster plan Task C3: the kinds of foe this fight has shown so far, so a summon is seen once (engine/bestiary.ts). */
+  private fightSeen = new Set<string>();
   /** The rescue room whose fight is on; she is met and the tile turns to floor on a win. */
   private rescueAt: { at: Pos; who: Meetable } | null = null;
   /** Bond plan ruling 3: who this fight has seen out of danger (at its start or after a round). Not saved. */
@@ -721,6 +724,7 @@ export class Game {
     this.state.revealed = structuredClone(b.revealed);
     this.state.party = writeBack(this.state.party, b);
     this.watchDanger(b);
+    this.seeJoined(b);
     if (b.outcome === 'ongoing') return { battle: b, end: null };
     this.battle = null;
     const empty: BattleEnd = { outcome: b.outcome, exp: 0, gold: 0, drops: {}, levelUps: [], left: {}, gear: [], gearLeft: [] };
@@ -734,6 +738,7 @@ export class Game {
     this.fightTier = undefined;
     if (b.outcome === 'fled') { this.phase = 'map'; return { battle: b, end: empty }; }
     if (b.outcome === 'lose') { this.wipe(); return { battle: b, end: empty }; }
+    noteFelled(this.state, b);   // the bestiary (roster plan Task C3): every foe beaten, on a win only
     const rw = rewards(b, this.rng, hasPassive(this.state.party, 'dropBoost'), CONDITIONS[this.run!.condition].dropMul);
     this.run!.loot.gold += rw.gold;
     const found = this.battleGear(b, elite !== null, tier);
@@ -1634,6 +1639,7 @@ export class Game {
   private pack(it: ItemInstance): ItemInstance {
     const taken = this.junkMarked(it);
     this.run!.loot.gear.push(taken);
+    if (taken.inscription) noteInscribed(this.state, taken.inscription);
     return taken;
   }
 
@@ -1712,12 +1718,22 @@ export class Game {
     this.battle = createBattle({ party: this.state.party, enemyIds, boss, inventory: this.state.inventory, revealed: this.state.revealed, scale, depth: this.floor, altar: this.run?.altarBuffs, extra, ...rest });
     // A thief in the fight reaches into the run pack (roster plan B3, M13); a fight without one carries no purse.
     if (run && stealsIn(this.battle, (c) => this.battle!.enemyDefs?.[c.key])) this.battle.purse = { gold: run.loot.gold, depth: this.floor };
+    // The bestiary (roster plan Task C3): each kind met, once this fight; it draws nothing.
+    this.fightSeen = new Set(speciesIn(this.battle));
+    noteSeen(this.state, [...this.fightSeen]);
     planEnemies(this.battle, this.rng);
     this.phase = 'battle';
     // Bond plan ruling 3: who starts this fight out of danger. One who starts in it is not saved by living through it.
     this.safeSeen.clear();
     this.endangered.clear();
     for (const c of this.battle.party) if (c.alive && !inDanger(c)) this.safeSeen.add(c.key as CharacterId);
+  }
+
+  /** Roster plan Task C3: a kind that joined this round (a summon) is seen once, as it joins. */
+  private seeJoined(b: BattleState): void {
+    const fresh = speciesIn(b).filter((id) => !this.fightSeen.has(id));
+    for (const id of fresh) this.fightSeen.add(id);
+    if (fresh.length) noteSeen(this.state, fresh);
   }
 
   /** Bond plan ruling 3, after a round: one in danger who was seen out of it is endangered; one out of it is seen so. */
