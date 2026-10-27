@@ -1,0 +1,331 @@
+{
+  "assets": {
+    "icon-marble-shard": {
+      "final": "art-factory/starlantern/work/sheet-icons-roster-2/cand/a2/icon-marble-shard.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-2\\sheet-icons-roster-2-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 6,
+        "size": [
+          35,
+          34
+        ],
+        "bright_key": 0,
+        "erased": 0,
+        "spec": "roster-icon:ed1986056114"
+      },
+      "status": "qa_passed",
+      "kind": "roster-icon"
+    },
+    "icon-hymn-sheet": {
+      "final": "art-factory/starlantern/work/sheet-icons-roster-2/cand/a2/icon-hymn-sheet.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-2\\sheet-icons-roster-2-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 7,
+        "size": [
+          32,
+          31
+        ],
+        "bright_key": 0,
+        "erased": 0,
+        "spec": "roster-icon:ed1986056114"
+      },
+      "status": "qa_passed",
+      "kind": "roster-icon"
+    },
+    "icon-larva-glow": {
+      "final": "art-factory/starlantern/work/sheet-icons-roster-2/cand/a2/icon-larva-glow.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-2\\sheet-icons-roster-2-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 6,
+        "size": [
+          31,
+          36
+        ],
+        "bright_key": 0,
+        "erased": 0,
+        "spec": "roster-icon:ed1986056114"
+      },
+      "status": "qa_passed",
+      "kind": "roster-icon"
+    },
+    "icon-epitaph-stone": {
+      "final": "art-factory/starlantern/work/sheet-icons-roster-2/cand/a2/icon-epitaph-stone.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-2\\sheet-icons-roster-2-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 6,
+        "size": [
+          34,
+          35
+        ],
+        "bright_key": 0,
+        "erased": 0,
+        "spec": "roster-icon:ed1986056114"
+      },
+      "status": "qa_passed",
+      "kind": "roster-icon"
+    },
+    "icon-old-cog": {
+      "final": "art-factory/starlantern/work/sheet-icons-roster-2/cand/a2/icon-old-cog.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-2\\sheet-icons-roster-2-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 7,
+        "size": [
+          32,
+          32
+        ],
+        "bright_key": 0,
+        "erased": 0,
+        "spec": "roster-icon:ed1986056114"
+      },
+      "status": "qa_passed",
+      "kind": "roster-icon"
+    },
+    "icon-ash-ink": {
+      "final": "art-factory/starlantern/work/sheet-icons-roster-2/cand/a2/icon-ash-ink.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-2\\sheet-icons-roster-2-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 6,
+        "size": [
+          29,
+          35
+        ],
+        "bright_key": 0,
+        "erased": 0,
+        "spec": "roster-icon:ed1986056114"
+      },
+      "status": "qa_passed",
+      "kind": "roster-icon"
+    },
+    "icon-spent-wick": {
+      "final": "art-factory/starlantern/work/sheet-icons-roster-2/cand/a2/icon-spent-wick.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-2\\sheet-icons-roster-2-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 6,
+        "size": [
+          34,
+          28
+        ],
+        "bright_key": 0,
+        "erased": 0,
+        "spec": "roster-icon:ed1986056114"
+      },
+      "status": "qa_passed",
+      "kind": "roster-icon"
+    },
+    "icon-lantern-ash": {
+      "final": "art-factory/starlantern/work/sheet-icons-roster-2/cand/a2/icon-lantern-ash.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-2\\sheet-icons-roster-2-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 8,
+        "size": [
+          33,
+          20
+        ],
+        "bright_key": 0,
+        "erased": 0,
+        "spec": "roster-icon:ed1986056114"
+      },
+      "status": "qa_passed",
+      "kind": "roster-icon"
+    },
+    "icon-ember-tooth": {
+      "final": "art-factory/starlantern/work/sheet-icons-roster-2/cand/a2/icon-ember-tooth.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-2\\sheet-icons-roster-2-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 7,
+        "size": [
+          30,
+          33
+        ],
+        "bright_key": 0,
+        "erased": 0,
+        "spec": "roster-icon:ed1986056114"
+      },
+      "status": "qa_passed",
+      "kind": "roster-icon"
+    },
+    "icon-sorrow-shard": {
+      "final": "art-factory/starlantern/work/sheet-icons-roster-2/cand/a2/icon-sorrow-shard.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-2\\sheet-icons-roster-2-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 6,
+        "size": [
+          26,
+          36
+        ],
+        "bright_key": 0,
+        "erased": 0,
+        "spec": "roster-icon:ed1986056114"
+      },
+      "status": "qa_passed",
+      "kind": "roster-icon"
+    },
+    "icon-pale-tendril": {
+      "final": "art-factory/starlantern/work/sheet-icons-roster-2/cand/a2/icon-pale-tendril.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-2\\sheet-icons-roster-2-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 6,
+        "size": [
+          29,
+          35
+        ],
+        "bright_key": 0,
+        "erased": 0,
+        "spec": "roster-icon:ed1986056114"
+      },
+      "status": "qa_passed",
+      "kind": "roster-icon"
+    },
+    "icon-music-comb": {
+      "final": "art-factory/starlantern/work/sheet-icons-roster-2/cand/a2/icon-music-comb.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-2\\sheet-icons-roster-2-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 7,
+        "size": [
+          34,
+          28
+        ],
+        "bright_key": 0,
+        "erased": 0,
+        "spec": "roster-icon:ed1986056114"
+      },
+      "status": "qa_passed",
+      "kind": "roster-icon"
+    },
+    "icon-crane-paper": {
+      "final": "art-factory/starlantern/work/sheet-icons-roster-2/cand/a2/icon-crane-paper.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-2\\sheet-icons-roster-2-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 7,
+        "size": [
+          34,
+          28
+        ],
+        "bright_key": 0,
+        "erased": 0,
+        "spec": "roster-icon:ed1986056114"
+      },
+      "status": "qa_passed",
+      "kind": "roster-icon"
+    }
+  }
+}

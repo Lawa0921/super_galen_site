@@ -1,0 +1,40 @@
+{
+  "assets": {
+    "enemy-keeper-echo": {
+      "final": "art-factory/starlantern/work/enemy-keeper-echo/cand/a1/enemy-keeper-echo.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-keeper-echo\\enemy-keeper-echo-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 18,
+        "size": [
+          39,
+          66
+        ],
+        "bright_key": 0,
+        "height": 64,
+        "width": 37,
+        "colours": 1374,
+        "lum": [
+          0.14,
+          0.972,
+          0.749
+        ],
+        "erased": 0,
+        "palette_over": true,
+        "spec": "roster-sprite:2e0d0bc9e5f1"
+      },
+      "status": "qa_passed",
+      "kind": "roster-sprite",
+      "roster_class": "normal",
+      "mainline": true
+    }
+  }
+}

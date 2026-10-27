@@ -1,0 +1,42 @@
+{
+  "assets": {
+    "enemy-requiem-choir": {
+      "final": "art-factory/starlantern/work/enemy-requiem-choir/cand/a1/enemy-requiem-choir.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-requiem-choir\\enemy-requiem-choir-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 3,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 14,
+        "size": [
+          66,
+          64
+        ],
+        "bright_key": 0,
+        "height": 62,
+        "width": 63,
+        "colours": 2578,
+        "lum": [
+          0.146,
+          0.969,
+          0.663
+        ],
+        "erased": 1,
+        "palette_over": true,
+        "spec": "roster-sprite:2e0d0bc9e5f1"
+      },
+      "status": "qa_passed",
+      "kind": "roster-sprite",
+      "roster_class": "normal",
+      "mainline": true
+    }
+  }
+}

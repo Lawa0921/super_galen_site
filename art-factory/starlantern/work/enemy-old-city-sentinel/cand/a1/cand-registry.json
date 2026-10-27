@@ -1,0 +1,42 @@
+{
+  "assets": {
+    "enemy-old-city-sentinel": {
+      "final": "art-factory/starlantern/work/enemy-old-city-sentinel/cand/a1/enemy-old-city-sentinel.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-old-city-sentinel\\enemy-old-city-sentinel-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 3,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 14,
+        "size": [
+          65,
+          76
+        ],
+        "bright_key": 0,
+        "height": 73,
+        "width": 63,
+        "colours": 2909,
+        "lum": [
+          0.077,
+          0.911,
+          0.588
+        ],
+        "erased": 0,
+        "palette_over": true,
+        "spec": "roster-sprite:2e0d0bc9e5f1"
+      },
+      "status": "qa_passed",
+      "kind": "roster-sprite",
+      "roster_class": "heavy",
+      "mainline": true
+    }
+  }
+}

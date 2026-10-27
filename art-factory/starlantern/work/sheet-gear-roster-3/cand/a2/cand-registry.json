@@ -1,0 +1,444 @@
+{
+  "assets": {
+    "gear-still-hand-boots-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-3/cand/a2/gear-still-hand-boots-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-3\\sheet-gear-roster-3-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 56,
+          "short": 45,
+          "mass": 0.574,
+          "box": [
+            4,
+            9,
+            60,
+            54
+          ],
+          "centre_off": 0.5
+        },
+        "block": 8.214,
+        "scale": 8.214,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "roster-gear:909b3e0e50cc",
+        "bright_key": 0,
+        "erased": 0
+      },
+      "status": "qa_passed",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-3\\sheet-gear-roster-3-a2.png",
+        "cell": "still-hand-boots"
+      },
+      "slot": "feet"
+    },
+    "gear-still-hand-boots": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-3/cand/a2/gear-still-hand-boots.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-3\\sheet-gear-roster-3-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 22,
+          "short": 18,
+          "mass": 0.579,
+          "box": [
+            2,
+            4,
+            24,
+            22
+          ],
+          "centre_off": 0.0
+        },
+        "block": 20.909,
+        "scale": 20.909,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "roster-gear:909b3e0e50cc",
+        "bright_key": 0,
+        "erased": 0
+      },
+      "status": "qa_passed",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-3\\sheet-gear-roster-3-a2.png",
+        "cell": "still-hand-boots"
+      },
+      "slot": "feet"
+    },
+    "gear-first-lantern-staff-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-3/cand/a2/gear-first-lantern-staff-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-3\\sheet-gear-roster-3-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 56,
+          "short": 55,
+          "mass": 0.301,
+          "box": [
+            4,
+            4,
+            60,
+            59
+          ],
+          "centre_off": 0.5
+        },
+        "block": 8.357,
+        "scale": 8.357,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "roster-gear:909b3e0e50cc",
+        "bright_key": 0,
+        "erased": 0
+      },
+      "status": "qa_passed",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-3\\sheet-gear-roster-3-a2.png",
+        "cell": "first-lantern-staff"
+      },
+      "slot": "weapon",
+      "weapon_kind": "staff"
+    },
+    "gear-first-lantern-staff": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-3/cand/a2/gear-first-lantern-staff.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-3\\sheet-gear-roster-3-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 22,
+          "short": 22,
+          "mass": 0.314,
+          "box": [
+            2,
+            2,
+            24,
+            24
+          ],
+          "centre_off": 0.0
+        },
+        "block": 21.273,
+        "scale": 21.273,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "roster-gear:909b3e0e50cc",
+        "bright_key": 0,
+        "erased": 0
+      },
+      "status": "qa_passed",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-3\\sheet-gear-roster-3-a2.png",
+        "cell": "first-lantern-staff"
+      },
+      "slot": "weapon",
+      "weapon_kind": "staff"
+    },
+    "gear-ancestor-gauntlet-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-3/cand/a2/gear-ancestor-gauntlet-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-3\\sheet-gear-roster-3-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 56,
+          "short": 50,
+          "mass": 0.749,
+          "box": [
+            4,
+            7,
+            60,
+            57
+          ],
+          "centre_off": 0.0
+        },
+        "block": 7.357,
+        "scale": 7.357,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "roster-gear:909b3e0e50cc",
+        "bright_key": 0,
+        "erased": 0
+      },
+      "status": "qa_passed",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-3\\sheet-gear-roster-3-a2.png",
+        "cell": "ancestor-gauntlet"
+      },
+      "slot": "hands"
+    },
+    "gear-ancestor-gauntlet": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-3/cand/a2/gear-ancestor-gauntlet.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-3\\sheet-gear-roster-3-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 22,
+          "short": 20,
+          "mass": 0.771,
+          "box": [
+            2,
+            3,
+            24,
+            23
+          ],
+          "centre_off": 0.0
+        },
+        "block": 18.727,
+        "scale": 18.727,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "roster-gear:909b3e0e50cc",
+        "bright_key": 0,
+        "erased": 0
+      },
+      "status": "qa_passed",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-3\\sheet-gear-roster-3-a2.png",
+        "cell": "ancestor-gauntlet"
+      },
+      "slot": "hands"
+    },
+    "gear-requiem-staff-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-3/cand/a2/gear-requiem-staff-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-3\\sheet-gear-roster-3-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 56,
+          "short": 55,
+          "mass": 0.312,
+          "box": [
+            4,
+            4,
+            60,
+            59
+          ],
+          "centre_off": 0.5
+        },
+        "block": 8.232,
+        "scale": 8.232,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "roster-gear:909b3e0e50cc",
+        "bright_key": 0,
+        "erased": 0
+      },
+      "status": "qa_passed",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-3\\sheet-gear-roster-3-a2.png",
+        "cell": "requiem-staff"
+      },
+      "slot": "weapon",
+      "weapon_kind": "staff"
+    },
+    "gear-requiem-staff": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-3/cand/a2/gear-requiem-staff.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-3\\sheet-gear-roster-3-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 22,
+          "short": 22,
+          "mass": 0.318,
+          "box": [
+            2,
+            2,
+            24,
+            24
+          ],
+          "centre_off": 0.0
+        },
+        "block": 20.955,
+        "scale": 20.955,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "roster-gear:909b3e0e50cc",
+        "bright_key": 0,
+        "erased": 0
+      },
+      "status": "qa_passed",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-3\\sheet-gear-roster-3-a2.png",
+        "cell": "requiem-staff"
+      },
+      "slot": "weapon",
+      "weapon_kind": "staff"
+    },
+    "gear-brood-lantern-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-3/cand/a2/gear-brood-lantern-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-3\\sheet-gear-roster-3-a2.png",
+      "qa": {
+        "pass": false,
+        "reasons": [
+          "subject too narrow"
+        ],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 56,
+          "short": 33,
+          "mass": 0.356,
+          "box": [
+            15,
+            4,
+            48,
+            60
+          ],
+          "centre_off": 0.5
+        },
+        "block": 8.268,
+        "scale": 8.268,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "roster-gear:909b3e0e50cc",
+        "bright_key": 0,
+        "erased": 0
+      },
+      "status": "qa_failed",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-3\\sheet-gear-roster-3-a2.png",
+        "cell": "brood-lantern"
+      },
+      "slot": "neck"
+    },
+    "gear-brood-lantern": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-3/cand/a2/gear-brood-lantern.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-3\\sheet-gear-roster-3-a2.png",
+      "qa": {
+        "pass": false,
+        "reasons": [
+          "subject too narrow"
+        ],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 22,
+          "short": 13,
+          "mass": 0.351,
+          "box": [
+            6,
+            2,
+            19,
+            24
+          ],
+          "centre_off": 0.5
+        },
+        "block": 21.045,
+        "scale": 21.045,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "roster-gear:909b3e0e50cc",
+        "bright_key": 0,
+        "erased": 0
+      },
+      "status": "qa_failed",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-3\\sheet-gear-roster-3-a2.png",
+        "cell": "brood-lantern"
+      },
+      "slot": "neck"
+    }
+  }
+}

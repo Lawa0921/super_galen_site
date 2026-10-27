@@ -1,0 +1,42 @@
+{
+  "assets": {
+    "enemy-gorged-beast": {
+      "final": "art-factory/starlantern/work/enemy-gorged-beast/cand/a1/enemy-gorged-beast.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-gorged-beast\\enemy-gorged-beast-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 7,
+        "size": [
+          172,
+          158
+        ],
+        "bright_key": 0,
+        "height": 156,
+        "width": 170,
+        "colours": 17839,
+        "lum": [
+          0.158,
+          0.93,
+          0.617
+        ],
+        "erased": 2,
+        "palette_over": true,
+        "spec": "roster-sprite:2e0d0bc9e5f1"
+      },
+      "status": "qa_passed",
+      "kind": "roster-sprite",
+      "roster_class": "boss",
+      "mainline": true
+    }
+  }
+}

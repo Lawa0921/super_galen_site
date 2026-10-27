@@ -14,8 +14,10 @@ describe('chip icons (art step 9, G4)', () => {
       expect(urls.has(ailmentIconUrl(id)), id).toBe(AILMENT_ICON_IDS.includes(id));
       expect(ailmentIconUrls(id), id).toEqual(AILMENT_ICON_IDS.includes(id) ? [ailmentIconUrl(id)] : []);
     }
-    // Roster plan B9 (ruling 22): only 遺忘's icon waits, for E1c; until then its word asks for no picture.
-    expect(Object.keys(AILMENT_FILL).filter((id) => !AILMENT_ICON_IDS.includes(id as keyof typeof AILMENT_FILL))).toEqual(['forget']);
+    // Roster plan E1c (ruling 27): 遺忘's icon is published with the forget round, so every ailment shown has its picture.
+    expect(Object.keys(AILMENT_FILL).filter((id) => !AILMENT_ICON_IDS.includes(id as keyof typeof AILMENT_FILL))).toEqual([]);
+    expect(urls.has(`${ART_BASE}/icon/ail-forget-14.png`)).toBe(true);
+    expect(ailmentIconUrls('forget')).toEqual([`${ART_BASE}/icon/ail-forget-14.png`]);
     for (const k of MECH_ICON_KEYS) expect(urls.has(art.mechIcon(k)), k).toBe(true);
   });
 

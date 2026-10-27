@@ -175,8 +175,12 @@ def test_full_set_covers_every_skill_without_icon_rins_mark_every_ailment_and_th
     assert skills == G.skills_without_icon() | {'rin-mark'}
     src = (Path(G.REPO) / 'src/scripts/games/starlantern/render/ailmentStyle.ts').read_text(encoding='utf-8')
     import re
-    ails = set(re.search(r'AILMENT_FILL[^{]*\{([^}]*)\}', src).group(1).replace(' ', '').replace('\n', '').split(','))
-    assert {p[4:] for p in parts if p.startswith('ail-')} == {a.split(':')[0] for a in ails if a}
+    body = re.sub(r'//[^\n]*', '', re.search(r'AILMENT_FILL[^{]*\{([^}]*)\}', src).group(1))   # B2 keeps a comment in the object
+    ails = set(body.replace(' ', '').replace('\n', '').replace('\r', '').split(','))
+    # 遺忘 (B2) is the one ailment whose chip is not in the G4 set: the roster draws it (sheet-ail-roster-1, plan rulings 22, 27).
+    import roster_art as RA
+    assert RA.FORGET == 'ail-forget'
+    assert {p[4:] for p in parts if p.startswith('ail-')} | {RA.FORGET[4:]} == {a.split(':')[0] for a in ails if a}
     assert {p for p in parts if p.startswith('mech-')} == {
         'mech-heat', 'mech-coins', 'mech-embers', 'mech-beat', 'mech-shield', 'mech-aim', 'mech-mark', 'mech-ward', 'mech-purify',
         'mech-thunder', 'mech-moon-first', 'mech-moon-full', 'mech-moon-waning', 'mech-moon-new'}

@@ -431,7 +431,7 @@ FORGET_ASSET = f'icon-{FORGET}-{CHIP[1]}'
 # Controller ruling 27 (2026-10-26): drawn with R0, but the game only lists it once B9 adds `forget` to AilmentShown, so it is
 # its own round: approved on an independent review record and published in E1c, with `forget` added to AILMENT_ICON_IDS.
 FORGET_ROUND = 'forget'
-FORGET_COLOUR = '#8FD9B6'             # misty sea green: no other ailment chip is green (B9 gives AILMENT_FILL.forget this colour)
+FORGET_COLOUR = '#8FD9B6'             # misty sea green, the art's colour; the game's label is AILMENT_FILL.forget #66B87E (B2, spec §0 17, 19)
 FORGET_DESC = (f'one soft round thought cloud in misty sea green {FORGET_COLOUR} with a thick dark diagonal band wiping across it, '
                'as if the thought were being erased')
 CHIP_PROMPT = ('One small square pixel art status ailment icon, alone on a perfectly flat pure magenta #FF00FF background with a wide '

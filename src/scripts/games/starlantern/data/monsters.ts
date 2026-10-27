@@ -20,7 +20,11 @@ const LEGACY = new Set(LEGACY_ENEMY_IDS);
 export const ROSTER_ART: ReadonlySet<string> = new Set<string>([
   'paper-moth', 'root-hound', 'bell-watcher', 'false-moon', 'fog-warden', 'lamp-wight', 'tin-soldier', 'dust-mimic',
   'market-ghost', 'tongueless-bell', 'hollow-hunter', 'mist-twin', 'moon-crow', 'sleepwalker', 'hoarder',
-  'silent-bell', 'hollow-champion', 'bell-warden',
+  'silent-bell', 'hollow-champion', 'bell-warden', 'old-city-sentinel', 'requiem-choir', 'lantern-larva',
+  'epitaph-golem', 'ancestor-automaton', 'ash-archivist', 'wick-shade', 'keeper-echo', 'ember-maw', 'sorrow-crystal',
+  'deep-tendril', 'music-box', 'paper-cranes', 'lost-shadow', 'returning-light', 'gilded-hoarder', 'old-city-archon',
+  'gorged-beast', 'lantern-mother', 'forgotten-festival', 'starless-whale', 'stopped-clock', 'first-lantern',
+  'archon-hand', 'toppled-automaton', 'requiem-conductor', 'lantern-brood',
 ]);
 /**
  * Roster ids met in the encounter tables, the boss table, warden rooms and the bestiary. Only a go-live commit adds to it,

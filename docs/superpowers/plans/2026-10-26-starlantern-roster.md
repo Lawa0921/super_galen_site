@@ -851,3 +851,12 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 
 ### Task F1：舊 5d 敵人 `bat.png` 的洋紅邊
 - [ ] R1 獨立審核（2026-10-26）看到已核准的舊敵人 `public/assets/games/starlantern/enemy/bat.png` 也有洋紅邊。這不在名冊的範圍內，所以本次不改（控制者 2026-10-26 裁定）。名冊收尾之後另開一個修正：先用名冊的 `roster_key_tint_count`（含 `_deep_key`）與 `magenta_spill_count` 量化，再決定重做或重新去背。重做要走「重做 → QA → 審核 → 重新發布」，並且同步改 `allArtUrls` 與 manifest。
+
+### Task F2：大取樣塊的雜訊（R3、R4 生成前考慮）
+- [ ] R2 獨立審核（2026-10-27）指出：codex 原圖的主體遠大於目標美術像素，`process_roster_sprite` 以 11–18 的 block 中心取樣（例：`toppled-automaton` 11、`requiem-conductor` 11、`keeper-echo` 18；頭目約 8），在 `toppled-automaton`、`requiem-conductor`、`keeper-echo` 留下看得見的雜訊點。本次不改管線（控制者 2026-10-27 裁定）。R3、R4 生成前評估：prompt 要求主體在畫布裡畫得接近目標尺寸（block 收斂到約 8 以下，例如加「the sprite is small on the canvas, drawn with big chunky art pixels」之類的句子），或其他不產生新顏色、不放寬任何閘門的取樣方式；改了要先寫失敗的測試，QA 戳記隨之改變，已發布的 R0–R2 不重做。
+
+### Task F3：遺忘圖示的 1 px 外框（選擇性）
+- [ ] 遺忘圖示（`icon-ail-forget-14`）在 E1c 審核時放在深色視窗上、`#66B87E` 的「遺忘」前面讀起來沒問題；但圖示本身是淡霧綠，沒有深色外框。若之後要放到亮色底（例如亮色主題、白底的提示框），考慮一個確定性的 1 px 深色外框（由已核准的圖轉出、不產生手繪像素，做法比照 5d 剪影的確定性轉換），走「轉出 → QA → 獨立審核 → 重新發布」。目前沒有亮色底，不做（控制者 2026-10-27）。
+
+### Task F4：悲傷結晶的內部光（錦上添花）
+- [ ] R2 第 2 輪獨立審核（2026-10-27）通過 `enemy-sorrow-crystal` a3，但它的「soft inner light」偏弱。之後如果有重畫的機會（使用者要求換圖，或 F2 的取樣調整），在 prompt 裡加強內部微光（淡金或象牙白的硬邊核心，仍維持淡紫、低飽和、不用深紫）。不擋發布，不另開重畫。
