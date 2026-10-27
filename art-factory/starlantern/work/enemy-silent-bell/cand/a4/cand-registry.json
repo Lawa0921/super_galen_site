@@ -1,0 +1,44 @@
+{
+  "assets": {
+    "enemy-silent-bell": {
+      "final": "art-factory/starlantern/work/enemy-silent-bell/cand/a4/enemy-silent-bell.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-silent-bell\\enemy-silent-bell-a4.png",
+      "qa": {
+        "pass": false,
+        "reasons": [
+          "magenta residue"
+        ],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 12,
+        "magenta_spill": 0,
+        "key_tint_inside": 2,
+        "block": 7,
+        "size": [
+          136,
+          154
+        ],
+        "bright_key": 1,
+        "height": 152,
+        "width": 134,
+        "colours": 9758,
+        "lum": [
+          0.058,
+          0.888,
+          0.408
+        ],
+        "erased": 2,
+        "palette_over": true,
+        "spec": "roster-sprite:2e0d0bc9e5f1"
+      },
+      "status": "qa_failed",
+      "kind": "roster-sprite",
+      "roster_class": "boss",
+      "mainline": true
+    }
+  }
+}

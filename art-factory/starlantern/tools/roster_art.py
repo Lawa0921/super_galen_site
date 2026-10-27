@@ -1,13 +1,16 @@
 """roster_art.py: the monster roster's art (roster plan PR D; spec §13): 100 foes, 98 material icons, 39 own uniques, the
 forget chip. Structure as gear_art.py (plan 5d).
 
-  gen  [--batch=r0..r4] [--only=prefix,...] [--n=N] [--extra=TEXT]
+  gen  [--batch=r0..r4] [--only=id,...] [--n=N] [--extra=TEXT]
                                          codex attempts, one at a time, until each job has N raws (R0 foes 2, else 1; cap 3)
   cand [--batch=..] [--only=..]          postprocess every raw attempt into work/<job>/cand/a<N>/ (scratch registry)
   pick --id JOB --attempt N [--part P] [--reopen]
                                          postprocess the chosen attempt into the registry (qa_passed / qa_failed, no runtime)
   note --id JOB --attempt N --reason R [--plain P]
                                          why an attempt was not used (registry `rejected_attempts`, `plain_reasons`)
+  extend-cap --id JOB --extra N --by TEXT --review PATH
+                                         a controller's cap extension (at most 3 more attempts, one per review; who and the date in
+                                         --by, the review record it cites); gen counts it
   approve --batch r0 --by TEXT           R0 only: the USER's words and the date, after the review page (writes
                                          roster_style_approved and roster_style_anchor)
   approve --batch rN --review PATH       R1-R4 (ruling 21): an independent fresh-context review record listing every image's
@@ -490,8 +493,11 @@ def _ref(eid):
 
 
 def _chunks(seq, n):
-    k = (len(seq) + n - 1) // n; half = (len(seq) + k - 1) // k
-    return [seq[i:i + half] for i in range(0, len(seq), half)]
+    """`seq` in n chunks as even as possible, in order (the first ones one longer): two sheets a round, not sheets of two."""
+    q, extra = divmod(len(seq), n); out = []; i = 0
+    for c in range(n):
+        size = q + (c < extra); out.append(seq[i:i + size]); i += size
+    return [c for c in out if c]
 
 
 def icon_sheets():
@@ -603,9 +609,38 @@ def attempts(sid):
 
 
 def selected(argv):
+    """The jobs a command works on: --only lists exact job ids (never prefixes: `sheet-icons-roster-1` once matched -10 and
+    up), --batch a round; an unknown id stops before anything runs."""
     only = G._opt(argv, 'only'); batch = G._opt(argv, 'batch')
     if batch: label(batch)
-    return [j for j in jobs() if (not only or any(j['id'].startswith(o) for o in only.split(','))) and (not batch or j['batch'] == batch)]
+    ids = [o for o in only.split(',') if o] if only else None
+    known = {j['id'] for j in jobs()}
+    if ids is not None and (bad := [o for o in ids if o not in known]): raise ValueError(f'unknown job id {bad} (--only takes exact ids)')
+    return [j for j in jobs() if (ids is None or j['id'] in ids) and (not batch or j['batch'] == batch)]
+
+
+CAP_EXTRA_MAX = 3   # controller rulings 2026-10-26/27 (R1 reviews): at most 3 more attempts per extension, one per review record
+
+
+def extend_cap(reg, sid, extra, by, review):
+    """Record a controller's cap extension for job `sid` (registry `cap_extensions`): `by` names who and the date, `review`
+    the review record it cites. At most CAP_EXTRA_MAX more attempts per extension, and one extension per review record."""
+    job_by_id(sid)
+    if not DATE.search(by or ''): raise ValueError('--by needs who and the date (YYYY-MM-DD)')
+    if not review: raise ValueError('--review: the review record the extension cites')
+    past = reg.data.get('cap_extensions', {}).get(sid, [])
+    if int(extra) < 1 or int(extra) > CAP_EXTRA_MAX: raise ValueError(f'a cap extension is at most {CAP_EXTRA_MAX} more attempts')
+    if any(x['review'] == str(review) for x in past): raise ValueError(f'{sid} was already extended on {review}: a new extension cites a new review')
+    reg.data.setdefault('cap_extensions', {}).setdefault(sid, []).append({'extra': int(extra), 'by': by, 'review': str(review)})
+    reg._save()
+
+
+def cap_of(reg, sid):
+    return CAP + sum(x['extra'] for x in reg.data.get('cap_extensions', {}).get(sid, []))
+
+
+def extend_cap_cli(argv):
+    extend_cap(_registry(), G._arg(argv, '--id'), G._arg(argv, '--extra'), G._arg(argv, '--by'), G._arg(argv, '--review'))
 
 
 QUOTA_WORDS = ('usage limit', 'rate limit', 'quota', 'out of credits', 'insufficient credits', 'purchase more credits')
@@ -635,7 +670,8 @@ def gen(argv):
         if missing: print(f'[skip] {job["id"]}: missing reference {missing}', flush=True); continue
         while len(attempts(job['id'])) < n:
             have = attempts(job['id'])
-            if len(have) >= CAP: raise PermissionError(f'{job["id"]} is at its attempt cap a{CAP}; stop and report (never a substitute)')
+            cap = cap_of(reg, job['id'])
+            if len(have) >= cap: raise PermissionError(f'{job["id"]} is at its attempt cap a{cap}; stop and report (never a substitute)')
             k = max([int(p.stem.rsplit('-a', 1)[1]) for p in have] + [0]) + 1
             PROMPTS.mkdir(parents=True, exist_ok=True)
             pf = PROMPTS / f'{job["id"]}.txt'
@@ -987,4 +1023,5 @@ def plan_json(argv):
 
 if __name__ == '__main__':
     cmd = sys.argv[1] if len(sys.argv) > 1 else ''
-    {'gen': gen, 'cand': cand, 'pick': pick, 'note': note, 'approve': approve, 'publish': publish, 'plan-json': plan_json}[cmd](sys.argv[2:])
+    {'gen': gen, 'cand': cand, 'pick': pick, 'note': note, 'extend-cap': extend_cap_cli, 'approve': approve, 'publish': publish,
+     'plan-json': plan_json}[cmd](sys.argv[2:])

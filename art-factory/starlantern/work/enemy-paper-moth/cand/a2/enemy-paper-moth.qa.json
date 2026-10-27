@@ -1,8 +1,7 @@
 {
   "pass": false,
   "reasons": [
-    "swarm wider than its band",
-    "too many colours"
+    "swarm wider than its band"
   ],
   "warnings": [],
   "residue": 0,
@@ -16,6 +15,7 @@
     81,
     55
   ],
+  "bright_key": 0,
   "height": 53,
   "width": 79,
   "colours": 2331,
@@ -25,5 +25,6 @@
     0.623
   ],
   "erased": 0,
-  "spec": "roster-sprite:d5d24a1a03ef"
+  "palette_over": true,
+  "spec": "roster-sprite:2e0d0bc9e5f1"
 }

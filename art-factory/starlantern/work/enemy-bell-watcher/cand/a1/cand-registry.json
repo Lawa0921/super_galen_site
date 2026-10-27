@@ -4,10 +4,8 @@
       "final": "art-factory/starlantern/work/enemy-bell-watcher/cand/a1/enemy-bell-watcher.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-bell-watcher\\enemy-bell-watcher-a1.png",
       "qa": {
-        "pass": false,
-        "reasons": [
-          "too many colours"
-        ],
+        "pass": true,
+        "reasons": [],
         "warnings": [
           "enclosed holes"
         ],
@@ -22,6 +20,7 @@
           53,
           68
         ],
+        "bright_key": 0,
         "height": 66,
         "width": 51,
         "colours": 1837,
@@ -31,9 +30,10 @@
           0.513
         ],
         "erased": 0,
-        "spec": "roster-sprite:d5d24a1a03ef"
+        "palette_over": true,
+        "spec": "roster-sprite:2e0d0bc9e5f1"
       },
-      "status": "qa_failed",
+      "status": "qa_passed",
       "kind": "roster-sprite",
       "roster_class": "normal",
       "mainline": true

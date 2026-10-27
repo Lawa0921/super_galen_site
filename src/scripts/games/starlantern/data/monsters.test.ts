@@ -57,7 +57,8 @@ describe('roster switches (roster plan Task A1, spec §11.1)', () => {
     // Drawn exactly when the registry has its sprite published (R0 since PR D); never listed while nothing is live.
     expect(fresh.filter(artEnemy).sort()).toEqual(fresh.filter((id) => publishedArt(`enemy-${id}`)).sort());
     for (const id of ['paper-moth', 'root-hound', 'bell-watcher', 'false-moon', 'fog-warden']) expect(artEnemy(id), id).toBe(true);
-    expect(artEnemy('lamp-wight')).toBe(false);   // R1: drawn on the R0 sheets, not published
+    expect(artEnemy('lamp-wight')).toBe(true);           // R1: published in E1 (independent review 2026-10-27)
+    expect(artEnemy('old-city-sentinel')).toBe(false);   // R2: not drawn yet
     expect(listedEnemy('no-such-foe')).toBe(false);
   });
 });
@@ -398,7 +399,8 @@ describe('roster materials and own uniques (roster plan Task A3, spec §7)', () 
       expect(artSpecial(s.id), s.id).toBe(!s.owner || (publishedArt(`gear-${s.id}`) && publishedArt(`gear-${s.id}-large`)));
     }
     expect(artMaterial('faded-letter') && artSpecial('fog-halberd')).toBe(true);     // R0's, published in PR D
-    expect(artMaterial('wight-wick') || artSpecial('silent-chime')).toBe(false);     // R1's, waiting
+    expect(artMaterial('wight-wick') && artSpecial('silent-chime')).toBe(true);      // R1's, published in E1
+    expect(artMaterial('marble-shard') || artSpecial('archon-crown')).toBe(false);   // R2's, waiting
   });
 });
 
@@ -847,7 +849,7 @@ describe('roster art switch (roster plan Task D4)', () => {
   });
 });
 
-describe('roster plan B2 review item 7: the traits carry the numbers spec §5 and §0 item 18 fix', () => {
+describe('roster plan B2 review item 7: the traits carry the numbers spec §5 and §0 item 19 fix', () => {
   const all = (d: EnemyDef) => [...d.skills, ...(d.stages ?? []).flatMap((st) => st.skills)];
   const effs = (id: string) => all(ENEMIES[id]).flatMap((k) => k.effects);
   const dmg = (id: string, key: 'drainPct' | 'tpDrain' | 'vsPoisoned' | 'hoardPct') =>
@@ -892,7 +894,7 @@ describe('roster plan B2 review item 7: the traits carry the numbers spec §5 an
     // Every N rounds: the lead's beat and the elder's spores 3, the whale's dive 3, the sandstorm 2.
     const every = (id: string) => all(E[id]).flatMap((k) => (k.every ? [k.every] : []));
     expect([every('mirage-lead'), every('grey-elder'), every('starless-whale'), every('sandstorm-maw')]).toEqual([[3], [3], [3], [2]]);
-    // The festival: a lantern a turn (the boss cap keeps three), the fire once all three are lit, at 0.6 (§0 item 18).
+    // The festival: a lantern a turn (the boss cap keeps three), the fire once all three are lit, at 0.6 (§0 item 19).
     const fire = all(E['forgotten-festival']).find((k) => k.needs);
     expect([fire?.needs, fire?.chance]).toEqual([{ id: 'lamp-wight', n: 3 }, 0.6]);
     expect(calls('forgotten-festival')).toEqual(['lamp-wight']);

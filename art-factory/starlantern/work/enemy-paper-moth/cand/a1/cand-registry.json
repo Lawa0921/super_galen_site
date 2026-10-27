@@ -6,8 +6,7 @@
       "qa": {
         "pass": false,
         "reasons": [
-          "swarm wider than its band",
-          "too many colours"
+          "swarm wider than its band"
         ],
         "warnings": [],
         "residue": 0,
@@ -21,6 +20,7 @@
           76,
           52
         ],
+        "bright_key": 0,
         "height": 50,
         "width": 74,
         "colours": 2220,
@@ -30,7 +30,8 @@
           0.591
         ],
         "erased": 0,
-        "spec": "roster-sprite:d5d24a1a03ef"
+        "palette_over": true,
+        "spec": "roster-sprite:2e0d0bc9e5f1"
       },
       "status": "qa_failed",
       "kind": "roster-sprite",
