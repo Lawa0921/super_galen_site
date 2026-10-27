@@ -13,7 +13,7 @@ Eight sections (no section for the bestiary's unknown-foe outline: ruling 18 sho
 Read-only for the registry and public/. Records the sha256 of every final it shows in work/review/roster-<round>-shown.json;
 `roster_art.py approve` refuses an asset whose file changed since. --contact also writes one PNG contact sheet of the round
 at the game's real display scale (the controller shows it to the user)."""
-import html, json, shutil, sys
+import html, json, re, shutil, sys
 from pathlib import Path
 
 import numpy as np
@@ -179,7 +179,7 @@ img{image-rendering:pixelated}
 .bag{position:relative;width:28px;height:28px;background:#0f0e16}
 .bag .frame{position:absolute;inset:0;width:28px;height:28px}
 .bag .g26{position:absolute;left:1px;top:1px;width:26px;height:26px}
-.chip{display:inline-flex;align-items:center;gap:1px;font-size:12px;color:#8fd9b6;background:#0f0e16;padding:0 4px}
+.chip{display:inline-flex;align-items:center;gap:1px;font-size:12px;color:FORGET_FILL;background:#0f0e16;padding:0 4px}
 .chip img{width:14px;height:14px}
 .story{display:flex;gap:12px;align-items:flex-start}
 table{border-collapse:collapse;width:100%;font-size:12px}td,th{border:1px solid #2e2a40;padding:4px;vertical-align:top;text-align:left}
@@ -188,6 +188,14 @@ td.ver img{zoom:2}
 .note{color:#a79fc0;font-size:12px}
 @media (max-width:640px){body{padding:16px}table{font-size:11px}}
 """
+
+
+def forget_fill():
+    """The colour the game draws 遺忘 in: AILMENT_FILL.forget in render/ailmentStyle.ts (#66B87E, spec §0 items 17 and 19; the
+    art's own #8FD9B6 was too close to other chips), so the chip on the page reads as it will in battle (plan E1c)."""
+    m = re.search(r'\bforget: 0x([0-9a-fA-F]{6})', (R.GAME / 'render/ailmentStyle.ts').read_text(encoding='utf-8'))
+    if not m: raise ValueError('AILMENT_FILL.forget not found in render/ailmentStyle.ts')
+    return '#' + m.group(1).lower()
 
 
 def main(rnd='r0', out=None, contact=None):
@@ -204,7 +212,7 @@ def main(rnd='r0', out=None, contact=None):
     foes = [a[6:] for a in aids if a.startswith('enemy-') and a in finals]
     bgs = {n: Image.open(PUB / 'bg' / f'f{n}.png') for n in (1, 2, 3) if (PUB / 'bg' / f'f{n}.png').is_file()}
     pg = [f'<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">'
-          f'<title>名冊美術 {rnd.upper()}</title><style>{CSS}</style></head><body>',
+          f'<title>名冊美術 {rnd.upper()}</title><style>{CSS.replace('FORGET_FILL', forget_fill())}</style></head><body>',
           f'<h1>星燈迷宮 怪物名冊美術 {rnd.upper()}（尚未發布）</h1>',
           '<p class="lead">' + ('R0 是風格樣本，也是唯一要你核准的一批：核准之後，R1–R4 每一批通過機械 QA 與全新脈絡的獨立審核就會發布，你之後隨時可以要求換掉任何一張。'
                                 if rnd == 'r0' else f'{rnd.upper()} 由機械 QA 與全新脈絡的獨立審核決定是否發布（裁定 21）；你之後隨時可以要求換掉任何一張。') + '</p>']

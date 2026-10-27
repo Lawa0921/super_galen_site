@@ -316,6 +316,17 @@ def test_approve_refuses_without_the_shown_hashes_a_date_or_with_any_part_not_qa
     _refused(factory, 'r0', by='user: 可以 2026-10-27')
 
 
+def test_the_forget_chip_on_the_review_page_wears_the_games_colour(factory, review):
+    """E1c (B2 merged, 2026-10-27): the game draws 遺忘 in AILMENT_FILL.forget (#66B87E, spec §0 items 17 and 19), not the art's
+    #8FD9B6, so the review page shows the chip icon in front of the word in the game's own colour, read from ailmentStyle.ts."""
+    _fill(factory, 'forget'); page = review.main('forget')
+    html = Path(page).read_text(encoding='utf-8').lower()
+    game = re.search(r'forget: 0x([0-9a-f]{6})', (R.GAME / 'render/ailmentStyle.ts').read_text(encoding='utf-8')).group(1)
+    assert game == '66b87e'
+    assert f'color:#{game}' in html and '8fd9b6' not in html
+    assert '<span class="chip"><img src="img/icon-ail-forget-14.png"' in html
+
+
 def test_r0_needs_the_users_words_in_by(factory, review):
     _fill(factory, 'r0'); review.main('r0')
     _refused(factory, 'r0', review=str(factory / 'rec.md'))                 # an agent review cannot approve the style
