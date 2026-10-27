@@ -43,8 +43,9 @@ describe('artPaths', () => {
     // + roster R0 (使用者 2026-10-26：核可，照這個畫風做下去): 5 foes, 5 material icons, 2 own uniques x 2 = 736
     // + roster R1 (independent review 2026-10-27): 13 foes, 13 material icons, 3 own uniques x 2 = 768
     // + roster R2 (independent review 2026-10-27): 27 foes, 26 material icons, 10 own uniques x 2 = 841
-    expect(urls).toHaveLength(841);
-    expect(new Set(urls).size).toBe(841);
+    // + roster FORGET (independent review 2026-10-27): 0 foes, 0 material icons, 0 own uniques x 2, the forget chip = 842
+    expect(urls).toHaveLength(842);
+    expect(new Set(urls).size).toBe(842);
     for (const id of Object.keys(SKILLS)) {
       expect(urls, id).not.toContain(art.icon(id));
       for (const px of SKILL_ICON_SIZES) expect(urls, id).toContain(art.skillIcon(id, px));

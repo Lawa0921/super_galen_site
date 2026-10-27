@@ -36970,7 +36970,7 @@
         "spec": "skill-cell:533a8c45dbc6",
         "interior_holes": 0
       },
-      "status": "approved",
+      "status": "published",
       "kind": "skill-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-ail-roster-1\\sheet-ail-roster-1-a1.png",
@@ -36979,7 +36979,8 @@
       "chosen_attempt": "a1",
       "source_id": "sheet-ail-roster-1",
       "batch": "roster-forget",
-      "approved_by": "independent review art-factory/starlantern/work/review/roster-forget-review.md (2026-10-27)"
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-forget-review.md (2026-10-27)",
+      "runtime": "/assets/games/starlantern/icon/ail-forget-14.png"
     },
     "gear-moonless-mirror-large": {
       "final": "art-factory/starlantern/work/sheet-gear-roster-1/gear-moonless-mirror-large.png",

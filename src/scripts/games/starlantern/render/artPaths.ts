@@ -25,7 +25,7 @@ export const RUNE_ICON_IDS = (): RuneIconId[] => ['slot-empty', 'slot-filled', .
 export type SkillIconSize = 16 | 14;
 export const SKILL_ICON_SIZES: readonly SkillIconSize[] = [16, 14];
 /** Every ailment shown in battle (render/ailmentStyle AILMENT_FILL): its 14px chip icon (registry `icon-ail-<id>-14`). */
-export const AILMENT_ICON_IDS: readonly AilmentShown[] = ['poison', 'sleep', 'burn', 'freeze', 'chill', 'shock', 'bleed'];
+export const AILMENT_ICON_IDS: readonly AilmentShown[] = ['poison', 'sleep', 'burn', 'freeze', 'chill', 'shock', 'bleed', 'forget'];
 /** A mechanic's 14px chip icon (registry `icon-mech-<key>-14`); a device uses its own skill's 14px icon instead. */
 export type MechIconKey = 'heat' | 'coins' | 'embers' | 'beat' | 'shield' | 'aim' | 'mark' | 'ward' | 'purify' | 'thunder'
   | 'moon-first' | 'moon-full' | 'moon-waning' | 'moon-new';

@@ -2405,7 +2405,8 @@ test.describe('starlantern', () => {
     // uniques x 2 = 736
     // + roster R1 (independent review 2026-10-27): 13 foes, 13 material icons, 3 own uniques x 2 = 768
     // + roster R2 (independent review 2026-10-27): 27 foes, 26 material icons, 10 own uniques x 2 = 841
-    expect(manifest.length).toBe(841);
+    // + roster FORGET (independent review 2026-10-27): 0 foes, 0 material icons, 0 own uniques x 2, the forget chip = 842
+    expect(manifest.length).toBe(842);
     // Every file the manifest lists answers 200.
     for (const u of manifest) expect((await page.request.get(u)).status(), u).toBe(200);
     // Walk the screens that show the new art (equipment, shop, forge, portal codex) with every sample piece in the bag.
