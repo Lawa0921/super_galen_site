@@ -436,7 +436,8 @@ export class BattleScene implements Scene {
       return;
     }
     if (target === 'ally' || target === 'deadAlly') {
-      const pool = target === 'ally' && actor ? choosable(this.state, actor, 'ally', p.kind === 'item') : this.state.party.filter((c) => (target === 'ally' ? c.alive : !c.alive));
+      const side = target === 'ally' ? 'ally' : 'fallen';
+      const pool = actor ? choosable(this.state, actor, side, p.kind === 'item') : this.state.party.filter((c) => (target === 'ally' ? c.alive : !c.alive));
       if (!pool.length) { this.ctx.sfx.error(); return; }
       this.subList(pool.map((c) => ({ id: c.key, label: c.name, right: `${c.hp}/${c.max.hp}` })), (it) => this.finish(p, it.id), 'slx-bsub slx-btarget');
       return;

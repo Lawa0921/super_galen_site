@@ -400,9 +400,9 @@ function resolveTargets(s: BattleState, actor: Combatant, target: Target | null,
     case 'allies': return choosable(s, actor, 'ally', item);
     case 'self': return [actor];
     case 'deadAlly': {
-      // A foe that left the fight is not a fallen ally (roster plan B1); nor is a decoy, or a foe raised once (B4).
-      const fallen = (c: Combatant) => !c.alive && !c.left && !c.rose && !c.decoyOf;
-      const t = allies.find((c) => c.key === chosen && fallen(c)) ?? allies.find(fallen);
+      // The fallen that can be raised (foes.choosable): none from inside a foe (B2 review item 4).
+      const pool = choosable(s, actor, 'fallen', item);
+      const t = pool.find((c) => c.key === chosen) ?? pool[0];
       return t ? [t] : [];
     }
     default: return [];
@@ -913,10 +913,13 @@ function hoarded(actor: Combatant, eff: Effect): Effect {
   return { ...eff, power: Math.round((eff.power * (100 + Math.min(actor.stolen, eff.hoardPct))) / 100) };
 }
 
-/** Roster plan B8 (M6): the member who landed the party's last blow, while she stands. */
+/**
+ * Roster plan B8 (M6): the member who landed the party's last blow, while she stands where a blow can find her: not inside a
+ * foe, not veiled (B2 review item 5). None: the borrowed blow is a plain attack, and its intent names no one.
+ */
 const lender = (s: BattleState): Combatant | undefined => {
   const rec = s.lastPartyHit;
-  return rec ? s.party.find((c) => c.key === rec.by && c.alive) : undefined;
+  return rec ? s.party.find((c) => c.key === rec.by && c.alive && !c.engulfed && !c.veil) : undefined;
 };
 
 /** Roster plan B8 (M6): the party's last blow, borrowed: its element, its power up to `cap`, never touching (a foe's own numbers). */

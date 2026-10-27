@@ -846,3 +846,63 @@ describe('roster art switch (roster plan Task D4)', () => {
     }
   });
 });
+
+describe('roster plan B2 review item 7: the traits carry the numbers spec §5 and §0 item 18 fix', () => {
+  const all = (d: EnemyDef) => [...d.skills, ...(d.stages ?? []).flatMap((st) => st.skills)];
+  const effs = (id: string) => all(ENEMIES[id]).flatMap((k) => k.effects);
+  const dmg = (id: string, key: 'drainPct' | 'tpDrain' | 'vsPoisoned' | 'hoardPct') =>
+    effs(id).flatMap((e) => (e.kind === 'damage' && e[key] !== undefined ? [e[key]] : []));
+  const calls = (id: string) => effs(id).flatMap((e) => (e.kind === 'summon' ? [e.id] : []));
+
+  it('every mechanic parameter is the design value (design changes only through a recorded ruling in an L task)', () => {
+    const E = ENEMIES;
+    // M3, and the gilded hoarder's dodge (spec §5.3).
+    expect([E.hoarder.fleeAfter, E['gilded-hoarder'].fleeAfter, E['gilded-hoarder'].dodgeUp]).toEqual([3, 2, 10]);
+    // M7: every shield halves (spec §6.2's 50).
+    for (const id of ['old-city-archon', 'rime-sovereign', 'ice-shrine', 'mirage-city', 'grey-blight']) expect(E[id].parts?.cutPct, id).toBe(50);
+    expect([E['ice-shrine'].parts?.by, E['mirage-city'].parts?.by, E['grey-blight'].parts?.by]).toEqual([['ice-komainu'], ['mirage-dancer'], ['spore-moth']]);
+    // M22: 30% (spec §5.3 paper cranes, §5.5 toppled automaton).
+    expect(E['toppled-automaton'].rise).toEqual({ pct: 30 });
+    expect(effs('paper-cranes').find((e) => e.kind === 'revive')).toEqual({ kind: 'revive', hpPct: 0.3 });
+    // M11 (spec §5.3, §5.4, §5.6).
+    expect([dmg('lantern-larva', 'drainPct'), dmg('leech-knight', 'drainPct'), dmg('gorged-beast', 'drainPct')]).toEqual([[50], [50], [40]]);
+    // M17: 15 a hit; M25: half again; M16: three rounds; M18: 60%; M21: 12% shorted by thunder, 10% for the treant.
+    for (const id of ['deep-tendril', 'star-ember', 'burning-page', 'starfire-colossus']) expect(dmg(id, 'tpDrain'), id).toEqual([15]);
+    expect(dmg('sand-scorpion', 'vsPoisoned')).toEqual([50]);
+    expect([E['sorrow-crystal'].adapt, E['lost-shadow'].mimic]).toEqual([3, 60]);
+    expect([E['ancestor-automaton'].mend, E['ashen-treant'].mend]).toEqual([{ pct: 12, stopBy: 'thunder' }, { pct: 10 }]);
+    // M10: the twin's anger, the wick's and the imp's bursts, the returning light's farewell, the knight's steel.
+    expect(E['mist-twin'].onFall?.effects).toEqual([{ kind: 'buff', stat: 'atk', pct: 40, turns: 3 }]);
+    expect(E['wick-shade'].onFall?.effects[0]).toMatchObject({ kind: 'damage', power: 40, element: 'fire' });
+    expect([E['cinder-imp'].onFall?.target, E['cinder-imp'].onFall?.effects[0]]).toEqual(['row', expect.objectContaining({ power: 35, element: 'fire' })]);
+    expect(E['returning-light'].onFall?.effects).toEqual([{ kind: 'restore', hpPct: 10 }]);
+    expect(E['fallen-knight'].onAllyFall?.effects).toEqual([{ kind: 'buff', stat: 'def', pct: 30, turns: 3 }]);
+    expect(E['burning-page'].onFall?.effects).toEqual([{ kind: 'restore', tp: 20 }]);
+    // M19, M23, M26, M27, M28 and the slow that deepens.
+    expect([E['mirage-dancer'].opener, E['mirage-lead'].decoys, E['frozen-pilgrim'].opener]).toEqual(['decoy', 2, 'encased']);
+    expect([E['banner-bearer'].rally, E['shadow-parade'].throng]).toEqual([{ atk: 20 }, { id: 'lost-shadow', per: { atk: 15, mag: 15 } }]);
+    expect(effs('stopped-clock').filter((e) => e.kind === 'delay' || e.kind === 'buff')).toEqual([{ kind: 'delay' }, { kind: 'buff', stat: 'spd', pct: -30, turns: 2 }]);
+    expect(effs('bog-leviathan').some((e) => e.kind === 'engulf')).toBe(true);
+    expect(effs('white-silence').find((e) => e.kind === 'buff')).toEqual({ kind: 'buff', stat: 'spd', pct: -10, turns: 3, stackTo: -30 });
+    // M8: the thresholds and beats spec §5 names.
+    const below = (id: string) => (E[id].stages ?? []).map((st) => st.below);
+    expect([below('silent-bell'), below('bell-warden'), below('ember-tyrant'), below('rift-maw'), below('hollow-champion')]).toEqual([[50], [50], [50], [50], [40]]);
+    expect([below('mire-hydra'), below('first-lantern')]).toEqual([[66, 33], [66, 33]]);
+    expect([E['false-moon'].stageEvery, E['stolen-tome'].stageEvery]).toEqual([2, 1]);
+    // Every N rounds: the lead's beat and the elder's spores 3, the whale's dive 3, the sandstorm 2.
+    const every = (id: string) => all(E[id]).flatMap((k) => (k.every ? [k.every] : []));
+    expect([every('mirage-lead'), every('grey-elder'), every('starless-whale'), every('sandstorm-maw')]).toEqual([[3], [3], [3], [2]]);
+    // The festival: a lantern a turn (the boss cap keeps three), the fire once all three are lit, at 0.6 (§0 item 18).
+    const fire = all(E['forgotten-festival']).find((k) => k.needs);
+    expect([fire?.needs, fire?.chance]).toEqual([{ id: 'lamp-wight', n: 3 }, 0.6]);
+    expect(calls('forgotten-festival')).toEqual(['lamp-wight']);
+    // The music box: two turns, 10% to its kin a turn, broken by a hit.
+    const song = all(E['music-box']).find((k) => k.windupRounds);
+    expect([song?.windupRounds, song?.windupAllies, song?.fragile]).toEqual([2, [{ kind: 'restore', hpPct: 10 }], true]);
+    // M13: depth × 5.
+    for (const id of ['market-ghost', 'vault-mimic', 'debt-collector', 'locked-vault', 'vault-dragon']) {
+      expect(effs(id).filter((e) => e.kind === 'steal'), id).toEqual([{ kind: 'steal', perDepth: 5 }]);
+    }
+    expect(dmg('vault-dragon', 'hoardPct')).toEqual([100]);
+  });
+});

@@ -364,16 +364,20 @@ export function settleGulps(s: BattleState): void {
 }
 
 /**
- * M28: whom `actor` may pick on one side (`foe`, the other side; `ally`, its own living): a member inside a foe picks that
- * foe alone, and of her allies herself; no one else picks her, from either side, but an item reaches her (`item`).
+ * M28: whom `actor` may pick on one side (`foe`, the other side; `ally`, its own living; `fallen`, its own fallen that can be
+ * raised): a member inside a foe picks that foe alone, and of her allies herself, and raises no one (B2 review item 4: from
+ * inside, her own skills reach herself and the engulfer only); no one else picks her, from either side, but an item
+ * reaches her (`item`).
  */
-export function choosable(s: BattleState, actor: Combatant, side: 'foe' | 'ally', item = false): Combatant[] {
+export function choosable(s: BattleState, actor: Combatant, side: 'foe' | 'ally' | 'fallen', item = false): Combatant[] {
   const foes = actor.side === 'party' ? s.enemies : s.party;
   const allies = actor.side === 'party' ? s.party : s.enemies;
   if (side === 'foe') {
     if (actor.engulfed) return foes.filter((c) => c.key === actor.engulfed && c.alive);
     return foes.filter((c) => c.alive && !c.engulfed);
   }
+  // A foe that left the fight is not a fallen ally (roster plan B1); nor is a decoy, or a foe raised once (B4).
+  if (side === 'fallen') return actor.engulfed && !item ? [] : allies.filter((c) => !c.alive && !c.left && !c.rose && !c.decoyOf);
   if (actor.engulfed && !item) return [actor];
   return allies.filter((c) => c.alive && (item || !c.engulfed || c === actor));
 }

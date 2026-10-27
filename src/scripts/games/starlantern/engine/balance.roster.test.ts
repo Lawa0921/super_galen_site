@@ -115,6 +115,16 @@ describe.skipIf(!on)('band 22: the roster against the lantern-eater and its own 
     }
     return r;
   };
+  /**
+   * The species judged against their reference because the reference misses the band (B2 review item 3: pinned, so a
+   * reference that drifts out of band fails here rather than going relative unseen).
+   */
+  const RELATIVE_22A = [
+    'lamp-wight', 'market-ghost', 'tongueless-bell', 'requiem-choir', 'ash-archivist', 'ember-maw', 'sorrow-crystal', 'deep-tendril',
+    'music-box', 'paper-cranes', 'lost-shadow', 'returning-light',
+    'snow-caller', 'storm-totem', 'charge-jelly', 'star-ember', 'stolen-tome', 'rot-lily', 'hush-acolyte',
+  ];
+  const relative22a: string[] = [];
   const parity = (ids: string[]) => {
     for (const id of ids) {
       const d = ENEMIES[id];
@@ -125,16 +135,23 @@ describe.skipIf(!on)('band 22: the roster against the lantern-eater and its own 
       const label = `22a ${id} (${arch}) ${region} d${depth}`;
       sayRun(label, { ...r, rounds: undefined });
       say(`${label} hpLoss-ref=${f3(r.hpLoss - ref.hpLoss)}`);
-      // At depth 4 a single group rarely gets to act against the expected party, and in bands E and F the references
-      // themselves lose: there the species is judged against its reference (the ruling above); elsewhere as before.
-      if (depth === 4 || !inBand(ref)) { judgeRelative(label, r, ref); continue; }
+      // Where the reference itself misses the band, the species is judged against it (the ruling above); elsewhere as
+      // before, absolute and within 0.08 of its reference (B2 review item 1: no depth is relative by itself).
+      if (!inBand(ref)) { relative22a.push(id); judgeRelative(label, r, ref); continue; }
       judgeAbsolute(label, r);
       ex(Math.abs(r.hpLoss - ref.hpLoss), `${label} against ${REFERENCE[arch]}`).toBeLessThanOrEqual(0.08);
     }
   };
 
-  it('22a species parity: the main road', () => parity(ORDINARY.filter((id) => !ENEMIES[id].home)), 600_000);
-  it('22a species parity: the regions', () => parity(ORDINARY.filter((id) => !!ENEMIES[id].home)), 600_000);
+  it('22a species parity: the main road', () => {
+    parity(ORDINARY.filter((id) => !ENEMIES[id].home));
+    expect(relative22a, 'the main road\'s relative cells').toEqual(RELATIVE_22A.filter((id) => !ENEMIES[id].home));
+  }, 600_000);
+  it('22a species parity: the regions', () => {
+    relative22a.length = 0;
+    parity(ORDINARY.filter((id) => !!ENEMIES[id].home));
+    expect(relative22a, 'the regions\' relative cells').toEqual(RELATIVE_22A.filter((id) => !!ENEMIES[id].home));
+  }, 600_000);
 
   /** Every new boss and the depths it is met at (≤ 50): bossFor with everything live, the lantern-eater's cells left out. */
   const bossCells = (): { region: RegionId; depth: number; group: string[] }[] => allLive(() => {
@@ -198,16 +215,24 @@ describe.skipIf(!on)('band 22: the roster against the lantern-eater and its own 
   }, 900_000);
 
   it('22c the regions deep: the expected party wins >= .85 and loses 10-45% at depths 15 and 25', () => {
+    const relative22c: string[] = [];
     for (const region of LANDS) for (const d of [15, 25]) {
       const r = expected(d, region, encounterTable(region, d));
       const label = `22c ${region} d${d}`;
       sayRun(label, r);
       // The legacy table at the same depth (the same fights while nothing is live): the reference of the ruling above.
-      const legacy = sameTables(encounterTable(region, d), legacyEncounterTable(region, d)) ? r : expected(d, region, legacyEncounterTable(region, d));
-      if (inBand(legacy)) judgeAbsolute(label, r); else judgeRelative(label, r, legacy);
+      const same = sameTables(encounterTable(region, d), legacyEncounterTable(region, d));
+      const legacy = same ? r : expected(d, region, legacyEncounterTable(region, d));
+      if (inBand(legacy)) judgeAbsolute(label, r);
+      else {
+        relative22c.push(`${region} d${d}`);
+        // While the tables are the same fights, the cell is its own reference: reported, not a gate (B2 review item 3).
+        if (same) say(`${label} relative cell: report only while the table is the legacy one`); else judgeRelative(label, r, legacy);
+      }
       // What the full roster's table gives (reported; it is asserted once the region's natives go live, plan L).
       sayRun(`${label} all live (report)`, allLive(() => expected(d, region, encounterTable(region, d))));
     }
+    expect(relative22c).toEqual(['frost d15', 'mire d25', 'iron d25']);
   }, 900_000);
 
   /** 22d's party (ruling of this task): band 18a's lopsided lineups on their fill build, with band 19a's kit and memories. */
@@ -220,14 +245,21 @@ describe.skipIf(!on)('band 22: the roster against the lantern-eater and its own 
     ['allPhys', 'iron', 12], ['allPhys', 'mire', 12], ['allMagic', 'storm', 12],
   ];
   it('22d lopsided lineups deep: wins >= .85 and loses 10-45%', () => {
+    const relative22d: string[] = [];
     for (const [name, region, d] of ODD_CELLS) {
       const r = expected(d, region, encounterTable(region, d), 8, odd(name));
       const label = `22d ${name} ${region} d${d}`;
       sayRun(label, r);
-      const legacy = sameTables(encounterTable(region, d), legacyEncounterTable(region, d)) ? r : expected(d, region, legacyEncounterTable(region, d), 8, odd(name));
-      if (inBand(legacy)) judgeAbsolute(label, r); else judgeRelative(label, r, legacy);
+      const same = sameTables(encounterTable(region, d), legacyEncounterTable(region, d));
+      const legacy = same ? r : expected(d, region, legacyEncounterTable(region, d), 8, odd(name));
+      if (inBand(legacy)) judgeAbsolute(label, r);
+      else {
+        relative22d.push(`${name} ${region} d${d}`);
+        if (same) say(`${label} relative cell: report only while the table is the legacy one`); else judgeRelative(label, r, legacy);
+      }
       sayRun(`${label} all live (report)`, allLive(() => expected(d, region, encounterTable(region, d), 8, odd(name))));
     }
+    expect(relative22d).toEqual(['noHeal mainline d35', 'noTank mainline d12', 'noTank mainline d35', 'allMagic mainline d12', 'allMagic mainline d35', 'allPhys mainline d35', 'allMagic storm d12']);
   }, 900_000);
 
   it('22f lopsided lineups against the bosses with calls, parts, forget, TP thieves, stalls and swallows', () => {
@@ -283,6 +315,7 @@ describe.skipIf(!on)('band 22: the roster against the lantern-eater and its own 
   };
   it('22h the own-unique ceiling: no boss falls in one round, no table loses under 10%', () => {
     expect(SLOTS).toContain('ring1');
+    const relative22h: number[] = [];
     for (const d of [10, 20]) allLive(() => {
       for (const group of [['lanterneater'], bossFor('mainline', d)]) {
         let rounds = 0;
@@ -309,10 +342,12 @@ describe.skipIf(!on)('band 22: the roster against the lantern-eater and its own 
       // than the tolerance off what it loses (the ruling above).
       if (plain / n >= 0.1) ex(loss / n, `22h table d${d}`).toBeGreaterThanOrEqual(0.1);
       else {
+        relative22h.push(d);
         say(`22h table d${d} judged against the kit without uniques hpLoss=${f3(plain / n)}`);
         ex(loss / n, `22h table d${d} against the kit without uniques`).toBeGreaterThanOrEqual(plain / n - TOL.hpLoss);
       }
     });
+    expect(relative22h).toEqual([10]);
   }, 600_000);
 
   it('22i wardens: each at its first two depths wins >= .6, and a rare kit never fells one in under two rounds', () => {
@@ -328,11 +363,13 @@ describe.skipIf(!on)('band 22: the roster against the lantern-eater and its own 
     const deferred = cells.filter((c) => c.depth > EXPECTED_DEPTH_MAX);
     for (const c of deferred) say(`22i ${c.id} ${c.region} d${c.depth} deferred to L: no tuned expected party past depth ${EXPECTED_DEPTH_MAX} (bands 19a, 19b)`);
     expect(deferred.map((c) => `${c.id} d${c.depth}`)).toEqual(['lantern-brood d28', 'false-moon d33', 'bell-warden d38', 'toppled-automaton d43', 'requiem-conductor d48', 'lantern-brood d53']);
-    for (const c of cells.filter((x) => x.depth <= EXPECTED_DEPTH_MAX)) allLive(() => {
+    for (const c of cells) allLive(() => {
       const group = wardenGroup(c.id);
       const scale = { depth: c.depth, region: c.region, elite: group[0] };
+      // The ENHANCE_MAX check needs no tuned party (B2 review item 6): every warden takes it, the deferred ones too.
+      const tuned = c.depth <= EXPECTED_DEPTH_MAX;
       let wins = 0;
-      for (let kit = 1; kit <= KITS; kit++) for (let seed = 1; seed <= 6; seed++) {
+      if (tuned) for (let kit = 1; kit <= KITS; kit++) for (let seed = 1; seed <= 6; seed++) {
         const r = simBattle(kitParty(levelAt(c.depth), c.depth, kit, undefined, expectedEnhance(c.depth), EXPECT), group, false, seed * 7919, scale);
         if (r.outcome === 'win') wins++;
       }
@@ -344,6 +381,7 @@ describe.skipIf(!on)('band 22: the roster against the lantern-eater and its own 
         rounds += r.rounds;
       }
       const label = `22i ${c.id} ${c.region} d${c.depth}`;
+      if (!tuned) { sayRun(`${label} +${ENHANCE_MAX} (win rate deferred to L)`, { rounds: rounds / 6 }); return; }
       sayRun(label, { rate, rounds: rounds / 6 });
       ex(rate, label).toBeGreaterThanOrEqual(0.6);
     });

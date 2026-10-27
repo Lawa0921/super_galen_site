@@ -1370,7 +1370,7 @@ describe('roster plan B11: the traits that needed one more rule', () => {
     expect(r.enemies[0].x.evasion).toBe(10);
     const r2 = resolveRound(r, { scarlet: { kind: 'attack', target: 'e0' } }, constRng(0.5));
     expect(r2.enemies[0].x.evasion).toBe(20);
-    expect(ENEMIES['gilded-hoarder'].dodgeUp).toBeGreaterThan(0);
+    expect(ENEMIES['gilded-hoarder'].dodgeUp).toBe(10);
   });
 
   it('the fallen knight steels itself as an ally falls', () => {
@@ -1405,5 +1405,45 @@ describe('roster plan B11: the traits that needed one more rule', () => {
     };
     expect(blow(50) / blow(0)).toBeCloseTo(1.5, 1);
     expect(blow(500)).toBe(blow(100));   // up to +100%
+  });
+});
+
+describe('roster plan B2 review', () => {
+  it('4. from inside a foe a member raises no one: her own skills reach herself and the engulfer only', () => {
+    const s = makeBattle([P('selene', { tp: 50, max: { hp: 1000, tp: 50, mag: 50 } as never, engulfed: 'e0' }), P('noel', { alive: false, hp: 0 }), P('scarlet', { max: { hp: 1000 } as never })],
+      [E('e0', { max: { hp: 100000 } as never, gulp: { key: 'selene', until: 9, taken: 0 } })]);
+    s.intents = { e0: { kind: 'attack', target: 'scarlet' } };
+    const r = resolveRound(s, { selene: { kind: 'skill', skill: 'rebirth', target: 'noel' }, scarlet: { kind: 'defend' } }, constRng(0.5));
+    expect(r.party[1].alive).toBe(false);
+    expect(choosable(s, s.party[0], 'fallen')).toEqual([]);
+    // Outside, she raises her as ever.
+    const out = makeBattle([P('selene', { tp: 50, max: { hp: 1000, tp: 50, mag: 50 } as never }), P('noel', { alive: false, hp: 0 }), P('scarlet', { max: { hp: 1000 } as never })], [E('e0', { max: { hp: 100000 } as never })]);
+    expect(choosable(out, out.party[0], 'fallen').map((c) => c.key)).toEqual(['noel']);
+    out.intents = { e0: { kind: 'attack', target: 'scarlet' } };
+    expect(resolveRound(out, { selene: { kind: 'skill', skill: 'rebirth', target: 'noel' }, scarlet: { kind: 'defend' } }, constRng(0.5)).party[1].alive).toBe(true);
+  });
+
+  it('5. a borrowed blow never names, nor goes back at, a lender inside a foe or veiled', () => {
+    const mirror: EnemySkill = { name: '鏡擊', chance: 1, target: 'enemy', effects: [{ kind: 'mirror', cap: 150 }] };
+    for (const hidden of [{ engulfed: 'e1' }, { veil: 2 }] as Partial<Combatant>[]) {
+      const holder = E('e1', { max: { hp: 100000 } as never, ...(hidden.engulfed ? { gulp: { key: 'scarlet', until: 9, taken: 0 } } : {}) });
+      const s = makeBattle([P('scarlet', { max: { hp: 1000 } as never, ...hidden }), P('noel', { max: { hp: 1000 } as never })], [E('e0', { mirrors: true }), holder],
+        { enemyDefs: { e0: def([mirror]), e1: def([]) }, lastPartyHit: { by: 'scarlet', element: 'fire', power: 120 } });
+      s.intents = { e0: { kind: 'enemy-skill', index: 0, target: 'noel' }, e1: { kind: 'attack', target: 'noel' } };
+      expect(intentLabel(s, 'e0')).toBe('鏡擊');
+      // (Her own action would end her veil, so she holds it this round.)
+      const r = resolveRound(s, { noel: { kind: 'defend' } }, constRng(0.5));
+      expect(acted(r, 'e0')).toEqual(['攻擊']);
+      expect(r.log.some((e) => e.type === 'damage' && e.target === 'scarlet')).toBe(false);
+    }
+  });
+
+  it('8. a stall a taunt sends back to the same member slows her still, but does not delay her', () => {
+    const stall: EnemySkill = { name: '遲滯', chance: 1, target: 'enemy', effects: [{ kind: 'delay' }, { kind: 'buff', stat: 'spd', pct: -30, turns: 2 }] };
+    const t = makeBattle([P('scarlet', { max: { hp: 9999 } as never, delayedBy: 'e0', taunt: 3 }), P('noel', { max: { hp: 9999 } as never })], [E('e0', { max: { hp: 9999 } as never })], { enemyDefs: { e0: def([stall]) } });
+    t.intents = { e0: { kind: 'enemy-skill', index: 0, target: 'scarlet' } };
+    const r = resolveRound(t, defend(t), constRng(0.5));
+    expect(r.party[0].delay).toBeUndefined();
+    expect(r.party[0].buffs).toContainEqual(expect.objectContaining({ stat: 'spd', pct: -30 }));
   });
 });
