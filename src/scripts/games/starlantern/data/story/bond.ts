@@ -80,15 +80,15 @@ export interface GiftTaste {
  * Spec §6.2, from each one's background (reviewed against the lore ledger in bond plan Task 1, spec §0 D19). Healing only
  * turns a declined material into liked or neutral, so a material she has taken never changes its worth. A companion's own
  * keepsake (roster plan ruling 13) is declined until her pieces are all told, then liked: Rin's and Selene's from L1a,
- * Bobby's from L2a, Chizuru's, Safira's and Noel's from L3a.
+ * Bobby's from L2a, Chizuru's, Safira's and Noel's from L3a, Sylvie's, Liz's and Scarlet's from L4a.
  */
 export const GIFT_TASTE: Record<Companion, GiftTaste> = {
   rin: { loved: ['dusk-cloth', 'thorn-fang'], liked: ['shade-crystal', 'star-tear'], declined: ['king-scale', 'tower-dust'], healed: { 'tower-dust': 'liked' } },
   noel: { loved: ['storm-stone', 'crystal-shell'], liked: ['king-scale', 'star-tear'], declined: ['star-stone', 'ash-page'], healed: { 'star-stone': 'liked', 'ash-page': 'liked' } },
   chizuru: { loved: ['old-coin', 'moss'], liked: ['star-stone', 'crystal-shell'], declined: ['ice-crystal', 'frost-heart', 'shrine-rope'], healed: { 'shrine-rope': 'liked' } },
-  liz: { loved: ['old-coin', 'king-scale'], liked: ['star-tear', 'ancient-gear'], declined: ['shade-crystal'], healed: { 'shade-crystal': 'neutral' } },
-  sylvie: { loved: ['moss', 'thorn-fang'], liked: ['bat-wing', 'lizard-scale'], declined: ['mire-gland'], healed: { 'mire-gland': 'neutral' } },
-  scarlet: { loved: ['blaze-core', 'dusk-cloth'], liked: ['king-scale', 'star-stone'], declined: ['iron-shard'], healed: { 'iron-shard': 'liked' } },
+  liz: { loved: ['old-coin', 'king-scale'], liked: ['star-tear', 'ancient-gear'], declined: ['shade-crystal', 'vault-coin'], healed: { 'shade-crystal': 'neutral', 'vault-coin': 'liked' } },
+  sylvie: { loved: ['moss', 'thorn-fang'], liked: ['bat-wing', 'lizard-scale'], declined: ['mire-gland', 'ashen-acorn'], healed: { 'mire-gland': 'neutral', 'ashen-acorn': 'liked' } },
+  scarlet: { loved: ['blaze-core', 'dusk-cloth'], liked: ['king-scale', 'star-stone'], declined: ['iron-shard', 'gate-splinter'], healed: { 'iron-shard': 'liked', 'gate-splinter': 'liked' } },
   selene: { loved: ['star-tear', 'crystal-shell'], liked: ['moss', 'ice-crystal', 'star-stone'], declined: ['old-coin', 'moon-silver'], healed: { 'old-coin': 'liked', 'moon-silver': 'liked' } },
   safira: { loved: ['lizard-scale', 'king-scale'], liked: ['star-stone', 'bat-wing'], declined: ['blaze-core', 'copper-anklet'], healed: { 'blaze-core': 'liked', 'copper-anklet': 'liked' } },
   bobby: { loved: ['ancient-gear', 'iron-shard'], liked: ['star-stone', 'crystal-shell', 'storm-stone'], declined: ['mire-gland', 'automaton-core'], healed: { 'automaton-core': 'liked' } },
