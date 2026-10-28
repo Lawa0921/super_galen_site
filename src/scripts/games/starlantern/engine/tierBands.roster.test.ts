@@ -87,7 +87,7 @@ const EXCEPTION_22J: Record<string, { min?: number; max?: number; why: string }>
   'ice-shrine frost': { min: 0.697, why: 'its attempt (喚醒狛犬 two calls → one) took Hell depth 23 .236 to .707 (item 23)' },
 };
 /** L3b review: a bare cell holds its rate from above only (`max`), every other from below only (`min`). */
-function directionBreaks22J(t: Record<string, { min?: number; max?: number }>): string[] {
+function directionBreaks22J(t: Record<string, { min?: number; max?: number; why: string }>): string[] {
   return Object.entries(t).flatMap(([k, e]) => {
     if (k.endsWith(' bare')) return e.max !== undefined && e.min === undefined ? [] : [`${k}: not max only`];
     return e.min !== undefined && e.max === undefined ? [] : [`${k}: not min only`];

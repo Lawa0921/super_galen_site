@@ -154,14 +154,14 @@ const EXCEPTION_22: Record<string, { min?: number; max?: number; why: string }> 
  * L3b review: the direction each exception holds, one bound a cell. 22a: the wick shade a ceiling only, every other a floor
  * only. Item 22's table: a 22b distance and a loss from above only (`max`), every other rate from below only (`min`).
  */
-function directionBreaks22A(t: Record<string, { floor?: number; ceiling?: number }>): string[] {
+function directionBreaks22A(t: Record<string, { floor?: number; ceiling?: number; why: string }>): string[] {
   return Object.entries(t).flatMap(([id, e]) => {
     if (e.floor !== undefined && e.ceiling !== undefined) return [`${id}: floor and ceiling`];
     if (id === 'wick-shade' ? e.ceiling === undefined : e.floor === undefined) return [`${id}: the wrong bound`];
     return [];
   });
 }
-function directionBreaks22(t: Record<string, { min?: number; max?: number }>): string[] {
+function directionBreaks22(t: Record<string, { min?: number; max?: number; why: string }>): string[] {
   return Object.entries(t).flatMap(([k, e]) => {
     const fromAbove = k.startsWith('22b') || k.endsWith(' loss');
     if (fromAbove) return e.max !== undefined && e.min === undefined ? [] : [`${k}: not max only`];
