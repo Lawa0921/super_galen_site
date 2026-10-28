@@ -901,3 +901,12 @@ L3b 的一次調整之後仍紅、列成具名例外的格子（spec §0 第 23 
 ### Task F8：已發布 5d 圖示的 key 殘留（E4 之後的小 PR，與 F1 一起）
 - [ ] R4 審核（2026-10-28）在已發布的 5d `icon-lizard-scale` 外緣找到一排 key 像素，E4 以 `repair-outliers --rule key-hue` 修好並隨 R4 發布。同一次唯讀掃描（`sl_art.key_hue_pixels`、`pink_outliers`，529 件已發布的名冊與圖示）另有 16 件 5d 圖示也命中：ancient-gear、antidote、bat-wing、crystal-shell、dusk-cloth、ether、ice-crystal、moss、old-coin、phoenix、potion、return-lamp、star-stone、thorn-fang、trait-poison、trait-shade；名冊的圖一件都沒有。這些是使用者核准過的舊圖，有些命中可能是真的紫色美術（phoenix、trait 晶片）。做法：全新脈絡的審核者逐件放大，標出真正的 key 殘留與刻意的美術；只有真的殘留才用同一個確定性修復（`repair-outliers --rule key-hue`，只動那些像素、alpha 不變、登錄表記前後），再一輪獨立審核後發布。F1（`enemy/bat.png` 的洋紅邊）一起做（控制者 2026-10-28 裁定）。
 - [ ] R4 第 2 輪審核（2026-10-29）附帶的三點，同一個後續一起看（都不擋 E4，遊戲大小看不出來）：(1) `icon-lizard-scale` 的修復後外緣留下一塊 6×2 的近黑墊（原本格線旁的像素），要清掉得改 alpha，是另一條規則；(2) `icon-crab-plate` 有一個偏玫瑰色的刺尖 (25,4)=(131,71,85)；(3) `gear-faceless-mask` 的 26 px 小圖是最弱的一張，之後若重畫：綁帶顏色淡一點、鼻梁凸起大一點。
+
+### Task F9：F8 範圍外的已發布圖 key 殘留（後續，控制者 2026-10-29）
+- [ ] F8 的唯讀重掃（2026-10-29，999 張已發布 png）在 F8 範圍（名冊與圖示）之外，還有這些觸發名冊的顏色閘門或 F8 的偵測（`key_hue_pixels`、`outline_blend_pixels`、`bright_key`、`pink_outliers`、外緣溢色）；F8 不動，之後另開一個修正，做法比照 F8（全新脈絡逐件分類殘留與美術 → 只用確定性規則修真的殘留，`--keep` 保留美術 → 獨立審核 → 同網址發布）：
+  - `ui-logo`（key-hue 105、outline-blend 107、pink 1、外緣溢色 179）與 `ui-window`（outline-blend 1、pink 1、外緣溢色 11）：UI 外框，殘留在這裡最顯眼，優先看。
+  - 5d 敵人：`enemy-lanterneater`（key-hue 88、outline-blend 139、亮 key 35、pink 3）、`enemy-golem`（key-hue 18、outline-blend 28、亮 key 6）、`enemy-shade`（key-hue 8、outline-blend 13、亮 key 2、pink 1）、`enemy-wolf`（key-hue 4、outline-blend 6、亮 key 1）、`enemy-beetle`（key-hue 6、outline-blend 9）、`enemy-lizard`（key-hue 2、outline-blend 6）、`enemy-wisp`（outline-blend 5）、`enemy-slime`（outline-blend 1、外緣溢色 32）。shade、wisp、lanterneater 可能有真的紫色美術，要逐點分。
+  - 地圖隊伍圖：`map-party-left`（outline-blend 3）、`map-party-right`、`map-party-up`（各 1）。
+  - 地磚：`tile-f3-wall`（key-hue 60、outline-blend 62、亮 key 2）、`tile-event-elite`（key-hue 4、outline-blend 4、pink 2）、`tile-event-vault-open`（pink 1）；`tile-f3-door`、`tile-f3-boss`、`bg-f3` 只有溢色（不透明圖，溢色多半是美術）。
+  - 裝備大圖：`gear-lg-scarlet-large`、`gear-set-storm-feet-large`，各 1 個亮 key。
+  - 角色、NPC、特效（char 123 件、npc 10 件、fx 15 件）多半是粉紅、紫色的美術，名冊閘門不適用；要看時先定它們自己的判準。
