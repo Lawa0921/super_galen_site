@@ -731,6 +731,30 @@ def gen(argv):
 
 
 # --- postprocess --------------------------------------------------------------------------------------------------------------
+def roster_cells(img, cols, rows, pad=8):
+    """portal.sheet_cells, and when a sheet's columns do not line up across its rows (codex drew a wide item in one row where
+    another row has its gutter: the global column projection merges), the same cells found row by row: the rows from the
+    global projection, then each row's own columns. Deterministic; a sheet the shared slicer cuts is cut exactly as before,
+    and a real bridge inside a row still refuses (R4 2026-10-29: sheet-icons-roster-6 a4, a5)."""
+    import numpy as np
+    from PIL import Image
+    try:
+        return P.sheet_cells(img, cols, rows, pad)
+    except ValueError:
+        rgb = np.asarray(img.convert('RGB')); fg = ~(A._near_magenta(rgb, 45) | A._magenta_tint(rgb))
+        ys = A._runs(fg.any(axis=1))
+        if len(ys) != rows: raise
+        out = []
+        for y0, y1 in ys:
+            xs = A._runs(fg[y0:y1].any(axis=0))
+            if len(xs) != cols: raise ValueError(f'expected {cols} cells in the row at y {y0}-{y1}, found {len(xs)}')
+            for x0, x1 in xs:
+                cell = img.crop((x0, y0, x1, y1))
+                if x0 == 0 or y0 == 0 or x1 == img.width or y1 == img.height: out.append(cell); continue
+                padded = Image.new('RGB', (cell.width + 2 * pad, cell.height + 2 * pad), (255, 0, 255)); padded.paste(cell, (pad, pad)); out.append(padded)
+        return out
+
+
 def process_attempt(reg, job, raw, workdir, parts=None):
     """Postprocess one raw attempt into finals and QA. Returns {registry id: qa}."""
     from PIL import Image
@@ -752,7 +776,7 @@ def process_attempt(reg, job, raw, workdir, parts=None):
         part = job['parts'][0]
         return {f'icon-{part}': A.process_roster_icon(reg, f'icon-{part}', img, workdir, raw)}
     out = {}
-    for cell, part in zip(P.sheet_cells(img, job['cols'], job['rows']), job['parts']):
+    for cell, part in zip(roster_cells(img, job['cols'], job['rows']), job['parts']):
         if part is None or (parts and part not in parts): continue
         if job['kind'] == 'gear-sheet':
             u = uniques()[part]

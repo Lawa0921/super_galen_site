@@ -887,3 +887,30 @@ def test_repair_outliers_with_the_key_hue_rule_on_a_published_5d_icon(factory):
     assert rec['qa']['pass'] and rec['qa']['bright_key'] == 0 and rec['qa']['spec'] == A.qa_spec('roster-icon')
     with pytest.raises(ValueError, match='rule'):
         R.repair_outliers(A.Registry(R.REG_PATH), 'icon-lizard-scale', 'r4', rule='anything')
+
+
+# --- R4 (2026-10-29): sheets whose columns do not line up across rows are sliced row by row ---------------------------------
+def _staggered(path, bridge=False):
+    """A 3 x 2 magenta sheet whose rows are offset: every global column projection merges, each row alone splits cleanly."""
+    from PIL import ImageDraw
+    img = Image.new('RGB', (420, 280), M); d = ImageDraw.Draw(img)
+    for r, off in ((0, 0), (1, 40)):
+        for c in range(3):
+            x0 = 20 + c * 130 + off; y0 = 20 + r * 140
+            d.rectangle((x0, y0, x0 + 90, y0 + 100), fill=(30, 28, 40)); d.rectangle((x0 + 6, y0 + 6, x0 + 84, y0 + 94), fill=(150, 150, 140))
+    if bridge: d.rectangle((110, 60, 160, 70), fill=(30, 28, 40))   # a real bridge between two cells of the first row
+    path.parent.mkdir(parents=True, exist_ok=True); img.save(path); return img
+
+
+def test_roster_cells_fall_back_to_rows_when_columns_do_not_line_up(factory):
+    import portal as P
+    img = _staggered(factory / 'stag.png')
+    with pytest.raises(ValueError):
+        P.sheet_cells(img, 3, 2)                                                   # the shared slicer is unchanged
+    cells = R.roster_cells(img, 3, 2)
+    assert len(cells) == 6 and all(c.size == (91 + 16, 101 + 16) for c in cells)
+    assert [c.getpixel((8 + 45, 8 + 50)) for c in cells] == [(150, 150, 140)] * 6
+    good = Image.new('RGB', (420, 280), M); good.paste(img.crop((0, 0, 420, 140)), (0, 0)); good.paste(img.crop((0, 0, 420, 140)), (0, 140))
+    assert [c.tobytes() for c in R.roster_cells(good, 3, 2)] == [c.tobytes() for c in P.sheet_cells(good, 3, 2)]   # aligned: same cells
+    with pytest.raises(ValueError):
+        R.roster_cells(_staggered(factory / 'bridge.png', bridge=True), 3, 2)       # a real bridge still refuses

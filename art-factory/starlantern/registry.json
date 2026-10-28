@@ -45906,7 +45906,7 @@
     },
     "icon-leech-plate": {
       "final": "art-factory/starlantern/work/sheet-icons-roster-6/icon-leech-plate.png",
-      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-6\\sheet-icons-roster-6-a1.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-6\\sheet-icons-roster-6-a4.png",
       "qa": {
         "pass": true,
         "reasons": [],
@@ -45917,10 +45917,10 @@
         "holes": 0,
         "magenta_spill": 0,
         "key_tint_inside": 0,
-        "block": 7,
+        "block": 9,
         "size": [
-          31,
-          34
+          34,
+          20
         ],
         "bright_key": 0,
         "pink_outlier": 0,
@@ -45929,7 +45929,7 @@
       },
       "status": "qa_passed",
       "kind": "roster-icon",
-      "chosen_attempt": "a1",
+      "chosen_attempt": "a4",
       "source_id": "sheet-icons-roster-6",
       "batch": "roster-r4"
     },
@@ -46024,7 +46024,7 @@
     },
     "icon-black-veil": {
       "final": "art-factory/starlantern/work/sheet-icons-roster-6/icon-black-veil.png",
-      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-6\\sheet-icons-roster-6-a2.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-6\\sheet-icons-roster-6-a5.png",
       "qa": {
         "pass": true,
         "reasons": [],
@@ -46038,7 +46038,7 @@
         "block": 8,
         "size": [
           33,
-          33
+          30
         ],
         "bright_key": 0,
         "pink_outlier": 0,
@@ -46047,7 +46047,7 @@
       },
       "status": "qa_passed",
       "kind": "roster-icon",
-      "chosen_attempt": "a2",
+      "chosen_attempt": "a5",
       "source_id": "sheet-icons-roster-6",
       "batch": "roster-r4"
     },
@@ -46169,7 +46169,7 @@
     },
     "icon-crab-plate": {
       "final": "art-factory/starlantern/work/sheet-icons-roster-6/icon-crab-plate.png",
-      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-6\\sheet-icons-roster-6-a1.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-6\\sheet-icons-roster-6-a4.png",
       "qa": {
         "pass": true,
         "reasons": [],
@@ -46180,10 +46180,10 @@
         "holes": 0,
         "magenta_spill": 0,
         "key_tint_inside": 0,
-        "block": 8,
+        "block": 9,
         "size": [
-          33,
-          26
+          36,
+          24
         ],
         "bright_key": 0,
         "pink_outlier": 0,
@@ -46192,7 +46192,7 @@
       },
       "status": "qa_passed",
       "kind": "roster-icon",
-      "chosen_attempt": "a1",
+      "chosen_attempt": "a4",
       "source_id": "sheet-icons-roster-6",
       "batch": "roster-r4"
     },
@@ -46540,7 +46540,7 @@
     },
     "gear-faceless-mask-large": {
       "final": "art-factory/starlantern/work/sheet-gear-roster-6/gear-faceless-mask-large.png",
-      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-6\\sheet-gear-roster-6-a2.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-6\\sheet-gear-roster-6-a3.png",
       "qa": {
         "pass": true,
         "reasons": [],
@@ -46553,18 +46553,18 @@
         "key_tint_inside": 0,
         "subject": {
           "long": 56,
-          "short": 56,
-          "mass": 0.653,
+          "short": 53,
+          "mass": 0.544,
           "box": [
+            5,
             4,
-            4,
-            60,
+            58,
             60
           ],
-          "centre_off": 0.0
+          "centre_off": 0.5
         },
-        "block": 7.839,
-        "scale": 7.839,
+        "block": 7.964,
+        "scale": 7.964,
         "size": [
           64,
           64
@@ -46577,17 +46577,17 @@
       "status": "qa_passed",
       "kind": "roster-gear",
       "source": {
-        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-6\\sheet-gear-roster-6-a2.png",
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-6\\sheet-gear-roster-6-a3.png",
         "cell": "faceless-mask"
       },
       "slot": "head",
-      "chosen_attempt": "a2",
+      "chosen_attempt": "a3",
       "source_id": "sheet-gear-roster-6",
       "batch": "roster-r4"
     },
     "gear-faceless-mask": {
       "final": "art-factory/starlantern/work/sheet-gear-roster-6/gear-faceless-mask.png",
-      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-6\\sheet-gear-roster-6-a2.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-6\\sheet-gear-roster-6-a3.png",
       "qa": {
         "pass": true,
         "reasons": [],
@@ -46600,18 +46600,18 @@
         "key_tint_inside": 0,
         "subject": {
           "long": 22,
-          "short": 22,
-          "mass": 0.667,
+          "short": 21,
+          "mass": 0.558,
           "box": [
             2,
             2,
-            24,
+            23,
             24
           ],
-          "centre_off": 0.0
+          "centre_off": 0.5
         },
-        "block": 19.955,
-        "scale": 19.955,
+        "block": 20.273,
+        "scale": 20.273,
         "size": [
           26,
           26
@@ -46624,11 +46624,11 @@
       "status": "qa_passed",
       "kind": "roster-gear",
       "source": {
-        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-6\\sheet-gear-roster-6-a2.png",
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-6\\sheet-gear-roster-6-a3.png",
         "cell": "faceless-mask"
       },
       "slot": "head",
-      "chosen_attempt": "a2",
+      "chosen_attempt": "a3",
       "source_id": "sheet-gear-roster-6",
       "batch": "roster-r4"
     },
@@ -47655,21 +47655,23 @@
     },
     "icon-commander-medal": {
       "final": "art-factory/starlantern/work/sheet-icons-roster-7/icon-commander-medal.png",
-      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-7\\sheet-icons-roster-7-a3.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-7\\sheet-icons-roster-7-a4.png",
       "qa": {
         "pass": true,
         "reasons": [],
-        "warnings": [],
+        "warnings": [
+          "enclosed holes"
+        ],
         "residue": 0,
         "semi": 0,
         "edge": 0,
-        "holes": 0,
+        "holes": 1,
         "magenta_spill": 0,
         "key_tint_inside": 0,
-        "block": 6,
+        "block": 8,
         "size": [
-          25,
-          34
+          34,
+          31
         ],
         "bright_key": 0,
         "pink_outlier": 0,
@@ -47678,7 +47680,7 @@
       },
       "status": "qa_passed",
       "kind": "roster-icon",
-      "chosen_attempt": "a3",
+      "chosen_attempt": "a4",
       "source_id": "sheet-icons-roster-7",
       "batch": "roster-r4"
     },
@@ -47772,31 +47774,39 @@
     "sheet-icons-roster-6": {
       "rejected_attempts": {
         "a1": "picked for every part except four, taken from a2: bog-peat read as a game grass cube; iou-slip read as a sealed letter like the published faded-letter; rivet read as a mushroom; black-veil had violet streaks (a2 still has some)",
-        "a3": "would not slice 5x4 (found 4x4); it was drawn to separate leech-plate from hydra-scale and crab-plate from rivet at 16 px. Cap 3 is reached, so those parts stay on a1 and a2"
+        "a3": "would not slice 5x4 (found 4x4); it was drawn to separate leech-plate from hydra-scale and crab-plate from rivet at 16 px. Cap 3 is reached, so those parts stay on a1 and a2",
+        "a4": "R4 review round 1 redraw: leech-plate and crab-plate picked from a4 (a segmented leech plate with a sucker mouth and steel rim; a fan shell with a rust-red spiked rim); its black-veil had 8 mauve pixels. It slices only row by row (roster_cells), because its columns do not line up across rows",
+        "a5": "R4 review round 1 redraw: black-veil picked from a5 (black and charcoal with grey rim highlights, 1 faintly mauve pixel against a4's 8); sliced row by row"
       },
       "plain_reasons": {
         "a1": "泥炭像方塊、借條像封蠟信、鉚釘像蘑菇、黑紗帶紫",
-        "a3": "切不出 5x4；已到上限"
+        "a3": "切不出 5x4；已到上限",
+        "a4": "採用蛭甲片與蟹甲；逐列切格",
+        "a5": "採用黑紗"
       }
     },
     "sheet-icons-roster-7": {
       "rejected_attempts": {
         "a1": "would not slice 5x4 (found 4x4): the metal parade lantern's handle crossed a gutter",
         "a2": "picked for every part except commander-medal, which failed QA (larger than the icon box: ribbon too long); the medal is taken from a3",
-        "a3": "commander-medal picked from a3 (compact, short ribbon); its parade-lantern failed QA (larger than the icon box)"
+        "a3": "commander-medal picked from a3 (compact, short ribbon); its parade-lantern failed QA (larger than the icon box)",
+        "a4": "R4 review round 1 redraw: commander-medal picked from a4 (a smaller disc with a star relief under a wide swallowtail ribbon, no potion outline)"
       },
       "plain_reasons": {
         "a1": "提燈的柄跨過格線，切不出 5x4",
         "a2": "勳章太高、超出圖示框",
-        "a3": "採用勳章"
+        "a3": "採用勳章",
+        "a4": "採用勳章（燕尾緞帶）"
       }
     },
     "sheet-gear-roster-6": {
       "rejected_attempts": {
-        "a1": "picked for every part except faceless-mask, taken from a2: a1 read as a framed oval mirror, not a mask"
+        "a1": "picked for every part except faceless-mask, taken from a2: a1 read as a framed oval mirror, not a mask",
+        "a3": "R4 review round 1 redraw: faceless-mask (both sizes) picked from a3 (three-quarter view, brow and nose in its outline, a mirror highlight band, long ties)"
       },
       "plain_reasons": {
-        "a1": "面具畫成鏡子"
+        "a1": "面具畫成鏡子",
+        "a3": "採用無面面具（四分之三側面）"
       }
     },
     "sheet-gear-roster-7": {

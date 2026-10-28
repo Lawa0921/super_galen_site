@@ -10,18 +10,18 @@
   "key_tint_inside": 0,
   "subject": {
     "long": 22,
-    "short": 22,
-    "mass": 0.667,
+    "short": 21,
+    "mass": 0.558,
     "box": [
       2,
       2,
-      24,
+      23,
       24
     ],
-    "centre_off": 0.0
+    "centre_off": 0.5
   },
-  "block": 19.955,
-  "scale": 19.955,
+  "block": 20.273,
+  "scale": 20.273,
   "size": [
     26,
     26

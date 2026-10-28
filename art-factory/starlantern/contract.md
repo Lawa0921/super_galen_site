@@ -242,7 +242,7 @@
 
 ## 怪物名冊（roster plan PR D–E；spec §13）
 依據：`docs/superpowers/specs/2026-10-19-starlantern-monster-roster-design.md` §13 與 `docs/superpowers/plans/2026-10-26-starlantern-roster.md`（裁定 18、21–24）。
-- 工具：`tools/roster_art.py`（`gen`／`cand`／`pick`／`note`／`approve`／`publish`／`plan-json`／`repair-outliers`）；審核頁 `tools/review_roster.py <rN>` → `tmp/starlantern/review-roster/<rN>/index.html`（`--contact=<png>` 另出一張遊戲實際大小的對照表）。`roster-plan.json` 由 `plan-json` 產生並 commit，測試檢查它是最新的。
+- 工具：`tools/roster_art.py`（`gen`／`cand`／`pick`／`note`／`approve`／`publish`／`plan-json`／`repair-outliers`／`supersede`）；審核頁 `tools/review_roster.py <rN>` → `tmp/starlantern/review-roster/<rN>/index.html`（`--contact=<png>` 另出一張遊戲實際大小的對照表）。`roster-plan.json` 由 `plan-json` 產生並 commit，測試檢查它是最新的。
 - 生成一律 `codex_still.py generate`（由 `roster_art.py gen` 呼叫，一次一張）；codex Plus 額度用完改用 codex credits，兩者都用完才停下回報；不換別的後端，絕不用佔位美術。每個 id 最多 3 次（`CAP`），R0 的每隻敵人至少 2 版擇優；控制者可以在審核後延長某個 id 的上限，每次最多 3 次、每份審核紀錄最多一次，用 `roster_art.py extend-cap --id J --extra N --by "<誰> <YYYY-MM-DD>" --review <審核紀錄>` 記在登錄表 `cap_extensions`，`gen` 只認這份紀錄（控制者 2026-10-26 裁定）。
 
 | 輪 | 敵人 | 同輪生成的表 |
@@ -264,6 +264,7 @@
 
 - Prompt：逐字沿用 `batch.py` 的敵人句型，附 `enemy-slime` 原圖；守關者與頭目再附 `enemy-lanterneater`；R1 起再附一張 R0 同類型的核准原圖（登錄表 `roster_style_anchor`，只在 R0 核准時寫入）；故事怪物不附任何夥伴立繪。本道物種用中性、偏亮的配色（地區上色是「亮度 × 顏色」），地區原生用該區本色；故人的殘影寫「由霧、光、材質構成，沒有清楚的臉」。
 - 審核的界線（控制者 2026-10-28 裁定，R3 審核第 1 輪）：「不畫現實宗教符號」禁止的是現實信仰的標誌：十字、主教冠、光環、真實的宗教紋章、可讀的經文或符字（R2 requiem-conductor a1 的拉丁十字與十字冠就是這種）。本作世界自有的神社陳設（千鶴是巫女，故事裡有山腰的神社）是 spec 指定的物件，允許：注連繩、紙垂、狛犬、拜殿與屋頂的千木（§13.3 ice-shrine、ice-komainu，§5.4「結冰的注連繩」）。鳥居、千鶴的「鈴」（閘門清單）與可讀的文字仍然不畫。
+- 控制者 2026-10-28／29 的工具補充：(1) 概念換掉的延後素材用 `supersede --old --new --reason --by`：延後移給新素材（記 `supersedes`），舊的標 `superseded`（嘗試與淘汰紀錄留作歷史，從未發布）；新素材若原本畫在某張表上，用自己的單張圖示工作 `single-icon-<素材>`（自己的嘗試與上限），原表那一格留空（`SLOT_SUPERSEDED`），版面不動（E3c：`mourning-veil` → `ash-chrysanthemum` 弔菊）。(2) `repair-outliers --rule key-hue`：`_bright_key` 任何位置、`_deep_key` 只在外緣（碰到透明或圖邊）的 key 像素，換成它 8 個相鄰「非 key」不透明像素的中位數，分次處理被 key 包住的點，alpha 不變；已發布的 5d 圖也可以用（以名冊圖示／立繪的顏色閘門重跑 QA），跟某一輪一起審核與發布（R4 審核：5d 的 `lizard-scale`）。(3) 名冊的切格 `roster_cells`：共用的 `portal.sheet_cells` 切不出時（某一列的寬物件擋住另一列的格線），以全圖的列再逐列找欄；共用切得出的表結果不變，列內真的黏在一起仍然拒絕（R4 `sheet-icons-roster-6` a4、a5）。
 - 素材圖示：照上面「圖示」列（`--height 32`、畫布 ≤ 36×36），附 5d 的風格錨點（`gear-anchor.png`）與 5d 已核准的 12 個素材圖示（`raw/roster-refs/mat-icons-x8.png`，不進 repo）。`iou-slip`、`hymn-sheet`、`torn-page`、`ash-page`、`epitaph-stone` 一律寫 blank、unreadable marks, no letters。
 - 專屬獨特：照 5d 的 `gear-<id>`／`gear-<id>-large` 規格與 `process_gear_cell`（傳入資料的 slot 與武器種類），版面照 `sheet-gear-8`（3×2），附 5d 風格錨點；沒有剪影。
 - 遺忘的異常小圖示：照 G4 的 chip 規格（`icon-ail-forget-14`，長邊 12、畫布 14，覆蓋率取樣，內部洞多於 `g4_art.HOLE_MAX` 就失敗），主色 `#8FD9B6`（B9 的 `AILMENT_FILL.forget` 用同一色）。它自成一輪（`forget`，登錄表 `roster-forget`，計畫裁定 27）：R0 發布時不含它，等 B9 之後在 E1c 以獨立審核紀錄核准並發布，同一個 commit 把 `forget` 加進 `AILMENT_ICON_IDS`。
