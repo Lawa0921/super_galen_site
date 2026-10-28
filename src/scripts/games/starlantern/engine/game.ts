@@ -18,7 +18,10 @@ import { ALTAR_STAT_CAP_PCT, altarAt, altarHpLoss, eliteGroup, FOUNTAIN_PCT, POI
 import { EQUIPMENT } from '../data/equipment';
 import { SPECIALS } from '../data/gear';
 import { applyAutoJunk, BAG_SIZE, mintUid } from './loot/bag';
-import { chestHasGear, GEAR_CHANCE, lootRng, rollBossGear, rollGear, rollRareMaterial, type DropCtx } from './loot/drops';
+import { chestHasGear, GEAR_CHANCE, inscribe, lootRng, ownUniqueOf, ownUniqueSwap, rollBossGear, rollGear, rollRareMaterial, trophyRng, type DropCtx } from './loot/drops';
+import { ENEMIES } from '../data/enemies';
+import { noteFelled, noteInscribed, noteSeen, speciesIn } from './bestiary';
+import { INSCRIBE_CHANCE } from '../data/forge';
 import { itemWeight, type DropSource } from './loot/item';
 import { grantRune, rollRune, runeRng, spotRuneRng } from './loot/runes';
 import { RUNE_DROP } from '../data/runeEconomy';
@@ -41,9 +44,9 @@ import { NIGHT_BEATS, type ScriptLine } from '../data/story.zh-TW';
 import { DAWN_BACKLOG, dawnMemory, eveMemories, nextBeat, orderNight, planNight, restoreNight } from './story/nights';
 import { SPRING_AFTER, dayOf, nextDay } from './calendar';
 import { newGame, type GameState } from './state';
-import { craftBase, craftItem, craftSet } from './forge/craft';
+import { craftBase, craftItem, craftOwnUnique, craftSet } from './forge/craft';
 import type { ForgeFail, RerollOpts } from './forge/cost';
-import { dismantle, enhance, fuse, reroll } from './forge/forge';
+import { dismantle, enhance, fuse, inscribeAt, reroll } from './forge/forge';
 import { castField, packEquip, packUnequip } from './field';
 import { moveRune, socketRune, unsocketRune, type SocketAt, type SocketFail } from './sockets';
 import type { RuneRef } from '../data/runes';
@@ -139,6 +142,8 @@ export class Game {
   private eliteAt: Pos | null = null;
   /** Roster plan B5: the fight on `eliteAt` is a warden's (it pays as an elite but no memory piece, and its room goes). */
   private wardenFight = false;
+  /** Roster plan Task C3: the kinds of foe this fight has shown so far, so a summon is seen once (engine/bestiary.ts). */
+  private fightSeen = new Set<string>();
   /** The rescue room whose fight is on; she is met and the tile turns to floor on a win. */
   private rescueAt: { at: Pos; who: Meetable } | null = null;
   /** Bond plan ruling 3: who this fight has seen out of danger (at its start or after a round). Not saved. */
@@ -719,6 +724,7 @@ export class Game {
     this.state.revealed = structuredClone(b.revealed);
     this.state.party = writeBack(this.state.party, b);
     this.watchDanger(b);
+    this.seeJoined(b);
     if (b.outcome === 'ongoing') return { battle: b, end: null };
     this.battle = null;
     const empty: BattleEnd = { outcome: b.outcome, exp: 0, gold: 0, drops: {}, levelUps: [], left: {}, gear: [], gearLeft: [] };
@@ -732,6 +738,7 @@ export class Game {
     this.fightTier = undefined;
     if (b.outcome === 'fled') { this.phase = 'map'; return { battle: b, end: empty }; }
     if (b.outcome === 'lose') { this.wipe(); return { battle: b, end: empty }; }
+    noteFelled(this.state, b);   // the bestiary (roster plan Task C3): every foe beaten, on a win only
     const rw = rewards(b, this.rng, hasPassive(this.state.party, 'dropBoost'), CONDITIONS[this.run!.condition].dropMul);
     this.run!.loot.gold += rw.gold;
     const found = this.battleGear(b, elite !== null, tier);
@@ -839,23 +846,47 @@ export class Game {
       const kills = this.state.dungeon.bossKills;
       const gear = rollBossGear(lootRng(run), { ...this.dropCtx('boss', tier), bossRepeat: (kills[key] ?? 0) > 0 });
       kills[key] = (kills[key] ?? 0) + 1;
-      return { gear };
+      return { gear: this.ownUnique(b, gear, ['boss', 'elite'], tier) };
     }
     const gear: ItemInstance[] = [];
     let rare: string | undefined;
     if (elite) {
       const rng = lootRng(run);
-      gear.push(rollGear(rng, this.dropCtx('elite', tier)));
+      const piece = rollGear(rng, this.dropCtx('elite', tier));
       rare = rollRareMaterial(rng);
+      // The elite's own piece takes its species' inscription roll too (PR C review S1), then a warden's own-unique swap.
+      gear.push(...this.ownUnique(b, [this.inscribed(piece, b.enemies[0].defId)], ['elite'], tier));
     }
     // In an elite fight the first enemy is the elite; the rest are escorts.
     for (let i = elite ? 1 : 0; i < b.enemies.length; i++) {
       if (b.survive && b.enemies[i].alive) continue;
       if (b.enemies[i].left || b.enemies[i].summoned) continue;   // it takes no loot draw (roster plan B1)
       const rng = lootRng(run);
-      if (rng() < GEAR_CHANCE.monster) gear.push(rollGear(rng, this.dropCtx('monster', tier)));
+      if (rng() < GEAR_CHANCE.monster) gear.push(this.inscribed(rollGear(rng, this.dropCtx('monster', tier)), b.enemies[i].defId));
     }
     return { gear, rare };
+  }
+
+  /**
+   * Roster plan Task C2 (spec §7.3, ruling 15): the gear of a live roster boss's fight, or of a live warden's (the first foe
+   * of an elite fight), after the loot stream is done with it: a legendary-tier piece may become that foe's own unique
+   * (`ownUniqueSwap`, on the trophy stream). Any other fight's gear is left as it is, and draws nothing.
+   */
+  private ownUnique(b: BattleState, gear: ItemInstance[], sources: DropSource[], tier: Difficulty | undefined): ItemInstance[] {
+    const foes = b.boss ? b.enemies.filter((e) => ENEMIES[e.defId]?.boss) : b.enemies.slice(0, 1);
+    const own = foes.map((e) => ownUniqueOf(e.defId)).find((s) => s);
+    if (!own) return gear;
+    return ownUniqueSwap(gear, sources, own, () => trophyRng(this.run!), this.dropCtx(sources[0], tier));
+  }
+
+  /**
+   * Roster plan Task C1 (spec §7.2, ruling 16): a piece a roster species dropped, once its loot draw is done, takes one
+   * trophy draw and, on INSCRIBE_CHANCE, the species' inscription. A legacy foe, or a special piece, draws nothing.
+   */
+  private inscribed(it: ItemInstance, species: string): ItemInstance {
+    if (it.special || !ENEMIES[species]?.inscribe) return it;
+    const t = trophyRng(this.run!);
+    return t() < INSCRIBE_CHANCE ? inscribe(it, species, t) : it;
   }
 
   /**
@@ -1347,6 +1378,9 @@ export class Game {
   craftItem(id: string, qty: number) { return this.forgeAct((s) => craftItem(s, id, qty)); }
   craftBase(slot: GearSlot) { return this.forgeAct((s) => craftBase(s, slot)); }
   craftSet(pieceId: string) { return this.forgeAct((s) => craftSet(s, pieceId)); }
+  /** Roster plan Task C4: 銘刻 (inscribe `species`' key on affix `index`) and crafting an own unique. */
+  inscribe(uid: number, index: number, species: string) { return this.forgeAct((s) => inscribeAt(s, uid, index, species)); }
+  craftOwnUnique(uniqueId: string) { return this.forgeAct((s) => craftOwnUnique(s, uniqueId)); }
   /** Three runes of a kind into one of the next tier (engine/runeTrade fuseRunes; plan 8f Task 5): a forge action, town only. */
   fuseRune(r: RuneRef) {
     return this.forgeAct((s) => {
@@ -1609,6 +1643,7 @@ export class Game {
   private pack(it: ItemInstance): ItemInstance {
     const taken = this.junkMarked(it);
     this.run!.loot.gear.push(taken);
+    if (taken.inscription) noteInscribed(this.state, taken.inscription);
     return taken;
   }
 
@@ -1687,12 +1722,22 @@ export class Game {
     this.battle = createBattle({ party: this.state.party, enemyIds, boss, inventory: this.state.inventory, revealed: this.state.revealed, scale, depth: this.floor, altar: this.run?.altarBuffs, extra, ...rest });
     // A thief in the fight reaches into the run pack (roster plan B3, M13); a fight without one carries no purse.
     if (run && stealsIn(this.battle, (c) => this.battle!.enemyDefs?.[c.key])) this.battle.purse = { gold: run.loot.gold, depth: this.floor };
+    // The bestiary (roster plan Task C3): each kind met, once this fight; it draws nothing.
+    this.fightSeen = new Set(speciesIn(this.battle));
+    noteSeen(this.state, [...this.fightSeen]);
     planEnemies(this.battle, this.rng);
     this.phase = 'battle';
     // Bond plan ruling 3: who starts this fight out of danger. One who starts in it is not saved by living through it.
     this.safeSeen.clear();
     this.endangered.clear();
     for (const c of this.battle.party) if (c.alive && !inDanger(c)) this.safeSeen.add(c.key as CharacterId);
+  }
+
+  /** Roster plan Task C3: a kind that joined this round (a summon) is seen once, as it joins. */
+  private seeJoined(b: BattleState): void {
+    const fresh = speciesIn(b).filter((id) => !this.fightSeen.has(id));
+    for (const id of fresh) this.fightSeen.add(id);
+    if (fresh.length) noteSeen(this.state, fresh);
   }
 
   /** Bond plan ruling 3, after a round: one in danger who was seen out of it is endangered; one out of it is seen so. */

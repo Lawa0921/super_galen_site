@@ -8,9 +8,13 @@ import { Game } from '../../engine/game';
 import { meet } from '../../engine/party';
 import type { SaveStorage } from '../../engine/save';
 import { restoreNight } from '../../engine/story/nights';
-import { constRng, memoryStorage } from '../../engine/testing';
+import { constRng, memoryStorage, withRosterLive } from '../../engine/testing';
+import { BESTIARY, BESTIARY_UI } from '../../data/bestiary.zh-TW';
+import { ENEMIES } from '../../data/enemies';
+import { MATERIALS } from '../../data/materials';
+import { codexName } from '../../data/gear';
 import type { CharacterId } from '../../engine/types';
-import { art } from '../../render/artPaths';
+import { art, enemyArt } from '../../render/artPaths';
 import { NO_ART, type ArtIndex } from '../../render/textures';
 import { artIdOf } from '../../ui/art';
 import { HandbookScene, tabsFor } from './handbook';
@@ -467,5 +471,94 @@ describe('HandbookScene: the bond (bond plan Task 14)', () => {
       await t.settle();
       expect(t.game.state.party.roster.rin.bond!.talk).toBe(0);
     } finally { bondsBack(); scenesBack('bond:rin:1'); }
+  });
+});
+
+describe('the bestiary page (roster plan Task C6)', () => {
+  const B = BESTIARY_UI;
+  const detail = (root: HTMLElement) => root.querySelector('.slx-hb-detail')!.textContent ?? '';
+  const OLD_ROAD = ['slime', 'bat', 'wolf', 'beetle', 'wisp', 'lizard', 'golem', 'shade'];
+
+  it('with nothing live the 圖鑑 page is as it was', () => {
+    const t = setup(undefined, (g) => { g.state.revealed = { slime: ['fire'] }; });
+    t.goTab(H.tabs.codex);
+    // The old kinds by name, each with its known weakness, whether met or not: no filter, no question marks.
+    expect(t.labels()).toEqual([...OLD_ROAD, 'lanterneater'].map((id) => ENEMIES[id].name));
+    expect(detail(t.root)).toBe(`${ENEMIES.slime.name}${H.codex.weak(T.element.fire)}`);
+    t.s.onAction('down');
+    expect(detail(t.root)).toBe(`${ENEMIES.bat.name}${H.codex.weakUnknown}`);
+    expect(t.root.querySelector('.slx-status-art img')).toBeNull();
+  });
+
+  it('the filters split main road, regions and bosses', () => {
+    withRosterLive(['paper-moth'], () => {
+      const t = setup();
+      t.goTab(H.tabs.codex);
+      expect(t.labels()).toEqual([B.filters.road, B.filters.bosses]);
+      expect(t.row(B.filters.road).querySelector('.slx-right')!.textContent).toBe(B.count(0, 9));
+    });
+    withRosterLive(['paper-moth', 'cinder-imp'], () => {
+      const u = setup();
+      u.goTab(H.tabs.codex);
+      expect(u.labels()).toEqual([B.filters.road, B.filters.lands, B.filters.bosses]);
+    });
+  });
+
+  it('an unseen foe is 「？？？」 and where it is met, with no picture', () => {
+    withRosterLive(['paper-moth'], () => {
+      const t = setup(undefined, (g) => { g.state.bestiary = { slime: { seen: 2, felled: 1 } }; g.state.revealed = { slime: ['fire'] }; }, { has: () => true });
+      t.goTab(H.tabs.codex);
+      t.pick(B.filters.road);
+      expect(t.labels()).toEqual([ENEMIES.slime.name, ...Array(8).fill(B.unknown)]);
+      expect(t.rows()[0].querySelector('.slx-right')!.textContent).toBe(B.felledRow(1));
+      // The cursor on the slime: its picture, twice its size, and what the bestiary knows.
+      const img = t.root.querySelector('.slx-status-art img')!;
+      expect(img.getAttribute('src')).toBe(enemyArt('slime'));
+      expect(img.className).toBe('slx-hb-foe slx-hb-foe-x2');
+      const text = detail(t.root);
+      expect(text).toContain(B.where(B.haunts.everywhere));
+      expect(text).toContain(H.codex.weak(T.element.fire));
+      expect(text).toContain(B.tally(2, 1));
+      // On a kind not met: the question marks and the place, no picture, not even a silhouette.
+      t.s.onAction('down');
+      expect(detail(t.root)).toBe(`${B.unknown}${B.where(B.haunts.everywhere)}`);
+      expect(t.root.querySelector('.slx-status-art img')).toBeNull();
+      for (let i = 0; i < 7; i++) t.s.onAction('down');
+      expect(detail(t.root)).toBe(`${B.unknown}${B.where(B.haunts.road(4, 9))}`);
+      // Back to the page's first list.
+      t.s.onAction('cancel');
+      expect(t.labels()).toEqual([B.filters.road, B.filters.bosses]);
+    });
+  });
+
+  it('a seen foe tells its trait, its lines once felled, and its own unique', () => {
+    const was = BESTIARY['fog-warden'];
+    try {
+      BESTIARY['fog-warden'] = { trait: '先打旗手。', lines: [{ text: '霧門前的守衛。' }, { text: '它在等人。', after: { seen: ['act3'] } }] };
+      withRosterLive(['fog-warden'], () => {
+        const seen = setup(undefined, (g) => { g.state.bestiary = { 'fog-warden': { seen: 1, felled: 0 } }; });
+        seen.goTab(H.tabs.codex);
+        seen.pick(B.filters.bosses);
+        seen.s.onAction('down');   // past the lantern-eater
+        let text = detail(seen.root);
+        expect(text).toContain('先打旗手。');
+        expect(text).toContain(B.later);
+        expect(text).not.toContain('霧門前的守衛。');
+        expect(text).toContain(B.own(codexName('fog-halberd'), false));
+        const felled = setup(undefined, (g) => { g.state.bestiary = { 'fog-warden': { seen: 1, felled: 2 } }; g.state.codex = ['fog-halberd']; }, { has: () => true });
+        felled.goTab(H.tabs.codex);
+        felled.pick(B.filters.bosses);
+        felled.s.onAction('down');
+        text = detail(felled.root);
+        expect(text).toContain('霧門前的守衛。');
+        expect(text).not.toContain('它在等人。');
+        expect(text).toContain(B.own(codexName('fog-halberd'), true));
+        expect(text).toContain(B.mats(MATERIALS['fog-gate-plate'].name));
+        // A boss stands at its own size.
+        expect(felled.root.querySelector('.slx-status-art img')!.className).toBe('slx-hb-foe');
+      });
+    } finally {
+      if (was) BESTIARY['fog-warden'] = was; else delete BESTIARY['fog-warden'];
+    }
   });
 });

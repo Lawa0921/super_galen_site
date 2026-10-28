@@ -1,13 +1,15 @@
 import { DISMANTLE, FUSE_NEXT, REGION_AFFIX_GROUP } from '../../data/forge';
-import { generalLegendaries } from '../../data/gear';
+import { AFFIXES, generalLegendaries } from '../../data/gear';
+import { ENEMIES } from '../../data/enemies';
+import { noteInscribed } from '../bestiary';
 import { mintUid } from '../loot/bag';
 import { addItem, clampToMax } from '../town';
 import { mulberry32, pick } from '../rng';
-import { maxValue, rollItem, rollValue } from '../loot/item';
+import { itemSlot, maxValue, rollItem, rollValue } from '../loot/item';
 import type { GameState } from '../state';
 import type { AnyStat, GearSlot, ItemInstance } from '../types';
 import type { Rng } from '../rng';
-import { canPay, enhanceChance, enhanceCost, findItem, forgeRng, fuseCost, fuseSlots, pay, rerollCost, swapPool, type ForgeResult, type RerollOpts } from './cost';
+import { canPay, enhanceChance, enhanceCost, findItem, forgeRng, fuseCost, fuseSlots, inscribeCost, inscriptionAffix, pay, rerollCost, swapPool, type ForgeResult, type RerollOpts } from './cost';
 
 /** The essences a set of gear dismantles into: the sum of DISMANTLE by rarity. */
 export function dismantleYield(its: ItemInstance[]): Record<string, number> {
@@ -118,4 +120,42 @@ export function fuse(s: GameState, uids: number[], slot?: GearSlot, rng?: Rng): 
   n.bag.push(item);
   if (item.special && !n.codex.includes(item.special)) n.codex.push(item.special);
   return { ok: true, state: n, out: { item } };
+}
+
+/**
+ * Roster plan Task C4 (spec §7.1, ruling 16): 銘刻, a reroll that turns affix `index` into `species`' inscription key, its
+ * value rolled in the piece's own range on one forge draw. It locks the affix as any reroll does, marks the piece with the
+ * species, and the bestiary notes the inscription. Only a magic, rare or epic piece (never a special one) can take it.
+ * A piece already inscribed takes a new inscription only on its old inscription's affix (that one is replaced in place), so
+ * it never carries two. Refusals, in order: stock, invalid (special / no affix there / no such species / another affix than
+ * the old inscription's), affixLocked, none (the slot cannot take
+ * the key, or another affix already holds it), gold/mats. Without `rng` it draws once (`forgeDraws` + 1).
+ */
+export function inscribeAt(s: GameState, uid: number, index: number, species: string, rng?: Rng): ForgeResult<{ before: { key: AnyStat; value: number }; after: { key: AnyStat; value: number } }> {
+  const found = findItem(s, uid);
+  if (!found) return { ok: false, reason: 'stock' };
+  const it = found.it;
+  const key = ENEMIES[species]?.inscribe;
+  const cost = inscribeCost(it, species);
+  if (it.special || !Number.isInteger(index) || index < 0 || index >= it.affixes.length || !key || !cost) return { ok: false, reason: 'invalid' };
+  // One inscription a piece (PR C review L3): a new one goes on the old inscription's affix, in its place, never beside it.
+  const old = inscriptionAffix(it);
+  if (old >= 0 && old !== index) return { ok: false, reason: 'invalid' };
+  if (it.locked !== undefined && it.locked !== index) return { ok: false, reason: 'affixLocked' };
+  if (!AFFIXES[key].slots.includes(itemSlot(it)) || it.affixes.some((a, i) => i !== index && a.key === key)) return { ok: false, reason: 'none' };
+  const lacking = canPay(s, cost);
+  if (lacking) return { ok: false, reason: lacking };
+  const n = structuredClone(s);
+  const target = findItem(n, uid);
+  if (!target) return { ok: false, reason: 'stock' };
+  pay(n, cost);
+  const draw = rng ?? forgeRng(n);
+  const before = { ...target.it.affixes[index] };
+  const after = { key, value: rollValue(draw, key, target.it.ilvl, target.it.rarity) };
+  target.it.affixes[index] = after;
+  target.it.locked = index;
+  target.it.inscription = species;
+  noteInscribed(n, species);
+  if (target.member) clampToMax(n.party.roster[target.member]);
+  return { ok: true, state: n, out: { before, after: { ...after } } };
 }

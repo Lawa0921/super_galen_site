@@ -1,4 +1,6 @@
-import { BASE_RECIPES, CONSUMABLE_RECIPES, CRAFT_MAGIC_CHANCE, SET_RECIPE, baseGold, setGold, type Cost } from '../../data/forge';
+import { BASE_RECIPES, CONSUMABLE_RECIPES, CRAFT_MAGIC_CHANCE, OWN_RECIPE, SET_RECIPE, baseGold, ownGold, setGold, type Cost } from '../../data/forge';
+import { MATERIALS } from '../../data/materials';
+import { ROSTER_LIVE } from '../../data/monsters';
 import { SETS, SPECIALS } from '../../data/gear';
 import { REGIONS } from '../../data/regions';
 import { mintUid, BAG_SIZE } from '../loot/bag';
@@ -90,5 +92,50 @@ export function craftSet(s: GameState, pieceId: string, rng?: Rng): ForgeResult<
   const item = rollItem(draw, { uid: mintUid(n), ilvl: craftLevel(s), rarity: 'set', special: pieceId });
   n.bag.push(item);
   for (const id of [pieceId, set.id]) if (!n.codex.includes(id)) n.codex.push(id);
+  return { ok: true, state: n, out: { item } };
+}
+
+/** Roster plan Task C4 (ruling 15): the trophy or keepsake an own unique is crafted from (its owner's); none for any other piece. */
+export function ownTrophyOf(uniqueId: string): string | undefined {
+  const owner = has(SPECIALS, uniqueId) ? SPECIALS[uniqueId].owner : undefined;
+  if (!owner) return undefined;
+  return Object.values(MATERIALS).find((m) => m.owner === owner && (m.kind === 'trophy' || m.kind === 'keepsake'))?.id;
+}
+
+/** The price of an own unique: OWN_RECIPE's trophy or keepsake and star tear, and ownGold at the current craft level; null for any other piece. */
+export function ownCost(s: GameState, uniqueId: string): Cost | null {
+  const trophy = ownTrophyOf(uniqueId);
+  if (!trophy) return null;
+  return { gold: ownGold(craftLevel(s)), mats: { [trophy]: OWN_RECIPE.trophyQty, [OWN_RECIPE.rare]: OWN_RECIPE.rareQty } };
+}
+
+/** The own uniques of every live boss and warden, in SPECIALS order (none while nothing is live): the forge's 專屬裝備 rows. */
+export const ownUniques = (): string[] => Object.values(SPECIALS).filter((s) => s.owner && ROSTER_LIVE.has(s.owner)).map((s) => s.id);
+
+/** Whether the bestiary has the owner of `uniqueId` felled once at least: the craft's condition (ruling 15). */
+export const ownerFelled = (s: GameState, uniqueId: string): boolean => {
+  const owner = has(SPECIALS, uniqueId) ? SPECIALS[uniqueId].owner : undefined;
+  return !!owner && (s.bestiary?.[owner]?.felled ?? 0) >= 1;
+};
+
+/**
+ * Roster plan Task C4 (spec §7.3, ruling 15): crafts the own unique `uniqueId` (the pity path for a boss or warden that would
+ * not drop it), once its owner is live and the bestiary has it felled; the piece enters the codex. As craftSet: without
+ * `rng` it draws once. Refusals, in order: invalid (not an own unique, owner not live), unbeaten, full, gold/mats.
+ */
+export function craftOwnUnique(s: GameState, uniqueId: string, rng?: Rng): ForgeResult<{ item: ItemInstance }> {
+  const cost = ownCost(s, uniqueId);
+  const sp = cost ? SPECIALS[uniqueId] : undefined;
+  if (!cost || !sp?.owner || !ROSTER_LIVE.has(sp.owner)) return { ok: false, reason: 'invalid' };
+  if (!ownerFelled(s, uniqueId)) return { ok: false, reason: 'unbeaten' };
+  if ((s.bag ?? []).length >= BAG_SIZE) return { ok: false, reason: 'full' };
+  const lacking = canPay(s, cost);
+  if (lacking) return { ok: false, reason: lacking };
+  const n = structuredClone(s);
+  pay(n, cost);
+  const draw = rng ?? mulberry32(Math.floor(forgeRng(n)() * 0x100000000));
+  const item = rollItem(draw, { uid: mintUid(n), ilvl: craftLevel(s), rarity: sp.rarity, special: uniqueId });
+  n.bag.push(item);
+  if (!n.codex.includes(uniqueId)) n.codex.push(uniqueId);
   return { ok: true, state: n, out: { item } };
 }

@@ -1,5 +1,6 @@
 import { CHARACTER_IDS } from '../data/characters';
 import { EQUIPMENT } from '../data/equipment';
+import { ENEMIES } from '../data/enemies';
 import { ENHANCE_MAX } from '../data/forge';
 import { AFFIXES, RARITIES, SETS, SPECIALS, STARLIT_RARITIES } from '../data/gear';
 import { REGIONS } from '../data/regions';
@@ -12,6 +13,7 @@ import { MAX_LEVEL, SLOTS, slotsFor } from './party';
 import { defaultTree, heroTree, memoriesOf, validBuild } from './progression';
 import { SAVE_VERSION, type GameState } from './state';
 import { repairRuneFields } from './sockets';
+import { isBestiary, repairBestiary } from './bestiary';
 import { tierUnlocked } from './tiers';
 import { buildOf } from '../data/builds';
 import { BANTER_PAIRS, GROUP_GATE, isSceneId, type BanterPair } from '../data/story/scenes';
@@ -105,6 +107,8 @@ function isItem(v: unknown): v is ItemInstance {
   if (v.junk !== undefined && typeof v.junk !== 'boolean') return false;
   // Plan 5g: a starlit flag is only ever true, and only on a legendary, unique or set special item.
   if (v.starlit !== undefined && !(v.starlit === true && v.special !== undefined && STARLIT_RARITIES.includes(v.rarity as never))) return false;
+  // Roster plan Task C1: an inscription names an ordinary roster species (one with an inscription key), never on a special piece.
+  if (v.inscription !== undefined && !(typeof v.inscription === 'string' && has(ENEMIES, v.inscription) && !!ENEMIES[v.inscription].inscribe && v.special === undefined)) return false;
   if (!Array.isArray(v.affixes)) return false;
   if (v.locked !== undefined && !(Number.isInteger(v.locked) && (v.locked as number) >= 0 && (v.locked as number) < v.affixes.length)) return false;
   return v.affixes.every((a) => isObj(a) && has(AFFIXES, a.key) && Number.isFinite(a.value) && Math.abs(a.value as number) <= MAX_AFFIX);
@@ -191,6 +195,8 @@ function isValid(d: Record<string, unknown>): boolean {
   if (new Set(uids).size !== uids.length || uids.some((u) => u >= (d.nextUid as number))) return false;
   if (!Array.isArray(d.codex) || !d.codex.every((id) => has(SPECIALS, id) || has(SETS, id))) return false;
   if (!['off', 'common', 'magic'].includes(d.autoJunk as string)) return false;
+  // Roster plan Task C3: the bestiary's shape (its unknown ids are dropped after this, by repairBestiary).
+  if (d.bestiary !== undefined && !isBestiary(d.bestiary)) return false;
   if (!isStory(d.story)) return false;
   // bond plan Task 2: a bond only on someone met (gates read what is told, `storyPieces`); today's gifts and the romance too
   const s = d as unknown as GameState;
@@ -322,6 +328,8 @@ export function loadGame(storage: SaveStorage): LoadResult {
   repairRuneFields(data);
   repairBuildField(data);
   if (!isValid(data)) { backup(storage, raw); return { status: 'corrupt' }; }
+  // A foe this build does not know is dropped from the bestiary, never a corrupt save (roster plan ruling 17).
+  repairBestiary(data);
   const state = data as unknown as GameState;
   // The game never writes a codex id twice; a hand-edited save that does is tidied rather than refused.
   state.codex = [...new Set(state.codex)];

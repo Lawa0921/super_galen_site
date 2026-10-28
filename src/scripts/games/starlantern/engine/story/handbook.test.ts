@@ -1,7 +1,8 @@
 import { afterEach, describe, it, expect } from 'vitest';
 import { CHARACTERS, CHARACTER_IDS } from '../../data/characters';
 import { ENEMIES } from '../../data/enemies';
-import { listedEnemy } from '../../data/monsters';
+import { LEGACY_ENEMY_IDS, listedEnemy } from '../../data/monsters';
+import { BESTIARY, BESTIARY_UI as B } from '../../data/bestiary.zh-TW';
 import { SETS, SPECIALS } from '../../data/gear';
 import { REGIONS } from '../../data/regions';
 import { chainLength, CHAINS } from '../../data/story/chains';
@@ -13,7 +14,7 @@ import { meet } from '../party';
 import { newGame, type GameState } from '../state';
 import type { CharacterId } from '../types';
 import { handbook } from './handbook';
-import { withTold } from '../testing';
+import { withRosterLive, withTold } from '../testing';
 import { arrivalScenes, onReturn, sceneDone } from './events';
 /**
  * Bond plan Task 17: the registries hold what is written now, so a test that registers its own puts back what was there
@@ -175,6 +176,8 @@ describe("the adventurer's handbook", () => {
     const s = fresh();
     s.codex = [Object.keys(SPECIALS)[0], Object.keys(SETS)[0]];
     s.revealed = { slime: ['fire'] };
+    // Roster plan C6: a weakness shows once the kind is seen (the bestiary), as the revealed one always was in play.
+    s.bestiary = { slime: { seen: 1, felled: 0 }, bat: { seen: 1, felled: 0 } };
     const c = handbook(s).codex;
     expect(c.monsters.map((m) => m.id)).toEqual(Object.values(ENEMIES).filter((e) => listedEnemy(e.id) && !e.story).map((e) => e.id));
     expect(c.monsters.some((m) => m.id === 'scarlet-foe')).toBe(false);
@@ -523,5 +526,104 @@ describe('the handbook and a healed refusal (review of bond plan Tasks 12-14)', 
     expect(page()).toEqual([{ mat: 'star-stone', taste: 'declined' }]);
     s.party.roster.noel.bond.gifts['star-stone'] = 1;
     expect(page()).toEqual([{ mat: 'star-stone', taste: 'liked' }]);
+  });
+});
+
+describe('the bestiary page (roster plan Task C6)', () => {
+  const fresh = (): GameState => newGame();
+  const page = (s: GameState, id: string) => handbook(s).codex.monsters.find((m) => m.id === id);
+
+  it('only live foes are listed', () => {
+    const s = fresh();
+    expect(page(s, 'paper-moth')).toBeUndefined();
+    expect(handbook(s).codex.monsters.map((m) => m.id)).toEqual(LEGACY_ENEMY_IDS.filter((id) => !ENEMIES[id].story));
+    withRosterLive(['paper-moth', 'fog-warden'], () => {
+      expect(page(s, 'paper-moth')).toBeDefined();
+      expect(page(s, 'fog-warden')).toBeDefined();
+      expect(page(s, 'root-hound')).toBeUndefined();
+    });
+  });
+
+  it('an unseen foe is a name of question marks and a place', () => {
+    const s = fresh();
+    s.revealed = { slime: ['fire'] };
+    expect(page(s, 'slime')).toEqual({
+      id: 'slime', name: B.unknown, filter: 'road', seen: 0, felled: 0, haunts: B.haunts.everywhere,
+      weak: null, trait: null, lines: [], mats: [], inscription: null,
+    });
+    s.bestiary = { slime: { seen: 2, felled: 0 } };
+    expect(page(s, 'slime')).toMatchObject({ name: ENEMIES.slime.name, seen: 2, felled: 0, weak: ['fire'], mats: [] });
+    // Felled: its materials, as the bestiary has seen them drop.
+    s.bestiary.slime.felled = 1;
+    expect(page(s, 'slime')!.mats).toEqual([...new Set(ENEMIES.slime.drops.map((d) => d.mat))]);
+    // Where each kind is met.
+    withRosterLive(['paper-moth', 'cinder-imp', 'fog-warden', 'false-moon', 'mirage-lead', 'mire-hydra', 'old-city-archon', 'archon-hand'], () => {
+      expect(page(s, 'paper-moth')!.haunts).toBe(B.haunts.road(4, 9));
+      expect(page(s, 'cinder-imp')!.haunts).toBe(REGIONS.blaze.name);
+      expect(page(s, 'fog-warden')!.haunts).toBe(B.haunts.depth(B.haunts.main, 5));
+      expect(page(s, 'false-moon')!.haunts).toBe(B.haunts.depth(B.haunts.main, 8));
+      expect(page(s, 'mirage-lead')!.haunts).toBe(B.haunts.from(REGIONS.blaze.name, 8));
+      expect(page(s, 'mire-hydra')!.haunts).toBe(B.haunts.depth(REGIONS.mire.name, 5));
+      expect(page(s, 'old-city-archon')!.haunts).toBe(B.haunts.depth(B.haunts.main, 20));
+      expect(page(s, 'archon-hand')!.haunts).toBe(B.haunts.depth(B.haunts.main, 20));
+    });
+    expect(page(s, 'lanterneater')!.haunts).toBe(B.haunts.bossFloors);
+  });
+
+  it('the filters split main road, regions and bosses', () => {
+    const s = fresh();
+    withRosterLive(['paper-moth', 'cinder-imp', 'fog-warden', 'false-moon', 'old-city-archon', 'archon-hand'], () => {
+      const by = (f: string) => handbook(s).codex.monsters.filter((m) => m.filter === f).map((m) => m.id);
+      expect(by('road')).toEqual(['slime', 'bat', 'wolf', 'beetle', 'wisp', 'lizard', 'golem', 'shade', 'paper-moth']);
+      expect(by('lands')).toEqual(['cinder-imp']);
+      expect(by('bosses')).toEqual(['lanterneater', 'false-moon', 'fog-warden', 'old-city-archon', 'archon-hand']);
+    });
+  });
+
+  it('lines open with their gates', () => {
+    const was = BESTIARY['false-moon'];
+    try {
+      BESTIARY['false-moon'] = {
+        trait: '它在明與蝕之間換來換去。',
+        lines: [{ text: '第一句。' }, { text: '第二句。', after: { seen: ['mem:selene:2'] } }, { text: '第三句。', after: { seen: ['mem:selene:3'] } }],
+      };
+      withRosterLive(['false-moon'], () => {
+        const s = fresh();
+        expect(page(s, 'false-moon')).toMatchObject({ trait: null, lines: [] });
+        s.bestiary = { 'false-moon': { seen: 1, felled: 0 } };
+        // Seen: its trait; the lines wait for a kill.
+        expect(page(s, 'false-moon')).toMatchObject({ trait: '它在明與蝕之間換來換去。', lines: [] });
+        s.bestiary['false-moon'].felled = 1;
+        expect(page(s, 'false-moon')!.lines).toEqual(['第一句。']);
+        s.story.seen.push('mem:selene:2');
+        expect(page(s, 'false-moon')!.lines).toEqual(['第一句。', '第二句。']);
+        s.story.seen.push('mem:selene:3');
+        expect(page(s, 'false-moon')!.lines).toEqual(['第一句。', '第二句。', '第三句。']);
+      });
+    } finally {
+      if (was) BESTIARY['false-moon'] = was; else delete BESTIARY['false-moon'];
+    }
+  });
+
+  it('a prism foe shows its weakness as turning', () => {
+    withRosterLive(['moon-crow', 'paper-moth'], () => {
+      const s = fresh();
+      s.bestiary = { 'moon-crow': { seen: 1, felled: 1 }, 'paper-moth': { seen: 1, felled: 1, inscribed: true } };
+      s.revealed = { 'moon-crow': ['ice'] };
+      expect(page(s, 'moon-crow')!.weak).toBe('prism');
+      // An ordinary species felled shows its inscription key.
+      expect(page(s, 'paper-moth')!.inscription).toBe(ENEMIES['paper-moth'].inscribe);
+      expect(page(s, 'moon-crow')!.own).toBeUndefined();
+    });
+  });
+
+  it('the own-unique line reads the codex', () => {
+    withRosterLive(['fog-warden'], () => {
+      const s = fresh();
+      s.bestiary = { 'fog-warden': { seen: 1, felled: 0 } };
+      expect(page(s, 'fog-warden')!.own).toEqual({ id: 'fog-halberd', got: false });
+      s.codex = ['fog-halberd'];
+      expect(page(s, 'fog-warden')!.own).toEqual({ id: 'fog-halberd', got: true });
+    });
   });
 });

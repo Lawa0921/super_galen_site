@@ -16,7 +16,7 @@ import { encounterTable, legacyEncounterTable, scaleEnemy } from '../engine/scal
 import { withRosterLive } from '../engine/testing';
 import { MARKER_GLYPH } from '../render/markers';
 import { GLIMMER_SALT, WARDEN_SALT } from '../engine/dungeon/run';
-import { STARLIT_SALT } from '../engine/loot/drops';
+import { STARLIT_SALT, TROPHY_SALT } from '../engine/loot/drops';
 import { FORGE_SALT } from '../engine/forge/cost';
 import { RUNE_SALT } from '../engine/loot/runes';
 import { ABSORB_SALT } from '../engine/story/fragments';
@@ -581,6 +581,9 @@ describe('roster tables, bosses and wardens (roster plan Task A4, spec §3.4, §
     expect(new Set(used).size).toBe(used.length);
     expect(WARDEN_SALT).toBe(0x428a2f98);
     expect(used).not.toContain(WARDEN_SALT);
+    // Plan C1: the trophy stream's salt, SHA-256's second round constant.
+    expect(TROPHY_SALT).toBe(0x71374491);
+    expect([...used, WARDEN_SALT]).not.toContain(TROPHY_SALT);
   });
 });
 

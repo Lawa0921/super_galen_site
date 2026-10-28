@@ -3,13 +3,17 @@ import { createHash } from 'node:crypto';
 import { TIERS } from '../../data/difficulty';
 import { describe, it, expect } from 'vitest';
 import { mulberry32, type Rng } from '../rng';
-import { ROLL_FLOOR, SPECIALS, affixRange } from '../../data/gear';
+import { AFFIXES, GEAR_SLOTS, ROLL_FLOOR, SPECIALS, affixRange } from '../../data/gear';
+import { ENEMIES } from '../../data/enemies';
+import { INSCRIPTION_NAME } from '../../data/bestiary.zh-TW';
+import { newRun } from '../dungeon/run';
+import { constRng, withRosterLive } from '../testing';
 import { MATERIALS } from '../../data/materials';
 import { CONDITIONS } from '../../data/conditions';
 import { MAX_ILVL, MAX_REACHED, depthLevel } from '../levels';
 import type { ItemInstance, Rarity } from '../types';
-import { itemLevel, rollItem, tierItemLevel, type DropSource } from './item';
-import { BOSS_LEGENDARY, EPIC_SHARE, GEAR_CHANCE, RARE_MATERIALS, STARLIT_CHANCE, STARLIT_SALT, applyStarlit, rarityWeights, rollBossGear, rollGear, rollRareMaterial, rollTier, starlitChance, pickSpecial, type DropCtx, type Tier } from './drops';
+import { itemLevel, itemName, rollItem, tierItemLevel, type DropSource } from './item';
+import { BOSS_LEGENDARY, EPIC_SHARE, GEAR_CHANCE, RARE_MATERIALS, STARLIT_CHANCE, STARLIT_SALT, TROPHY_SALT, applyStarlit, inscribe, lootRng, mix, ownUniqueOf, ownUniqueSwap, trophyRng, rarityWeights, rollBossGear, rollGear, rollRareMaterial, rollTier, starlitChance, pickSpecial, type DropCtx, type Tier } from './drops';
 import type { RegionId } from '../../data/regions';
 
 const N = 20000;
@@ -549,3 +553,132 @@ describe('the roster leaves the special pools alone (roster plan Task A3)', () =
 });
 const PICKS_HEAD = ['lg-selene', 'lg-selene', 'lg-selene', 'blaze-ember-ring', 'blaze-ember-ring', 'blaze-ember-ring'];
 const PICKS_SHA = '2ce8998abb5648d99ac7ee99f4c0b8fce2fdfd7b356cfb6120960d9ff5078751';
+
+describe('the trophy stream and species inscriptions (roster plan Task C1)', () => {
+  it('trophyRng keys each draw by the run seed, TROPHY_SALT and its own count, and moves no loot draw', () => {
+    const run = newRun(7, 'mainline', 'plain', 1);
+    expect(run.trophyDraws).toBe(0);
+    const first = trophyRng(run)();
+    const second = trophyRng(run)();
+    expect(run.trophyDraws).toBe(2);
+    expect(run.lootDraws).toBe(0);
+    expect(first).toBe(mulberry32(mix(7 ^ TROPHY_SALT, 0))());
+    expect(second).toBe(mulberry32(mix(7 ^ TROPHY_SALT, 1))());
+    expect(lootRng(newRun(7, 'mainline', 'plain', 1))()).not.toBe(first);
+  });
+
+  it("an inscription never raises an item's affix count or range", () => {
+    // 100,000 pieces: every rarity an inscription can meet, item levels across the game.
+    const rng = mulberry32(42);
+    const t = mulberry32(43);
+    const rarities: Rarity[] = ['common', 'magic', 'rare', 'epic'];
+    let swapped = 0;
+    for (let i = 0; i < 100000; i++) {
+      const rarity = rarities[i % rarities.length];
+      const ilvl = 1 + (i % MAX_ILVL);
+      const it = rollItem(rng, { uid: i + 1, ilvl, rarity });
+      const ins = inscribe(it, 'paper-moth', t);
+      expect(ins.inscription).toBe('paper-moth');
+      expect([ins.uid, ins.base, ins.rarity, ins.ilvl, ins.enhance]).toEqual([it.uid, it.base, it.rarity, it.ilvl, it.enhance]);
+      if (ins.affixes.length !== it.affixes.length) throw new Error(`count moved at ${i}`);
+      if (new Set(ins.affixes.map((a) => a.key)).size !== ins.affixes.length) throw new Error(`a key twice at ${i}`);
+      for (const a of ins.affixes) {
+        const [lo, hi] = affixRange(a.key, ilvl);
+        const floor = ROLL_FLOOR[rarity];
+        const min = Math.max(1, Math.round(lo + (hi - lo) * floor));
+        if (a.value < min || a.value > Math.max(1, Math.round(hi))) throw new Error(`${a.key} ${a.value} out of range at ${i}`);
+      }
+      if (ins.affixes.some((a) => a.key === 'sleepRes') && !it.affixes.some((a) => a.key === 'sleepRes')) swapped++;
+    }
+    // It does land on the pieces that can take it (a magic, rare or epic piece of a slot that rolls 睡眠抗性).
+    expect(swapped).toBeGreaterThan(10000);
+  });
+
+  it('a slot that cannot take the key keeps its affixes but carries the mark', () => {
+    const key = ENEMIES['paper-moth'].inscribe!;
+    const slot = GEAR_SLOTS.find((s) => !AFFIXES[key].slots.includes(s))!;
+    expect(slot).toBeDefined();
+    const it = rollItem(mulberry32(5), { uid: 9, ilvl: 10, rarity: 'rare', slot });
+    const ins = inscribe(it, 'paper-moth', mulberry32(6));
+    expect(ins.affixes).toEqual(it.affixes);
+    expect(ins.inscription).toBe('paper-moth');
+    // A piece that already carries the key is marked and left as it is.
+    const fits = GEAR_SLOTS.find((s) => AFFIXES[key].slots.includes(s))!;
+    const has = { ...rollItem(mulberry32(7), { uid: 10, ilvl: 10, rarity: 'rare', slot: fits }) };
+    has.affixes = [{ key, value: 12 }, ...has.affixes.filter((a) => a.key !== key)];
+    expect(inscribe(has, 'paper-moth', mulberry32(8)).affixes).toEqual(has.affixes);
+  });
+
+  it("an inscribed piece is named after its species' two characters", () => {
+    const it = rollItem(mulberry32(1), { uid: 1, ilvl: 5, rarity: 'magic' });
+    expect(itemName({ ...it, inscription: 'paper-moth' })).toBe(`${itemName(it)}・${INSCRIPTION_NAME['paper-moth']}銘`);
+    expect(INSCRIPTION_NAME['paper-moth']).toBe('紙蛾');
+    // Every ordinary species has its two characters, and nothing else does.
+    const species = Object.values(ENEMIES).filter((e) => e.inscribe).map((e) => e.id).sort();
+    expect(Object.keys(INSCRIPTION_NAME).sort()).toEqual(species);
+    for (const [id, name] of Object.entries(INSCRIPTION_NAME)) {
+      expect([...name], id).toHaveLength(2);
+      for (const ch of name) expect(ENEMIES[id].name, id).toContain(ch);
+    }
+  });
+});
+
+describe("a boss's or a warden's own unique (roster plan Task C2)", () => {
+  it("only a live owner's unique drops", () => {
+    expect(ownUniqueOf('fog-warden')).toBeUndefined();
+    withRosterLive(['fog-warden'], () => {
+      expect(ownUniqueOf('fog-warden')?.id).toBe('fog-halberd');
+      expect(ownUniqueOf('slime')).toBeUndefined();
+    });
+    withRosterLive(['false-moon'], () => expect(ownUniqueOf('false-moon')?.id).toBe('moonless-mirror'));
+    // An ordinary roster species has none.
+    withRosterLive(['paper-moth'], () => expect(ownUniqueOf('paper-moth')).toBeUndefined());
+  });
+
+  it('own uniques never raise the special rate', () => {
+    // 100,000 boss drops (two pieces each) on depth 10: the swap only ever turns a special piece into another special.
+    const own = SPECIALS['fog-halberd'];
+    const ctx = ctxFor({ depth: 10, source: 'boss', seed: 99 });
+    let before = 0, after = 0, owned = 0, withSpecial = 0, pieces = 0;
+    for (let seed = 1; seed <= 50000; seed++) {
+      const gear = rollBossGear(mulberry32(seed), ctx);
+      let n = 0;
+      const out = ownUniqueSwap(gear, ['boss', 'elite'], own, () => mulberry32(mix(seed, n++)), ctx);
+      pieces += gear.length;
+      before += gear.filter((it) => it.special).length;
+      after += out.filter((it) => it.special).length;
+      const mine = out.filter((it) => it.special === own.id);
+      expect(mine.length).toBeLessThanOrEqual(1);
+      owned += mine.length;
+      if (gear.some((it) => it.special)) withSpecial++;
+      // A swapped piece keeps its uid and item level; everything else is the unique's own.
+      out.forEach((it, i) => {
+        expect(it.uid).toBe(gear[i].uid);
+        expect(it.ilvl).toBe(gear[i].ilvl);
+        if (it.special !== gear[i].special) expect([it.special, it.rarity]).toEqual([own.id, 'unique']);
+      });
+    }
+    expect(pieces).toBe(100000);
+    expect(Math.abs(after - before) / pieces).toBeLessThan(0.005);
+    expect(after).toBe(before);
+    // About half the fights with a special piece leave the owner's own (a little more: two pieces can both be special).
+    expect(owned / withSpecial).toBeGreaterThan(0.45);
+    expect(owned / withSpecial).toBeLessThan(0.6);
+  });
+
+  it('a swapped piece can still be starlit, keyed by its uid', () => {
+    const saved = { ...STARLIT_CHANCE.boss };
+    try {
+      STARLIT_CHANCE.boss = { base: 1, perDepth: 0, cap: 1 };
+      const piece = rollItem(mulberry32(3), { uid: 77, ilvl: 20, rarity: 'legendary', special: 'lg-selene' });
+      const out = ownUniqueSwap([piece], ['boss'], SPECIALS['fog-halberd'], () => constRng(0), { seed: 5, depth: 10 });
+      expect(out[0]).toMatchObject({ uid: 77, special: 'fog-halberd', starlit: true });
+      // Without a seed nothing is starlit, as with any drop.
+      expect(ownUniqueSwap([piece], ['boss'], SPECIALS['fog-halberd'], () => constRng(0), { depth: 10 })[0].starlit).toBeUndefined();
+      // A draw at or over the share keeps the piece.
+      expect(ownUniqueSwap([piece], ['boss'], SPECIALS['fog-halberd'], () => constRng(0.99), { seed: 5, depth: 10 })[0]).toBe(piece);
+    } finally {
+      STARLIT_CHANCE.boss = saved;
+    }
+  });
+});

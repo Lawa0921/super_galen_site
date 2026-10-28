@@ -709,6 +709,10 @@ $slx-mech: (heat: #ff9a10, expose: #5cffa8, mark: #ff6cd9, veil: #92b4ac, ward: 
 
 // Adventurer's handbook: the status sheet's frame, a list beside its detail
 .slx-silhouette { filter: brightness(0); }
+// Roster plan Task C6: a seen foe on the bestiary page stands where a standee would, pixel for pixel: a boss at its own size,
+// any other foe at twice (a whole multiple, so its pixels stay square). A foe not seen has no picture at all (ruling 18).
+.slx-hb-foe { position: relative; margin-bottom: 24px; image-rendering: pixelated; filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.7)); }
+.slx-hb-foe-x2 { zoom: 2; margin-bottom: 12px; }
 .slx-hb-body { flex: 1; display: flex; gap: 12px; min-height: 0; }
 .slx-hb-list { flex: 1 1 44%; min-width: 0; }
 .slx-hb-detail { flex: 1 1 56%; min-width: 0; overflow-y: auto; }

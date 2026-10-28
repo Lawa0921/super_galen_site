@@ -90,3 +90,24 @@ export const CRAFT_MAGIC_CHANCE = 0.25;
 export const SET_RECIPE = { regionQty: 8, rare: 'star-tear', rareQty: 1 };
 /** A set piece's gold at item level `ilvl`: rises with a set piece's sell price (16 G per item level), so no crafted piece outsells its recipe. About 300 G in the first floors. */
 export const setGold = (ilvl: number): number => 200 + 16 * ilvl;
+
+/**
+ * Roster plan Task C1 (spec §7.2, ruling 16): the chance, on the trophy stream, that a piece a roster species dropped
+ * carries its inscription.
+ */
+export const INSCRIBE_CHANCE = 0.25;
+/**
+ * Roster plan Task C2 (spec §7.3, ruling 15): the chance, on the trophy stream, that a legendary-tier piece from a live
+ * roster boss's or warden's fight is that foe's own unique instead.
+ */
+export const OWN_UNIQUE_SHARE = 0.5;
+/** Roster plan Task C4 (ruling 16): inscribing at the forge takes this many of the species' signature material. */
+export const INSCRIBE_QTY = 3;
+/** Roster plan Task C4 (ruling 15): crafting an own unique: its trophy or keepsake, a star tear, and ownGold. */
+export const OWN_RECIPE = { trophyQty: 5, rare: 'star-tear', rareQty: 1 };
+/**
+ * An own unique's gold at item level `ilvl` (spec §0 item 20): rises with a unique piece's sell price (20 G per item level),
+ * so no crafted one outsells its recipe at any depth; setGold (16 G a level, after a set piece's price) falls behind a
+ * unique's past item level 195. About 300 G in the first floors, as setGold.
+ */
+export const ownGold = (ilvl: number): number => 200 + 20 * ilvl;
