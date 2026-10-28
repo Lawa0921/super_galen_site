@@ -83,9 +83,9 @@ def test_prompts_follow_batch_py_sentence_with_the_anchors(factory):
 
 
 def test_icon_sheets_are_5_by_4_with_their_parts():
-    sheets = [j for j in R.jobs() if j['kind'] == 'icon-sheet']
+    sheets = [j for j in R.jobs() if j['kind'] == 'icon-sheet']; singles = [j for j in R.jobs() if j['kind'] == 'icon-single']
     mats = R.materials()
-    parts = [p for j in sheets for p in j['parts'] if p]
+    parts = [p for j in sheets + singles for p in j['parts'] if p]   # every material drawn exactly once, on a sheet or alone
     assert len(parts) == len(set(parts)) == 98 and set(parts) == set(mats)
     for j in sheets:
         assert (j['cols'], j['rows']) == (5, 4) and len(j['parts']) == 20, j['id']
@@ -107,7 +107,8 @@ def test_each_later_round_has_two_icon_sheets_and_two_unique_sheets_as_the_plan_
         assert icons[f'sheet-icons-roster-{k}'][0] == r and gear[f'sheet-gear-roster-{k}'][0] == r
     for r in ('r2', 'r3', 'r4'):
         mats = [R.MAT_OF[o] for o in R.ROUNDS[r] if o in R.MAT_OF]; uns = [R.UNIQUE_OF[o] for o in R.ROUNDS[r] if o in R.UNIQUE_OF]
-        drawn = [[p for p in ps if p] for rr, ps in icons.values() if rr == r]
+        drawn = [[p if p else (R.SLOT_SUPERSEDED.get((sid, i)) or None) for i, p in enumerate(ps)] for sid, (rr, ps) in icons.items() if rr == r]
+        drawn = [[p for p in ps if p] for ps in drawn]   # a superseded slot stays empty on its sheet and counts where it was
         assert [p for ps in drawn for p in ps] == mats and max(map(len, drawn)) - min(map(len, drawn)) <= 1, r
         drawn = [[p for p in ps if p] for rr, ps in gear.values() if rr == r]
         assert [p for ps in drawn for p in ps] == uns and max(map(len, drawn)) - min(map(len, drawn)) <= 1, r
@@ -777,3 +778,139 @@ def test_publish_holds_a_deferred_asset_and_its_owners_other_art_out_of_runtime_
     assert 'lamp-wight' not in art and set(art) == set(R.ROUNDS['r1']) - {'lamp-wight'}
     t = R.ARTPATHS_TEST.read_bytes().decode('utf-8')
     assert f'12 foes, 12 material icons, 3 own uniques x 2 (deferred: icon-wight-wick with lamp-wight) = {total0[0] + len(done)}' in t
+
+
+# --- plan Task E3c (controller 2026-10-28): a deferred asset approved and published later, on its own review record --------
+def _deferred_published(factory, review, rooted):
+    rec, why = _defer_setup(factory, review)
+    R.do_approve(A.Registry(R.REG_PATH), 'r1', review=str(rec), defer={'icon-wight-wick': str(why)})
+    R.do_publish(A.Registry(R.REG_PATH), 'r1', rooted)
+    reg = A.Registry(R.REG_PATH)                                                  # the redraw: a new final for the deferred icon
+    reg.set('icon-wight-wick', final=_png(factory / 'work' / 'sheet-icons-roster-1' / 'icon-wight-wick-a2.png', colour=(90, 150, 60)))
+    review.main('r1')                                                             # the review page shows the new bytes
+    shown = json.loads(R.shown_path('r1').read_text(encoding='utf-8'))['parts']
+    later = factory / 'veil-round6.md'
+    later.write_text(f'# round 6\n- icon-wight-wick {shown["icon-wight-wick"]} 通過\n', encoding='utf-8')
+    return later, shown['icon-wight-wick']
+
+
+def test_a_deferred_asset_is_approved_later_on_its_own_record(factory, review, rooted):
+    later, h = _deferred_published(factory, review, rooted)
+    before = {a: e.get('status') for a, e in A.Registry(R.REG_PATH).data['assets'].items()}
+    done = R.do_approve(A.Registry(R.REG_PATH), 'r1', review=str(later), deferred=True)
+    reg = A.Registry(R.REG_PATH); ab = reg.data['approved_batches']['roster-r1']
+    assert done == ['icon-wight-wick'] and reg.get('icon-wight-wick')['status'] == 'approved'
+    assert {a: e.get('status') for a, e in reg.data['assets'].items() if a != 'icon-wight-wick'} == {a: s for a, s in before.items() if a != 'icon-wight-wick'}
+    kept = R.WORK / 'review' / 'roster-r1-deferred-review.md'
+    assert kept.read_bytes() == later.read_bytes() and ab['shown']['icon-wight-wick'] == h
+    d = ab['deferred']['icon-wight-wick']
+    assert d['completed'] == {'review': R.repo_path(kept), 'review_sha256': R.sha256(kept), 'sha256': h, 'date': d['completed']['date']}
+
+
+def test_a_deferred_asset_approved_later_publishes_with_its_owners_held_art(factory, review, rooted):
+    later, h = _deferred_published(factory, review, rooted); public = rooted
+    R.do_approve(A.Registry(R.REG_PATH), 'r1', review=str(later), deferred=True)
+    total0 = R.url_totals()
+    done = R.do_publish(A.Registry(R.REG_PATH), 'r1', public)
+    reg = A.Registry(R.REG_PATH)
+    assert set(done) == {'icon-wight-wick', 'enemy-lamp-wight'}
+    assert R.sha256(public / 'assets/games/starlantern/icon/wight-wick.png') == h
+    assert (public / 'assets/games/starlantern/enemy/lamp-wight.png').is_file() and reg.get('enemy-lamp-wight')['status'] == 'published'
+    assert 'lamp-wight' in R.roster_art_ids(R.MONSTERS_TS) and R.url_totals() == (total0[0] + 2, total0[1] + 2)
+    urls = json.loads((public / 'assets/games/starlantern/manifest.json').read_text(encoding='utf-8'))['urls']
+    assert '/assets/games/starlantern/icon/wight-wick.png' in urls and '/assets/games/starlantern/enemy/lamp-wight.png' in urls
+    snap = R.REG_PATH.read_bytes()
+    assert R.do_publish(A.Registry(R.REG_PATH), 'r1', public) == [] and R.REG_PATH.read_bytes() == snap
+
+
+def test_approving_a_deferred_asset_later_refuses_without_a_pass_a_deferral_or_with_held_art_changed(factory, review, rooted):
+    later, h = _deferred_published(factory, review, rooted)
+    bad = factory / 'bad.md'; bad.write_text(f'- icon-wight-wick {"0" * 64} 通過\n', encoding='utf-8')
+    _refused(factory, 'r1', review=str(bad), deferred=True)                      # the record does not pass the shown bytes
+    reg = A.Registry(R.REG_PATH); _png(A._final_path(reg.get('enemy-lamp-wight')['final']), (60, 64), colour=(1, 2, 3))
+    _refused(factory, 'r1', review=str(later), deferred=True)                    # the owner's held art changed since its approval
+    with pytest.raises(PermissionError, match='no deferred'):
+        R.do_approve(A.Registry(R.REG_PATH), 'r2', review=str(later), deferred=True)
+
+
+# --- controller ruling 2026-10-28 (E3c): the veil concept dropped; ash-mourner's material is the funeral chrysanthemum -------
+def test_the_chrysanthemum_is_drawn_alone_and_sheet_4_keeps_its_old_slot_empty():
+    """The mourning veil failed six reviews; ash-mourner's material became `ash-chrysanthemum` (弔菊). It is drawn by its own
+    single-icon job (its own attempts and cap), and sheet-icons-roster-4 keeps its layout with that slot empty, so a re-pick
+    of an old sheet-4 attempt never turns a veil drawing into the chrysanthemum."""
+    j = R.job_by_id('single-icon-ash-chrysanthemum')
+    assert j['kind'] == 'icon-single' and j['batch'] == 'r3' and j['parts'] == ['ash-chrysanthemum'] and (j['cols'], j['rows']) == (1, 1)
+    assert 'chrysanthemum' in j['prompt'] and 'No text' in j['prompt'] and R.assets_of(j, 'ash-chrysanthemum') == ['icon-ash-chrysanthemum']
+    assert R.round_of('icon-ash-chrysanthemum') == 'r3' and 'icon-ash-chrysanthemum' in R.batch_assets('r3')
+    four = R.job_by_id('sheet-icons-roster-4')['parts']
+    assert four[:5] == ['cinder-dust', 'forge-slag', None, 'mirage-sequin', 'scorpion-stinger']
+    assert R.SLOT_SUPERSEDED[('sheet-icons-roster-4', 2)] == 'ash-chrysanthemum'
+    assert 'mourning-veil' not in R.materials() and 'icon-mourning-veil' not in R.batch_assets('r3')
+
+
+def test_a_single_icon_raw_is_processed_whole_as_one_roster_icon(factory):
+    from PIL import ImageDraw
+    img = Image.new('RGB', (400, 400), M); d = ImageDraw.Draw(img)
+    d.ellipse((120, 120, 280, 280), fill=(30, 28, 40)); d.ellipse((130, 130, 270, 270), fill=(200, 200, 190))
+    raw = factory / 'raw' / 'single-icon-ash-chrysanthemum' / 'single-icon-ash-chrysanthemum-a1.png'; raw.parent.mkdir(parents=True); img.save(raw)
+    res = R.do_pick(A.Registry(R.REG_PATH), 'single-icon-ash-chrysanthemum', 1)
+    e = A.Registry(R.REG_PATH).get('icon-ash-chrysanthemum')
+    assert list(res) == ['icon-ash-chrysanthemum'] and e['kind'] == 'roster-icon' and e['batch'] == 'roster-r3' and e['qa']['pass'], res
+    assert e['source_id'] == 'single-icon-ash-chrysanthemum' and max(Image.open(A._final_path(e['final'])).size) <= A.ICON_BOX
+
+
+def test_supersede_moves_a_deferral_to_the_new_asset_and_retires_the_old(factory, review, rooted):
+    rec, why = _defer_setup(factory, review)
+    R.do_approve(A.Registry(R.REG_PATH), 'r1', review=str(rec), defer={'icon-wight-wick': str(why)})
+    reg = A.Registry(R.REG_PATH); reg.set('icon-new-wick', status='qa_passed', batch='roster-r1'); reg._save()
+    R.supersede(A.Registry(R.REG_PATH), 'icon-wight-wick', 'icon-new-wick', reason=str(why), by='controller 2026-10-28')
+    reg = A.Registry(R.REG_PATH); ab = reg.data['approved_batches']['roster-r1']
+    old = reg.get('icon-wight-wick')
+    assert old['status'] == 'superseded' and old['superseded_by'] == 'icon-new-wick' and 'runtime' not in old
+    assert 'icon-wight-wick' not in ab['deferred'] and ab['deferred']['icon-new-wick']['supersedes'] == 'icon-wight-wick'
+    assert ab['deferred']['icon-new-wick']['owner'] == 'lamp-wight' and reg.get('icon-new-wick')['deferred']['batch'] == 'roster-r1'
+    snap = R.REG_PATH.read_bytes()
+    with pytest.raises(ValueError):
+        R.supersede(A.Registry(R.REG_PATH), 'icon-wight-wick', 'icon-new-wick', reason=str(why), by='controller 2026-10-28')
+    assert R.REG_PATH.read_bytes() == snap
+
+
+def test_repair_outliers_with_the_key_hue_rule_on_a_published_5d_icon(factory):
+    """R4 review (controller 2026-10-28): the published 5d icon lizard-scale (kind sprite, no roster batch) has a key row on its
+    outline. repair-outliers --rule key-hue records a pending repair for it, re-gated under the roster icon gates."""
+    e = _real_entry(factory, 'icon-lizard-scale'); before = dict(e)
+    rec = R.repair_outliers(A.Registry(R.REG_PATH), 'icon-lizard-scale', 'r4', rule='key-hue')
+    now = A.Registry(R.REG_PATH).get('icon-lizard-scale')
+    for k in ('final', 'status', 'runtime', 'qa'): assert now[k] == before[k], k
+    assert rec['rule'] == R.REPAIR_RULES['key-hue'] and rec['skipped'] == [] and rec['changed_pixels'] == len(rec['pixels']) >= 6
+    assert {'x': 11, 'y': 35, 'from': [144, 5, 155], 'to': rec['pixels'][[(p['x'], p['y']) for p in rec['pixels']].index((11, 35))]['to']} in rec['pixels']
+    assert rec['qa']['pass'] and rec['qa']['bright_key'] == 0 and rec['qa']['spec'] == A.qa_spec('roster-icon')
+    with pytest.raises(ValueError, match='rule'):
+        R.repair_outliers(A.Registry(R.REG_PATH), 'icon-lizard-scale', 'r4', rule='anything')
+
+
+# --- R4 (2026-10-29): sheets whose columns do not line up across rows are sliced row by row ---------------------------------
+def _staggered(path, bridge=False):
+    """A 3 x 2 magenta sheet whose rows are offset: every global column projection merges, each row alone splits cleanly."""
+    from PIL import ImageDraw
+    img = Image.new('RGB', (420, 280), M); d = ImageDraw.Draw(img)
+    for r, off in ((0, 0), (1, 40)):
+        for c in range(3):
+            x0 = 20 + c * 130 + off; y0 = 20 + r * 140
+            d.rectangle((x0, y0, x0 + 90, y0 + 100), fill=(30, 28, 40)); d.rectangle((x0 + 6, y0 + 6, x0 + 84, y0 + 94), fill=(150, 150, 140))
+    if bridge: d.rectangle((110, 60, 160, 70), fill=(30, 28, 40))   # a real bridge between two cells of the first row
+    path.parent.mkdir(parents=True, exist_ok=True); img.save(path); return img
+
+
+def test_roster_cells_fall_back_to_rows_when_columns_do_not_line_up(factory):
+    import portal as P
+    img = _staggered(factory / 'stag.png')
+    with pytest.raises(ValueError):
+        P.sheet_cells(img, 3, 2)                                                   # the shared slicer is unchanged
+    cells = R.roster_cells(img, 3, 2)
+    assert len(cells) == 6 and all(c.size == (91 + 16, 101 + 16) for c in cells)
+    assert [c.getpixel((8 + 45, 8 + 50)) for c in cells] == [(150, 150, 140)] * 6
+    good = Image.new('RGB', (420, 280), M); good.paste(img.crop((0, 0, 420, 140)), (0, 0)); good.paste(img.crop((0, 0, 420, 140)), (0, 140))
+    assert [c.tobytes() for c in R.roster_cells(good, 3, 2)] == [c.tobytes() for c in P.sheet_cells(good, 3, 2)]   # aligned: same cells
+    with pytest.raises(ValueError):
+        R.roster_cells(_staggered(factory / 'bridge.png', bridge=True), 3, 2)       # a real bridge still refuses

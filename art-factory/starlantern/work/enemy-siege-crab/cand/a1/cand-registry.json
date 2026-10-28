@@ -1,0 +1,41 @@
+{
+  "assets": {
+    "enemy-siege-crab": {
+      "final": "art-factory/starlantern/work/enemy-siege-crab/cand/a1/enemy-siege-crab.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-siege-crab\\enemy-siege-crab-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 9,
+        "size": [
+          163,
+          77
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "height": 75,
+        "width": 161,
+        "colours": 6719,
+        "lum": [
+          0.056,
+          0.715,
+          0.313
+        ],
+        "erased": 0,
+        "palette_over": true,
+        "spec": "roster-sprite:929ae0136de6"
+      },
+      "status": "qa_passed",
+      "kind": "roster-sprite",
+      "roster_class": "heavy",
+      "mainline": false
+    }
+  }
+}

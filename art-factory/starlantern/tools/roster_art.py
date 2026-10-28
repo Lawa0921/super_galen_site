@@ -18,10 +18,16 @@ forget chip. Structure as gear_art.py (plan 5d).
                                          whose 通過 lines together cover every image's current sha256; no user approval is
                                          asked for or accepted. [--defer ASSET --reason RECORD ...]: approve and publish the
                                          round without ASSET (the record that failed it kept; refused when its species is live)
+  approve --batch rN --deferred --review PATH [...]
+                                         Task E3c: the round's deferred assets alone, later, on their own review record(s); the
+                                         next publish of the round sends them out with their owners' held art
   publish --batch rN                     runtime, copy to public/, manifest, the round's ids into ROSTER_ART (data/monsters.ts)
                                          and the url count in render/artPaths.test.ts, all in the working tree
   plan-json                              write art-factory/starlantern/roster-plan.json (the exact lists per round)
-  repair-outliers --id ASSET --with rN   a roster asset's pink outliers (key residue) repaired by postprocess only, recorded
+  supersede --old ASSET --new ASSET --reason RECORD --by TEXT
+                                         a deferred asset whose concept was replaced: the deferral moves to the new asset, the old
+                                         is retired as superseded (E3c: icon-mourning-veil -> icon-ash-chrysanthemum)
+  repair-outliers --id ASSET --with rN [--rule pink-outlier|key-hue]   a roster asset's pink outliers (key residue) repaired by postprocess only, recorded
                                          as a pending `repair`; reviewed, approved and published with round rN
 
 Rounds (spec §13.5): r0 the style sample (5 foes, the R0+R1 icon sheet, the R0+R1 unique sheet, the forget chip), r1-r4 the
@@ -320,7 +326,10 @@ MAT_DESC = {
     'homeward-glow': 'a small bead of warm golden light inside a glass drop',
     'glitter-scrap': 'a little heap of shiny trinket scraps: a button, a bead and a twist of foil', 'gilded-scrap': 'a crumpled flake of shiny gold leaf',
     'cinder-dust': 'a small heap of glowing orange cinder dust', 'forge-slag': 'a lump of dark slag with molten orange veins',
-    'mourning-veil': 'a folded grey lace mourning veil', 'mirage-sequin': 'a large bronze sequin shimmering with heat haze',
+    'ash-chrysanthemum': ('one ash-grey funeral chrysanthemum flower head with many long narrow drooping petals in pale grey and '
+                          'off-white, on a short dark green stem with one small leaf, a few tiny glowing orange embers and grey ash '
+                          'flecks resting on the petals'),
+    'mirage-sequin': 'a large bronze sequin shimmering with heat haze',
     'scorpion-stinger': 'a curved sand-gold scorpion stinger with a glowing drop', 'porcelain-chip': 'a white porcelain shard with a pale blue painted edge',
     'glacier-scute': 'a hexagonal shell plate of blue glacier ice', 'snow-voice': 'a smooth pale blue stone with ripple rings like an echo',
     'komainu-fang': 'a big curved fang of blue ice', 'prayer-rope': 'a short twisted straw shrine rope coated in ice with a white paper zigzag streamer',
@@ -505,14 +514,33 @@ def _chunks(seq, n):
     return [c for c in out if c]
 
 
+# A material whose concept changed after it was drawn on a sheet is drawn alone by its own single-icon job (its own attempts
+# and cap); its old slot stays empty on the sheet, so the sheet's layout (and every old attempt's cell) never shifts.
+# Controller ruling 2026-10-28 (E3c): the mourning veil failed six reviews; ash-mourner's material is the chrysanthemum.
+SLOT_SUPERSEDED = {('sheet-icons-roster-4', 2): 'ash-chrysanthemum'}
+SINGLE_ICONS = tuple(SLOT_SUPERSEDED.values())
+
+
 def icon_sheets():
-    """{sheet id: (round, 20 parts)}: R0+R1's 18 materials on sheet 1 (two empty slabs), then each later round's on two sheets."""
+    """{sheet id: (round, 20 parts)}: R0+R1's 18 materials on sheet 1 (two empty slabs), then each later round's on two sheets;
+    a SLOT_SUPERSEDED slot is empty (None) at its old position."""
     out = {'sheet-icons-roster-1': ('r0', [MAT_OF[o] for o in ROUNDS['r0'] + ROUNDS['r1']] + [None, None])}
     k = 2
     for r in ('r2', 'r3', 'r4'):
         for chunk in _chunks([MAT_OF[o] for o in ROUNDS[r] if o in MAT_OF], 2):
-            out[f'sheet-icons-roster-{k}'] = (r, chunk + [None] * (20 - len(chunk))); k += 1
+            sid = f'sheet-icons-roster-{k}'
+            chunk = [None if (sid, i) in SLOT_SUPERSEDED else m for i, m in enumerate(chunk)]
+            out[sid] = (r, chunk + [None] * (20 - len(chunk))); k += 1
     return out
+
+
+SINGLE_ICON = (
+    'One single small square pixel art RPG crafting material icon, alone and centred on a perfectly flat pure magenta #FF00FF '
+    'background with a wide magenta margin; nothing touches the image edges. The icon, about 28 by 28 art pixels: {desc}. One bold '
+    'readable object filling its square, with a crisp dark outline, two or three hard-edged shading tones and a bright highlight '
+    'from the upper left. Match the drawing style, scale, outline, shading and palette of the attached approved equipment sheet '
+    '(the style anchor) and of the attached approved material icons from the same game (shown enlarged). 16-bit JRPG item icon '
+    'style, ' + PIX + '. No text, no numbers, no letters, no frames, no badge or circle behind the item. ' + G.ORIGINAL)
 
 
 def gear_sheets():
@@ -539,6 +567,10 @@ def jobs():
     for sid, (r, parts) in icon_sheets().items():
         out.append(dict(id=sid, kind='icon-sheet', batch=r, cols=5, rows=4, parts=parts, images=[G.GEAR_ANCHOR, mat_ref()], r0_anchor=None,
                         prompt=ICON_SHEET.format(listing=G._listing(parts, MAT_DESC))))
+    for m in SINGLE_ICONS:
+        r = ROUND_OF[materials()[m]]
+        out.append(dict(id=f'single-icon-{m}', kind='icon-single', batch=r, cols=1, rows=1, parts=[m], images=[G.GEAR_ANCHOR, mat_ref()],
+                        r0_anchor=None, prompt=SINGLE_ICON.format(desc=MAT_DESC[m])))
     for sid, (r, parts) in gear_sheets().items():
         out.append(dict(id=sid, kind='gear-sheet', batch=r, cols=3, rows=2, parts=parts, images=[G.GEAR_ANCHOR, G.ICONS_OLD], r0_anchor=None,
                         prompt=G.GEAR_SHEET.format(cols=3, rows=2, n=6, listing=G._listing(parts, GEAR_DESC), refs=G.REFS_MAIN)))
@@ -699,6 +731,30 @@ def gen(argv):
 
 
 # --- postprocess --------------------------------------------------------------------------------------------------------------
+def roster_cells(img, cols, rows, pad=8):
+    """portal.sheet_cells, and when a sheet's columns do not line up across its rows (codex drew a wide item in one row where
+    another row has its gutter: the global column projection merges), the same cells found row by row: the rows from the
+    global projection, then each row's own columns. Deterministic; a sheet the shared slicer cuts is cut exactly as before,
+    and a real bridge inside a row still refuses (R4 2026-10-29: sheet-icons-roster-6 a4, a5)."""
+    import numpy as np
+    from PIL import Image
+    try:
+        return P.sheet_cells(img, cols, rows, pad)
+    except ValueError:
+        rgb = np.asarray(img.convert('RGB')); fg = ~(A._near_magenta(rgb, 45) | A._magenta_tint(rgb))
+        ys = A._runs(fg.any(axis=1))
+        if len(ys) != rows: raise
+        out = []
+        for y0, y1 in ys:
+            xs = A._runs(fg[y0:y1].any(axis=0))
+            if len(xs) != cols: raise ValueError(f'expected {cols} cells in the row at y {y0}-{y1}, found {len(xs)}')
+            for x0, x1 in xs:
+                cell = img.crop((x0, y0, x1, y1))
+                if x0 == 0 or y0 == 0 or x1 == img.width or y1 == img.height: out.append(cell); continue
+                padded = Image.new('RGB', (cell.width + 2 * pad, cell.height + 2 * pad), (255, 0, 255)); padded.paste(cell, (pad, pad)); out.append(padded)
+        return out
+
+
 def process_attempt(reg, job, raw, workdir, parts=None):
     """Postprocess one raw attempt into finals and QA. Returns {registry id: qa}."""
     from PIL import Image
@@ -716,8 +772,11 @@ def process_attempt(reg, job, raw, workdir, parts=None):
             (Path(workdir) / f'{aid}.qa.json').write_text(json.dumps(q, indent=2), encoding='utf-8')
             reg.set(aid, qa=q, status='qa_passed' if q['pass'] else 'qa_failed')
         return res
+    if job['kind'] == 'icon-single':   # one icon alone on magenta: the whole raw is its cell
+        part = job['parts'][0]
+        return {f'icon-{part}': A.process_roster_icon(reg, f'icon-{part}', img, workdir, raw)}
     out = {}
-    for cell, part in zip(P.sheet_cells(img, job['cols'], job['rows']), job['parts']):
+    for cell, part in zip(roster_cells(img, job['cols'], job['rows']), job['parts']):
         if part is None or (parts and part not in parts): continue
         if job['kind'] == 'gear-sheet':
             u = uniques()[part]
@@ -785,6 +844,21 @@ def note(argv):
 # --- repair-outliers (controller ruling 2026-10-28) -----------------------------------------------------------------------------
 REPAIR_RULE = ('pink_outlier key residue only: each such pixel takes the rounded per-channel median of its opaque 8-neighbours '
                '(sl_art.repair_pink_outliers), its alpha kept; no other pixel changes')
+REPAIR_RULES = {   # repair-outliers --rule: which key residue, repaired how (controller rulings 2026-10-28)
+    'pink-outlier': REPAIR_RULE,
+    'key-hue': ('key-hue residue only (sl_art.key_hue_pixels: _bright_key anywhere, _deep_key on the outline): each such pixel takes '
+                'the rounded per-channel median of its opaque 8-neighbours that are not key hue, in passes; alpha kept; no other '
+                'pixel changes (R4 review: the published 5d lizard-scale)'),
+}
+REPAIR_FN = {'pink-outlier': 'repair_pink_outliers', 'key-hue': 'repair_key_hue'}
+
+
+def gate_kind(entry, aid):
+    """The roster stamp a repaired final is re-gated under: its own roster kind, or for a published 5d asset the roster kind of
+    its shape (icon or sprite)."""
+    k = entry.get('kind')
+    if k in ('roster-sprite', 'roster-icon', 'roster-gear'): return k
+    return 'roster-icon' if aid.startswith('icon-') else 'roster-gear' if aid.startswith('gear-') else 'roster-sprite'
 COLOUR_REASONS = ('magenta residue', 'magenta spill', 'too flat to tint', 'too dark to tint')
 
 
@@ -793,7 +867,7 @@ def regate(entry, img):
     alpha, so the alpha-only numbers of the entry's QA (size, height band, holes, edge, semi alpha, erased, the gear sizes
     and mass) carry over unchanged."""
     import copy
-    kind = entry.get('kind'); q = copy.deepcopy(entry.get('qa') or {})
+    kind = entry.get('_gate_kind') or entry.get('kind'); q = copy.deepcopy(entry.get('qa') or {})
     q['reasons'] = [r for r in q.get('reasons', []) if r not in COLOUR_REASONS]
     q['residue'] = A.alpha_qa(img)['residue']
     if q['residue'] > entry.get('allow_residue', 0): q['reasons'].append('magenta residue')
@@ -814,7 +888,7 @@ def _final_ref(path):
     return path.relative_to(repo).as_posix() if path.is_relative_to(repo) else str(path)
 
 
-def repair_outliers(reg, aid, publish_with):
+def repair_outliers(reg, aid, publish_with, rule='pink-outlier'):
     """Repair a roster asset's pink outliers (key residue) as a deterministic postprocess of its current final, for review
     and publishing with round `publish_with`. Writes work/repair/<aid>.png and records registry `repair` (old and new
     sha256, every pixel, the rule, the colour gates run again under the current stamp, status pending). The asset's own
@@ -823,12 +897,15 @@ def repair_outliers(reg, aid, publish_with):
     from PIL import Image
     import numpy as np
     label(publish_with)
+    if rule not in REPAIR_RULES: raise ValueError(f'unknown repair rule {rule!r}; one of {list(REPAIR_RULES)}')
     e = reg.data['assets'].get(aid)
-    if not e or not str(e.get('batch', '')).startswith('roster-') or not e.get('final'): raise ValueError(f'{aid} is not a picked roster asset')
+    roster = bool(e) and str(e.get('batch', '')).startswith('roster-')
+    if not e or not e.get('final') or not (roster or e.get('status') == 'published'):
+        raise ValueError(f'{aid} is neither a picked roster asset nor a published asset')
     src = A._final_path(e['final']); img = Image.open(src).convert('RGBA')
-    new, fixed, skipped = A.repair_pink_outliers(img)
+    new, fixed, skipped = getattr(A, REPAIR_FN[rule])(img)
     if skipped: raise PermissionError(f'{aid}: pink outliers with fewer than {A.REPAIR_MIN_NEIGHBOURS} opaque neighbours, not repaired: {skipped}')
-    if not fixed: raise ValueError(f'{aid}: no pink outlier to repair')
+    if not fixed: raise ValueError(f'{aid}: no pink outlier to repair' if rule == 'pink-outlier' else f'{aid}: no {rule} pixel to repair')
     a, b = np.asarray(img), np.asarray(new); changed = int((a != b).any(axis=-1).sum())
     if not (a[..., 3] == b[..., 3]).all() or changed != len(fixed): raise RuntimeError(f'{aid}: the repair changed more than its pixels')
     out = WORK / 'repair' / f'{aid}.png'; out.parent.mkdir(parents=True, exist_ok=True)
@@ -837,8 +914,8 @@ def repair_outliers(reg, aid, publish_with):
     else: os.replace(tmp, out)
     rec = {'from_sha256': sha256(src), 'to_sha256': sha256(out), 'final': _final_ref(out),
            'pixels': [{'x': x, 'y': y, 'from': list(o), 'to': list(n)} for x, y, o, n in fixed], 'skipped': [],
-           'changed_pixels': changed, 'rule': REPAIR_RULE, 'postprocess_only': True, 'publish_with': publish_with,
-           'qa': regate(e, new)}
+           'changed_pixels': changed, 'rule': REPAIR_RULES[rule], 'postprocess_only': True, 'publish_with': publish_with,
+           'qa': regate({**e, '_gate_kind': gate_kind(e, aid)}, new)}
     old = e.get('repair')
     if old and all(old.get(k) == v for k, v in rec.items()): return old
     rec.update(status='pending', date=datetime.date.today().isoformat())
@@ -847,9 +924,34 @@ def repair_outliers(reg, aid, publish_with):
 
 
 def repair_outliers_cli(argv):
-    rec = repair_outliers(_registry(), G._arg(argv, '--id'), G._arg(argv, '--with'))
+    rec = repair_outliers(_registry(), G._arg(argv, '--id'), G._arg(argv, '--with'), rule=G._arg(argv, '--rule') or 'pink-outlier')
     print(json.dumps({k: rec[k] for k in ('from_sha256', 'to_sha256', 'final', 'pixels', 'changed_pixels', 'status')}, ensure_ascii=False))
     print('qa', json.dumps({k: rec['qa'].get(k) for k in ('pass', 'reasons', 'pink_outlier', 'bright_key', 'key_tint_inside', 'spec')}))
+
+
+def supersede(reg, old, new, reason, by):
+    """A deferred asset whose concept was replaced (controller ruling 2026-10-28, E3c): the round's deferral moves to `new`
+    (recording `supersedes`), and `old` is retired as `superseded` (its attempts and notes stay as history; it never had a
+    runtime file and never gets one). Refuses unless `old` is a pending deferral of exactly one round and `new` is in the registry."""
+    if not DATE.search(by or ''): raise ValueError('--by needs who and the date (YYYY-MM-DD)')
+    if not reason or not Path(reason).is_file(): raise PermissionError(f'superseding {old} needs the record that decided it ({reason})')
+    hit = [(lab, rec) for lab, rec in reg.data.get('approved_batches', {}).items()
+           if old in (rec.get('deferred') or {}) and not rec['deferred'][old].get('completed')]
+    if len(hit) != 1: raise ValueError(f'{old} is not a pending deferral of exactly one round')
+    lab, rec = hit[0]; e_old = reg.data['assets'].get(old, {}); e_new = reg.data['assets'].get(new)
+    if e_new is None or e_old.get('runtime') or e_old.get('status') == 'published': raise ValueError(f'cannot supersede {old} with {new}')
+    today = datetime.date.today().isoformat()
+    d = rec['deferred'].pop(old); d.update(supersedes=old, superseded_on=today, superseded_by_record=str(reason), superseded_by=by)
+    rec['deferred'][new] = d
+    e_old.update(status='superseded', superseded_by=new, superseded_on=today, superseded_record=str(reason))
+    e_new['deferred'] = {'batch': lab, 'reason': d.get('reason'), 'date': today, 'supersedes': old}
+    reg._save()
+    return d
+
+
+def supersede_cli(argv):
+    print(json.dumps(supersede(_registry(), G._arg(argv, '--old'), G._arg(argv, '--new'), G._arg(argv, '--reason'), G._arg(argv, '--by')),
+                     ensure_ascii=False))
 
 
 def repairs_with(reg, rnd):
@@ -916,7 +1018,61 @@ def defer_copy(rnd, aid):
     return WORK / 'review' / f'roster-{rnd}-defer-{aid}.md'
 
 
-def do_approve(reg, rnd, by=None, review=None, defer=None):
+def _review_passes_all(reviews):
+    """({asset: every sha256 the records pass}, [malformed lines]) over several review records."""
+    passed, bad = {}, []
+    for r in reviews:
+        ok, wrong = review_passes(Path(r).read_text(encoding='utf-8')); bad += wrong
+        for a, h in ok.items(): passed.setdefault(a, set()).add(h)
+    return passed, bad
+
+
+def approve_deferred(reg, rnd, reviews):
+    """Plan Task E3c: approve a round's deferred assets later, on their own review record(s), without touching what the round
+    already approved or published. Each deferred asset must be picked, QA passed under the current spec, the bytes the review
+    page shows, and passed by a record; its owner's held art must still be the bytes approved with the round. The records
+    are kept as work/review/roster-<rN>-deferred-review*.md; the deferral is marked completed and the next publish of the
+    round sends the asset out with its owner's held art."""
+    lab = label(rnd); rec = reg.data.get('approved_batches', {}).get(lab) or {}
+    pending = {a: d for a, d in (rec.get('deferred') or {}).items() if not d.get('completed')}
+    if not pending: raise PermissionError(f'{rnd} has no deferred asset waiting for a later approval')
+    if not reviews or any(not Path(r).is_file() for r in reviews): raise PermissionError(f'no independent review record at {reviews}')
+    passed, bad = _review_passes_all(reviews); problems = {}
+    if bad: problems['review lines not in the form "- <id> <sha256> 通過"'] = bad
+    sp = shown_path(rnd); shown = json.loads(sp.read_text(encoding='utf-8')).get('parts', {}) if sp.exists() else {}
+    owners = {d.get('owner') for d in pending.values()}; now = {}
+    for aid in pending:
+        e = reg.data['assets'].get(aid, {}); f = A._final_path(e['final']) if e.get('final') else None
+        if not e.get('chosen_attempt') or f is None or not f.is_file(): problems.setdefault('not picked', []).append(aid); continue
+        if e.get('status') not in ('qa_passed', 'approved'): problems.setdefault(f'status {e.get("status")}', []).append(aid); continue
+        if A.qa_stale(e): problems.setdefault('QA recorded under an older spec (pick it again)', []).append(aid); continue
+        h = sha256(f); now[aid] = h
+        if h != shown.get(aid): problems.setdefault('changed since (or missing from) the review page', []).append(aid)
+        elif h not in passed.get(aid, ()): problems.setdefault('not passed by the independent review (id, sha256, 通過)', []).append(aid)
+    for aid in batch_assets(rnd):
+        if aid in pending or owner_of(aid) not in owners: continue
+        e = reg.data['assets'].get(aid, {}); f = A._final_path(e['final']) if e.get('final') else None
+        if e.get('status') != 'approved' or f is None or not f.is_file() or sha256(f) != (rec.get('shown') or {}).get(aid):
+            problems.setdefault("the owner's held art changed since the round's approval", []).append(aid)
+    if problems: raise PermissionError(f'refusing to approve the deferred assets of {rnd}: {problems}')
+    today = datetime.date.today().isoformat(); kept = []
+    for i, r in enumerate(reviews):
+        k = WORK / 'review' / (f'roster-{rnd}-deferred-review.md' if i == 0 else f'roster-{rnd}-deferred-review-{i + 1}.md')
+        k.parent.mkdir(parents=True, exist_ok=True)
+        if Path(r).resolve() != k.resolve(): shutil.copyfile(r, k)
+        kept.append(k)
+    who = f'independent review {", ".join(repo_path(k) for k in kept)} ({today})'
+    for aid, d in pending.items():
+        e = reg.data['assets'][aid]; e['status'] = 'approved'; e['approved_by'] = who
+        if isinstance(e.get('deferred'), dict): e['deferred']['completed'] = today
+        rec['shown'][aid] = now[aid]
+        d['completed'] = {'review': repo_path(kept[0]), 'review_sha256': sha256(kept[0]), 'sha256': now[aid], 'date': today}
+        if len(kept) > 1: d['completed']['reviews'] = [{'record': repo_path(k), 'sha256': sha256(k)} for k in kept]
+    reg._save()
+    return list(pending)
+
+
+def do_approve(reg, rnd, by=None, review=None, defer=None, deferred=False):
     """R0: the USER's approval of the style sample (their words and the date in `by`). R1-R4 (ruling 21) and the forget
     chip (ruling 27): an independent fresh-context review record (`review`) whose lines `- <id> <sha256> 通過` cover every
     asset of the round; no user words are asked for or taken. The record is kept at work/review/roster-<round>-review.md
@@ -927,6 +1083,7 @@ def do_approve(reg, rnd, by=None, review=None, defer=None):
     whole round and changes nothing."""
     lab = label(rnd)
     reviews = [review] if isinstance(review, (str, Path)) else list(review or [])   # several records: one per review round
+    if deferred: return approve_deferred(reg, rnd, reviews)                           # plan Task E3c
     if rnd == 'r0':
         if reviews: raise ValueError('R0 is the style sample: only the user approves it (--by with their words and the date), never a review record')
         if not by or not DATE.search(by) or not DATE.sub('', by).strip(' :：,，;；-—'):
@@ -947,10 +1104,7 @@ def do_approve(reg, rnd, by=None, review=None, defer=None):
     sp = shown_path(rnd)
     if not sp.exists(): raise PermissionError(f'no review page record for {rnd} ({sp}); build and show the review page first')
     shown = json.loads(sp.read_text(encoding='utf-8')).get('parts', {})
-    passed, bad = {}, []   # {asset: every sha256 a record passes}: an asset passes when its current bytes are among them
-    for r in reviews:
-        ok, wrong = review_passes(Path(r).read_text(encoding='utf-8')); bad += wrong
-        for a, h in ok.items(): passed.setdefault(a, set()).add(h)
+    passed, bad = _review_passes_all(reviews)   # {asset: every sha256 a record passes}: its current bytes must be among them
     aids = [a for a in batch_assets(rnd) if a not in defer]; problems = {}
     if not shown: problems['nothing was shown'] = [rnd]
     if bad: problems['review lines not in the form "- <id> <sha256> 通過"'] = bad
@@ -967,7 +1121,7 @@ def do_approve(reg, rnd, by=None, review=None, defer=None):
         e = reg.data['assets'][aid]; f = A._final_path(rep['final'])
         if not f.is_file() or sha256(f) != rep['to_sha256']: problems.setdefault('repair file changed since it was recorded', []).append(aid)
         elif sha256(A._final_path(e['final'])) != rep['from_sha256']: problems.setdefault('repair made from another file', []).append(aid)
-        elif not rep['qa'].get('pass') or rep['qa'].get('spec') != A.qa_spec(e.get('kind')): problems.setdefault('repair QA', []).append(aid)
+        elif not rep['qa'].get('pass') or rep['qa'].get('spec') != A.qa_spec(gate_kind(e, aid)): problems.setdefault('repair QA', []).append(aid)
         elif not reviews or rep['to_sha256'] not in passed.get(aid, ()):
             problems.setdefault('repair not passed by the independent review (id, sha256, 通過)', []).append(aid)
     if problems: raise PermissionError(f'refusing to approve {rnd}: {problems}')
@@ -1090,7 +1244,8 @@ def do_publish(reg, rnd, public=None):
     rec = reg.data.get('approved_batches', {}).get(lab)
     if not rec: raise PermissionError(f'round {rnd} has no current approval; build its review page and approve it first')
     shown = rec.get('shown') if isinstance(rec.get('shown'), dict) else {}
-    deferred = rec.get('deferred') or {}   # recorded at approval: no runtime file, no manifest url, no count, owner not in ROSTER_ART
+    # recorded at approval and not yet approved later (Task E3c): no runtime file, no manifest url, no count, owner not in ROSTER_ART
+    deferred = {a: d for a, d in (rec.get('deferred') or {}).items() if not d.get('completed')}
     owners = {d.get('owner') for d in deferred.values()}
     # the owner's other art waits too: a published url must be a known art url (allArtUrls follows ROSTER_ART)
     aids = [a for a in batch_assets(rnd) if a not in deferred and owner_of(a) not in owners]; problems = {}; todo = []
@@ -1144,7 +1299,7 @@ def do_publish(reg, rnd, public=None):
         e.setdefault('history', []).append({'final': e['final'], 'final_sha256': rep['from_sha256'], 'qa': e.get('qa'),
                                             'replaced_on': today, 'by': f'repair-outliers, published with {lab}'})
         e['final'] = rep['final']; e['qa'] = rep['qa']; rep.update(status='published', published_on=today)
-        own = reg.data.get('approved_batches', {}).get(e['batch'])
+        own = reg.data.get('approved_batches', {}).get(e.get('batch'))
         if own is not None:
             if isinstance(own.get('shown'), dict): own['shown'][aid] = rep['to_sha256']
             own.setdefault('repaired', {})[aid] = {'from': rep['from_sha256'], 'to': rep['to_sha256'], 'with': lab}
@@ -1167,7 +1322,7 @@ def approve(argv):
     reasons = [argv[i + 1] for i, a in enumerate(argv) if a == '--reason' and i + 1 < len(argv)]
     if len(defers) != len(reasons): raise ValueError('each --defer ASSET needs its own --reason RECORD')
     print(json.dumps(do_approve(_registry(), G._arg(argv, '--batch'), by=G._arg(argv, '--by'), review=reviews or None,
-                                defer=dict(zip(defers, reasons)) or None), ensure_ascii=False))
+                                defer=dict(zip(defers, reasons)) or None, deferred='--deferred' in argv), ensure_ascii=False))
 
 
 def publish(argv):
@@ -1193,4 +1348,4 @@ def plan_json(argv):
 if __name__ == '__main__':
     cmd = sys.argv[1] if len(sys.argv) > 1 else ''
     {'gen': gen, 'cand': cand, 'pick': pick, 'note': note, 'extend-cap': extend_cap_cli, 'approve': approve, 'publish': publish,
-     'plan-json': plan_json, 'repair-outliers': repair_outliers_cli}[cmd](sys.argv[2:])
+     'plan-json': plan_json, 'repair-outliers': repair_outliers_cli, 'supersede': supersede_cli}[cmd](sys.argv[2:])

@@ -2000,3 +2000,30 @@ def test_repair_pink_outliers_is_idempotent():
     img = Image.open(FOG_WARDEN).convert('RGBA')
     once, _, _ = A.repair_pink_outliers(img); twice, fixed, skipped = A.repair_pink_outliers(once)
     assert fixed == [] and skipped == [] and np.array_equal(np.asarray(once), np.asarray(twice))
+
+
+# --- controller ruling 2026-10-28 (R4 review): key-hued pixels on a published 5d icon's outline, repaired deterministically ----
+LIZARD_SCALE = Path(__file__).resolve().parents[1] / 'work/sheet-icons-2/icon-lizard-scale.png'
+
+
+def test_repair_key_hue_takes_the_key_row_off_the_lizard_scale_and_nothing_else():
+    """R4 review: the published 5d icon lizard-scale keeps a row of key pixels on its lower outline, (7-12,35) up to
+    (144,5,155), and a few more ((10,7), (21,29)). Key hue is _bright_key or _deep_key; each such pixel takes the rounded
+    per-channel median of its opaque 8-neighbours that are not key hue themselves; alpha is kept; nothing else changes."""
+    img = Image.open(LIZARD_SCALE).convert('RGBA'); arr = np.asarray(img)
+    assert tuple(arr[35, 11, :3]) == (144, 5, 155) and (11, 35) in A.key_hue_pixels(img)
+    new, fixed, skipped = A.repair_key_hue(img)
+    out = np.asarray(new)
+    assert (11, 35) in [(f[0], f[1]) for f in fixed] and skipped == []
+    assert (out[..., 3] == arr[..., 3]).all() and int((out != arr).any(axis=-1).sum()) == len(fixed)
+    assert A.key_hue_pixels(new) == [] and A.bright_key_count(new) == 0
+    again, fixed2, _ = A.repair_key_hue(new)
+    assert fixed2 == [] and np.array_equal(np.asarray(again), out)
+
+
+def test_repair_key_hue_leaves_violet_art_and_uses_only_non_key_neighbours():
+    arr = np.zeros((8, 8, 4), np.uint8); arr[:, :] = (60, 80, 100, 255)
+    arr[3, 3] = (144, 5, 155, 255); arr[3, 4] = (132, 10, 134, 255); arr[6, 6] = (126, 1, 153, 255)   # key, key, violet art (289)
+    new, fixed, skipped = A.repair_key_hue(Image.fromarray(arr, 'RGBA'))
+    assert sorted((f[0], f[1]) for f in fixed) == [(3, 3), (4, 3)] and all(f[3] == (60, 80, 100) for f in fixed)
+    assert tuple(np.asarray(new)[6, 6, :3]) == (126, 1, 153)

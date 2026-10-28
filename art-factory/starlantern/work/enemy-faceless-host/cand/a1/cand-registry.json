@@ -1,0 +1,43 @@
+{
+  "assets": {
+    "enemy-faceless-host": {
+      "final": "art-factory/starlantern/work/enemy-faceless-host/cand/a1/enemy-faceless-host.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-faceless-host\\enemy-faceless-host-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 8,
+        "size": [
+          114,
+          147
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "height": 145,
+        "width": 112,
+        "colours": 5618,
+        "lum": [
+          0.047,
+          0.737,
+          0.222
+        ],
+        "erased": 0,
+        "palette_over": true,
+        "spec": "roster-sprite:929ae0136de6"
+      },
+      "status": "qa_passed",
+      "kind": "roster-sprite",
+      "roster_class": "boss",
+      "mainline": false
+    }
+  }
+}

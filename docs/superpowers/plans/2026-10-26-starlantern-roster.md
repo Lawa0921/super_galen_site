@@ -823,7 +823,8 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 - [ ] 照 E2：28 隻、`sheet-icons-roster-4`、`-5`（27）、`sheet-gear-roster-4`、`-5`（12）；故事物種的閘門清單隨審核頁一起給使用者參考，不等他回覆（裁定 21）；發布 ＋79。commit：`feat(art): roster R3, the fire, frost and storm lands`。
 - 實際（2026-10-28）：獨立審核 5 輪（第 1 輪 73／79 通過；第 2–5 輪只審重畫與 R0 修復），`approve --batch r3` 一次引用 5 份紀錄。`icon-mourning-veil` 第 5 輪仍不通過，照控制者裁定延後（`--defer icon-mourning-veil --reason <第 5 輪紀錄>`）：發布 ＋77（28 隻減 `ash-mourner`、26 個圖示、12 件專屬獨特 ×2），`allArtUrls` 842 → 919；`ash-mourner` 的立繪已核准但跟面紗一起等，不進 `ROSTER_ART`。同一次發布把 R0 的 `enemy-fog-warden`、`icon-fog-gate-plate` 換成 `repair-outliers` 修過的版本（網址不變）。
 
-### Task E3c：延後的面紗（L3 的硬性前提）
+### Task E3c：延後的素材（L3 的硬性前提）
+- 實際（2026-10-28）：工具（`approve --batch r3 --deferred`）已在 E4 分支完成。面紗再畫兩次（a9、a10）仍不通過，控制者裁定改概念：灰衣弔者的素材改成 `ash-chrysanthemum` 弔菊（spec §0 第 21 條），用單張圖示工作 `single-icon-ash-chrysanthemum` 畫，`supersede` 把延後移給它；它通過審核後以 `approve --batch r3 --deferred` 核准，和 `ash-mourner` 的立繪一起在 E4 的 PR 發布。下面原本針對面紗的重畫方向保留作紀錄。
 - [ ] **工具（測試先行）**：`approve --batch r3` 目前只能核准整輪，已發布的素材會讓它拒絕。先寫失敗的測試，再讓延後的素材可以單獨核准：只審這一件（審核紀錄的 `- icon-mourning-veil <sha256> 通過`），已發布的其他件不重審、不動；`publish --batch r3` 只發布它與它主人`ash-mourner` 的立繪，把 `ash-mourner` 加進 `ROSTER_ART`，網址總數 ＋2，核准紀錄的 `deferred` 改成已完成並記下審核紀錄。
 - [ ] **重畫**：以第 5 輪紀錄 `extend-cap` 一次（新的審核紀錄），重畫 `sheet-icons-roster-4`，只挑面紗。第 5 輪審核者的方向：上緣是寬的弧線，最上面一列至少有最寬一列的 60%；寬高比 ≥ 1.4、斜放；兩道橫向、階梯狀的摺；每個孔的核心至少 3×3；正面是平的中灰；外框中性深灰（不帶紫或洋紅）。驗收：蓋住孔，16 px 的剪影仍讀得出是一塊布（不是錐形堆、磚或長條）。
 - [ ] 獨立審核通過後照上面的工具核准、發布，收尾 G；commit：`feat(art): the mourning veil and ash-mourner published`。**L3b 的上線切換要等這一項完成**（`ash-mourner` 不在 `ROSTER_ART` 就不能進 `ROSTER_LIVE`）。
@@ -843,6 +844,7 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 # PR E4：美術第四批（R4）
 
 ### Task E4a、E4b
+- 實際（2026-10-29）：R4 獨立審核 2 輪（第 1 輪 72／78 通過；第 2 輪 8／8 通過：5 件重畫、弔菊、`lizard-scale` 修復），`approve --batch r4` 引用兩份紀錄；弔菊以 `approve --batch r3 --deferred` 核准。發布 ＋80（R4 78 件、R3 延後的弔菊與 `ash-mourner` 立繪），`allArtUrls` 919 → 999，`ROSTER_ART` 100 個 id 全齊；5d 的 `icon-lizard-scale` 同時換成修過的版本（網址不變）。
 - [ ] 照 E3：27 隻、`sheet-icons-roster-6`、`-7`（27）、`sheet-gear-roster-6`、`-7`（12）；發布 ＋78（預期總數 999）。commit：`feat(art): roster R4, the mire, the shade and the iron`。
 
 # PR L4：上線四與收尾
@@ -889,3 +891,7 @@ L2b 的一次調整之後仍紅、列成具名例外的格子（spec §0 第 22 
 
 ### Task F4：悲傷結晶的內部光（錦上添花）
 - [ ] R2 第 2 輪獨立審核（2026-10-27）通過 `enemy-sorrow-crystal` a3，但它的「soft inner light」偏弱。之後如果有重畫的機會（使用者要求換圖，或 F2 的取樣調整），在 prompt 裡加強內部微光（淡金或象牙白的硬邊核心，仍維持淡紫、低飽和、不用深紫）。不擋發布，不另開重畫。
+
+### Task F8：已發布 5d 圖示的 key 殘留（E4 之後的小 PR，與 F1 一起）
+- [ ] R4 審核（2026-10-28）在已發布的 5d `icon-lizard-scale` 外緣找到一排 key 像素，E4 以 `repair-outliers --rule key-hue` 修好並隨 R4 發布。同一次唯讀掃描（`sl_art.key_hue_pixels`、`pink_outliers`，529 件已發布的名冊與圖示）另有 16 件 5d 圖示也命中：ancient-gear、antidote、bat-wing、crystal-shell、dusk-cloth、ether、ice-crystal、moss、old-coin、phoenix、potion、return-lamp、star-stone、thorn-fang、trait-poison、trait-shade；名冊的圖一件都沒有。這些是使用者核准過的舊圖，有些命中可能是真的紫色美術（phoenix、trait 晶片）。做法：全新脈絡的審核者逐件放大，標出真正的 key 殘留與刻意的美術；只有真的殘留才用同一個確定性修復（`repair-outliers --rule key-hue`，只動那些像素、alpha 不變、登錄表記前後），再一輪獨立審核後發布。F1（`enemy/bat.png` 的洋紅邊）一起做（控制者 2026-10-28 裁定）。
+- [ ] R4 第 2 輪審核（2026-10-29）附帶的三點，同一個後續一起看（都不擋 E4，遊戲大小看不出來）：(1) `icon-lizard-scale` 的修復後外緣留下一塊 6×2 的近黑墊（原本格線旁的像素），要清掉得改 alpha，是另一條規則；(2) `icon-crab-plate` 有一個偏玫瑰色的刺尖 (25,4)=(131,71,85)；(3) `gear-faceless-mask` 的 26 px 小圖是最弱的一張，之後若重畫：綁帶顏色淡一點、鼻梁凸起大一點。

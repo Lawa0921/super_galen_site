@@ -28,7 +28,11 @@ export const ROSTER_ART: ReadonlySet<string> = new Set<string>([
   'mirage-dancer', 'sand-scorpion', 'frost-doll', 'glacier-tortoise', 'snow-caller', 'ice-komainu', 'frozen-pilgrim',
   'thunder-kite', 'storm-totem', 'charge-jelly', 'star-ember', 'stolen-tome', 'ember-tyrant', 'sandstorm-maw',
   'mirage-city', 'rime-sovereign', 'white-silence', 'rift-maw', 'thunder-roc', 'storm-conductor',
-  'starfire-colossus', 'mirage-lead', 'ice-shrine', 'burning-page', 'rime-pillar',
+  'starfire-colossus', 'mirage-lead', 'ice-shrine', 'burning-page', 'rime-pillar', 'bog-mother', 'rot-lily',
+  'leech-knight', 'ashen-treant', 'spore-moth', 'mirror-thief', 'veil-stalker', 'hush-acolyte', 'vault-mimic',
+  'debt-collector', 'rivet-golem', 'siege-crab', 'herald-engine', 'fallen-knight', 'banner-bearer', 'mire-hydra',
+  'grey-blight', 'bog-leviathan', 'faceless-host', 'vault-dragon', 'shadow-parade', 'fortress-colossus',
+  'siege-titan', 'last-commander', 'grey-elder', 'locked-vault', 'gate-breaker', 'ash-mourner',
 ]);
 /**
  * Roster ids met in the encounter tables, the boss table, warden rooms and the bestiary. Only a go-live commit adds to it,
