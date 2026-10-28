@@ -13,11 +13,16 @@ forget chip. Structure as gear_art.py (plan 5d).
                                          --by, the review record it cites); gen counts it
   approve --batch r0 --by TEXT           R0 only: the USER's words and the date, after the review page (writes
                                          roster_style_approved and roster_style_anchor)
-  approve --batch rN --review PATH       R1-R4 (ruling 21): an independent fresh-context review record listing every image's
-                                         sha256 with 通過; no user approval is asked for or accepted
+  approve --batch rN --review PATH [--review PATH ...]
+                                         R1-R4 (ruling 21): independent fresh-context review records (one per review round)
+                                         whose 通過 lines together cover every image's current sha256; no user approval is
+                                         asked for or accepted. [--defer ASSET --reason RECORD ...]: approve and publish the
+                                         round without ASSET (the record that failed it kept; refused when its species is live)
   publish --batch rN                     runtime, copy to public/, manifest, the round's ids into ROSTER_ART (data/monsters.ts)
                                          and the url count in render/artPaths.test.ts, all in the working tree
   plan-json                              write art-factory/starlantern/roster-plan.json (the exact lists per round)
+  repair-outliers --id ASSET --with rN   a roster asset's pink outliers (key residue) repaired by postprocess only, recorded
+                                         as a pending `repair`; reviewed, approved and published with round rN
 
 Rounds (spec §13.5): r0 the style sample (5 foes, the R0+R1 icon sheet, the R0+R1 unique sheet, the forget chip), r1-r4 the
 rest; the forget chip drawn with r0 is approved and published as its own round `forget` in E1c (ruling 27). Every asset belongs to the round of its owner (an R1 foe's icon drawn on the R0 sheet is published with R1), so a
@@ -777,6 +782,81 @@ def note(argv):
     if plain: reg.set(sid, plain_reasons={**e.get('plain_reasons', {}), f'a{k}': plain})
 
 
+# --- repair-outliers (controller ruling 2026-10-28) -----------------------------------------------------------------------------
+REPAIR_RULE = ('pink_outlier key residue only: each such pixel takes the rounded per-channel median of its opaque 8-neighbours '
+               '(sl_art.repair_pink_outliers), its alpha kept; no other pixel changes')
+COLOUR_REASONS = ('magenta residue', 'magenta spill', 'too flat to tint', 'too dark to tint')
+
+
+def regate(entry, img):
+    """Every roster gate that reads colour, run again on a repaired final under the current stamp. The repair keeps the
+    alpha, so the alpha-only numbers of the entry's QA (size, height band, holes, edge, semi alpha, erased, the gear sizes
+    and mass) carry over unchanged."""
+    import copy
+    kind = entry.get('kind'); q = copy.deepcopy(entry.get('qa') or {})
+    q['reasons'] = [r for r in q.get('reasons', []) if r not in COLOUR_REASONS]
+    q['residue'] = A.alpha_qa(img)['residue']
+    if q['residue'] > entry.get('allow_residue', 0): q['reasons'].append('magenta residue')
+    q['magenta_spill'] = A.magenta_spill_count(img)
+    if q['magenta_spill'] > entry.get('allow_magenta_spill', A.MAGENTA_SPILL_MAX): q['reasons'].append('magenta spill')
+    if kind == 'roster-sprite':
+        q['reasons'] += [r for r in A.lum_range(img, bool(entry.get('mainline'))) if r not in q['reasons']]
+        q.update(colours=A.palette_count(img), lum=list(A.lum_stats(img)), palette_over=bool(A.palette_max(img)))
+    q['pass'] = not q['reasons']
+    A.roster_key_tint_gate(q, img)
+    q['pass'] = not q['reasons']; q['spec'] = A.qa_spec(kind)
+    return q
+
+
+def _final_ref(path):
+    """A final as the registry names it (as _save_final does): repo relative when it is inside the repo, else absolute."""
+    path = Path(path).resolve(); repo = A.ROOT.parents[1].resolve()
+    return path.relative_to(repo).as_posix() if path.is_relative_to(repo) else str(path)
+
+
+def repair_outliers(reg, aid, publish_with):
+    """Repair a roster asset's pink outliers (key residue) as a deterministic postprocess of its current final, for review
+    and publishing with round `publish_with`. Writes work/repair/<aid>.png and records registry `repair` (old and new
+    sha256, every pixel, the rule, the colour gates run again under the current stamp, status pending). The asset's own
+    final, runtime, status and QA do not change until that round publishes. A pixel with too few opaque neighbours is
+    reported and nothing is recorded; an asset with no outlier is refused. Running it again changes nothing."""
+    from PIL import Image
+    import numpy as np
+    label(publish_with)
+    e = reg.data['assets'].get(aid)
+    if not e or not str(e.get('batch', '')).startswith('roster-') or not e.get('final'): raise ValueError(f'{aid} is not a picked roster asset')
+    src = A._final_path(e['final']); img = Image.open(src).convert('RGBA')
+    new, fixed, skipped = A.repair_pink_outliers(img)
+    if skipped: raise PermissionError(f'{aid}: pink outliers with fewer than {A.REPAIR_MIN_NEIGHBOURS} opaque neighbours, not repaired: {skipped}')
+    if not fixed: raise ValueError(f'{aid}: no pink outlier to repair')
+    a, b = np.asarray(img), np.asarray(new); changed = int((a != b).any(axis=-1).sum())
+    if not (a[..., 3] == b[..., 3]).all() or changed != len(fixed): raise RuntimeError(f'{aid}: the repair changed more than its pixels')
+    out = WORK / 'repair' / f'{aid}.png'; out.parent.mkdir(parents=True, exist_ok=True)
+    tmp = out.with_name(out.name + '.tmp'); new.save(tmp, format='PNG')
+    if out.is_file() and out.read_bytes() == tmp.read_bytes(): tmp.unlink()
+    else: os.replace(tmp, out)
+    rec = {'from_sha256': sha256(src), 'to_sha256': sha256(out), 'final': _final_ref(out),
+           'pixels': [{'x': x, 'y': y, 'from': list(o), 'to': list(n)} for x, y, o, n in fixed], 'skipped': [],
+           'changed_pixels': changed, 'rule': REPAIR_RULE, 'postprocess_only': True, 'publish_with': publish_with,
+           'qa': regate(e, new)}
+    old = e.get('repair')
+    if old and all(old.get(k) == v for k, v in rec.items()): return old
+    rec.update(status='pending', date=datetime.date.today().isoformat())
+    e['repair'] = rec; reg._save()
+    return rec
+
+
+def repair_outliers_cli(argv):
+    rec = repair_outliers(_registry(), G._arg(argv, '--id'), G._arg(argv, '--with'))
+    print(json.dumps({k: rec[k] for k in ('from_sha256', 'to_sha256', 'final', 'pixels', 'changed_pixels', 'status')}, ensure_ascii=False))
+    print('qa', json.dumps({k: rec['qa'].get(k) for k in ('pass', 'reasons', 'pink_outlier', 'bright_key', 'key_tint_inside', 'spec')}))
+
+
+def repairs_with(reg, rnd):
+    """{asset: its repair record} for every recorded repair that is reviewed and published with round `rnd`."""
+    return {a: e['repair'] for a, e in reg.data['assets'].items() if (e.get('repair') or {}).get('publish_with') == rnd}
+
+
 # --- approval and publishing ----------------------------------------------------------------------------------------------------
 def shown_path(rnd):
     return WORK / 'review' / f'roster-{rnd}-shown.json'
@@ -815,7 +895,28 @@ def review_copy(rnd):
     return WORK / 'review' / f'roster-{rnd}-review.md'
 
 
-def do_approve(reg, rnd, by=None, review=None):
+def owner_of(aid):
+    """The roster species an asset belongs to (a foe's sprite, its material icon, its own unique at either size)."""
+    if aid.startswith('enemy-'): return aid[len('enemy-'):]
+    if aid.startswith('icon-'): return materials().get(aid[len('icon-'):])
+    u = aid[len('gear-'):]; u = u[:-len('-large')] if u.endswith('-large') else u
+    return (uniques().get(u) or {}).get('owner')
+
+
+LIVE_RE = re.compile(r'export const ROSTER_LIVE: ReadonlySet<string> = new Set<string>\(\[(.*?)\]\);', re.S)
+
+
+def roster_live_ids(path=None):
+    m = LIVE_RE.search(_read_keep_eol(path or MONSTERS_TS)[0])
+    if not m: raise ValueError(f'ROSTER_LIVE not found in {path or MONSTERS_TS}')
+    return re.findall(r"'([a-z0-9-]+)'", m.group(1))
+
+
+def defer_copy(rnd, aid):
+    return WORK / 'review' / f'roster-{rnd}-defer-{aid}.md'
+
+
+def do_approve(reg, rnd, by=None, review=None, defer=None):
     """R0: the USER's approval of the style sample (their words and the date in `by`). R1-R4 (ruling 21) and the forget
     chip (ruling 27): an independent fresh-context review record (`review`) whose lines `- <id> <sha256> 通過` cover every
     asset of the round; no user words are asked for or taken. The record is kept at work/review/roster-<round>-review.md
@@ -825,20 +926,32 @@ def do_approve(reg, rnd, by=None, review=None):
     its final still the bytes the review page recorded (and, for R1-R4, the bytes the review passed). Any miss refuses the
     whole round and changes nothing."""
     lab = label(rnd)
+    reviews = [review] if isinstance(review, (str, Path)) else list(review or [])   # several records: one per review round
     if rnd == 'r0':
-        if review: raise ValueError('R0 is the style sample: only the user approves it (--by with their words and the date), never a review record')
+        if reviews: raise ValueError('R0 is the style sample: only the user approves it (--by with their words and the date), never a review record')
         if not by or not DATE.search(by) or not DATE.sub('', by).strip(' :：,，;；-—'):
             raise ValueError("--by must quote the user's approval and carry its date (YYYY-MM-DD)")
     else:
         if by: raise ValueError('R1-R4 are approved on an independent review record (--review), not on the user\'s words (ruling 21)')
         if not reg.data.get('roster_style_approved'):
             raise PermissionError('roster_style_approved is missing: the user has not approved the R0 style sample yet')
-        if not review or not Path(review).is_file(): raise PermissionError(f'no independent review record at {review}')
+        if not reviews or any(not Path(r).is_file() for r in reviews): raise PermissionError(f'no independent review record at {review}')
+    defer = dict(defer or {})   # {asset: the review record that failed it}: approved and published without it (controller 2026-10-28)
+    if defer:
+        if rnd == 'r0': raise ValueError('R0 is the style sample: nothing in it is deferred')
+        live = set(roster_live_ids()); mine = set(batch_assets(rnd))
+        for aid, why in defer.items():
+            if aid not in mine: raise ValueError(f'{aid} is not an asset of {rnd}; only an asset of the round can be deferred')
+            if not why or not Path(why).is_file(): raise PermissionError(f'deferring {aid} needs the review record that failed it ({why})')
+            if owner_of(aid) in live: raise PermissionError(f'{aid}: its species {owner_of(aid)} is live, so its art cannot be deferred')
     sp = shown_path(rnd)
     if not sp.exists(): raise PermissionError(f'no review page record for {rnd} ({sp}); build and show the review page first')
     shown = json.loads(sp.read_text(encoding='utf-8')).get('parts', {})
-    passed, bad = review_passes(Path(review).read_text(encoding='utf-8')) if review else ({}, [])
-    aids = batch_assets(rnd); problems = {}
+    passed, bad = {}, []   # {asset: every sha256 a record passes}: an asset passes when its current bytes are among them
+    for r in reviews:
+        ok, wrong = review_passes(Path(r).read_text(encoding='utf-8')); bad += wrong
+        for a, h in ok.items(): passed.setdefault(a, set()).add(h)
+    aids = [a for a in batch_assets(rnd) if a not in defer]; problems = {}
     if not shown: problems['nothing was shown'] = [rnd]
     if bad: problems['review lines not in the form "- <id> <sha256> 通過"'] = bad
     for aid in aids:
@@ -848,21 +961,43 @@ def do_approve(reg, rnd, by=None, review=None):
         if A.qa_stale(e): problems.setdefault('QA recorded under an older spec (pick it again)', []).append(aid); continue
         h = sha256(f)
         if h != shown.get(aid): problems.setdefault('changed since (or missing from) the review page', []).append(aid)
-        elif review and passed.get(aid) != h: problems.setdefault('not passed by the independent review (id, sha256, 通過)', []).append(aid)
+        elif reviews and h not in passed.get(aid, ()): problems.setdefault('not passed by the independent review (id, sha256, 通過)', []).append(aid)
+    reps = {a: r for a, r in repairs_with(reg, rnd).items() if r.get('status') != 'published'}
+    for aid, rep in reps.items():
+        e = reg.data['assets'][aid]; f = A._final_path(rep['final'])
+        if not f.is_file() or sha256(f) != rep['to_sha256']: problems.setdefault('repair file changed since it was recorded', []).append(aid)
+        elif sha256(A._final_path(e['final'])) != rep['from_sha256']: problems.setdefault('repair made from another file', []).append(aid)
+        elif not rep['qa'].get('pass') or rep['qa'].get('spec') != A.qa_spec(e.get('kind')): problems.setdefault('repair QA', []).append(aid)
+        elif not reviews or rep['to_sha256'] not in passed.get(aid, ()):
+            problems.setdefault('repair not passed by the independent review (id, sha256, 通過)', []).append(aid)
     if problems: raise PermissionError(f'refusing to approve {rnd}: {problems}')
     today = datetime.date.today().isoformat()
     rec = {'date': today, 'record': repo_path(sp), 'shown': {a: sha256(A._final_path(reg.data['assets'][a]['final'])) for a in aids}}
-    if review:
-        kept = review_copy(rnd); kept.parent.mkdir(parents=True, exist_ok=True)
-        if Path(review).resolve() != kept.resolve(): shutil.copyfile(review, kept)
-        rec.update({'review': repo_path(kept), 'review_sha256': sha256(kept)})
-        who = f'independent review {repo_path(kept)} ({today})'
+    if reviews:
+        kept = []
+        for i, r in enumerate(reviews):
+            k = review_copy(rnd) if i == 0 else review_copy(rnd).with_name(f'roster-{rnd}-review-{i + 1}.md')
+            k.parent.mkdir(parents=True, exist_ok=True)
+            if Path(r).resolve() != k.resolve(): shutil.copyfile(r, k)
+            kept.append(k)
+        rec.update({'review': repo_path(kept[0]), 'review_sha256': sha256(kept[0])})
+        if len(kept) > 1: rec['reviews'] = [{'record': repo_path(k), 'sha256': sha256(k)} for k in kept]
+        who = f'independent review {", ".join(repo_path(k) for k in kept)} ({today})'
     else:
         rec['by'] = by; who = by
     done = []
     for aid in aids:
         e = reg.data['assets'][aid]
         if e['status'] == 'qa_passed': e['status'] = 'approved'; e['approved_by'] = who; done.append(aid)
+    if reps: rec['repairs'] = {a: r['to_sha256'] for a, r in reps.items()}
+    if defer:
+        rec['deferred'] = {}
+        for aid, why in defer.items():
+            k = defer_copy(rnd, aid); k.parent.mkdir(parents=True, exist_ok=True)
+            if Path(why).resolve() != k.resolve(): shutil.copyfile(why, k)
+            rec['deferred'][aid] = {'reason': repo_path(k), 'sha256': sha256(k), 'owner': owner_of(aid)}
+            reg.data['assets'][aid]['deferred'] = {'batch': lab, 'reason': repo_path(k), 'date': today}
+    for r in reps.values(): r['status'] = 'approved'
     reg.data.setdefault('approved_batches', {})[lab] = rec
     if rnd == 'r0':
         reg.data['roster_style_approved'] = today
@@ -955,7 +1090,10 @@ def do_publish(reg, rnd, public=None):
     rec = reg.data.get('approved_batches', {}).get(lab)
     if not rec: raise PermissionError(f'round {rnd} has no current approval; build its review page and approve it first')
     shown = rec.get('shown') if isinstance(rec.get('shown'), dict) else {}
-    aids = batch_assets(rnd); problems = {}; todo = []
+    deferred = rec.get('deferred') or {}   # recorded at approval: no runtime file, no manifest url, no count, owner not in ROSTER_ART
+    owners = {d.get('owner') for d in deferred.values()}
+    # the owner's other art waits too: a published url must be a known art url (allArtUrls follows ROSTER_ART)
+    aids = [a for a in batch_assets(rnd) if a not in deferred and owner_of(a) not in owners]; problems = {}; todo = []
     for aid in aids:
         e = reg.data['assets'].get(aid, {}); f = A._final_path(e['final']) if e.get('final') else None
         if e.get('status') not in ('approved', 'published'): problems.setdefault(f'status {e.get("status")}', []).append(aid); continue
@@ -967,18 +1105,32 @@ def do_publish(reg, rnd, public=None):
                 problems.setdefault('published file is not the approved one', []).append(aid)
             continue
         todo.append(aid)
+    rep_todo = []
+    for aid, rep in repairs_with(reg, rnd).items():
+        if rep.get('status') == 'published': continue
+        e = reg.data['assets'][aid]; f = A._final_path(rep['final']); dst = public / str(e.get('runtime', '')).lstrip('/')
+        if rep.get('status') != 'approved' or (rec.get('repairs') or {}).get(aid) != rep['to_sha256']:
+            problems.setdefault('repair not approved with this round', []).append(aid)
+        elif not f.is_file() or sha256(f) != rep['to_sha256']: problems.setdefault('repair file changed since its approval', []).append(aid)
+        elif e.get('status') != 'published' or not dst.is_file() or sha256(dst) != rep['from_sha256']:
+            problems.setdefault('the published file is not the one the repair was made from', []).append(aid)
+        else: rep_todo.append(aid)
     try:
         roster_art_ids(); url_totals()
     except (ValueError, OSError) as err:
         problems.setdefault('cannot update the game files', []).append(str(err))
     if problems: raise PermissionError(f'refusing to publish {rnd}; nothing was published: {problems}')
-    if not todo: return []
+    if not todo and not rep_todo: return []
     staged = []
     try:
         for aid in todo:
             dst = public / runtime(aid).lstrip('/'); dst.parent.mkdir(parents=True, exist_ok=True)
             tmp = dst.with_name(dst.name + '.publishing'); staged.append((tmp, dst))
             shutil.copyfile(A._final_path(reg.data['assets'][aid]['final']), tmp)
+        for aid in rep_todo:
+            dst = public / reg.data['assets'][aid]['runtime'].lstrip('/')
+            tmp = dst.with_name(dst.name + '.publishing'); staged.append((tmp, dst))
+            shutil.copyfile(A._final_path(reg.data['assets'][aid]['repair']['final']), tmp)
     except BaseException:
         for tmp, _ in staged:
             if tmp.exists(): tmp.unlink()
@@ -986,19 +1138,36 @@ def do_publish(reg, rnd, public=None):
     for tmp, dst in staged: os.replace(tmp, dst)
     for aid in todo:
         reg.data['assets'][aid].update(runtime=runtime(aid), status='published')
+    today = datetime.date.today().isoformat()
+    for aid in rep_todo:   # the repaired bytes replace the published ones: final, QA and the owner round's approved hash follow
+        e = reg.data['assets'][aid]; rep = e['repair']
+        e.setdefault('history', []).append({'final': e['final'], 'final_sha256': rep['from_sha256'], 'qa': e.get('qa'),
+                                            'replaced_on': today, 'by': f'repair-outliers, published with {lab}'})
+        e['final'] = rep['final']; e['qa'] = rep['qa']; rep.update(status='published', published_on=today)
+        own = reg.data.get('approved_batches', {}).get(e['batch'])
+        if own is not None:
+            if isinstance(own.get('shown'), dict): own['shown'][aid] = rep['to_sha256']
+            own.setdefault('repaired', {})[aid] = {'from': rep['from_sha256'], 'to': rep['to_sha256'], 'with': lab}
     reg._save(); reg.write_manifest(public)
-    if ROUNDS.get(rnd): add_roster_art(ROUNDS[rnd])
+    if not todo: return []
+    if ROUNDS.get(rnd): add_roster_art([e for e in ROUNDS[rnd] if e not in owners])
     foes = sum(a.startswith('enemy-') for a in todo); icons = sum(a.startswith('icon-') and a != FORGET_ASSET for a in todo)
     gear = sum(a.startswith('gear-') and not a.endswith('-large') for a in todo)
     who = rec.get('by') or f'independent review {rec.get("date")}'
     note = (f'roster {rnd.upper()} ({who}): {foes} foes, {icons} material icons, {gear} own uniques x 2'
-            + (', the forget chip' if FORGET_ASSET in todo else ''))
+            + (', the forget chip' if FORGET_ASSET in todo else '')
+            + (' (deferred: ' + ', '.join(f"{a} with {d.get('owner')}" for a, d in deferred.items()) + ')' if deferred else ''))
     bump_art_count(len(todo), note); bump_e2e_count(len(todo), note)
     return todo
 
 
 def approve(argv):
-    print(json.dumps(do_approve(_registry(), G._arg(argv, '--batch'), by=G._arg(argv, '--by'), review=G._arg(argv, '--review')), ensure_ascii=False))
+    reviews = [argv[i + 1] for i, a in enumerate(argv) if a == '--review' and i + 1 < len(argv)]   # --review may repeat
+    defers = [argv[i + 1] for i, a in enumerate(argv) if a == '--defer' and i + 1 < len(argv)]
+    reasons = [argv[i + 1] for i, a in enumerate(argv) if a == '--reason' and i + 1 < len(argv)]
+    if len(defers) != len(reasons): raise ValueError('each --defer ASSET needs its own --reason RECORD')
+    print(json.dumps(do_approve(_registry(), G._arg(argv, '--batch'), by=G._arg(argv, '--by'), review=reviews or None,
+                                defer=dict(zip(defers, reasons)) or None), ensure_ascii=False))
 
 
 def publish(argv):
@@ -1024,4 +1193,4 @@ def plan_json(argv):
 if __name__ == '__main__':
     cmd = sys.argv[1] if len(sys.argv) > 1 else ''
     {'gen': gen, 'cand': cand, 'pick': pick, 'note': note, 'extend-cap': extend_cap_cli, 'approve': approve, 'publish': publish,
-     'plan-json': plan_json}[cmd](sys.argv[2:])
+     'plan-json': plan_json, 'repair-outliers': repair_outliers_cli}[cmd](sys.argv[2:])

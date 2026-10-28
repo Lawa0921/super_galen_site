@@ -59,7 +59,9 @@ describe('roster switches (roster plan Task A1, spec §11.1)', () => {
     for (const id of ['paper-moth', 'root-hound', 'bell-watcher', 'false-moon', 'fog-warden']) expect(artEnemy(id), id).toBe(true);
     expect(artEnemy('lamp-wight')).toBe(true);           // R1: published in E1 (independent review 2026-10-27)
     expect(artEnemy('old-city-sentinel')).toBe(true);    // R2: published in E2 (independent review 2026-10-27, round 2)
-    expect(artEnemy('cinder-imp')).toBe(false);          // R3: not drawn yet
+    expect(artEnemy('cinder-imp')).toBe(true);           // R3: published in E3 (independent review 2026-10-28, rounds 1-5)
+    expect(artEnemy('ash-mourner')).toBe(false);         // R3's ash-mourner waits for its deferred veil (an L3 prerequisite)
+    expect(artEnemy('bog-mother')).toBe(false);          // R4: not drawn yet
     expect(listedEnemy('no-such-foe')).toBe(false);
   });
 });
@@ -402,7 +404,9 @@ describe('roster materials and own uniques (roster plan Task A3, spec §7)', () 
     expect(artMaterial('faded-letter') && artSpecial('fog-halberd')).toBe(true);     // R0's, published in PR D
     expect(artMaterial('wight-wick') && artSpecial('silent-chime')).toBe(true);      // R1's, published in E1
     expect(artMaterial('marble-shard') && artSpecial('archon-crown')).toBe(true);    // R2's, published in E2
-    expect(artMaterial('cinder-dust') || artSpecial('burning-crown-ring')).toBe(false);   // R3's, waiting
+    expect(artMaterial('cinder-dust') && artSpecial('burning-crown-ring')).toBe(true);    // R3's, published in E3
+    expect(artMaterial('mourning-veil')).toBe(false);                                     // R3's deferred veil, waiting
+    expect(artMaterial('bog-peat') || artSpecial('hydra-fang')).toBe(false);              // R4's, waiting
   });
 });
 

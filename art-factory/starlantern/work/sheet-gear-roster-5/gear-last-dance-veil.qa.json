@@ -1,0 +1,33 @@
+{
+  "pass": true,
+  "reasons": [],
+  "warnings": [],
+  "residue": 0,
+  "semi": 0,
+  "edge": 0,
+  "holes": 0,
+  "magenta_spill": 0,
+  "key_tint_inside": 0,
+  "subject": {
+    "long": 22,
+    "short": 21,
+    "mass": 0.688,
+    "box": [
+      2,
+      2,
+      23,
+      24
+    ],
+    "centre_off": 0.5
+  },
+  "block": 22.409,
+  "scale": 22.409,
+  "size": [
+    26,
+    26
+  ],
+  "spec": "roster-gear:91c76b116bcd",
+  "bright_key": 0,
+  "pink_outlier": 0,
+  "erased": 0
+}

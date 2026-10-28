@@ -1,0 +1,526 @@
+{
+  "assets": {
+    "gear-burning-crown-ring-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-4/cand/a2/gear-burning-crown-ring-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-4\\sheet-gear-roster-4-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 56,
+          "short": 54,
+          "mass": 0.677,
+          "box": [
+            5,
+            4,
+            59,
+            60
+          ],
+          "centre_off": 0.0
+        },
+        "block": 7.375,
+        "scale": 7.375,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "roster-gear:909b3e0e50cc",
+        "bright_key": 0,
+        "erased": 0
+      },
+      "status": "qa_passed",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-4\\sheet-gear-roster-4-a2.png",
+        "cell": "burning-crown-ring"
+      },
+      "slot": "ring"
+    },
+    "gear-burning-crown-ring": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-4/cand/a2/gear-burning-crown-ring.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-4\\sheet-gear-roster-4-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 22,
+          "short": 21,
+          "mass": 0.676,
+          "box": [
+            2,
+            2,
+            23,
+            24
+          ],
+          "centre_off": 0.5
+        },
+        "block": 18.773,
+        "scale": 18.773,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "roster-gear:909b3e0e50cc",
+        "bright_key": 0,
+        "erased": 0
+      },
+      "status": "qa_passed",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-4\\sheet-gear-roster-4-a2.png",
+        "cell": "burning-crown-ring"
+      },
+      "slot": "ring"
+    },
+    "gear-sand-veil-boots-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-4/cand/a2/gear-sand-veil-boots-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-4\\sheet-gear-roster-4-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 56,
+          "short": 51,
+          "mass": 0.717,
+          "box": [
+            4,
+            6,
+            60,
+            57
+          ],
+          "centre_off": 0.5
+        },
+        "block": 8.107,
+        "scale": 8.107,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "roster-gear:909b3e0e50cc",
+        "bright_key": 0,
+        "erased": 2
+      },
+      "status": "qa_passed",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-4\\sheet-gear-roster-4-a2.png",
+        "cell": "sand-veil-boots"
+      },
+      "slot": "feet"
+    },
+    "gear-sand-veil-boots": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-4/cand/a2/gear-sand-veil-boots.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-4\\sheet-gear-roster-4-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 22,
+          "short": 20,
+          "mass": 0.723,
+          "box": [
+            2,
+            3,
+            24,
+            23
+          ],
+          "centre_off": 0.0
+        },
+        "block": 20.636,
+        "scale": 20.636,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "roster-gear:909b3e0e50cc",
+        "bright_key": 0,
+        "erased": 0
+      },
+      "status": "qa_passed",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-4\\sheet-gear-roster-4-a2.png",
+        "cell": "sand-veil-boots"
+      },
+      "slot": "feet"
+    },
+    "gear-troupe-drum-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-4/cand/a2/gear-troupe-drum-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-4\\sheet-gear-roster-4-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 56,
+          "short": 54,
+          "mass": 0.717,
+          "box": [
+            4,
+            5,
+            60,
+            59
+          ],
+          "centre_off": 0.0
+        },
+        "block": 7.875,
+        "scale": 7.875,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "roster-gear:909b3e0e50cc",
+        "bright_key": 0,
+        "erased": 1
+      },
+      "status": "qa_passed",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-4\\sheet-gear-roster-4-a2.png",
+        "cell": "troupe-drum"
+      },
+      "slot": "offhand"
+    },
+    "gear-troupe-drum": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-4/cand/a2/gear-troupe-drum.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-4\\sheet-gear-roster-4-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 22,
+          "short": 21,
+          "mass": 0.717,
+          "box": [
+            2,
+            2,
+            24,
+            23
+          ],
+          "centre_off": 0.5
+        },
+        "block": 20.045,
+        "scale": 20.045,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "roster-gear:909b3e0e50cc",
+        "bright_key": 0,
+        "erased": 0
+      },
+      "status": "qa_passed",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-4\\sheet-gear-roster-4-a2.png",
+        "cell": "troupe-drum"
+      },
+      "slot": "offhand"
+    },
+    "gear-everwinter-veil-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-4/cand/a2/gear-everwinter-veil-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-4\\sheet-gear-roster-4-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 56,
+          "short": 54,
+          "mass": 0.726,
+          "box": [
+            5,
+            4,
+            59,
+            60
+          ],
+          "centre_off": 0.0
+        },
+        "block": 8.339,
+        "scale": 8.339,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "roster-gear:909b3e0e50cc",
+        "bright_key": 0,
+        "erased": 0
+      },
+      "status": "qa_passed",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-4\\sheet-gear-roster-4-a2.png",
+        "cell": "everwinter-veil"
+      },
+      "slot": "body"
+    },
+    "gear-everwinter-veil": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-4/cand/a2/gear-everwinter-veil.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-4\\sheet-gear-roster-4-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 22,
+          "short": 21,
+          "mass": 0.721,
+          "box": [
+            2,
+            2,
+            23,
+            24
+          ],
+          "centre_off": 0.5
+        },
+        "block": 21.227,
+        "scale": 21.227,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "roster-gear:909b3e0e50cc",
+        "bright_key": 0,
+        "erased": 0
+      },
+      "status": "qa_passed",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-4\\sheet-gear-roster-4-a2.png",
+        "cell": "everwinter-veil"
+      },
+      "slot": "body"
+    },
+    "gear-snowmute-ring-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-4/cand/a2/gear-snowmute-ring-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-4\\sheet-gear-roster-4-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 56,
+          "short": 55,
+          "mass": 0.667,
+          "box": [
+            4,
+            4,
+            59,
+            60
+          ],
+          "centre_off": 0.5
+        },
+        "block": 7.821,
+        "scale": 7.821,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "roster-gear:909b3e0e50cc",
+        "bright_key": 0,
+        "erased": 0
+      },
+      "status": "qa_passed",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-4\\sheet-gear-roster-4-a2.png",
+        "cell": "snowmute-ring"
+      },
+      "slot": "ring"
+    },
+    "gear-snowmute-ring": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-4/cand/a2/gear-snowmute-ring.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-4\\sheet-gear-roster-4-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 22,
+          "short": 22,
+          "mass": 0.684,
+          "box": [
+            2,
+            2,
+            24,
+            24
+          ],
+          "centre_off": 0.0
+        },
+        "block": 19.909,
+        "scale": 19.909,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "roster-gear:909b3e0e50cc",
+        "bright_key": 0,
+        "erased": 0
+      },
+      "status": "qa_passed",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-4\\sheet-gear-roster-4-a2.png",
+        "cell": "snowmute-ring"
+      },
+      "slot": "ring"
+    },
+    "gear-sealing-spear-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-4/cand/a2/gear-sealing-spear-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-4\\sheet-gear-roster-4-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 56,
+          "short": 54,
+          "mass": 0.297,
+          "box": [
+            4,
+            5,
+            60,
+            59
+          ],
+          "centre_off": 0.0
+        },
+        "block": 8.661,
+        "scale": 8.661,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "roster-gear:909b3e0e50cc",
+        "bright_key": 0,
+        "erased": 0
+      },
+      "status": "qa_passed",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-4\\sheet-gear-roster-4-a2.png",
+        "cell": "sealing-spear"
+      },
+      "slot": "weapon",
+      "weapon_kind": "spear"
+    },
+    "gear-sealing-spear": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-4/cand/a2/gear-sealing-spear.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-4\\sheet-gear-roster-4-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 22,
+          "short": 21,
+          "mass": 0.3,
+          "box": [
+            2,
+            2,
+            24,
+            23
+          ],
+          "centre_off": 0.5
+        },
+        "block": 22.045,
+        "scale": 22.045,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "roster-gear:909b3e0e50cc",
+        "bright_key": 0,
+        "erased": 0
+      },
+      "status": "qa_passed",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-4\\sheet-gear-roster-4-a2.png",
+        "cell": "sealing-spear"
+      },
+      "slot": "weapon",
+      "weapon_kind": "spear"
+    }
+  }
+}
