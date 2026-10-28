@@ -1,0 +1,43 @@
+{
+  "assets": {
+    "enemy-mire-hydra": {
+      "final": "art-factory/starlantern/work/enemy-mire-hydra/cand/a1/enemy-mire-hydra.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-mire-hydra\\enemy-mire-hydra-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 7,
+        "size": [
+          163,
+          157
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "height": 155,
+        "width": 161,
+        "colours": 13611,
+        "lum": [
+          0.059,
+          0.719,
+          0.325
+        ],
+        "erased": 1,
+        "palette_over": true,
+        "spec": "roster-sprite:929ae0136de6"
+      },
+      "status": "qa_passed",
+      "kind": "roster-sprite",
+      "roster_class": "boss",
+      "mainline": false
+    }
+  }
+}

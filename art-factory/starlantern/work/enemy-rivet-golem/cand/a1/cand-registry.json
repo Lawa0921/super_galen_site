@@ -1,0 +1,41 @@
+{
+  "assets": {
+    "enemy-rivet-golem": {
+      "final": "art-factory/starlantern/work/enemy-rivet-golem/cand/a1/enemy-rivet-golem.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-rivet-golem\\enemy-rivet-golem-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          96,
+          76
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "height": 74,
+        "width": 93,
+        "colours": 3540,
+        "lum": [
+          0.005,
+          0.639,
+          0.275
+        ],
+        "erased": 0,
+        "palette_over": true,
+        "spec": "roster-sprite:929ae0136de6"
+      },
+      "status": "qa_passed",
+      "kind": "roster-sprite",
+      "roster_class": "heavy",
+      "mainline": false
+    }
+  }
+}

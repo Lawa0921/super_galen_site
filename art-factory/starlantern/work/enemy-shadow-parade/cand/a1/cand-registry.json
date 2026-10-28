@@ -1,0 +1,41 @@
+{
+  "assets": {
+    "enemy-shadow-parade": {
+      "final": "art-factory/starlantern/work/enemy-shadow-parade/cand/a1/enemy-shadow-parade.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-shadow-parade\\enemy-shadow-parade-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 7,
+        "size": [
+          161,
+          154
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "height": 152,
+        "width": 159,
+        "colours": 7912,
+        "lum": [
+          0.029,
+          0.538,
+          0.162
+        ],
+        "erased": 0,
+        "palette_over": true,
+        "spec": "roster-sprite:929ae0136de6"
+      },
+      "status": "qa_passed",
+      "kind": "roster-sprite",
+      "roster_class": "boss",
+      "mainline": false
+    }
+  }
+}

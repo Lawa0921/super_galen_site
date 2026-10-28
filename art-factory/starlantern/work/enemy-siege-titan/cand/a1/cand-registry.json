@@ -1,0 +1,41 @@
+{
+  "assets": {
+    "enemy-siege-titan": {
+      "final": "art-factory/starlantern/work/enemy-siege-titan/cand/a1/enemy-siege-titan.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-siege-titan\\enemy-siege-titan-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 7,
+        "size": [
+          153,
+          151
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "height": 149,
+        "width": 151,
+        "colours": 11642,
+        "lum": [
+          0.076,
+          0.544,
+          0.314
+        ],
+        "erased": 0,
+        "palette_over": true,
+        "spec": "roster-sprite:929ae0136de6"
+      },
+      "status": "qa_passed",
+      "kind": "roster-sprite",
+      "roster_class": "boss",
+      "mainline": false
+    }
+  }
+}

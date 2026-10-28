@@ -1,0 +1,43 @@
+{
+  "assets": {
+    "enemy-grey-elder": {
+      "final": "art-factory/starlantern/work/enemy-grey-elder/cand/a2/enemy-grey-elder.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-grey-elder\\enemy-grey-elder-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 9,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 11,
+        "size": [
+          103,
+          99
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "height": 97,
+        "width": 101,
+        "colours": 5941,
+        "lum": [
+          0.056,
+          0.766,
+          0.416
+        ],
+        "erased": 3,
+        "palette_over": true,
+        "spec": "roster-sprite:929ae0136de6"
+      },
+      "status": "qa_passed",
+      "kind": "roster-sprite",
+      "roster_class": "warden",
+      "mainline": false
+    }
+  }
+}
