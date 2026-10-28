@@ -60,8 +60,8 @@ describe('roster switches (roster plan Task A1, spec §11.1)', () => {
     expect(artEnemy('lamp-wight')).toBe(true);           // R1: published in E1 (independent review 2026-10-27)
     expect(artEnemy('old-city-sentinel')).toBe(true);    // R2: published in E2 (independent review 2026-10-27, round 2)
     expect(artEnemy('cinder-imp')).toBe(true);           // R3: published in E3 (independent review 2026-10-28, rounds 1-5)
-    expect(artEnemy('ash-mourner')).toBe(false);         // R3's ash-mourner waits for its deferred material (an L3 prerequisite)
-    expect(artEnemy('bog-mother')).toBe(false);          // R4: not drawn yet
+    expect(artEnemy('ash-mourner')).toBe(true);          // R3's ash-mourner, published in E4 with its chrysanthemum (Task E3c)
+    expect(artEnemy('bog-mother')).toBe(true);           // R4: published in E4 (independent review 2026-10-28/29, rounds 1-2)
     expect(listedEnemy('no-such-foe')).toBe(false);
   });
 });
@@ -411,8 +411,8 @@ describe('roster materials and own uniques (roster plan Task A3, spec §7)', () 
     expect(artMaterial('wight-wick') && artSpecial('silent-chime')).toBe(true);      // R1's, published in E1
     expect(artMaterial('marble-shard') && artSpecial('archon-crown')).toBe(true);    // R2's, published in E2
     expect(artMaterial('cinder-dust') && artSpecial('burning-crown-ring')).toBe(true);    // R3's, published in E3
-    expect(artMaterial('ash-chrysanthemum')).toBe(false);                                 // R3's deferred material, waiting
-    expect(artMaterial('bog-peat') || artSpecial('hydra-fang')).toBe(false);              // R4's, waiting
+    expect(artMaterial('ash-chrysanthemum')).toBe(true);                                  // R3's deferred material, published in E4
+    expect(artMaterial('bog-peat') && artSpecial('hydra-fang')).toBe(true);               // R4's, published in E4
   });
 });
 

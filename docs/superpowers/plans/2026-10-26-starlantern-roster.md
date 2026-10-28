@@ -837,6 +837,7 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 # PR E4：美術第四批（R4）
 
 ### Task E4a、E4b
+- 實際（2026-10-29）：R4 獨立審核 2 輪（第 1 輪 72／78 通過；第 2 輪 8／8 通過：5 件重畫、弔菊、`lizard-scale` 修復），`approve --batch r4` 引用兩份紀錄；弔菊以 `approve --batch r3 --deferred` 核准。發布 ＋80（R4 78 件、R3 延後的弔菊與 `ash-mourner` 立繪），`allArtUrls` 919 → 999，`ROSTER_ART` 100 個 id 全齊；5d 的 `icon-lizard-scale` 同時換成修過的版本（網址不變）。
 - [ ] 照 E3：27 隻、`sheet-icons-roster-6`、`-7`（27）、`sheet-gear-roster-6`、`-7`（12）；發布 ＋78（預期總數 999）。commit：`feat(art): roster R4, the mire, the shade and the iron`。
 
 # PR L4：上線四與收尾
@@ -877,3 +878,4 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 
 ### Task F8：已發布 5d 圖示的 key 殘留（E4 之後的小 PR，與 F1 一起）
 - [ ] R4 審核（2026-10-28）在已發布的 5d `icon-lizard-scale` 外緣找到一排 key 像素，E4 以 `repair-outliers --rule key-hue` 修好並隨 R4 發布。同一次唯讀掃描（`sl_art.key_hue_pixels`、`pink_outliers`，529 件已發布的名冊與圖示）另有 16 件 5d 圖示也命中：ancient-gear、antidote、bat-wing、crystal-shell、dusk-cloth、ether、ice-crystal、moss、old-coin、phoenix、potion、return-lamp、star-stone、thorn-fang、trait-poison、trait-shade；名冊的圖一件都沒有。這些是使用者核准過的舊圖，有些命中可能是真的紫色美術（phoenix、trait 晶片）。做法：全新脈絡的審核者逐件放大，標出真正的 key 殘留與刻意的美術；只有真的殘留才用同一個確定性修復（`repair-outliers --rule key-hue`，只動那些像素、alpha 不變、登錄表記前後），再一輪獨立審核後發布。F1（`enemy/bat.png` 的洋紅邊）一起做（控制者 2026-10-28 裁定）。
+- [ ] R4 第 2 輪審核（2026-10-29）附帶的三點，同一個後續一起看（都不擋 E4，遊戲大小看不出來）：(1) `icon-lizard-scale` 的修復後外緣留下一塊 6×2 的近黑墊（原本格線旁的像素），要清掉得改 alpha，是另一條規則；(2) `icon-crab-plate` 有一個偏玫瑰色的刺尖 (25,4)=(131,71,85)；(3) `gear-faceless-mask` 的 26 px 小圖是最弱的一張，之後若重畫：綁帶顏色淡一點、鼻梁凸起大一點。
