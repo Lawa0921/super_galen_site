@@ -337,6 +337,11 @@ export interface ItemInstance {
   special?: string; enhance: number; locked?: number; junk?: boolean;
   /** Plan 5g: a legendary-tier drop with every affix at its maximum and one more (engine/loot/drops.ts applyStarlit). */
   starlit?: true;
+  /**
+   * Roster plan ruling 16 (spec §7.2): the ordinary roster species whose inscription this piece carries (its id); named
+   * 「・〇〇銘」 after it. Never on a special piece.
+   */
+  inscription?: string;
 }
 /** Roster plan ruling 12: `trophy`, a boss's or warden's spoil; `keepsake`, the warden of a companion's story drops it. */
 export type MaterialKind = 'essence' | 'monster' | 'region' | 'rare' | 'junk' | 'trophy' | 'keepsake';

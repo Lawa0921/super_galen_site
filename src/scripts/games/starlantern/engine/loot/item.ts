@@ -1,6 +1,7 @@
 import { AFFIXES, AFFIX_COUNT, GEAR_SLOTS, IMPLICIT_PER_ILVL, ROLL_FLOOR, SLOT_WEIGHT, SPECIALS, affixRange } from '../../data/gear';
 import { EQUIPMENT } from '../../data/equipment';
 import { ENHANCE_STEP } from '../../data/forge';
+import { INSCRIPTION_NAME } from '../../data/bestiary.zh-TW';
 import { MAX_ILVL, depthLevel } from '../levels';
 import type { TierDef } from '../../data/difficulty';
 import { pick, randInt, type Rng } from '../rng';
@@ -106,7 +107,11 @@ export function itemStats(it: ItemInstance): Partial<Sheet> {
   return out;
 }
 
-export const itemName = (it: ItemInstance): string => (it.special ? SPECIALS[it.special].name : EQUIPMENT[it.base].name);
+/** A special's own name, else its base's; an inscribed piece adds 「・〇〇銘」 (roster plan ruling 16). */
+export const itemName = (it: ItemInstance): string => {
+  const name = it.special ? SPECIALS[it.special].name : EQUIPMENT[it.base].name;
+  return it.inscription ? `${name}・${INSCRIPTION_NAME[it.inscription] ?? ''}銘` : name;
+};
 export const itemSlot = (it: ItemInstance): GearSlot => EQUIPMENT[it.base].slot;
 export const itemWeight = (it: ItemInstance): number => SLOT_WEIGHT[itemSlot(it)];
 /** Plan 5g: a starlit piece sells for this many times its rarity's price. */

@@ -7,7 +7,10 @@ import { TOWN_FRAGMENTS } from '../../data/story/fragments';
 import type { SceneId } from '../../data/story/scenes';
 import { STORY } from '../../data/story.zh-TW';
 import { T } from '../../data/text.zh-TW';
-import { handbook, type BondPage, type Handbook, type SceneEntry } from '../../engine/story/handbook';
+import { BEAST_FILTERS, handbook, type BeastFilter, type BondPage, type Handbook, type MonsterPage, type SceneEntry } from '../../engine/story/handbook';
+import { BESTIARY_UI } from '../../data/bestiary.zh-TW';
+import { MATERIALS } from '../../data/materials';
+import { ROSTER_LIVE } from '../../data/monsters';
 import { AFFIXES, AFFIX_IDS } from '../../data/affixes';
 import { TIERS } from '../../data/difficulty';
 import type { Difficulty } from '../../engine/battle';
@@ -15,7 +18,7 @@ import type { GameState } from '../../engine/state';
 import { HELL_BOSS_DEPTH, NIGHTMARE_DEPTH, tierUnlocked } from '../../engine/tiers';
 import type { Lead } from '../../engine/story/leads';
 import type { CharacterId } from '../../engine/types';
-import { art } from '../../render/artPaths';
+import { art, enemyArt } from '../../render/artPaths';
 import { artIdOf } from '../../ui/art';
 import { el, itemName } from '../../ui/dom';
 import type { UiAction } from '../input';
@@ -44,7 +47,11 @@ const LIST_ROWS = 10;
 /** The standee on the left: whose, and whether the person is still a silhouette. */
 interface Shown { id: CharacterId; met: boolean }
 /** One list on a page: its rows, what a pick does, and the detail beside the cursor. */
-interface Level { key: string; /** No detail column at all: the list takes the whole width. */ solo?: boolean; rows: MenuItem[]; pick(id: string): void; detail(id: string | undefined): Node[]; shown(id: string | undefined): Shown | null }
+interface Level {
+  key: string; /** No detail column at all: the list takes the whole width. */ solo?: boolean; rows: MenuItem[]; pick(id: string): void; detail(id: string | undefined): Node[]; shown(id: string | undefined): Shown | null;
+  /** Roster plan Task C6: the foe whose picture stands on the left in place of a standee (a kind seen in the bestiary). */
+  foe?(id: string | undefined): string | null;
+}
 
 const paras = (lines: string[]) => lines.map((text) => el('p', { text }));
 /** Bond plan Task 14 (spec §4.8): her tier and points, each source against its cap (已滿 once full), and what she was offered. */
@@ -67,6 +74,8 @@ export class HandbookScene implements Scene {
   private tab = 0;
   /** The character whose second list is open (a piece list, or a person's scenes); null on a tab's first list. */
   private sub: CharacterId | null = null;
+  /** Roster plan Task C6: the bestiary filter open on the 圖鑑 page (its second list); null on the page's first list. */
+  private beasts: BeastFilter | null = null;
   private cursors = new Map<string, number>();
   private view: MenuView | null = null;
   private level!: Level;
@@ -122,6 +131,7 @@ export class HandbookScene implements Scene {
     const n = tabsFor(this.ctx.game.state).length;
     this.tab = (this.tab + d + n) % n;
     this.sub = null;
+    this.beasts = null;
     this.ctx.sfx.cursor();
     this.render();
   }
@@ -129,6 +139,7 @@ export class HandbookScene implements Scene {
   private back(): void {
     this.ctx.sfx.cancel();
     if (this.sub) { this.sub = null; this.render(); return; }
+    if (this.beasts) { this.beasts = null; this.render(); return; }
     this.ctx.go(this.dungeon() ? 'dungeon' : (this.ctx.from ?? 'town'));
   }
 
@@ -219,24 +230,76 @@ export class HandbookScene implements Scene {
     };
   }
 
+  /**
+   * 圖鑑: the specials and sets found, then the bestiary's filters (roster plan Task C6, spec §10): 本道, 各地區 and
+   * 頭目與守關者, each a row (only those that list a kind) that opens its own list of foes. While no roster foe is live
+   * the page is the page it was (spec §0 item 20): the old kinds by name, each with its known weakness.
+   */
   private codex(h: Handbook): Level {
     const c = h.codex;
+    const bestiaryOn = ROSTER_LIVE.size > 0;
+    if (this.beasts && bestiaryOn) return this.bestiary(c.monsters.filter((m) => m.filter === this.beasts), this.beasts);
     const have = (set: string) => SETS[set].pieces.filter((id) => this.ctx.game.state.codex.includes(id));
-    const weak = (id: string) => c.monsters.find((m) => m.id === id)!.weak;
+    const B = BESTIARY_UI;
+    const of = (f: BeastFilter) => c.monsters.filter((m) => m.filter === f);
+    const filters = BEAST_FILTERS.filter((f) => of(f).length);
+    const revealed = this.ctx.game.state.revealed;
     const weakText = (w: string[] | null) => (w ? (w.length ? H.codex.weak(w.map((e) => T.element[e as keyof typeof T.element]).join('、')) : H.codex.none) : H.codex.weakUnknown);
     const rows: MenuItem[] = [
       ...c.specials.map((id): MenuItem => ({ id, label: codexName(id), cls: `slx-rarity-${SPECIALS[id].rarity}`, right: H.codex.rarity[SPECIALS[id].rarity] })),
       ...c.sets.map((id): MenuItem => ({ id, label: codexName(id), cls: 'slx-rarity-set', right: H.codex.setPieces(have(id).length, SETS[id].pieces.length) })),
-      ...c.monsters.map((m): MenuItem => ({ id: m.id, label: m.name })),
+      ...(bestiaryOn
+        ? filters.map((f): MenuItem => ({ id: `beasts:${f}`, label: B.filters[f], right: B.count(of(f).filter((m) => m.seen).length, of(f).length) }))
+        : c.monsters.map((m): MenuItem => ({ id: m.id, label: ENEMIES[m.id].name }))),
     ];
     return {
-      key: 'codex', rows, pick: () => this.ctx.sfx.error(), shown: () => null,
+      key: 'codex', rows, shown: () => null,
+      pick: (id) => { if (id.startsWith('beasts:')) { this.beasts = id.slice(7) as BeastFilter; this.render(); } else this.ctx.sfx.error(); },
       detail: (id) => {
         if (!id) return [];
+        if (id.startsWith('beasts:')) {
+          const list = of(id.slice(7) as BeastFilter);
+          return [el('h4', { text: B.filters[id.slice(7) as BeastFilter] }), el('p', { class: 'slx-dim', text: B.count(list.filter((m) => m.seen).length, list.length) })];
+        }
         if (id in SPECIALS) return [el('h4', { text: codexName(id) }), el('p', { text: SPECIALS[id].lore })];
         if (id in SETS) return [el('h4', { text: codexName(id) }), ...paras(have(id).map(codexName))];
-        return [el('h4', { text: ENEMIES[id].name }), el('p', { text: weakText(weak(id) as string[] | null) })];
+        if (!bestiaryOn && id in ENEMIES) return [el('h4', { text: ENEMIES[id].name }), el('p', { text: weakText(revealed[id] ? [...revealed[id]] : null) })];
+        return [];
       },
+    };
+  }
+
+  /** One bestiary filter's foes: a kind not met is 「？？？」 and where it is met; one met shows what the bestiary knows. */
+  private bestiary(list: MonsterPage[], f: BeastFilter): Level {
+    const B = BESTIARY_UI;
+    const of = (id: string | undefined) => list.find((m) => m.id === id);
+    const weakText = (w: MonsterPage['weak']) => (w === 'prism' ? B.prism : w ? (w.length ? H.codex.weak(w.map((e) => T.element[e]).join('、')) : H.codex.none) : H.codex.weakUnknown);
+    const detail = (m: MonsterPage | undefined): Node[] => {
+      if (!m) return [];
+      if (!m.seen) return [el('h4', { text: B.unknown }), el('p', { class: 'slx-dim', text: B.where(m.haunts) })];
+      const known = m.felled
+        ? [
+          ...paras(m.lines),
+          ...(m.mats.length ? [el('p', { class: 'slx-dim', text: B.mats(m.mats.map((id) => MATERIALS[id]?.name ?? id).join('、')) })] : []),
+          ...(m.inscription ? [el('p', { class: 'slx-dim', text: B.inscription(T.gear.statName[m.inscription], !!m.inscribed) })] : []),
+        ]
+        : [el('p', { class: 'slx-dim', text: B.later })];
+      return [
+        el('h4', { text: m.name }),
+        el('p', { class: 'slx-dim', text: B.where(m.haunts) }),
+        el('p', { text: weakText(m.weak) }),
+        el('p', { class: 'slx-dim', text: B.tally(m.seen, m.felled) }),
+        ...(m.trait ? [el('p', { text: m.trait })] : []),
+        ...known,
+        ...(m.own ? [el('p', { class: 'slx-dim', text: B.own(codexName(m.own.id), m.own.got) })] : []),
+      ];
+    };
+    return {
+      key: `codex/${f}`,
+      rows: list.map((m): MenuItem => ({ id: m.id, label: m.name, ...(m.felled ? { right: B.felledRow(m.felled) } : m.seen ? { right: B.seenRow } : {}) })),
+      pick: () => this.ctx.sfx.error(), shown: () => null,
+      detail: (id) => detail(of(id)),
+      foe: (id) => { const m = of(id); return m && m.seen ? m.id : null; },
     };
   }
 
@@ -291,7 +354,7 @@ export class HandbookScene implements Scene {
     this.bodyEl.classList.toggle('slx-hb-solo', !!this.level.solo);
     this.tabsEl.replaceChildren(...tabs.map((t, i) => {
       const b = el('span', { class: i === this.tab ? 'slx-tab slx-tab-sel' : 'slx-tab', text: H.tabs[t], attrs: { role: 'tab', 'aria-selected': String(i === this.tab) } });
-      b.addEventListener('click', () => { if (this.playing) return; this.tab = i; this.sub = null; this.ctx.sfx.cursor(); this.render(); });
+      b.addEventListener('click', () => { if (this.playing) return; this.tab = i; this.sub = null; this.beasts = null; this.ctx.sfx.cursor(); this.render(); });
       return b;
     }));
     const key = this.level.key;
@@ -308,8 +371,25 @@ export class HandbookScene implements Scene {
   private drawDetail(): void {
     const id = this.view?.menu.current()?.id || undefined;
     this.detailEl.replaceChildren(...this.level.detail(id));
+    const foe = this.level.foe?.(id) ?? null;
+    if (foe) { this.drawFoe(foe); return; }
     const shown = this.level.shown(id);
     this.drawStandee(shown);
+  }
+
+  /**
+   * Roster plan Task C6: a seen foe's own picture on the left, at a whole multiple of its size (twice for any but a boss),
+   * once it has loaded; nothing until then. A foe not seen is never drawn, not even as a silhouette (ruling 18).
+   */
+  private drawFoe(id: string): void {
+    const src = enemyArt(id);
+    const here = this.ctx.art.has(src);
+    awaitArt(this.artEl, 'standee', here ? [] : [src], () => { if (!this.closed) this.drawDetail(); });
+    if (!here) { this.artEl.replaceChildren(); return; }
+    const cur = this.artEl.firstElementChild;
+    if (cur && cur.getAttribute('src') === src && cur.classList.contains('slx-hb-foe')) return;
+    const cls = ENEMIES[id]?.boss ? 'slx-hb-foe' : 'slx-hb-foe slx-hb-foe-x2';
+    this.artEl.replaceChildren(el('img', { class: cls, attrs: { src, alt: ENEMIES[id]?.name ?? '' } }));
   }
 
   /** The standee of whoever the cursor is on; a person not yet met is the same picture as a black silhouette. */

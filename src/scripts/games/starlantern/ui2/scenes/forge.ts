@@ -3,13 +3,15 @@ import { T } from '../../data/text.zh-TW';
 import type { ForgeResult } from '../../engine/forge/cost';
 import type { Cost } from '../../data/forge';
 import { ENHANCE_MAX, FUSE_NEXT, REGION_AFFIX_GROUP } from '../../data/forge';
-import { affixRange } from '../../data/gear';
+import { AFFIXES, affixRange } from '../../data/gear';
+import { ENEMIES } from '../../data/enemies';
+import { ROSTER_LIVE } from '../../data/monsters';
 import { REGIONS, type RegionId } from '../../data/regions';
 import { MATERIALS } from '../../data/materials';
 import { compareDelta } from '../../engine/compare';
-import { enhanceChance, enhanceCost, findItem, fuseCost, fuseSlots, rerollCost, rerollRange, swapPool } from '../../engine/forge/cost';
+import { enhanceChance, enhanceCost, findItem, fuseCost, fuseSlots, inscribeCost, inscriptionAffix, rerollCost, rerollRange, signatureOf, swapPool } from '../../engine/forge/cost';
 import { dismantleYield } from '../../engine/forge/forge';
-import { implicitStats } from '../../engine/loot/item';
+import { implicitStats, itemSlot } from '../../engine/loot/item';
 import { SLOTS } from '../../engine/party';
 import type { GameState } from '../../engine/state';
 import type { AnyStat, GearSlot, ItemInstance, Rarity } from '../../engine/types';
@@ -142,6 +144,18 @@ const precious = (it: ItemInstance): boolean =>
   it.rarity === 'epic' || it.rarity === 'legendary' || it.rarity === 'unique' || it.rarity === 'set' || invested(it);
 /** A single piece asks first from rare up (or when invested in); a plain common or magic piece goes at once. */
 const asksFirst = (it: ItemInstance): boolean => it.rarity !== 'common' && it.rarity !== 'magic' || invested(it);
+
+/** Roster plan Task C4: the live species whose signature the stores hold, in ENEMIES order (none while nothing is live). */
+function inscribable(s: GameState): string[] {
+  return Object.values(ENEMIES)
+    .filter((e) => e.inscribe && ROSTER_LIVE.has(e.id) && (s.inventory[signatureOf(e.id) ?? ''] ?? 0) > 0)
+    .map((e) => e.id);
+}
+/** Whether affix `index` of `it` can take `species`' key: the slot rolls it, and no other affix holds it (engine inscribeAt). */
+function inscribeFits(it: ItemInstance, index: number, species: string): boolean {
+  const key = ENEMIES[species].inscribe!;
+  return AFFIXES[key].slots.includes(itemSlot(it)) && !it.affixes.some((a, i) => i !== index && a.key === key);
+}
 
 /** A detail window's name line: the label, and the wearer when worn (a long row label is cut short, so the detail says it in full). */
 function nameLine(s: GameState, it: ItemInstance): HTMLElement {
@@ -423,12 +437,32 @@ export function rerollPage(h: ForgeHost): void {
             const region = regionOfMaterial(m);
             return row(`mat:${m}`, F.rerollWith(MATERIALS[m]?.name ?? m, region ? T.forge.group[region] : ''));
           })] : []),
+          ...inscribeRows(it),
         ];
       };
+      /**
+       * 銘刻 (roster plan Task C4): one row for each live species whose signature the stores hold, on a piece that is not
+       * special, with its signature's icon; a key the slot cannot take, or one on another affix, is greyed out with why.
+       */
+      const inscribeRows = (it: ItemInstance): MenuItem[] => (it.special ? [] : inscribable(game.state).map((species): MenuItem => {
+        const id = `ins:${species}`;
+        const icon = lateArt(h.ctx.art, art.icon(signatureOf(species)!));
+        const label = F.inscribeWith(ENEMIES[species].name);
+        // One inscription a piece (PR C review L3): only the old inscription's affix takes a new one.
+        const old = inscriptionAffix(it);
+        const why = old >= 0 && old !== index ? F.inscribeOld : inscribeFits(it, index, species) ? null : T.reasons.none;
+        const base: MenuItem = why === null
+          ? { id, label, right: T.ui2.forge.costGold(inscribeCost(it, species)!.gold) }
+          : { id, label, disabled: true, right: why, note: why };
+        return { ...base, ...(icon ? { icon } : {}) };
+      }));
+      const insOf = (id: string | undefined): string | undefined => (id?.startsWith('ins:') ? id.slice(4) : undefined);
       const mview: MenuView = new MenuView(new Menu(methods()), {
         pick: (row) => {
           const it = find(itemUid);
           if (!it) return;
+          const species = insOf(row.id);
+          if (species) { askInscribe(it, species); return; }
           const o = how(row.id);
           const lack = lackingNames(game.state, rerollCost(it, o));
           if (lack.length) { h.ctx.sfx.error(); void h.say(F.lackNames(lack)); return; }
@@ -448,6 +482,19 @@ export function rerollPage(h: ForgeHost): void {
         const it = find(itemUid);
         const cur = mview.menu.current();
         if (!it || !it.affixes[index]) { info.replaceChildren(); return; }
+        const species = insOf(cur?.id);
+        if (species) {
+          // 銘刻: what the affix becomes, its range, the cost, and the lock it takes.
+          const key = ENEMIES[species].inscribe!;
+          const [lo, hi] = rerollRange({ ...it, starlit: undefined, affixes: it.affixes.map((a, i) => (i === index ? { key, value: 0 } : a)) }, index)!;
+          info.replaceChildren(...[
+            itemLine(it), el('p', { text: F.rerollNow(affixText(it.affixes[index])) }),
+            el('p', { text: F.inscribeTo(T.gear.statName[key], ENEMIES[species].name) }), el('p', { text: F.rerollRange(key, lo, hi) }),
+            el('p', {}, richNodes(costText(game.state, inscribeCost(it, species)!))),
+            ...(it.locked === undefined ? [el('p', { class: 'slx-desc', text: F.lockWarn })] : []),
+          ]);
+          return;
+        }
         const o = how(cur?.id ?? 'value');
         const lines = [itemLine(it), el('p', { text: F.rerollNow(affixText(it.affixes[index])) })];
         if (o.swap) lines.push(el('p', { text: F.rerollPool(swapPool(it, index, o.mat).map((k) => T.gear.statName[k]).join('、')) }));
@@ -460,6 +507,23 @@ export function rerollPage(h: ForgeHost): void {
       });
       show();
       h.push({ el: win('slx-list slx-forge-list slx-reroll-list', [mview.el]), onAction: (a) => mview.onAction(a) });
+
+      /** 銘刻: refused with what is short, else asked first (否 under the cursor), with the lock warning on a first reroll. */
+      const askInscribe = (it: ItemInstance, species: string) => {
+        const lack = lackingNames(game.state, inscribeCost(it, species)!);
+        if (lack.length) { h.ctx.sfx.error(); void h.say(F.lackNames(lack)); return; }
+        const ask = fill2(F.askInscribe, [gearPart(it)], [affixText(it.affixes[index])]);
+        const box = confirmBox(it.locked === undefined ? [...ask, `\n${F.lockWarn}`] : ask, (yes) => {
+          h.pop(!yes);
+          if (!yes) return;
+          const r = game.inscribe(itemUid, index, species);
+          if (r.ok) { shows.pop(); h.pop(true); refresh(); show(); }
+          h.afterAct(r, (out) => fill2(F.inscribed, [affixText(out.before)], [affixText(out.after)]));
+        });
+        box.view.menu.setCursor(1);
+        box.view.render();
+        h.push({ el: box.el, onAction: (a) => box.view.onAction(a) });
+      };
 
       const run = (o: { swap: boolean; mat?: string }) => {
         const r = game.reroll(itemUid, index, o);

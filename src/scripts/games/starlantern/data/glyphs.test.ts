@@ -74,6 +74,8 @@ describe('glyphs (legibility Task 1)', () => {
     const texts = sources();
     expect(texts.length).toBeGreaterThan(50);
     expect(texts.map((t) => t.file)).toContain('pages/games/starlantern.astro');
+    // Roster plan Task C5: the bestiary's words are read too.
+    expect(texts.map((t) => t.file)).toContain('data/bestiary.zh-TW.ts');
     const missing = texts.flatMap(({ file, text }) =>
       charsOf(file, text).filter(({ ch }) => !cmap.has(ch.codePointAt(0)!)).map(({ ch, line }) => `${ch} ${hex(ch)} ${file}:${line}`));
     expect(missing).toEqual([]);

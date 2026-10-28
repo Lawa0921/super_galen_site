@@ -1,8 +1,9 @@
 import { CHARACTER_IDS, titleOf } from '../../data/characters';
 import { ENEMIES } from '../../data/enemies';
-import { listedEnemy } from '../../data/monsters';
+import { BOSS_PARTS, LEGACY_ENEMY_IDS, MAINLINE_BOSSES, MAINLINE_WARDENS, REGION_BOSSES, REGION_WARDENS, listedEnemy } from '../../data/monsters';
+import { BESTIARY, BESTIARY_UI } from '../../data/bestiary.zh-TW';
 import { SETS, SPECIALS } from '../../data/gear';
-import { REGIONS } from '../../data/regions';
+import { REGIONS, type RegionId } from '../../data/regions';
 import { CHAINS, chainLength } from '../../data/story/chains';
 import { TOWN_FRAGMENTS, type TownFragmentId } from '../../data/story/fragments';
 import { BANTER_COUNT, BANTER_PAIRS, CHAT_COUNT, HOME_OWNERS, SEASON_SCENES, banterScene, bondScene, groupScene, homeScene, memScene, type HomeOwner, type SceneId, type Stage, STAGES } from '../../data/story/scenes';
@@ -10,10 +11,10 @@ import { STORY } from '../../data/story.zh-TW';
 import { T } from '../../data/text.zh-TW';
 import { memoriesOf } from '../progression';
 import type { GameState } from '../state';
-import type { CharacterId, Element } from '../types';
+import type { AnyStat, CharacterId, Element, EnemyDef } from '../types';
 import { MEETINGS } from '../../data/meetings';
 import { followedLeads, nextLead, type Lead } from './leads';
-import { storyPieces } from './events';
+import { gateOpen, storyPieces } from './events';
 import { bondOf, bondPoints, bondTier, giftPoints, knownTaste } from './bond';
 import { BOND_CAP, BOND_PER_PIECE, GIFTABLE, type BondTier, type Companion, type Taste } from '../../data/story/bond';
 import type { GiftId } from '../types';
@@ -35,7 +36,21 @@ export interface BondPage {
 }
 export interface PersonPage { id: CharacterId; met: boolean; title: string; segments: string[]; scenes: SceneEntry[]; bond?: BondPage }
 export interface TownPage { id: TownFragmentId; status: 'unknown' | 'held' | 'returned'; lines: string[]; scene: SceneEntry | null }
-export interface CodexPage { specials: string[]; sets: string[]; monsters: { id: string; name: string; weak: Element[] | null }[] }
+/** Roster plan Task C6: the bestiary's three filters (spec §10). */
+export type BeastFilter = 'road' | 'lands' | 'bosses';
+export const BEAST_FILTERS: readonly BeastFilter[] = ['road', 'lands', 'bosses'];
+/**
+ * One kind of foe on the bestiary page (roster plan Task C6, spec §10, rulings 17-18). Not seen yet: its name is
+ * 「？？？」 and only `haunts` is told (no silhouette). Seen: its name, weakness (`prism`, one that turns), tallies and
+ * `trait`. Felled: its `lines` whose gates are open, its materials and its inscription key. A boss or warden with an own
+ * unique says whether the codex holds it.
+ */
+export interface MonsterPage {
+  id: string; name: string; filter: BeastFilter; seen: number; felled: number; haunts: string;
+  weak: Element[] | 'prism' | null; trait: string | null; lines: string[]; mats: string[]; inscription: AnyStat | null;
+  inscribed?: true; own?: { id: string; got: boolean };
+}
+export interface CodexPage { specials: string[]; sets: string[]; monsters: MonsterPage[] }
 export interface TruthPage { stage: Stage; unlocked: boolean; text: string | null; scenes: SceneEntry[] }
 /** The guild's leads (6c Task 16): the one to follow now, the ones already followed, and whether anyone is left at all. */
 export interface LeadsPage { current: Lead | null; followed: Lead[]; allMet: boolean }
@@ -119,7 +134,7 @@ export function handbook(s: GameState): Handbook {
     // A set piece sits in SPECIALS too, but it is listed under its set, not twice.
     specials: s.codex.filter((id) => Object.hasOwn(SPECIALS, id) && !SPECIALS[id].set),
     sets: s.codex.filter((id) => Object.hasOwn(SETS, id)),
-    monsters: Object.values(ENEMIES).filter((e) => listedEnemy(e.id) && !e.story).map((e) => ({ id: e.id, name: e.name, weak: s.revealed[e.id] ? [...s.revealed[e.id]] : null })),
+    monsters: Object.values(ENEMIES).filter((e) => listedEnemy(e.id) && !e.story).map((e) => monsterPage(s, e)),
   };
   // An act's page opens once its scene has played as well (final review I-2): the depth alone can come a whole stay early,
   // when Rin's reveal plays alone and holds the act for the next return.
@@ -144,6 +159,50 @@ export function handbook(s: GameState): Handbook {
   const followed = followedLeads(s);
   const leads: LeadsPage = { current: nextLead(s), followed, allMet: followed.length === MEETINGS.length };
   return { memories, people, town, codex, truths, leads };
+}
+
+/** Which filter a kind sits under: bosses, wardens and parts; a region's natives; the rest is the main road. */
+const filterOf = (e: EnemyDef): BeastFilter => (e.boss || e.rank ? 'bosses' : e.home ? 'lands' : 'road');
+
+/** The depths of the main road's bands (spec §3.1); F has no floor. */
+const BAND_DEPTHS: Record<NonNullable<EnemyDef['band']>, [number, number?]> = { B: [4, 9], C: [10, 15], D: [16, 24], E: [25, 30], F: [31] };
+
+/** Where a kind is met (spec §10): from the tables that list it (data/monsters.ts). */
+function hauntsOf(e: EnemyDef): string {
+  const U = BESTIARY_UI.haunts;
+  if (LEGACY_ENEMY_IDS.includes(e.id)) return e.boss ? U.bossFloors : U.everywhere;
+  const body = Object.keys(BOSS_PARTS).find((b) => BOSS_PARTS[b].includes(e.id));
+  if (body) return hauntsOf(ENEMIES[body]);
+  const main = MAINLINE_BOSSES.indexOf(e.id);
+  if (main >= 0) return U.depth(U.main, 5 * (main + 1));
+  for (const [r, list] of Object.entries(REGION_BOSSES)) if (list.includes(e.id)) return U.depth(REGIONS[r as RegionId].name, 5 * (list.indexOf(e.id) + 1));
+  const warden = MAINLINE_WARDENS.indexOf(e.id);
+  if (warden >= 0) return U.depth(U.main, 8 + 5 * warden);
+  for (const [r, id] of Object.entries(REGION_WARDENS)) if (id === e.id) return U.from(REGIONS[r as RegionId].name, 8);
+  if (e.boss) return U.finale;   // the lantern-mother: the finale's alone (ruling 11)
+  if (e.home) return REGIONS[e.home].name;
+  if (e.band) { const [lo, hi] = BAND_DEPTHS[e.band]; return U.road(lo, hi); }
+  return U.deep;
+}
+
+/** Roster plan Task C6: one kind's page, from the bestiary and the story (`gateOpen`); nothing is shown before it is met. */
+function monsterPage(s: GameState, e: EnemyDef): MonsterPage {
+  const rec = s.bestiary?.[e.id];
+  const seen = rec?.seen ?? 0, felled = rec?.felled ?? 0;
+  const base = { id: e.id, filter: filterOf(e), seen, felled, haunts: hauntsOf(e) };
+  if (!seen) return { ...base, name: BESTIARY_UI.unknown, weak: null, trait: null, lines: [], mats: [], inscription: null };
+  const text = BESTIARY[e.id];
+  const own = Object.values(SPECIALS).find((sp) => sp.owner === e.id);
+  return {
+    ...base, name: e.name,
+    weak: e.prism ? 'prism' : s.revealed[e.id] ? [...s.revealed[e.id]] : null,
+    trait: text?.trait ?? null,
+    lines: felled && text ? text.lines.filter((l) => gateOpen(s, l.after)).map((l) => l.text) : [],
+    mats: felled ? [...new Set(e.drops.map((d) => d.mat))] : [],
+    inscription: felled ? (e.inscribe ?? null) : null,
+    ...(felled && rec?.inscribed ? { inscribed: true as const } : {}),
+    ...(own ? { own: { id: own.id, got: s.codex.includes(own.id) } } : {}),
+  };
 }
 
 /** Bond plan Task 14: her bond page (spec §4.8): memory 3 a piece held of her chain's, each other source to its cap; a taste once offered. */

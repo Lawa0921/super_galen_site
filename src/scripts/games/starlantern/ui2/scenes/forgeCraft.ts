@@ -1,10 +1,11 @@
 import { BASE_RECIPES, CONSUMABLE_RECIPES, CRAFT_MAGIC_CHANCE, type Cost } from '../../data/forge';
-import { SETS, codexName } from '../../data/gear';
+import { SETS, SPECIALS, codexName } from '../../data/gear';
+import { ENEMIES } from '../../data/enemies';
 import { ITEMS } from '../../data/items';
 import { REGIONS } from '../../data/regions';
 import { T } from '../../data/text.zh-TW';
 import { specialLines } from '../../engine/compare';
-import { baseCost, craftLevel, itemRecipeCost, setCost } from '../../engine/forge/craft';
+import { baseCost, craftLevel, itemRecipeCost, ownCost, ownUniques, ownerFelled, setCost } from '../../engine/forge/craft';
 import { BAG_SIZE } from '../../engine/loot/bag';
 import type { GameState } from '../../engine/state';
 import { priceOf } from '../../engine/town';
@@ -40,7 +41,7 @@ function refusal(s: GameState, c: Cost): string {
 const costLine = (s: GameState, c: Cost) => el('p', {}, richNodes([T.ui2.forge.craftNeed, ...costText(s, c)]));
 
 /**
- * 製作: three categories. 消耗品 shows the shop price beside the craft cost and asks how many (a quantity box capped at
+ * 製作: three categories (four once a roster boss or warden is live: 專屬裝備, roster plan Task C4). 消耗品 shows the shop price beside the craft cost and asks how many (a quantity box capped at
  * what the stores can pay for, and at 99); 底材 is one row per slot and 套裝 is a set, then its pieces. Both of those
  * ask first with 否 under the cursor. A row that cannot be paid for stays readable and says why when picked.
  */
@@ -201,8 +202,53 @@ export function openCraft(h: ForgeHost): void {
     });
   };
 
-  const cats = new MenuView(new Menu((['item', 'base', 'set'] as const).map((id) => ({ id, label: F.craftCats[id] }))), {
-    pick: (it) => (it.id === 'item' ? consumables() : it.id === 'base' ? bases() : sets()),
+  /**
+   * 專屬裝備 (roster plan Task C4): each live boss's or warden's own unique. One whose owner the bestiary has never seen
+   * felled is greyed out and says so; the rest read as any recipe does.
+   */
+  const owns = () => {
+    const info = newInfo();
+    const owner = (id: string) => ENEMIES[SPECIALS[id].owner!].name;
+    layer(info, {
+      shown: GEAR_ROWS,
+      rows: () => ownUniques().map((id): MenuItem => {
+        const gear = gearIcon(id);
+        if (!ownerFelled(game.state, id)) {
+          const why = F.unbeaten(owner(id));
+          return { id, label: codexName(id), cls: 'slx-rarity-unique', disabled: true, right: why, note: why, ...gear };
+        }
+        return { ...recipeRow(game.state, { id, label: codexName(id), cost: ownCost(game.state, id)!, cls: 'slx-rarity-unique' }), ...gear };
+      }),
+      detail: (id) => [
+        el('p', { class: 'slx-name-line slx-rarity-unique', text: codexName(id) }),
+        el('p', { class: 'slx-dim', text: F.ownOf(owner(id)) }),
+        ...specialLines(id).map((l) => el('p', { class: l.kind === 'lore' ? 'slx-desc' : '', text: l.text })),
+        ...(ownerFelled(game.state, id) ? [] : [el('p', { class: 'slx-desc', text: F.unbeaten(owner(id)) })]),
+        el('p', { class: 'slx-desc', text: F.craftBagRoom(Math.max(0, BAG_SIZE - game.state.bag.length)) }),
+        costLine(game.state, ownCost(game.state, id)!),
+      ],
+      pick: (it, refresh) => {
+        const cost = ownCost(game.state, it.id)!;
+        if (!ready(cost, true)) return;
+        ask([
+          ...fillRich(F.askCraftSet, [{ text: codexName(it.id), cls: 'slx-rarity-unique' }]),
+          `\n${F.craftNeed}`,
+          ...costText(game.state, cost),
+        ], () => {
+          const r = game.craftOwnUnique(it.id);
+          if (r.ok) refresh();
+          h.afterAct(r, (out) => fillRich(F.crafted, [gearPart(out.item)]));
+          if (r.ok) h.ctx.sfx.loot?.(r.out.item.rarity);
+        });
+      },
+      back: () => info.remove(),
+    });
+  };
+
+  // The own uniques' category is there only while some owner is live (nothing changes before the roster goes live).
+  const catIds = ownUniques().length ? (['item', 'base', 'set', 'own'] as const) : (['item', 'base', 'set'] as const);
+  const cats = new MenuView(new Menu(catIds.map((id) => ({ id, label: F.craftCats[id] }))), {
+    pick: (it) => (it.id === 'item' ? consumables() : it.id === 'base' ? bases() : it.id === 'own' ? owns() : sets()),
     moved: () => h.ctx.sfx.cursor(),
     cancel: () => h.pop(),
   }, 12);

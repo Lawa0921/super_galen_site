@@ -1538,3 +1538,65 @@ describe('bond scenes and the story they need (bond review fix)', () => {
     expect(status(g)).toBe('corrupt');
   });
 });
+
+describe('an inscription in the save (roster plan Task C1)', () => {
+  const inscribed = <T,>(uid: number, inscription: T) => ({ ...plainItem('iron-sword', uid), rarity: 'magic' as const, affixes: [{ key: 'sleepRes' as const, value: 6 }], inscription });
+  it('the save keeps an inscription and refuses an unknown one', () => {
+    const st = memoryStorage();
+    const g = newGame();
+    g.bag = [inscribed(1, 'paper-moth')];
+    g.nextUid = 2;
+    expect(saveGame(st, g)).toBe(true);
+    const r = loadGame(st);
+    expect(r).toEqual({ status: 'ok', state: g });
+    expect(r.status === 'ok' && r.state.bag[0].inscription).toBe('paper-moth');
+    // Only an ordinary species' id: not an unknown one, not a boss, not a legacy foe (they have no inscription), not a special piece.
+    const cases: [string, Record<string, unknown>][] = [
+      ['unknown id', inscribed(1, 'no-such-moth')],
+      ['a boss', inscribed(1, 'fog-warden')],
+      ['a legacy foe', inscribed(1, 'slime')],
+      ['not a string', inscribed(1, 3)],
+      ['on a special piece', { ...plainItem('thorn-spear', 1), rarity: 'legendary', ilvl: 20, special: 'lg-chizuru', affixes: [{ key: 'atk', value: 11 }], inscription: 'paper-moth' }],
+    ];
+    for (const [name, item] of cases) {
+      const raw = JSON.parse(JSON.stringify({ ...newGame(), nextUid: 2 }));
+      raw.bag = [item];
+      expect(loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(raw) })).status, name).toBe('corrupt');
+    }
+  });
+});
+
+describe('the bestiary in the save (roster plan Task C3)', () => {
+  const raw = (bestiary: unknown) => JSON.stringify({ ...JSON.parse(JSON.stringify(newGame())), bestiary });
+  it('the save version stays 9', () => expect(SAVE_VERSION).toBe(9));
+  it('a bestiary round-trips', () => {
+    const st = memoryStorage();
+    const g = newGame();
+    g.bestiary = { slime: { seen: 3, felled: 2 }, 'paper-moth': { seen: 1, felled: 1, inscribed: true }, 'fog-warden': { seen: 1, felled: 0 } };
+    expect(saveGame(st, g)).toBe(true);
+    expect(loadGame(st)).toEqual({ status: 'ok', state: g });
+    // A save without one loads without one.
+    const plain = newGame();
+    expect(saveGame(st, plain)).toBe(true);
+    const r = loadGame(st);
+    expect(r.status === 'ok' && r.state.bestiary).toBeUndefined();
+  });
+  it('an unknown id is dropped on load, the save is not corrupt', () => {
+    const r = loadGame(memoryStorage({ [SAVE_KEY]: raw({ slime: { seen: 1, felled: 1 }, 'no-such-foe': { seen: 4, felled: 4 } }) }));
+    expect(r.status).toBe('ok');
+    expect(r.status === 'ok' && r.state.bestiary).toEqual({ slime: { seen: 1, felled: 1 } });
+  });
+  it('a negative or broken count is corrupt', () => {
+    const cases: [string, unknown][] = [
+      ['not an object', []],
+      ['a negative count', { slime: { seen: -1, felled: 0 } }],
+      ['a fraction', { slime: { seen: 1.5, felled: 0 } }],
+      ['a missing count', { slime: { seen: 1 } }],
+      ['a string count', { slime: { seen: '1', felled: 0 } }],
+      ['an entry that is not an object', { slime: 3 }],
+      ['inscribed false', { slime: { seen: 1, felled: 0, inscribed: false } }],
+      ['a huge count', { slime: { seen: 1e12, felled: 0 } }],
+    ];
+    for (const [name, b] of cases) expect(loadGame(memoryStorage({ [SAVE_KEY]: raw(b) })).status, name).toBe('corrupt');
+  });
+});
