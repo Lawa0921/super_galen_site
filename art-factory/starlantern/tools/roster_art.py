@@ -1091,7 +1091,9 @@ def do_publish(reg, rnd, public=None):
     if not rec: raise PermissionError(f'round {rnd} has no current approval; build its review page and approve it first')
     shown = rec.get('shown') if isinstance(rec.get('shown'), dict) else {}
     deferred = rec.get('deferred') or {}   # recorded at approval: no runtime file, no manifest url, no count, owner not in ROSTER_ART
-    aids = [a for a in batch_assets(rnd) if a not in deferred]; problems = {}; todo = []
+    owners = {d.get('owner') for d in deferred.values()}
+    # the owner's other art waits too: a published url must be a known art url (allArtUrls follows ROSTER_ART)
+    aids = [a for a in batch_assets(rnd) if a not in deferred and owner_of(a) not in owners]; problems = {}; todo = []
     for aid in aids:
         e = reg.data['assets'].get(aid, {}); f = A._final_path(e['final']) if e.get('final') else None
         if e.get('status') not in ('approved', 'published'): problems.setdefault(f'status {e.get("status")}', []).append(aid); continue
@@ -1148,12 +1150,13 @@ def do_publish(reg, rnd, public=None):
             own.setdefault('repaired', {})[aid] = {'from': rep['from_sha256'], 'to': rep['to_sha256'], 'with': lab}
     reg._save(); reg.write_manifest(public)
     if not todo: return []
-    if ROUNDS.get(rnd): add_roster_art([e for e in ROUNDS[rnd] if e not in {d.get('owner') for d in deferred.values()}])
+    if ROUNDS.get(rnd): add_roster_art([e for e in ROUNDS[rnd] if e not in owners])
     foes = sum(a.startswith('enemy-') for a in todo); icons = sum(a.startswith('icon-') and a != FORGET_ASSET for a in todo)
     gear = sum(a.startswith('gear-') and not a.endswith('-large') for a in todo)
     who = rec.get('by') or f'independent review {rec.get("date")}'
     note = (f'roster {rnd.upper()} ({who}): {foes} foes, {icons} material icons, {gear} own uniques x 2'
-            + (', the forget chip' if FORGET_ASSET in todo else ''))
+            + (', the forget chip' if FORGET_ASSET in todo else '')
+            + (' (deferred: ' + ', '.join(f"{a} with {d.get('owner')}" for a, d in deferred.items()) + ')' if deferred else ''))
     bump_art_count(len(todo), note); bump_e2e_count(len(todo), note)
     return todo
 

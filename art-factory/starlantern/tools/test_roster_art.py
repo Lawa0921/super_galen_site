@@ -599,6 +599,8 @@ def _real_entry(factory, aid):
     """The real registry entry of a published roster asset, its final copied into the test factory."""
     import copy, shutil
     e = copy.deepcopy(json.loads(REAL_REG.read_text(encoding='utf-8'))['assets'][aid])
+    if (e.get('repair') or {}).get('status') == 'published':   # once R3 published the repair: the entry as it was before
+        last = e['history'][-1]; e.update(final=last['final'], qa=last['qa']); e.pop('repair'); e.pop('history')
     dst = factory / 'work' / 'real' / f'{aid}.png'; dst.parent.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(A._final_path(e['final']), dst); e['final'] = str(dst)
     reg = A.Registry(R.REG_PATH); reg.data['assets'][aid] = e; reg._save()
@@ -756,18 +758,22 @@ def test_defer_refuses_a_live_owner_an_asset_outside_the_round_or_no_reason(fact
     assert not (R.WORK / 'review' / 'roster-r1-defer-icon-wight-wick.md').exists()
 
 
-def test_publish_leaves_a_deferred_asset_and_its_owner_out_of_runtime_manifest_counts_and_roster_art(factory, review, rooted):
+def test_publish_holds_a_deferred_asset_and_its_owners_other_art_out_of_runtime_manifest_counts_and_roster_art(factory, review, rooted):
     public = rooted; rec, why = _defer_setup(factory, review)
     R.do_approve(A.Registry(R.REG_PATH), 'r1', review=str(rec), defer={'icon-wight-wick': str(why)})
     total0 = R.url_totals()
     done = R.do_publish(A.Registry(R.REG_PATH), 'r1', public)
     reg = A.Registry(R.REG_PATH)
-    assert set(done) == set(R.batch_assets('r1')) - {'icon-wight-wick'}
-    assert not (public / 'assets/games/starlantern/icon/wight-wick.png').exists()
-    e = reg.get('icon-wight-wick'); assert e['status'] == 'qa_passed' and 'runtime' not in e
+    held = {a for a in R.batch_assets('r1') if R.owner_of(a) == 'lamp-wight'}
+    assert held == {'icon-wight-wick', 'enemy-lamp-wight'}
+    assert set(done) == set(R.batch_assets('r1')) - held                                # the owner's whole art waits with it
+    for a, f in (('icon-wight-wick', 'icon/wight-wick.png'), ('enemy-lamp-wight', 'enemy/lamp-wight.png')):
+        assert not (public / 'assets/games/starlantern' / f).exists() and 'runtime' not in reg.get(a)
+    assert reg.get('icon-wight-wick')['status'] == 'qa_passed' and reg.get('enemy-lamp-wight')['status'] == 'approved'
     urls = json.loads((public / 'assets/games/starlantern/manifest.json').read_text(encoding='utf-8'))['urls']
-    assert '/assets/games/starlantern/icon/wight-wick.png' not in urls and len(urls) == len(done)
+    assert not [u for u in urls if 'wight-wick' in u or 'lamp-wight' in u] and len(urls) == len(done)
     assert R.url_totals() == (total0[0] + len(done), total0[1] + len(done))
     art = R.roster_art_ids(R.MONSTERS_TS)
     assert 'lamp-wight' not in art and set(art) == set(R.ROUNDS['r1']) - {'lamp-wight'}
-    assert (public / 'assets/games/starlantern/enemy/lamp-wight.png').is_file()         # its other art is out, unused until then
+    t = R.ARTPATHS_TEST.read_bytes().decode('utf-8')
+    assert f'12 foes, 12 material icons, 3 own uniques x 2 (deferred: icon-wight-wick with lamp-wight) = {total0[0] + len(done)}' in t
