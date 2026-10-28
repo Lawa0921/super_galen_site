@@ -287,7 +287,7 @@
 | `star-ember` 星屑火、`stolen-tome` 飛舞的魔法書、`burning-page` 燃燒的那一頁、`starfire-colossus` 星火巨像 | 雷鳴一般、中頭目、頭目 | 雷鳴 4、8、15 | 諾艾兒：偷來的書、燒記憶的那一頁（I-67） | 名字不寫「記憶」；牠吸的是 TP | 那一頁的第二句 `mem:noel:3`（燒的是記憶）；第三句 `mem:noel:4`（老師在保護她）。不寫商人（`mem:noel:5`） | 自足 |
 | `ashen-treant` 枯灰樹人、`grey-elder` 灰化的老樹、`grey-blight` 灰枯 | 腐毒一般、中頭目、頭目 | 腐毒 4、8、10 | 希爾薇：她守的林子、樹皮上的箭頭、灰化（I-66） | 「樹人」「老樹」中性 | 樹人第二句 `mem:sylvie:1`（沼澤是她的林子）；老樹第二句 `mem:sylvie:5`（最後一顆種子）；灰枯第二句 `mem:sylvie:2`（霧是射不死的） | 自足 |
 | `vault-mimic` 餓肚子的寶庫、`locked-vault` 鎖著的金庫 | 暗影一般、中頭目 | 暗影 4、8 | 莉茲：上鎖的寶庫、餓著肚子（§6 相遇） | 相遇已經演出 | 第二句 `mem:liz:3`（還債）。**永遠不寫道具店、露米亞、歐里克**（ledger §3 莉茲列） | 自足 |
-| `debt-collector` 討債的影子 | 暗影一般 | 暗影 10 | 莉茲：家裡的債 | 中性 | 第二句 `mem:liz:2`。同上 | 自足 |
+| `debt-collector` 敲門的影子（§0 第 11 條改名） | 暗影一般 | 暗影 10 | 莉茲：家裡的債 | 中性 | 第二句 `mem:liz:2`。同上 | 自足 |
 | `fallen-knight` 要塞的騎士殘影、`banner-bearer` 紅旗旗手、`gate-breaker` 撞門的巨影、`last-commander` 最後的指揮官 | 鋼鐵一般、中頭目、頭目 | 鋼鐵 4、8、15 | 絲嘉蕾：被吞下的要塞、紅旗、被撞的城門（I-77、I-78） | 相遇（鋼鐵 8）就是守城門；名字不寫公主、撤退 | 騎士第二句 `mem:scarlet:2`（要塞是她的國家）；撞門第二句 `mem:scarlet:3`；指揮官第二句 `mem:scarlet:5`。**任何地方都不寫「撤退」「號角是撤退的」**，直到 `mem:scarlet:5` | 自足 |
 
 - 總計：故事怪物 **42 種**（一般 20、守關者 11、頭目 11），其餘 58 個定義是世界觀的迴響與部件。
@@ -384,7 +384,7 @@
 | | `veil-stalker` | 帷幕潛行者 | 標準 | 「背刺」打後排、必暴（D） | `black-veil` 黑紗 | — | `critDmg` |
 | | `hush-acolyte` | 靜默侍者（故事） | 術 | cross 遺忘（M9） | `hush-bell` 無聲小鈴 | — | `tpCost` |
 | | `vault-mimic` | 餓肚子的寶庫（故事） | 重 | 偽裝＋偷金幣（M14、M13） | `vault-lock` 寶庫的鎖 | `old-coin` 20% | `goldFind` |
-| | `debt-collector` | 討債的影子（故事） | 標準 | 宣告標記＋偷金幣（M24、M13） | `iou-slip` 泛黃的借條 | — | `vuln` |
+| | `debt-collector` | 敲門的影子（故事；§0 第 11 條改名） | 標準 | 宣告標記＋偷金幣（M24、M13） | `iou-slip` 泛黃的借條 | — | `vuln` |
 | 鋼鐵 | `rivet-golem` | 鉚釘機兵 | 重 | 守護（M2） | `rivet` 鉚釘 | `ancient-gear` 2% | `armor` |
 | | `siege-crab` | 攻城蟹 | 重 | 蓄力「破城鉗」row 170（M1） | `crab-plate` 蟹甲 | — | `meleeDR` |
 | | `herald-engine` | 號令機 | 輔 | 同伴 atk +25%、def +20%（D） | `herald-horn` 號令喇叭 | — | `gauge` |

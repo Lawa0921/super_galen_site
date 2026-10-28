@@ -874,3 +874,6 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 
 ### Task F4：悲傷結晶的內部光（錦上添花）
 - [ ] R2 第 2 輪獨立審核（2026-10-27）通過 `enemy-sorrow-crystal` a3，但它的「soft inner light」偏弱。之後如果有重畫的機會（使用者要求換圖，或 F2 的取樣調整），在 prompt 裡加強內部微光（淡金或象牙白的硬邊核心，仍維持淡紫、低飽和、不用深紫）。不擋發布，不另開重畫。
+
+### Task F8：已發布 5d 圖示的 key 殘留（E4 之後的小 PR，與 F1 一起）
+- [ ] R4 審核（2026-10-28）在已發布的 5d `icon-lizard-scale` 外緣找到一排 key 像素，E4 以 `repair-outliers --rule key-hue` 修好並隨 R4 發布。同一次唯讀掃描（`sl_art.key_hue_pixels`、`pink_outliers`，529 件已發布的名冊與圖示）另有 16 件 5d 圖示也命中：ancient-gear、antidote、bat-wing、crystal-shell、dusk-cloth、ether、ice-crystal、moss、old-coin、phoenix、potion、return-lamp、star-stone、thorn-fang、trait-poison、trait-shade；名冊的圖一件都沒有。這些是使用者核准過的舊圖，有些命中可能是真的紫色美術（phoenix、trait 晶片）。做法：全新脈絡的審核者逐件放大，標出真正的 key 殘留與刻意的美術；只有真的殘留才用同一個確定性修復（`repair-outliers --rule key-hue`，只動那些像素、alpha 不變、登錄表記前後），再一輪獨立審核後發布。F1（`enemy/bat.png` 的洋紅邊）一起做（控制者 2026-10-28 裁定）。
