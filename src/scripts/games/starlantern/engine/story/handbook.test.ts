@@ -14,7 +14,7 @@ import { meet } from '../party';
 import { newGame, type GameState } from '../state';
 import type { CharacterId } from '../types';
 import { handbook } from './handbook';
-import { WAVE_1_LIVE, withRosterLive, withRosterOnly, withTold } from '../testing';
+import { WAVE_1_LIVE, WAVE_2_LIVE, withRosterLive, withRosterOnly, withTold } from '../testing';
 import { arrivalScenes, onReturn, sceneDone } from './events';
 /**
  * Bond plan Task 17: the registries hold what is written now, so a test that registers its own puts back what was there
@@ -559,7 +559,8 @@ describe('the bestiary page (roster plan Task C6)', () => {
     expect(page(s, 'paper-moth')).toMatchObject({ name: ENEMIES['paper-moth'].name, trait: BESTIARY['paper-moth']!.trait });
   }));
 
-  it('the second live wave is listed too, each a name of question marks until met (L2b)', () => {
+  it('the second live wave is listed too, each a name of question marks until met (L2b)', () => withRosterOnly([...WAVE_2_LIVE], () => {
+    // L3b: measures the game as it was before the third wave.
     const s = fresh();
     const by = (f: string) => handbook(s).codex.monsters.filter((m) => m.filter === f).map((m) => m.id);
     expect(by('road')).toEqual(['slime', 'bat', 'wolf', 'beetle', 'wisp', 'lizard', 'golem', 'shade', 'paper-moth', 'lamp-wight', 'root-hound',
@@ -576,6 +577,24 @@ describe('the bestiary page (roster plan Task C6)', () => {
     expect(page(s, 'keeper-echo')).toMatchObject({ name: B.unknown, seen: 0, trait: null, lines: [] });
     s.bestiary = { 'keeper-echo': { seen: 1, felled: 1 } };
     expect(page(s, 'keeper-echo')).toMatchObject({ name: ENEMIES['keeper-echo'].name, trait: BESTIARY['keeper-echo']!.trait });
+  }));
+
+  it('the third live wave is listed too: the fire, frost and storm lands (L3b)', () => {
+    const s = fresh();
+    const by = (f: string) => handbook(s).codex.monsters.filter((m) => m.filter === f).map((m) => m.id);
+    expect(by('road')).toHaveLength(37);
+    expect(by('lands')).toEqual(['cinder-imp', 'forge-hound', 'ash-mourner', 'mirage-dancer', 'sand-scorpion', 'frost-doll', 'glacier-tortoise',
+      'snow-caller', 'ice-komainu', 'frozen-pilgrim', 'thunder-kite', 'storm-totem', 'charge-jelly', 'star-ember', 'stolen-tome']);
+    expect(by('bosses')).toEqual(['lanterneater', 'false-moon', 'bell-warden', 'toppled-automaton', 'requiem-conductor', 'lantern-brood',
+      'mirage-lead', 'ice-shrine', 'burning-page', 'fog-warden', 'silent-bell', 'hollow-champion', 'old-city-archon', 'gorged-beast',
+      'lantern-mother', 'forgotten-festival', 'starless-whale', 'stopped-clock', 'first-lantern', 'ember-tyrant', 'sandstorm-maw', 'mirage-city',
+      'rime-sovereign', 'white-silence', 'rift-maw', 'thunder-roc', 'storm-conductor', 'starfire-colossus', 'archon-hand', 'rime-pillar']);
+    expect(page(s, 'bog-mother')).toBeUndefined();   // R4, not live yet
+    // A land's native says where: its land from depth 4 (spec §10); its story line waits for its gate.
+    expect(page(s, 'mirage-dancer')).toMatchObject({ name: B.unknown, seen: 0, trait: null, lines: [] });
+    s.bestiary = { 'mirage-dancer': { seen: 1, felled: 1 } };
+    expect(page(s, 'mirage-dancer')).toMatchObject({ name: ENEMIES['mirage-dancer'].name, trait: BESTIARY['mirage-dancer']!.trait });
+    expect(page(s, 'mirage-dancer')!.lines).toEqual([BESTIARY['mirage-dancer']!.lines[0].text]);   // Safira's 1st piece not seen
   });
 
   it('an unseen foe is a name of question marks and a place', () => {

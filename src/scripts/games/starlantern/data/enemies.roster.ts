@@ -309,8 +309,9 @@ const WARDENS: [string, Spec][] = [
     skills: [call('孵化', 'lantern-larva', undefined, 1), sk('蜷縮', 1, 'self', buff('def', 20, 2))] }],
   ['mirage-lead', { name: '蜃樓的領舞者', arch: 'std', rank: 'warden', home: 'blaze', lore: 'safira', remnant: true, opener: 'decoy', decoys: 2,
     skills: [every(sk('轉拍', 1, 'allies', buff('spd', 30, 3)), 3), sk('領舞', 0.3, 'enemy', hit(130))] }],
+  // L3b (spec §0 item 23, band 22j's warden): 喚醒狛犬 two calls → one.
   ['ice-shrine', { name: '冰中的拜殿', arch: 'heavy', rank: 'warden', home: 'frost', lore: 'chizuru', parts: { cutPct: 50, by: ['ice-komainu'] },
-    skills: [call('喚醒狛犬', 'ice-komainu', 2), sk('寒光', 0.3, 'column', hit(100, 'ice'))] }],
+    skills: [call('喚醒狛犬', 'ice-komainu', 1), sk('寒光', 0.3, 'column', hit(100, 'ice'))] }],
   ['burning-page', { name: '燃燒的那一頁', arch: 'std', rank: 'warden', home: 'storm', lore: 'noel',
     onFall: { name: '最後一頁', target: 'enemies', effects: [{ kind: 'restore', tp: 20 }] },
     skills: [sk('燃頁', 0.35, 'enemy', drain(hit(120, 'fire', { scale: 'atk' }), 15)), sk('灰燼之字', 0.25, 'row', forget(0.4))] }],
@@ -360,26 +361,30 @@ const BOSSES: [string, Spec][] = [
   ['first-lantern', { name: '最初的燈', arch: 'boss', mul: { hp: 1.1 }, prism: 'stage', weak: ['ice'], skills: pair('初火', 'fire', '燈芯之擊'),
     stages: [{ below: 66, weak: ['fire'], skills: pair('初冰', 'ice', '燈芯之擊') }, { below: 33, weak: ['phys'], skills: pair('初雷', 'thunder', '燈芯之擊') }] }],
   // 熾焰之地
-  ['ember-tyrant', { name: '焚城之焰', arch: 'boss', home: 'blaze', skills: [sk('火雨', 0.3, 'row', hit(100, 'fire')), sk('烈焰之拳', 0.3, 'enemy', hit(160))],
-    stages: [{ below: 50, skills: [sk('焚城', 0.45, 'enemies', hit(125, 'fire')), sk('烈焰之拳', 0.3, 'enemy', hit(165))] }] }],
+  // L3b (spec §0 item 23, band 22j bare): 烈焰之拳 160, 165 → 195, 200.
+  ['ember-tyrant', { name: '焚城之焰', arch: 'boss', home: 'blaze', skills: [sk('火雨', 0.3, 'row', hit(100, 'fire')), sk('烈焰之拳', 0.3, 'enemy', hit(195))],
+    stages: [{ below: 50, skills: [sk('焚城', 0.45, 'enemies', hit(125, 'fire')), sk('烈焰之拳', 0.3, 'enemy', hit(200))] }] }],
   ['sandstorm-maw', { name: '沙暴之口', arch: 'boss', mul: { spd: UP }, home: 'blaze', lore: 'safira',
     skills: [every(sk('沙暴', 1, 'enemies', hit(90, 'phys', { melee: false }), buff('spd', -20, 2)), 2), sk('沙之顎', 0.3, 'enemy', hit(160))] }],
+  // L3b (spec §0 item 23, bands 22f, 22j): its pair's 幻之火 110 → 90 and 城門崩落 160 → 130.
   ['mirage-city', { name: '蜃樓之城', arch: 'boss', hp: 960, home: 'blaze', lore: 'safira', parts: { cutPct: 50, by: ['mirage-dancer'] },
-    skills: [call('舞者登場', 'mirage-dancer', 1), ...pair('幻之火', 'fire', '城門崩落')] }],
+    skills: [call('舞者登場', 'mirage-dancer', 1), sk('幻之火', 0.35, 'enemies', hit(90, 'fire')), sk('城門崩落', 0.3, 'enemy', hit(130))] }],
   // 霜凍之地
   ['rime-sovereign', { name: '永凍之守', arch: 'boss', hp: 820, home: 'frost', parts: { cutPct: 50 }, skills: pair('永凍', 'ice', '冰槌') }],
+  // L3b (spec §0 item 23, bands 22b, 22j bare): 冰柱落下 175/.35 → 205/.45.
   ['white-silence', { name: '白色寂靜', arch: 'boss', mul: { hp: 1.1 }, home: 'frost',
     // The quiet deepens a step at a time, to three steps; its snow makes the party forget.
     skills: [sk('寂靜', 0.35, 'enemies', { kind: 'buff', stat: 'spd', pct: -10, turns: 3, stackTo: -30 }), sk('雪幕', 0.45, 'cross', hit(140, 'ice'), forget(0.4)),
-      sk('冰柱落下', 0.35, 'enemy', hit(175))] }],
+      sk('冰柱落下', 0.45, 'enemy', hit(205))] }],
   ['rift-maw', { name: '迷宮的裂口', arch: 'boss', home: 'frost', lore: 'chizuru',
     skills: [call('裂口湧出', 'frost-doll', 1), ...pair('裂口之息', 'ice', '撕裂')],
     stages: [{ below: 50, skills: [call('裂口湧出', 'frost-doll', 1), sk('裂口之息', 0.5, 'enemies', hit(115, 'ice')), sk('撕裂', 0.3, 'enemy', hit(160))] }] }],
   // 雷鳴之地
   ['thunder-roc', { name: '雷鳴巨鵬', arch: 'boss', mul: { spd: UPUP }, home: 'storm',
     skills: [windup(sk('天雷俯衝', 0.2, 'enemies', hit(130, 'thunder', { scale: 'atk', melee: true })), '盤旋'), sk('雙爪', 0.3, 'enemy', hit(80, 'phys', { hits: 2 }))] }],
+  // L3b (spec §0 item 23, band 22j bare): 雷杖 190 → 225.
   ['storm-conductor', { name: '雷霆指揮者', arch: 'boss', home: 'storm',
-    skills: [sk('指名', 0.2, 'enemy', hunt), sk('連鎖雷', 0.4, 'cross', hit(145, 'thunder')), sk('雷杖', 0.4, 'enemy', hit(190))] }],
+    skills: [sk('指名', 0.2, 'enemy', hunt), sk('連鎖雷', 0.4, 'cross', hit(145, 'thunder')), sk('雷杖', 0.4, 'enemy', hit(225))] }],
   ['starfire-colossus', { name: '星火巨像', arch: 'boss', home: 'storm', lore: 'noel',
     skills: [sk('星火', 0.35, 'enemies', hit(110, 'fire')), sk('汲星', 0.3, 'enemy', drain(hit(140), 15))] }],
   // 腐毒沼澤

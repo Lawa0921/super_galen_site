@@ -259,8 +259,9 @@ describe('encounterGroup', () => {
     expect([...seen].sort()).toEqual(NORMAL_ENEMIES.filter((id) => LEGACY_ENEMY_IDS.includes(id)).sort());
     // the spec says nine, counting the boss; the boss is not a random foe. Plan L1b: 8 + the first wave's 13 ordinary
     // species (18 live, less 3 bosses and 2 wardens: ruling 3 counts no boss, warden or part) = 21; plan L2b: + the second
-    // wave's 16 (26 live, less 6 bosses, 3 wardens and the archon's hand) = 37.
-    expect(NORMAL_ENEMIES).toHaveLength(37);
+    // wave's 16 (26 live, less 6 bosses, 3 wardens and the archon's hand) = 37; plan L3b: + the third wave's 15 natives (28
+    // live, less 9 bosses, 3 wardens and the permafrost's pillar) = 52.
+    expect(NORMAL_ENEMIES).toHaveLength(52);
     const a = mulberry32(3), b = mulberry32(3);
     for (let i = 0; i < 20; i++) expect(encounterGroup('iron', 4, a)).toEqual(encounterGroup('iron', 4, b));
   }));
@@ -363,7 +364,7 @@ describe('story enemies', () => {
     const story = Object.values(ENEMIES).filter((e) => e.story).map((e) => e.id);
     expect(story).toContain('scarlet-foe');
     for (const id of story) expect(NORMAL_ENEMIES).not.toContain(id);
-    expect(NORMAL_ENEMIES).toHaveLength(37);   // plan L1b: 8 + 13 (the first wave less its 3 bosses and 2 wardens, ruling 3); L2b: + 16
+    expect(NORMAL_ENEMIES).toHaveLength(52);   // plan L1b: 8 + 13 (the first wave less its 3 bosses and 2 wardens, ruling 3); L2b: + 16; L3b: + 15
   });
 });
 

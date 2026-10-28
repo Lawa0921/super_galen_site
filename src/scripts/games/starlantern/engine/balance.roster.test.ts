@@ -118,6 +118,13 @@ const EXCEPTION_22A: Record<string, { floor?: number; ceiling?: number; why: str
   // and held to its measured .457 plus .01. Three fuses that burn the whole party as they fall: the trait says to fell them
   // one by one. Backlog F6.
   'wick-shade': { ceiling: 0.467, why: 'three fuses that each burn the whole party as they fall; one attempt spent (item 22)' },
+  // Spec §0 item 23 (plan L3b; controller ruling 2026-10-28): the fire and frost natives first met at depth 4 whose one
+  // attempt moved nothing or made it worse, back at the spec's numbers and held to their measured loss less .01 (rounded
+  // outward to three places). Backlog F7.
+  'ash-mourner': { floor: 0.031, why: 'a support that mends and lifts magic; its attempt (灰燼 130/.5 → 160/.6) moved nothing (.041 → .043) (item 23)' },
+  'forge-hound': { floor: 0.052, why: 'its attempt (熔吼 .25 → .35, 熔牙 145 → 175) made it softer (.062 → .032): more turns spent winding up (item 23)' },
+  'frozen-pilgrim': { floor: 0, why: 'its pair is felled in the ice before it thaws; its attempt (冰之祈 140/.4 → 170/.5) moved nothing (.000) (item 23)' },
+  'sand-scorpion': { floor: 0.095, why: 'in the band but .132 under its reference; its attempt (毒針 135 → 165) gave .123 and put 22c blaze d25 over .45 (item 23)' },
 };
 
 /**
@@ -131,7 +138,36 @@ const EXCEPTION_22: Record<string, { min?: number; max?: number; why: string }> 
   '22d noHeal mainline d20': { min: 0.764, why: 'the D table after its one attempt (four groups swapped for band 19a), .563 → .774 (item 22)' },
   '22d allPhys mainline d20': { min: 0.757, why: 'the D table after its one attempt (four groups swapped for band 19a), .587 → .767 (item 22)' },
   '22f old-city-archon mainline d20 noTank': { min: 0.59, why: 'its attempt (王權 160 → 130) moved nothing (.6) and cost allPhys; back at 160 (item 22)' },
+  // Spec §0 item 23 (plan L3b; controller ruling 2026-10-28): the third wave's cells still red after their one attempt. An
+  // attempt that moved a cell toward its band and turned no other red is kept, its bound on the value it gave (±.01, rounded
+  // outward to three places); one that moved nothing is back at the spec's numbers. Backlog F7.
+  '22b mirage-city blaze d30': { max: 0.135, why: 'neither wins at depth 30 (0 to the eater .125); the attempt (幻之火 110 → 90, 城門崩落 160 → 130) kept for its 22f noHeal (item 23)' },
+  '22b rift-maw frost d30': { max: 0.135, why: 'neither wins at depth 30 (0 to the eater .125); its attempt (裂口之息 .5 → .35 past half) moved nothing (item 23)' },
+  '22b rime-sovereign frost d20': { max: 0.135, why: 'it wins 1.0 to the eater .875 at depth 20, where 22j finds it the harder; its attempt (冰之加護 25 → 15) moved nothing (item 23)' },
+  '22b white-silence frost d25': { max: 0.198, why: 'its attempt (冰柱落下 175/.35 → 205/.45) took .75 to .563 against the eater .375; kept (item 23)' },
+  '22c frost d25': { min: 0.705, why: 'the komainu pairs at depth 25 (.125, 0); their attempt (hp ×0.85) moved nothing and turned 22a red (item 23)' },
+  '22c frost d25 loss': { max: 0.531, why: 'the loss of the same cell (.521); the komainu attempt is back at the spec (item 23)' },
+  '22f mirage-city blaze d15 allPhys': { min: 0.79, why: 'the attempt that greened its noHeal (.7 → .9) left allPhys at .8 to the eater 1.0 (item 23)' },
+  '22f rift-maw frost d15 allPhys': { min: 0.79, why: 'its attempt (裂口之息 .5 → .35 past half) moved nothing (.8 to the eater 1.0) (item 23)' },
 };
+/**
+ * L3b review: the direction each exception holds, one bound a cell. 22a: the wick shade a ceiling only, every other a floor
+ * only. Item 22's table: a 22b distance and a loss from above only (`max`), every other rate from below only (`min`).
+ */
+function directionBreaks22A(t: Record<string, { floor?: number; ceiling?: number }>): string[] {
+  return Object.entries(t).flatMap(([id, e]) => {
+    if (e.floor !== undefined && e.ceiling !== undefined) return [`${id}: floor and ceiling`];
+    if (id === 'wick-shade' ? e.ceiling === undefined : e.floor === undefined) return [`${id}: the wrong bound`];
+    return [];
+  });
+}
+function directionBreaks22(t: Record<string, { min?: number; max?: number }>): string[] {
+  return Object.entries(t).flatMap(([k, e]) => {
+    const fromAbove = k.startsWith('22b') || k.endsWith(' loss');
+    if (fromAbove) return e.max !== undefined && e.min === undefined ? [] : [`${k}: not max only`];
+    return e.min !== undefined && e.max === undefined ? [] : [`${k}: not min only`];
+  });
+}
 /** A cell of EXCEPTION_22: asserts its own bound on `value`, says so, and returns true; false for every other cell. */
 const exceptedCell = (label: string, value: number): boolean => {
   const e = EXCEPTION_22[label];
@@ -144,11 +180,21 @@ const exceptedCell = (label: string, value: number): boolean => {
 
 describe('band 22a names its exceptions (ruling 21)', () => {
   it('exactly the paper moth and the mist twins, each with its floor, and the wick shade with its ceiling (item 22)', () => {
-    expect(Object.keys(EXCEPTION_22A).sort()).toEqual(['mist-twin', 'paper-moth', 'wick-shade']);
+    expect(Object.keys(EXCEPTION_22A).sort()).toEqual(['ash-mourner', 'forge-hound', 'frozen-pilgrim', 'mist-twin', 'paper-moth', 'sand-scorpion', 'wick-shade']);
     expect(EXCEPTION_22A['paper-moth'].floor).toBe(0.099);
     expect(EXCEPTION_22A['mist-twin']?.floor).toBe(0.171);
     expect(EXCEPTION_22A['wick-shade']).toMatchObject({ ceiling: 0.467 });
     expect(EXCEPTION_22A['wick-shade']?.floor).toBeUndefined();
+    // Spec §0 item 23 (plan L3b): the fire and frost natives whose one attempt moved nothing, each on its measured loss less .01
+    // (the frozen pilgrim held at nothing: its pair is felled in the ice).
+    expect(Object.fromEntries(['ash-mourner', 'forge-hound', 'frozen-pilgrim', 'sand-scorpion'].map((id) => [id, EXCEPTION_22A[id].floor])))
+      .toEqual({ 'ash-mourner': 0.031, 'forge-hound': 0.052, 'frozen-pilgrim': 0, 'sand-scorpion': 0.095 });
+  });
+  it('each cell holds one direction: the wick shade a ceiling only, every other a floor only (L3b review)', () => {
+    expect(directionBreaks22A(EXCEPTION_22A)).toEqual([]);
+    // The check bites: a floor cell given a ceiling too, and the ceiling cell given a floor.
+    expect(directionBreaks22A({ ...EXCEPTION_22A, 'forge-hound': { floor: 0.052, ceiling: 0.2, why: 'x' } })).toEqual(['forge-hound: floor and ceiling']);
+    expect(directionBreaks22A({ ...EXCEPTION_22A, 'wick-shade': { floor: 0.1, ceiling: 0.467, why: 'x' } })).toEqual(['wick-shade: floor and ceiling']);
   });
 });
 
@@ -159,11 +205,28 @@ describe('band 22 names its other exceptions (spec §0 item 22, plan L2b)', () =
       '22d noHeal mainline d20': 0.764,
       '22d allPhys mainline d20': 0.757,
       '22f old-city-archon mainline d20 noTank': 0.59,
+      // Spec §0 item 23 (plan L3b).
+      '22b mirage-city blaze d30': 0.135,
+      '22b rift-maw frost d30': 0.135,
+      '22b rime-sovereign frost d20': 0.135,
+      '22b white-silence frost d25': 0.198,
+      '22c frost d25': 0.705,
+      '22c frost d25 loss': 0.531,
+      '22f mirage-city blaze d15 allPhys': 0.79,
+      '22f rift-maw frost d15 allPhys': 0.79,
     });
-    // A 22b cell bounds its distance from the lantern-eater from above; every other one its rate from below.
+    // A 22b cell bounds its distance from the lantern-eater from above, and a 22c loss cell its loss; every other one its
+    // rate from below.
     expect(EXCEPTION_22['22b gorged-beast mainline d25'].max).toBe(0.135);
-    for (const [k, e] of Object.entries(EXCEPTION_22)) if (!k.startsWith('22b')) expect(e.max, k).toBeUndefined();
-    for (const e of Object.values(EXCEPTION_22)) expect(e.why, e.why).toMatch(/item 22/);
+    for (const [k, e] of Object.entries(EXCEPTION_22)) if (!k.startsWith('22b') && !k.endsWith(' loss')) expect(e.max, k).toBeUndefined();
+    for (const [k, e] of Object.entries(EXCEPTION_22)) if (k.endsWith(' loss')) expect(e.min, k).toBeUndefined();
+    for (const e of Object.values(EXCEPTION_22)) expect(e.why, e.why).toMatch(/item 2[23]/);
+  });
+  it('each cell holds one direction: a 22b distance and a loss from above only, every other rate from below only (L3b review)', () => {
+    expect(directionBreaks22(EXCEPTION_22)).toEqual([]);
+    // The check bites: a 22b cell given a floor, a rate cell given a ceiling.
+    expect(directionBreaks22({ ...EXCEPTION_22, '22b rift-maw frost d30': { min: 0.1, max: 0.135, why: 'x' } })).toEqual(['22b rift-maw frost d30: not max only']);
+    expect(directionBreaks22({ ...EXCEPTION_22, '22c frost d25': { max: 0.705, why: 'x' } })).toEqual(['22c frost d25: not min only']);
   });
 });
 
@@ -174,29 +237,18 @@ describe('band 22 names its other exceptions (spec §0 item 22, plan L2b)', () =
  * keeps a deferred cell).
  */
 const DEFERRED_22: Record<string, { wave: 'L2' | 'L3' | 'L4'; id: string }> = {
-  '22a ash-mourner (support) blaze d4': { wave: 'L3', id: 'ash-mourner' },
   '22a debt-collector (std) shade d4': { wave: 'L4', id: 'debt-collector' },
-  '22a forge-hound (std) blaze d4': { wave: 'L3', id: 'forge-hound' },
-  '22a frozen-pilgrim (std) frost d4': { wave: 'L3', id: 'frozen-pilgrim' },
   '22a herald-engine (support) iron d4': { wave: 'L4', id: 'herald-engine' },
   '22a mirror-thief (std) shade d4': { wave: 'L4', id: 'mirror-thief' },
-  '22a sand-scorpion (std) blaze d4': { wave: 'L3', id: 'sand-scorpion' },
   '22a siege-crab (heavy) iron d4': { wave: 'L4', id: 'siege-crab' },
   '22a spore-moth (swarm) mire d4': { wave: 'L4', id: 'spore-moth' },
   '22a veil-stalker (std) shade d4': { wave: 'L4', id: 'veil-stalker' },
   '22b faceless-host shade d20': { wave: 'L4', id: 'faceless-host' },
   '22b fortress-colossus iron d20': { wave: 'L4', id: 'fortress-colossus' },
   '22b grey-blight mire d25': { wave: 'L4', id: 'grey-blight' },
-  '22b mirage-city blaze d30': { wave: 'L3', id: 'mirage-city' },
-  '22b rift-maw frost d30': { wave: 'L3', id: 'rift-maw' },
-  '22b rime-sovereign frost d20': { wave: 'L3', id: 'rime-sovereign' },
   '22b shadow-parade shade d30': { wave: 'L4', id: 'shadow-parade' },
   '22b vault-dragon shade d25': { wave: 'L4', id: 'vault-dragon' },
-  '22b white-silence frost d25': { wave: 'L3', id: 'white-silence' },
   '22f grey-blight mire d10 allPhys': { wave: 'L4', id: 'grey-blight' },
-  '22f mirage-city blaze d15 allPhys': { wave: 'L3', id: 'mirage-city' },
-  '22f mirage-city blaze d15 noHeal': { wave: 'L3', id: 'mirage-city' },
-  '22f rift-maw frost d15 allPhys': { wave: 'L3', id: 'rift-maw' },
   '22f shadow-parade shade d15 allPhys': { wave: 'L4', id: 'shadow-parade' },
   '22f shadow-parade shade d15 noHeal': { wave: 'L4', id: 'shadow-parade' },
   '22i gate-breaker iron d8': { wave: 'L4', id: 'gate-breaker' },
@@ -212,7 +264,7 @@ describe('band 22 defers only what is not live yet (controller ruling 2026-10-28
   it('no live species keeps a deferred cell', () => {
     expect(liveDeferred()).toEqual([]);
     // The check bites: a species gone live with its cell still deferred is caught.
-    withRosterLive(['forge-hound'], () => expect(liveDeferred()).toEqual(['forge-hound']));
+    withRosterLive(['spore-moth'], () => expect(liveDeferred()).toEqual(['spore-moth']));
   });
   it('every deferred cell is a roster species of a later wave', () => {
     for (const [label, d] of Object.entries(DEFERRED_22)) {
@@ -357,7 +409,10 @@ describe.skipIf(!on)('band 22: the roster against the lantern-eater and its own 
       const same = sameTables(encounterTable(region, d), legacyEncounterTable(region, d));
       // L1b: the legacy table as it was met with nothing live (no deep trait), as recorded.
       const legacy = same ? r : withRosterOnly([], () => expected(d, region, legacyEncounterTable(region, d)));
-      if (inBand(legacy)) judgeAbsolute(label, r);
+      if (exceptedCell(label, r.rate)) {
+        // Item 23: the rate held to its floor; the loss to its own ceiling, or the band's.
+        if (!exceptedCell(`${label} loss`, r.hpLoss)) { ex(r.hpLoss, label).toBeGreaterThanOrEqual(0.1); ex(r.hpLoss, label).toBeLessThanOrEqual(0.45); }
+      } else if (inBand(legacy)) judgeAbsolute(label, r);
       else {
         relative22c.push(`${region} d${d}`);
         // While the tables are the same fights, the cell is its own reference: reported, not a gate (B2 review item 3).

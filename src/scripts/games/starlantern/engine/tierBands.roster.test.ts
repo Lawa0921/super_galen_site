@@ -50,29 +50,18 @@ function cell(depth: number, region: RegionId, group: string[], hell: boolean, a
 const DEFERRED_22J: Record<string, { wave: 'L2' | 'L3' | 'L4'; id: string }> = {
   'bog-leviathan mire d15 hell rare bare': { wave: 'L4', id: 'bog-leviathan' },
   'bog-leviathan mire d15 nightmare magic bare': { wave: 'L4', id: 'bog-leviathan' },
-  'ember-tyrant blaze d20 hell rare bare': { wave: 'L3', id: 'ember-tyrant' },
-  'ember-tyrant blaze d20 nightmare magic bare': { wave: 'L3', id: 'ember-tyrant' },
   'faceless-host shade d20 hell rare bare': { wave: 'L4', id: 'faceless-host' },
   'grey-blight mire d25 hell rare': { wave: 'L4', id: 'grey-blight' },
   'grey-blight mire d25 nightmare magic': { wave: 'L4', id: 'grey-blight' },
   'last-commander iron d15 hell rare bare': { wave: 'L4', id: 'last-commander' },
   'last-commander iron d15 nightmare magic bare': { wave: 'L4', id: 'last-commander' },
-  'mirage-city blaze d15 hell rare': { wave: 'L3', id: 'mirage-city' },
-  'mirage-city blaze d15 nightmare magic': { wave: 'L3', id: 'mirage-city' },
-  'rime-sovereign frost d20 hell rare': { wave: 'L3', id: 'rime-sovereign' },
-  'rime-sovereign frost d20 nightmare magic': { wave: 'L3', id: 'rime-sovereign' },
   'shadow-parade shade d15 hell rare': { wave: 'L4', id: 'shadow-parade' },
   'shadow-parade shade d15 nightmare magic': { wave: 'L4', id: 'shadow-parade' },
   'siege-titan iron d10 hell rare bare': { wave: 'L4', id: 'siege-titan' },
   'siege-titan iron d10 nightmare magic bare': { wave: 'L4', id: 'siege-titan' },
-  'storm-conductor storm d25 hell rare bare': { wave: 'L3', id: 'storm-conductor' },
-  'storm-conductor storm d25 nightmare magic bare': { wave: 'L3', id: 'storm-conductor' },
   'vault-dragon shade d10 hell rare bare': { wave: 'L4', id: 'vault-dragon' },
-  'white-silence frost d25 hell rare bare': { wave: 'L3', id: 'white-silence' },
-  'white-silence frost d25 nightmare magic bare': { wave: 'L3', id: 'white-silence' },
   'gate-breaker iron': { wave: 'L4', id: 'gate-breaker' },
   'grey-elder mire': { wave: 'L4', id: 'grey-elder' },
-  'ice-shrine frost': { wave: 'L3', id: 'ice-shrine' },
   'locked-vault shade': { wave: 'L4', id: 'locked-vault' },
 };
 /**
@@ -80,14 +69,36 @@ const DEFERRED_22J: Record<string, { wave: 'L2' | 'L3' | 'L4'; id: string }> = {
  * warden still red after its wave's one simple tuning attempt. Each is still measured and printed (`exception`) and held to
  * its own floor instead, the measured rate less .01. Pinned below; backlog F6.
  */
-const EXCEPTION_22J: Record<string, { min: number; why: string }> = {
+const EXCEPTION_22J: Record<string, { min?: number; max?: number; why: string }> = {
   'requiem-conductor mainline': { min: 0.397, why: 'its attempt (召集歌隊 two calls → one) moved nothing (.421); back at two; the choir it calls mends every foe (item 22)' },
+  // Spec §0 item 23 (plan L3b; controller ruling 2026-10-28): the third wave's cells still red after their one attempt, a
+  // built cell held to its measured rate less .01, a bare one (the party that spent no points should lose) to its rate plus
+  // .01, each rounded outward to three places. An attempt that moved a cell toward the eater's odds is kept; one that moved nothing is back at the spec. Backlog F7.
+  'mirage-city blaze d15 nightmare magic': { min: 0.719, why: 'its attempt (幻之火 110 → 90, 城門崩落 160 → 130) took .621 to .729 against the eater .958 (item 23)' },
+  'mirage-city blaze d15 hell rare': { min: 0.74, why: 'its attempt took .664 to .750 against the eater .964 (item 23)' },
+  'ember-tyrant blaze d20 nightmare magic bare': { max: 0.748, why: 'its attempt (烈焰之拳 160/165 → 195/200) took the bare party .783 to .738 against the eater .550 (item 23)' },
+  'ember-tyrant blaze d20 hell rare bare': { max: 0.418, why: 'its attempt took the bare party .450 to .407 against the eater .293 (item 23)' },
+  'rime-sovereign frost d20 nightmare magic': { min: 0.585, why: 'two pillars that mend and guard it; its attempt (冰之加護 25 → 15) moved nothing (.600), back at 25 (item 23)' },
+  'rime-sovereign frost d20 hell rare': { min: 0.525, why: 'its attempt moved nothing (.557), back at the spec (item 23)' },
+  'white-silence frost d25 nightmare magic bare': { max: 0.748, why: 'its attempt (冰柱落下 175/.35 → 205/.45) took the bare party .771 to .738 against the eater .446 (item 23)' },
+  'white-silence frost d25 hell rare bare': { max: 0.625, why: 'its attempt took the bare party .643 to .614 against the eater .229 (item 23)' },
+  'storm-conductor storm d25 nightmare magic bare': { max: 0.61, why: 'its attempt (雷杖 190 → 225) took the bare party .742 to .600 against the eater .217 (item 23)' },
+  'storm-conductor storm d25 hell rare bare': { max: 0.553, why: 'its attempt took the bare party .636 to .543 against the eater .050 (item 23)' },
+  'ice-shrine frost': { min: 0.697, why: 'its attempt (喚醒狛犬 two calls → one) took Hell depth 23 .236 to .707 (item 23)' },
 };
+/** L3b review: a bare cell holds its rate from above only (`max`), every other from below only (`min`). */
+function directionBreaks22J(t: Record<string, { min?: number; max?: number }>): string[] {
+  return Object.entries(t).flatMap(([k, e]) => {
+    if (k.endsWith(' bare')) return e.max !== undefined && e.min === undefined ? [] : [`${k}: not max only`];
+    return e.min !== undefined && e.max === undefined ? [] : [`${k}: not min only`];
+  });
+}
 const excepted = (label: string, rate: number): boolean => {
   const e = EXCEPTION_22J[label];
   if (!e) return false;
-  say(`exception ${label}: ${e.why}; floor >= ${e.min.toFixed(3)}`);
-  ex(rate, `${label} (exception floor)`).toBeGreaterThanOrEqual(e.min);
+  say(`exception ${label}: ${e.why}; ${e.min !== undefined ? `floor >= ${e.min.toFixed(3)}` : `ceiling <= ${e.max!.toFixed(3)}`}`);
+  if (e.min !== undefined) ex(rate, `${label} (exception floor)`).toBeGreaterThanOrEqual(e.min);
+  if (e.max !== undefined) ex(rate, `${label} (exception ceiling)`).toBeLessThanOrEqual(e.max);
   return true;
 };
 const deferred = (label: string): boolean => {
@@ -97,9 +108,29 @@ const deferred = (label: string): boolean => {
 };
 
 describe('band 22j names its exceptions (spec §0 item 22, plan L2b)', () => {
-  it('exactly the requiem conductor in Hell at depth 23, with its floor', () => {
-    expect(Object.fromEntries(Object.entries(EXCEPTION_22J).map(([k, e]) => [k, e.min]))).toEqual({ 'requiem-conductor mainline': 0.397 });
-    for (const e of Object.values(EXCEPTION_22J)) expect(e.why, e.why).toMatch(/item 22/);
+  it('exactly the requiem conductor in Hell at depth 23, with its floor, and the third wave cells (item 23)', () => {
+    expect(Object.fromEntries(Object.entries(EXCEPTION_22J).map(([k, e]) => [k, e.min ?? e.max]))).toEqual({
+      'requiem-conductor mainline': 0.397,
+      // Spec §0 item 23 (plan L3b): a built cell holds its rate from below, a bare cell from above.
+      'mirage-city blaze d15 nightmare magic': 0.719,
+      'mirage-city blaze d15 hell rare': 0.74,
+      'ember-tyrant blaze d20 nightmare magic bare': 0.748,
+      'ember-tyrant blaze d20 hell rare bare': 0.418,
+      'rime-sovereign frost d20 nightmare magic': 0.585,
+      'rime-sovereign frost d20 hell rare': 0.525,
+      'white-silence frost d25 nightmare magic bare': 0.748,
+      'white-silence frost d25 hell rare bare': 0.625,
+      'storm-conductor storm d25 nightmare magic bare': 0.61,
+      'storm-conductor storm d25 hell rare bare': 0.553,
+      'ice-shrine frost': 0.697,
+    });
+    for (const [k, e] of Object.entries(EXCEPTION_22J)) expect([k.endsWith(' bare'), e.max !== undefined, e.min === undefined], k).toEqual([k.endsWith(' bare'), k.endsWith(' bare'), k.endsWith(' bare')]);
+    for (const e of Object.values(EXCEPTION_22J)) expect(e.why, e.why).toMatch(/item 2[23]/);
+  });
+  it('each cell holds one direction: a bare cell from above only, every other from below only (L3b review)', () => {
+    expect(directionBreaks22J(EXCEPTION_22J)).toEqual([]);
+    expect(directionBreaks22J({ ...EXCEPTION_22J, 'ice-shrine frost': { min: 0.697, max: 0.9, why: 'x' } })).toEqual(['ice-shrine frost: not min only']);
+    expect(directionBreaks22J({ ...EXCEPTION_22J, 'ember-tyrant blaze d20 hell rare bare': { min: 0.418, why: 'x' } })).toEqual(['ember-tyrant blaze d20 hell rare bare: not max only']);
   });
 });
 
@@ -142,8 +173,8 @@ describe.skipIf(!on)('band 22j: the roster on Nightmare and Hell (roster plan B1
       const label = `${bossOf(c.group)} ${c.region} d${c.depth} ${hell ? 'hell rare' : 'nightmare magic'}`;
       say(line(label, built));
       say(line(`${label} bare`, bare));
-      if (!deferred(label)) ex(built.rate, label).toBeGreaterThanOrEqual(eater(c.depth, c.region, hell, false).rate - 0.1);
-      if (!deferred(`${label} bare`)) ex(bare.rate, `${label} bare`).toBeLessThanOrEqual(eater(c.depth, c.region, hell, true).rate + 0.1);
+      if (!deferred(label) && !excepted(label, built.rate)) ex(built.rate, label).toBeGreaterThanOrEqual(eater(c.depth, c.region, hell, false).rate - 0.1);
+      if (!deferred(`${label} bare`) && !excepted(`${label} bare`, bare.rate)) ex(bare.rate, `${label} bare`).toBeLessThanOrEqual(eater(c.depth, c.region, hell, true).rate + 0.1);
     }
   }, 3_000_000);
 

@@ -155,6 +155,18 @@ export const WAVE_1_LIVE: readonly string[] = [
 ];
 
 /**
+ * Roster plan L3b: the roster ids the first two go-live waves (L1b, L2b with L2c) made live, in their order; with
+ * `withRosterOnly` it measures the game as it was before the third wave, for the pins written for that state.
+ */
+export const WAVE_2_LIVE: readonly string[] = [
+  ...WAVE_1_LIVE,
+  'old-city-sentinel', 'requiem-choir', 'lantern-larva', 'epitaph-golem', 'ancestor-automaton', 'ash-archivist', 'wick-shade', 'keeper-echo',
+  'ember-maw', 'sorrow-crystal', 'deep-tendril', 'music-box', 'paper-cranes', 'lost-shadow', 'returning-light', 'gilded-hoarder',
+  'old-city-archon', 'gorged-beast', 'forgotten-festival', 'starless-whale', 'stopped-clock', 'first-lantern', 'archon-hand',
+  'toppled-automaton', 'requiem-conductor', 'lantern-brood', 'lantern-mother',
+];
+
+/**
  * Roster plan L1b (controller ruling 2026-10-28): runs `f` with exactly `ids` live (their art published too), then puts both
  * sets back as they were, in their order, when `f` returns, throws, or (async) settles. For the pins written for the
  * game as it was with nothing live, once a wave is. Test support only: nothing in the game imports it.

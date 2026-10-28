@@ -64,7 +64,7 @@ import { GIFT_LINES, RIN_OATH, type GiftPools } from '../data/bond.zh-TW';
 import { BOND_RUN_CAP, FIELD_POINTS } from '../data/story/bond';
 import { BONDS_WRITTEN, ROMANCES_WRITTEN, TOGETHER_WRITTEN, sceneTime } from '../data/story/scenes';
 import { today } from './story/bond';
-import { withBondEarn, withBondScale, withRosterLive, withRosterOnly } from './testing';
+import { WAVE_2_LIVE, withBondEarn, withBondScale, withRosterLive, withRosterOnly } from './testing';
 /**
  * Bond plan Task 17: the registries hold what is written now, so a test that registers its own puts back what was there
  * (`bondsBack`), registers a companion only once (`bondsAdd`), and gives a written scene back instead of deleting it.
@@ -603,7 +603,8 @@ describe('battles', () => {
     // Not grown by depth or region; only ENEMY_POWER at its level applies.
     expect([b.name, b.max, b.tint]).toEqual(['燈喰之獸', empower(ENEMIES.lanterneater, b.level).stats, undefined]);
   });
-  it('a region boss is the 燈喰之獸 grown by depth and region', () => {
+  it('a region boss is the 燈喰之獸 grown by depth and region', () => withRosterOnly([...WAVE_2_LIVE], () => {
+    // L3b: measures the game as it was before the third wave (no region's boss live); blaze's own boss stands there now.
     const g = new Game(calm(), null, undefined, 0, LEGACY_LINEUP);
     g.state.dungeon.reached.blaze = 5;
     g.depart({ region: 'blaze', condition: 'plain' }, 5);
@@ -611,6 +612,14 @@ describe('battles', () => {
     const b = g.battle!.enemies[0];
     expect([b.name, b.tint, b.boss, b.resist, b.weak]).toEqual(['深層・熾焰・燈喰之獸', 'fire', true, ['fire'], ['ice']]);
     expect(b.max.hp).toBeGreaterThan(ENEMIES.lanterneater.stats.hp);
+  }));
+  it('a region boss is its own once its region goes live: blaze depth 5 is 焚城之焰 (L3b)', () => {
+    const g = new Game(calm(), null, undefined, 0, LEGACY_LINEUP);
+    g.state.dungeon.reached.blaze = 5;
+    g.depart({ region: 'blaze', condition: 'plain' }, 5);
+    stepOnto(g, g.map().boss!);
+    const b = g.battle!.enemies[0];
+    expect([b.name, b.tint, b.boss, b.resist, b.weak]).toEqual(['深層・熾焰・焚城之焰', 'fire', true, ['fire'], ['ice']]);
   });
   it('the run condition reaches the fight: 兇暴 enemies hit harder', () => {
     const g = new Game(calm(), null, undefined, 0, LEGACY_LINEUP);
