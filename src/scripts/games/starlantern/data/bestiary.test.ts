@@ -85,6 +85,16 @@ const opens = (g: StoryGate | undefined, at: Reveal): boolean =>
   at === 'never' ? false : 'mem' in at ? piecesHeld(g, at.mem[0]) >= at.mem[1] : actHeld(g, at.scene);
 
 const COMPANIONS = CHARACTER_IDS.filter((c) => c !== 'hero');
+/**
+ * What the script calls each companion besides her name (PR C review S2): the nicknames the ledger records (I-146 莉茲's
+ * 「騎士大姊」「小魔女」, I-160 莎菲拉's 「小嘉」「小鶴」 and 千鶴's 「舞姬大人」 for her, the style bible §3 莎菲拉's 「小希」
+ * 「凜凜」, data/story/voiceGates.ts VOCATIVES), and her title (data/characters.ts). The 「〇〇姊」「〇〇姑娘」「〇〇小姐」
+ * forms hold her name, so the name catches them. When the ledger names a new one, it goes here.
+ */
+const ALIASES: Partial<Record<CharacterId, string[]>> = {
+  chizuru: ['小鶴'], safira: ['舞姬大人'], sylvie: ['小希'], scarlet: ['小嘉', '騎士大姊'], noel: ['小魔女'], rin: ['凜凜'],
+};
+const namesOf = (c: CharacterId): string[] => [CHARACTERS[c].name, ...(ALIASES[c] ?? []), CHARACTERS[c].title];
 /** Plan ruling 20: handbook text, every line at most sixty characters. */
 const MAX_LEN = 60;
 
@@ -105,8 +115,12 @@ function problemsOf(id: string, e: BestiaryText): string[] {
     if ([...text].length > MAX_LEN) out.push(`${at}: over ${MAX_LEN} characters`);
     if (/精英/.test(text)) out.push(`${at}: 精英 (write 菁英)`);
     for (const w of WORDS) if (w.re.test(text) && !opens(after, w.at)) out.push(`${at}: ${w.re.source} before its reveal`);
-    // A companion's name is hers to tell: only on a line behind one of her own memories (the remnant's line).
-    for (const c of COMPANIONS) if (text.includes(CHARACTERS[c].name) && piecesHeld(after, c) < 1) out.push(`${at}: ${CHARACTERS[c].name} without her memory`);
+    // A companion's name is hers to tell: only on a line behind one of her own memories (the remnant's line). Her
+    // nicknames and her title count as her name (PR C review S2); a line is told once per companion, by the first form found.
+    for (const c of COMPANIONS) {
+      const form = namesOf(c).find((n) => text.includes(n));
+      if (form && piecesHeld(after, c) < 1) out.push(`${at}: ${form} without her memory`);
+    }
   }
   return out;
 }
@@ -181,5 +195,23 @@ describe('the bestiary text and its gates (roster plan Task C5)', () => {
     expect(md.startsWith('# 圖鑑朗讀稿')).toBe(true);
     const out = process.env.BESTIARY_DUMP;
     if (out) writeFileSync(out, `${md}\n`, 'utf8');
+  });
+});
+
+describe("a companion's other names are hers too (PR C review S2)", () => {
+  const one = (text: string, after?: StoryGate) => problemsOf('x', { trait: '先打旗手。', lines: [{ text, after }] });
+  it('her nicknames and her title wait for her memory as her name does', () => {
+    // The nicknames the script gives them (ledger I-146, I-160; style bible §3, Safira's 口癖) and each one's title.
+    expect(one('小鶴記得的那個人不在這裡。')).toEqual(['x line 1: 小鶴 without her memory']);
+    expect(one('小鶴記得的那個人不在這裡。', { seen: ['mem:chizuru:1'] })).toEqual([]);
+    expect(one('騎士大姊的影子。')).toEqual(['x line 1: 騎士大姊 without her memory']);
+    expect(one('小嘉的影子。')).toEqual(['x line 1: 小嘉 without her memory']);
+    expect(one('小魔女的筆記。')).toEqual(['x line 1: 小魔女 without her memory']);
+    expect(one('小希的箭。')).toEqual(['x line 1: 小希 without her memory']);
+    expect(one('舞姬大人的舞台。')).toEqual(['x line 1: 舞姬大人 without her memory']);
+    expect(one('沙漠舞劍士的步子。')).toEqual(['x line 1: 沙漠舞劍士 without her memory']);
+    expect(one('沙漠舞劍士的步子。', { pieces: { safira: 1 } })).toEqual([]);
+    // 凜凜 holds 凜: one problem, under her name.
+    expect(one('凜凜不在。')).toEqual(['x line 1: 凜 without her memory']);
   });
 });

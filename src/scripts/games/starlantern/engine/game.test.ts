@@ -6712,3 +6712,37 @@ describe("a boss's or a warden's own unique in a fight (roster plan Task C2)", (
     expect(swaps).toBeLessThan(8);
   });
 });
+
+describe("an elite's own piece takes its inscription roll (PR C review S1)", () => {
+  /** A roster species met as the elite of an elite fight on depth 1, beaten at once; its gear and the draws it took. */
+  const eliteFight = (seed: number) => {
+    const g = inMap(1, mulberry32(seed));
+    (g as unknown as { eliteAt: Pos | null }).eliteAt = { ...g.pos };
+    (g as unknown as { startBattle: (e: string[], b: boolean, s: boolean, elite?: string) => void }).startBattle(['paper-moth'], false, true, 'paper-moth');
+    const at = { loot: g.run!.lootDraws, trophy: g.run!.trophyDraws };
+    const end = killAll(g);
+    return { gear: [...end.gear, ...end.gearLeft], loot: g.run!.lootDraws - at.loot, trophy: g.run!.trophyDraws - at.trophy };
+  };
+  const lootOf = (it: ItemInstance) => ({ uid: it.uid, base: it.base, rarity: it.rarity, ilvl: it.ilvl, special: it.special, n: it.affixes.length });
+
+  it('an elite of an inscribing species rolls on the trophy stream, and no loot draw moves', () => {
+    const def = ENEMIES['paper-moth'] as { inscribe?: EnemyDef['inscribe'] };
+    const key = def.inscribe;
+    let marks = 0;
+    for (let seed = 1; seed <= 12; seed++) {
+      const on = eliteFight(seed);
+      delete def.inscribe;
+      let off: ReturnType<typeof eliteFight>;
+      try { off = eliteFight(seed); } finally { def.inscribe = key; }
+      expect(on.gear[0].ilvl).toBe(itemLevel(1, 'elite'));
+      expect(on.loot).toBe(off.loot);
+      expect(on.gear.map(lootOf)).toEqual(off.gear.map(lootOf));
+      // The elite's piece draws once (unless it is special); an inscription keeps to that piece's own rules.
+      expect(on.trophy).toBe(on.gear[0].special ? 0 : 1);
+      expect(off.trophy).toBe(0);
+      if (on.gear[0].inscription === 'paper-moth') marks++;
+    }
+    expect(marks).toBeGreaterThan(0);
+    expect(marks).toBeLessThan(12);
+  });
+});

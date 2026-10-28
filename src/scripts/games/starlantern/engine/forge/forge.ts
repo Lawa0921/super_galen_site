@@ -9,7 +9,7 @@ import { itemSlot, maxValue, rollItem, rollValue } from '../loot/item';
 import type { GameState } from '../state';
 import type { AnyStat, GearSlot, ItemInstance } from '../types';
 import type { Rng } from '../rng';
-import { canPay, enhanceChance, enhanceCost, findItem, forgeRng, fuseCost, fuseSlots, inscribeCost, pay, rerollCost, swapPool, type ForgeResult, type RerollOpts } from './cost';
+import { canPay, enhanceChance, enhanceCost, findItem, forgeRng, fuseCost, fuseSlots, inscribeCost, inscriptionAffix, pay, rerollCost, swapPool, type ForgeResult, type RerollOpts } from './cost';
 
 /** The essences a set of gear dismantles into: the sum of DISMANTLE by rarity. */
 export function dismantleYield(its: ItemInstance[]): Record<string, number> {
@@ -126,7 +126,9 @@ export function fuse(s: GameState, uids: number[], slot?: GearSlot, rng?: Rng): 
  * Roster plan Task C4 (spec §7.1, ruling 16): 銘刻, a reroll that turns affix `index` into `species`' inscription key, its
  * value rolled in the piece's own range on one forge draw. It locks the affix as any reroll does, marks the piece with the
  * species, and the bestiary notes the inscription. Only a magic, rare or epic piece (never a special one) can take it.
- * Refusals, in order: stock, invalid (special / no affix there / no such species), affixLocked, none (the slot cannot take
+ * A piece already inscribed takes a new inscription only on its old inscription's affix (that one is replaced in place), so
+ * it never carries two. Refusals, in order: stock, invalid (special / no affix there / no such species / another affix than
+ * the old inscription's), affixLocked, none (the slot cannot take
  * the key, or another affix already holds it), gold/mats. Without `rng` it draws once (`forgeDraws` + 1).
  */
 export function inscribeAt(s: GameState, uid: number, index: number, species: string, rng?: Rng): ForgeResult<{ before: { key: AnyStat; value: number }; after: { key: AnyStat; value: number } }> {
@@ -136,6 +138,9 @@ export function inscribeAt(s: GameState, uid: number, index: number, species: st
   const key = ENEMIES[species]?.inscribe;
   const cost = inscribeCost(it, species);
   if (it.special || !Number.isInteger(index) || index < 0 || index >= it.affixes.length || !key || !cost) return { ok: false, reason: 'invalid' };
+  // One inscription a piece (PR C review L3): a new one goes on the old inscription's affix, in its place, never beside it.
+  const old = inscriptionAffix(it);
+  if (old >= 0 && old !== index) return { ok: false, reason: 'invalid' };
   if (it.locked !== undefined && it.locked !== index) return { ok: false, reason: 'affixLocked' };
   if (!AFFIXES[key].slots.includes(itemSlot(it)) || it.affixes.some((a, i) => i !== index && a.key === key)) return { ok: false, reason: 'none' };
   const lacking = canPay(s, cost);

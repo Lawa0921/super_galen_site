@@ -789,6 +789,8 @@ export const T = {
       rerollTrend: (after: string, up: boolean) => `${after}（${up ? '提升' : '下降'}）`,
       /** Roster plan Task C4, 銘刻: the method row, 「銘刻：遺信紙蛾」. */
       inscribeWith: (species: string) => `銘刻：${species}`,
+      /** Why another affix of an inscribed piece is greyed out: a piece holds one inscription, so a new one replaces the old in place. */
+      inscribeOld: '已有銘文，只能銘刻在原本那一條',
       /** The detail: what the affix becomes, and whose mark the piece takes. */
       inscribeTo: (stat: string, species: string) => `銘刻成　${stat}（${species}的銘文）`,
       askInscribe: (label: string, affix: string) => `要把${label}的「${affix}」銘刻成銘文嗎？`,

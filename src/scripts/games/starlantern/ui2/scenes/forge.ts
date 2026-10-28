@@ -9,7 +9,7 @@ import { ROSTER_LIVE } from '../../data/monsters';
 import { REGIONS, type RegionId } from '../../data/regions';
 import { MATERIALS } from '../../data/materials';
 import { compareDelta } from '../../engine/compare';
-import { enhanceChance, enhanceCost, findItem, fuseCost, fuseSlots, inscribeCost, rerollCost, rerollRange, signatureOf, swapPool } from '../../engine/forge/cost';
+import { enhanceChance, enhanceCost, findItem, fuseCost, fuseSlots, inscribeCost, inscriptionAffix, rerollCost, rerollRange, signatureOf, swapPool } from '../../engine/forge/cost';
 import { dismantleYield } from '../../engine/forge/forge';
 import { implicitStats, itemSlot } from '../../engine/loot/item';
 import { SLOTS } from '../../engine/party';
@@ -448,10 +448,12 @@ export function rerollPage(h: ForgeHost): void {
         const id = `ins:${species}`;
         const icon = lateArt(h.ctx.art, art.icon(signatureOf(species)!));
         const label = F.inscribeWith(ENEMIES[species].name);
-        const ok = inscribeFits(it, index, species);
-        const base: MenuItem = ok
+        // One inscription a piece (PR C review L3): only the old inscription's affix takes a new one.
+        const old = inscriptionAffix(it);
+        const why = old >= 0 && old !== index ? F.inscribeOld : inscribeFits(it, index, species) ? null : T.reasons.none;
+        const base: MenuItem = why === null
           ? { id, label, right: T.ui2.forge.costGold(inscribeCost(it, species)!.gold) }
-          : { id, label, disabled: true, right: T.reasons.none, note: T.reasons.none };
+          : { id, label, disabled: true, right: why, note: why };
         return { ...base, ...(icon ? { icon } : {}) };
       }));
       const insOf = (id: string | undefined): string | undefined => (id?.startsWith('ins:') ? id.slice(4) : undefined);

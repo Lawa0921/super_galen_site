@@ -130,6 +130,15 @@ export function signatureOf(species: string): string | undefined {
   return Object.values(MATERIALS).find((m) => m.owner === species && m.kind === 'monster')?.id;
 }
 
+/**
+ * The affix that holds a piece's inscription (its species' key), or -1: none, or a mark with no affix of its own (the slot
+ * could not take the key). A new inscription replaces this one in place (PR C review L3).
+ */
+export function inscriptionAffix(it: ItemInstance): number {
+  const key = it.inscription ? ENEMIES[it.inscription]?.inscribe : undefined;
+  return key ? it.affixes.findIndex((a) => a.key === key) : -1;
+}
+
 /** What inscribing `species`' key on `it` costs (ruling 16): INSCRIBE_QTY of its signature and a reroll's gold; null when it has none. */
 export function inscribeCost(it: ItemInstance, species: string): Cost | null {
   const sig = signatureOf(species);

@@ -854,7 +854,8 @@ export class Game {
       const rng = lootRng(run);
       const piece = rollGear(rng, this.dropCtx('elite', tier));
       rare = rollRareMaterial(rng);
-      gear.push(...this.ownUnique(b, [piece], ['elite'], tier));
+      // The elite's own piece takes its species' inscription roll too (PR C review S1), then a warden's own-unique swap.
+      gear.push(...this.ownUnique(b, [this.inscribed(piece, b.enemies[0].defId)], ['elite'], tier));
     }
     // In an elite fight the first enemy is the elite; the rest are escorts.
     for (let i = elite ? 1 : 0; i < b.enemies.length; i++) {

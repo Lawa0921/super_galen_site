@@ -5,7 +5,9 @@ import { mulberry32, type Rng } from './rng';
 import type { Portal } from './dungeon/run';
 import type { CharacterId } from './types';
 import { GEAR_CHANCE } from './loot/drops';
-import { noteFelled, noteInscribed, noteSeen } from './bestiary';
+import { BESTIARY_MAX, isBestiary, noteFelled, noteInscribed, noteSeen } from './bestiary';
+import { newGame } from './state';
+import type { BattleState } from './battle';
 import { withRosterLive } from './testing';
 
 // Wrapped so a test can switch the bookkeeping off and compare the draws; it still records for real.
@@ -119,5 +121,18 @@ describe('the bestiary remembers what was seen and felled (roster plan Task C3)'
     expect(on.draws).toEqual(off.draws);
     expect(on.draws.loot).toBe(3);
     expect(on.draws.trophy).toBe(1);
+  });
+});
+
+describe('the counts stop at the save cap (PR C review L2)', () => {
+  it('a kind at the cap stays there, and the save still loads it', () => {
+    const s = newGame();
+    s.bestiary = { slime: { seen: BESTIARY_MAX, felled: BESTIARY_MAX } };
+    noteSeen(s, ['slime']);
+    const b = { enemies: [{ defId: 'slime', alive: false }] } as unknown as BattleState;
+    noteFelled(s, b);
+    expect(s.bestiary.slime).toEqual({ seen: BESTIARY_MAX, felled: BESTIARY_MAX });
+    expect(isBestiary(s.bestiary)).toBe(true);
+    expect(isBestiary({ slime: { seen: BESTIARY_MAX + 1, felled: 0 } })).toBe(false);
   });
 });

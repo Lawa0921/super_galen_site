@@ -596,8 +596,10 @@ describe('inscribing at the forge (roster plan Task C4)', () => {
     // The state it was given is left alone.
     expect(s.bag[0].affixes[1].key).toBe('res');
     expect(s.inventory['faded-letter']).toBe(5);
-    // As a reroll does, it locks the affix: another one is refused after.
-    expect(inscribeAt({ ...r.state, inventory: { 'faded-letter': 3 } }, 1, 0, 'paper-moth')).toEqual({ ok: false, reason: 'affixLocked' });
+    // It locks the affix, as a reroll does; and a piece holds one inscription (PR C review L3), so another affix is refused
+    // for that first (`invalid`), the lock behind it.
+    expect(r.state.bag[0].locked).toBe(1);
+    expect(inscribeAt({ ...r.state, inventory: { 'faded-letter': 3 } }, 1, 0, 'paper-moth')).toEqual({ ok: false, reason: 'invalid' });
   });
 
   it('a special piece cannot be inscribed', () => {
@@ -662,5 +664,37 @@ describe('crafting an own unique (roster plan Task C4)', () => {
       expect(craftOwnUnique({ ...s, inventory: { 'fog-gate-plate': 4, 'star-tear': 1 } }, 'fog-halberd')).toEqual({ ok: false, reason: 'mats' });
       expect(craftOwnUnique({ ...s, bag: Array.from({ length: BAG_SIZE }, (_, i) => at('common', i + 1)) }, 'fog-halberd')).toEqual({ ok: false, reason: 'full' });
     });
+  });
+});
+
+describe('inscribing over an inscription (PR C review L3)', () => {
+  const NECK = Object.values(EQUIPMENT).filter((e) => e.slot === 'neck').sort((a, b) => a.ilvl - b.ilvl)[0].id;
+  /** A neck piece a paper moth dropped: its inscription (睡眠抗性) on the first affix, nothing locked. */
+  const dropped = (extra: Partial<ItemInstance> = {}): ItemInstance =>
+    ({ uid: 1, base: NECK, rarity: 'rare', ilvl: 10, affixes: [{ key: 'sleepRes', value: 20 }, { key: 'hp', value: 30 }], enhance: 0, inscription: 'paper-moth', ...extra });
+  const stocked = (it: ItemInstance): GameState => ({ ...withBag([it]), gold: 1000, inventory: { 'wight-wick': 3, 'faded-letter': 3 } });
+
+  it('a new inscription replaces the old one in place: one inscription a piece', () => {
+    const r = inscribeAt(stocked(dropped()), 1, 0, 'lamp-wight');
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    const it = r.state.bag[0];
+    expect(it.inscription).toBe('lamp-wight');
+    expect(it.affixes.map((a) => a.key)).toEqual(['heal', 'hp']);
+    expect(it.affixes[1]).toEqual({ key: 'hp', value: 30 });
+    const [lo, hi] = rerollRange(it, 0)!;
+    expect(it.affixes[0].value).toBeGreaterThanOrEqual(lo);
+    expect(it.affixes[0].value).toBeLessThanOrEqual(hi);
+  });
+
+  it('it is refused on any other affix, so the old key can never stay beside a new one', () => {
+    expect(inscribeAt(stocked(dropped()), 1, 1, 'lamp-wight')).toEqual({ ok: false, reason: 'invalid' });
+    // The same species again, on its own affix, rerolls it.
+    const again = inscribeAt(stocked(dropped()), 1, 0, 'paper-moth');
+    expect(again.ok && again.state.bag[0].affixes.map((a) => a.key)).toEqual(['sleepRes', 'hp']);
+    // A mark with no affix of its own (the slot could not take the key then) leaves the choice free.
+    const marked = dropped({ affixes: [{ key: 'res', value: 4 }, { key: 'hp', value: 30 }] });
+    const free = inscribeAt(stocked(marked), 1, 1, 'lamp-wight');
+    expect(free.ok && free.state.bag[0].affixes.map((a) => a.key)).toEqual(['res', 'heal']);
   });
 });

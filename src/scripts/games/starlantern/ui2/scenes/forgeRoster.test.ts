@@ -142,3 +142,22 @@ describe('the forge for the roster (roster plan Task C4)', () => {
     });
   });
 });
+
+describe('inscribing over an inscription at the forge (PR C review L3)', () => {
+  it('only the old inscription affix takes a new one', () => {
+    withRosterLive(['paper-moth', 'lamp-wight'], () => {
+      const game = new Game(constRng(0.5), memoryStorage());
+      game.state.bag = [neck({ affixes: [{ key: 'sleepRes', value: 20 }, { key: 'hp', value: 30 }], inscription: 'paper-moth' })];
+      game.state.gold = 1000;
+      game.state.inventory = { 'essence-rare': 5, 'wight-wick': 3 };
+      const t = setup(game);
+      t.go('confirm', 'down', 'down', 'confirm');   // greeting, 重鑄
+      t.go('confirm', 'down', 'confirm');           // the piece, its second affix (生命)
+      const row = t.row('ins:lamp-wight');
+      expect(row.getAttribute('aria-disabled')).toBe('true');
+      expect(row.querySelector('.slx-right')!.textContent).toBe(F.inscribeOld);
+      t.go('cancel', 'up', 'confirm');              // back, the first affix (the old inscription)
+      expect(t.row('ins:lamp-wight').getAttribute('aria-disabled')).toBe('false');
+    });
+  });
+});

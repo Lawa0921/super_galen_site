@@ -11,8 +11,13 @@ export interface BestiaryEntry { seen: number; felled: number; inscribed?: true 
 /** By definition id: a region's tinted variant is the same kind. */
 export type Bestiary = Record<string, BestiaryEntry>;
 
-/** Far above any play; keeps a hand-edited save's counts finite. */
-const MAX_COUNT = 1e9;
+/**
+ * Far above any play; keeps a hand-edited save's counts finite. The counts stop here too (PR C review L2), so a save at the
+ * cap never turns corrupt one fight later.
+ */
+export const BESTIARY_MAX = 1e9;
+const MAX_COUNT = BESTIARY_MAX;
+const bump = (n: number): number => Math.min(MAX_COUNT, n + 1);
 
 /** The kinds a fight shows now: each foe's definition id once, a decoy left out (it is its foe's phantom). */
 export function speciesIn(b: BattleState): string[] {
@@ -26,12 +31,12 @@ function entry(s: GameState, id: string): BestiaryEntry {
 
 /** One more fight in which each of `ids` was met. Draws nothing. */
 export function noteSeen(s: GameState, ids: readonly string[]): void {
-  for (const id of ids) entry(s, id).seen++;
+  for (const id of ids) { const e = entry(s, id); e.seen = bump(e.seen); }
 }
 
 /** A won fight: each foe beaten in it (fallen, not fled, not a decoy) counts once. Draws nothing. */
 export function noteFelled(s: GameState, b: BattleState): void {
-  for (const c of b.enemies) if (!c.alive && !c.left && !c.decoyOf) entry(s, c.defId).felled++;
+  for (const c of b.enemies) if (!c.alive && !c.left && !c.decoyOf) { const e = entry(s, c.defId); e.felled = bump(e.felled); }
 }
 
 /** A piece with `species`' inscription came into the party's hands. Draws nothing. */
