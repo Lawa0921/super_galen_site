@@ -60,7 +60,7 @@ export function measureParity(policies?: PolicyTable): ParityTable {
   const cells: ParityCell[] = [];
   for (const level of PARITY_LEVELS) {
     const depth = parityDepth(level);
-    const scale = { depth, region: 'mainline' as const };
+    const scale = { depth, region: 'mainline' as const, legacy: true as const };
     const fights: { enemyIds: string[]; boss: boolean }[] = [
       ...legacyEncounterTable('mainline', depth).map((g) => ({ enemyIds: g, boss: false })),
       { enemyIds: ['lanterneater'], boss: true },

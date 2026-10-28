@@ -104,6 +104,13 @@ describe('rune band measurements (plan 8h Task 5a)', () => {
     expect([buildOf('hero', 'healer')!.scenario, buildOf('selene', 'fullmoon')!.scenario]).toEqual(['ordeal', 'ordeal']);
   });
 
+  it('the known exceptions are exactly the two of roster ruling 21, until follow-up F5 takes them off', () => {
+    // Roster plan L1b (spec §0 item 21): the first live wave's C crowd; new-species levers exhausted. No third without a ruling.
+    expect(Object.keys(BAND_EXCEPTIONS)).toEqual(['hero/mage']);
+    expect(Object.keys(ONE_RUNE_EXCEPTIONS)).toEqual(['safira/festival war-dance+lasting']);
+    for (const e of [...Object.values(BAND_EXCEPTIONS), ...Object.values(ONE_RUNE_EXCEPTIONS)]) expect(e.reason, e.reason).toMatch(/F5, ruling 21/);
+  });
+
   it('every known exception is a real build, named for the controller, with a reason', () => {
     for (const [tag, e] of Object.entries(BAND_EXCEPTIONS)) {
       const [owner, key] = tag.split('/') as [CharacterId, string];

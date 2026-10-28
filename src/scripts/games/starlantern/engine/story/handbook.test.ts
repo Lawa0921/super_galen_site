@@ -14,7 +14,7 @@ import { meet } from '../party';
 import { newGame, type GameState } from '../state';
 import type { CharacterId } from '../types';
 import { handbook } from './handbook';
-import { withRosterLive, withTold } from '../testing';
+import { withRosterLive, withRosterOnly, withTold } from '../testing';
 import { arrivalScenes, onReturn, sceneDone } from './events';
 /**
  * Bond plan Task 17: the registries hold what is written now, so a test that registers its own puts back what was there
@@ -533,7 +533,8 @@ describe('the bestiary page (roster plan Task C6)', () => {
   const fresh = (): GameState => newGame();
   const page = (s: GameState, id: string) => handbook(s).codex.monsters.find((m) => m.id === id);
 
-  it('only live foes are listed', () => {
+  it('only live foes are listed', () => withRosterOnly([], () => {
+    // L1b: measures the game as it was with nothing live.
     const s = fresh();
     expect(page(s, 'paper-moth')).toBeUndefined();
     expect(handbook(s).codex.monsters.map((m) => m.id)).toEqual(LEGACY_ENEMY_IDS.filter((id) => !ENEMIES[id].story));
@@ -542,6 +543,19 @@ describe('the bestiary page (roster plan Task C6)', () => {
       expect(page(s, 'fog-warden')).toBeDefined();
       expect(page(s, 'root-hound')).toBeUndefined();
     });
+  }));
+
+  it('the first live wave is listed, each a name of question marks until met (L1b)', () => {
+    const s = fresh();
+    const by = (f: string) => handbook(s).codex.monsters.filter((m) => m.filter === f).map((m) => m.id);
+    expect(by('road')).toEqual(['slime', 'bat', 'wolf', 'beetle', 'wisp', 'lizard', 'golem', 'shade', 'paper-moth', 'lamp-wight', 'root-hound',
+      'tin-soldier', 'dust-mimic', 'market-ghost', 'tongueless-bell', 'hollow-hunter', 'mist-twin', 'moon-crow', 'bell-watcher', 'sleepwalker', 'hoarder']);
+    expect(by('lands')).toEqual([]);
+    expect(by('bosses')).toEqual(['lanterneater', 'false-moon', 'bell-warden', 'fog-warden', 'silent-bell', 'hollow-champion']);
+    expect(page(s, 'old-city-sentinel')).toBeUndefined();   // R2, not live yet
+    expect(page(s, 'paper-moth')).toMatchObject({ name: B.unknown, seen: 0, trait: null, lines: [] });
+    s.bestiary = { 'paper-moth': { seen: 1, felled: 1 } };
+    expect(page(s, 'paper-moth')).toMatchObject({ name: ENEMIES['paper-moth'].name, trait: BESTIARY['paper-moth']!.trait });
   });
 
   it('an unseen foe is a name of question marks and a place', () => {
@@ -572,7 +586,8 @@ describe('the bestiary page (roster plan Task C6)', () => {
 
   it('the filters split main road, regions and bosses', () => {
     const s = fresh();
-    withRosterLive(['paper-moth', 'cinder-imp', 'fog-warden', 'false-moon', 'old-city-archon', 'archon-hand'], () => {
+    // L1b: exactly these live, the rest as with nothing live.
+    withRosterOnly(['paper-moth', 'cinder-imp', 'fog-warden', 'false-moon', 'old-city-archon', 'archon-hand'], () => {
       const by = (f: string) => handbook(s).codex.monsters.filter((m) => m.filter === f).map((m) => m.id);
       expect(by('road')).toEqual(['slime', 'bat', 'wolf', 'beetle', 'wisp', 'lizard', 'golem', 'shade', 'paper-moth']);
       expect(by('lands')).toEqual(['cinder-imp']);

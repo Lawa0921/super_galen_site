@@ -239,13 +239,18 @@ export const UNCAST: Readonly<Record<string, string>> = {
  * Builds that fail the §12.4 band after tuning (plan 8h Task 5b, three rounds), kept as known exceptions for the
  * controller to decide; the band test checks each still fails (a fixed one must leave the list) and reports it.
  */
-export const BAND_EXCEPTIONS: Readonly<Record<string, { decider: 'controller'; reason: string }>> = {};
+export const BAND_EXCEPTIONS: Readonly<Record<string, { decider: 'controller'; reason: string }>> = {
+  // Roster plan L1b (spec §0 item 21): the band's only shortfall is Lv 50's crowd wins (93 < 106 - 2 of 120).
+  'hero/mage': { decider: 'controller', reason: 'the C crowd focus-fire and turning weakness (moon-crow, bell-watcher) out-pace the fragile mage build at Lv50 (crowd wins); new-species levers exhausted (rebaseline-L1 builds.bands 第 1–2 輪); fix belongs on the build side, follow-up F5, ruling 21' },
+};
 
 /**
  * Single runes over ONE_RUNE_MAX that only a §6.7 number would bring under (plan 8h Task 5b: BLOCKED, the controller's),
  * keyed `<owner>/<key> <skill>+<rune>`.
  */
-export const ONE_RUNE_EXCEPTIONS: Readonly<Record<string, { decider: 'controller'; reason: string }>> = {};
+export const ONE_RUNE_EXCEPTIONS: Readonly<Record<string, { decider: 'controller'; reason: string }>> = {
+  'safira/festival war-dance+lasting': { decider: 'controller', reason: 'lasting dominates 2–3 round C fights (eater 1.20, legacy d13 passed); rune-side question, follow-up F5, ruling 21' },
+};
 
 const f2 = (n: number) => n.toFixed(2);
 

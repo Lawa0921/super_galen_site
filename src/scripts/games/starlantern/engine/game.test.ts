@@ -59,7 +59,7 @@ import { GIFT_LINES, RIN_OATH, type GiftPools } from '../data/bond.zh-TW';
 import { BOND_RUN_CAP, FIELD_POINTS } from '../data/story/bond';
 import { BONDS_WRITTEN, ROMANCES_WRITTEN, TOGETHER_WRITTEN, sceneTime } from '../data/story/scenes';
 import { today } from './story/bond';
-import { withBondEarn, withBondScale, withRosterLive } from './testing';
+import { withBondEarn, withBondScale, withRosterLive, withRosterOnly } from './testing';
 /**
  * Bond plan Task 17: the registries hold what is written now, so a test that registers its own puts back what was there
  * (`bondsBack`), registers a companion only once (`bondsAdd`), and gives a written scene back instead of deleting it.
@@ -5407,8 +5407,9 @@ describe('drops and kill keys by tier (difficulty plan Task 6a-prime)', () => {
     });
   });
 
-  it('Normal drops are as before', () => {
+  it('Normal drops are as before', () => withRosterOnly([], () => {
     // Pinned before Task 6a-prime: one seed's elite win, boss win and gear chest on iron depth 5, runes open.
+    // L1b: measures the game as it was with nothing live.
     const g = new Game(mulberry32(17), null, undefined, 0, HERO_LINEUP);
     g.state.dungeon.reached.iron = 5;
     g.state.runesOpen = true;
@@ -5425,7 +5426,7 @@ describe('drops and kill keys by tier (difficulty plan Task 6a-prime)', () => {
     expect([g.state.dungeon.bossKills, g.run!.lootDraws, g.run!.runeDraws, g.rng()]).toEqual([{ 'iron:5': 1 }, 5, 2, 0.06393614131957293]);
     // The whole of each result, to the last affix of every piece.
     expect([fnv(elite), fnv(boss), fnv(chest)]).toEqual(['f5001d33', 'b08b01f5', 'e0f8ad6e']);
-  });
+  }));
 });
 
 describe('time and moon: the day (Task 1)', () => {
@@ -6405,6 +6406,10 @@ describe('a thief in a real fight (roster plan B3, M13)', () => {
 
   it('lost when the party flees', () => {
     const g = thief(100);
+    // L1b tuned the thief's blow (90 → 140, spec §0 item 21); this test is about the purse, not the blow, so the depth-1
+    // party keeps the strength to run: the blow as it was when the test was written.
+    const e0 = g.battle!.enemyDefs!.e0;
+    e0.skills = e0.skills.map((k) => ({ ...k, effects: k.effects.map((x) => (x.kind === 'damage' ? { ...x, power: 90 } : x)) }));
     for (let i = 0; i < 6 && !g.battle!.enemies[0].stolen; i++) g.submitRound(defendAll(g));
     expect(g.run!.loot.gold).toBe(95);
     const fled = (() => { for (let i = 0; i < 40; i++) { const r = g.submitRound({ hero: { kind: 'escape' } }); if (r?.end) return r; } return null; })();
@@ -6460,14 +6465,16 @@ describe('wardens on the map and bosses by depth (roster plan B5)', () => {
   const wardenAt = (g: Game) => floorOf(g.run!, g.floor).contents.find((c) => c.kind === 'warden');
   const rareCount = (r: Record<string, number>) => RARE_MATERIALS.reduce((n, m) => n + (r[m] ?? 0), 0);
 
-  it('with nothing live every boss is the lantern-eater', () => {
+  it('with nothing live every boss is the lantern-eater', () => withRosterOnly([], () => {
+    // L1b: measures the game as it was with nothing live.
     for (const region of ['mainline', 'blaze', 'frost', 'storm', 'mire', 'shade', 'iron'] as const) {
       for (const depth of [5, 10, 15]) expect(bossIds(deep(region, depth)), `${region} ${depth}`).toEqual(['lanterneater']);
     }
-  });
+  }));
 
   it('a live boss is met where bossFor says', () => {
-    withRosterLive(['fog-warden', 'mire-hydra'], () => {
+    // L1b: exactly these two live, the rest as with nothing live.
+    withRosterOnly(['fog-warden', 'mire-hydra'], () => {
       expect(bossIds(deep('mainline', 5))).toEqual(['fog-warden']);
       expect(bossIds(deep('mainline', 10))).toEqual(['lanterneater']);
       expect(bossIds(deep('mire', 5))).toEqual(['mire-hydra']);
@@ -6509,12 +6516,13 @@ describe('wardens on the map and bosses by depth (roster plan B5)', () => {
   });
 
   it('a warden brings its escort only once the escort is live', () => {
-    withRosterLive(['bell-warden'], () => {
+    // L1b: exactly these live, the rest as with nothing live.
+    withRosterOnly(['bell-warden'], () => {
       const g = deep('mainline', 13);
       stepOnto(g, wardenAt(g)!.at);
       expect(g.battle!.enemies.map((e) => e.defId)).toEqual(['bell-warden']);
     });
-    withRosterLive(['bell-warden', 'bell-watcher'], () => {
+    withRosterOnly(['bell-warden', 'bell-watcher'], () => {
       const g = deep('mainline', 13);
       stepOnto(g, wardenAt(g)!.at);
       expect(g.battle!.enemies.map((e) => e.defId)).toEqual(['bell-warden', 'bell-watcher']);
@@ -6664,8 +6672,9 @@ describe("a boss's or a warden's own unique in a fight (roster plan Task C2)", (
     try {
       BOSS_LEGENDARY.first = 1;
       for (let seed = 1; seed <= 10; seed++) {
-        const plain = bossFight(seed);
-        const own = withRosterLive(['fog-warden'], () => bossFight(seed));
+        // L1b: the plain fight as the game was with nothing live; the own one with only its boss live.
+        const plain = withRosterOnly([], () => bossFight(seed));
+        const own = withRosterOnly(['fog-warden'], () => bossFight(seed));
         expect(plain.ids).toEqual(['lanterneater']);
         expect(own.ids).toEqual(['fog-warden']);
         expect(own.loot).toBe(plain.loot);

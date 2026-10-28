@@ -8,7 +8,7 @@ import { Game } from '../../engine/game';
 import { meet } from '../../engine/party';
 import type { SaveStorage } from '../../engine/save';
 import { restoreNight } from '../../engine/story/nights';
-import { constRng, memoryStorage, withRosterLive } from '../../engine/testing';
+import { constRng, memoryStorage, withRosterLive, withRosterOnly } from '../../engine/testing';
 import { BESTIARY, BESTIARY_UI } from '../../data/bestiary.zh-TW';
 import { ENEMIES } from '../../data/enemies';
 import { MATERIALS } from '../../data/materials';
@@ -479,7 +479,8 @@ describe('the bestiary page (roster plan Task C6)', () => {
   const detail = (root: HTMLElement) => root.querySelector('.slx-hb-detail')!.textContent ?? '';
   const OLD_ROAD = ['slime', 'bat', 'wolf', 'beetle', 'wisp', 'lizard', 'golem', 'shade'];
 
-  it('with nothing live the 圖鑑 page is as it was', () => {
+  it('with nothing live the 圖鑑 page is as it was', () => withRosterOnly([], () => {
+    // L1b: measures the game as it was with nothing live.
     const t = setup(undefined, (g) => { g.state.revealed = { slime: ['fire'] }; });
     t.goTab(H.tabs.codex);
     // The old kinds by name, each with its known weakness, whether met or not: no filter, no question marks.
@@ -488,16 +489,28 @@ describe('the bestiary page (roster plan Task C6)', () => {
     t.s.onAction('down');
     expect(detail(t.root)).toBe(`${ENEMIES.bat.name}${H.codex.weakUnknown}`);
     expect(t.root.querySelector('.slx-status-art img')).toBeNull();
+  }));
+
+  it('the first live wave: the road and the bosses, each foe 「？？？」 until met (L1b)', () => {
+    const t = setup();
+    t.goTab(H.tabs.codex);
+    expect(t.labels()).toEqual([B.filters.road, B.filters.bosses]);   // no region's natives live yet
+    expect(t.row(B.filters.road).querySelector('.slx-right')!.textContent).toBe(B.count(0, 21));
+    expect(t.row(B.filters.bosses).querySelector('.slx-right')!.textContent).toBe(B.count(0, 6));
+    t.pick(B.filters.road);
+    expect(t.labels().length).toBeGreaterThan(0);   // the rows in view: none met, so every one is question marks
+    expect(new Set(t.labels())).toEqual(new Set([B.unknown]));
   });
 
   it('the filters split main road, regions and bosses', () => {
-    withRosterLive(['paper-moth'], () => {
+    // L1b: exactly these live, the rest as with nothing live.
+    withRosterOnly(['paper-moth'], () => {
       const t = setup();
       t.goTab(H.tabs.codex);
       expect(t.labels()).toEqual([B.filters.road, B.filters.bosses]);
       expect(t.row(B.filters.road).querySelector('.slx-right')!.textContent).toBe(B.count(0, 9));
     });
-    withRosterLive(['paper-moth', 'cinder-imp'], () => {
+    withRosterOnly(['paper-moth', 'cinder-imp'], () => {
       const u = setup();
       u.goTab(H.tabs.codex);
       expect(u.labels()).toEqual([B.filters.road, B.filters.lands, B.filters.bosses]);
@@ -505,7 +518,8 @@ describe('the bestiary page (roster plan Task C6)', () => {
   });
 
   it('an unseen foe is 「？？？」 and where it is met, with no picture', () => {
-    withRosterLive(['paper-moth'], () => {
+    // L1b: exactly this one live, the rest as with nothing live.
+    withRosterOnly(['paper-moth'], () => {
       const t = setup(undefined, (g) => { g.state.bestiary = { slime: { seen: 2, felled: 1 } }; g.state.revealed = { slime: ['fire'] }; }, { has: () => true });
       t.goTab(H.tabs.codex);
       t.pick(B.filters.road);
@@ -535,7 +549,8 @@ describe('the bestiary page (roster plan Task C6)', () => {
     const was = BESTIARY['fog-warden'];
     try {
       BESTIARY['fog-warden'] = { trait: '先打旗手。', lines: [{ text: '霧門前的守衛。' }, { text: '它在等人。', after: { seen: ['act3'] } }] };
-      withRosterLive(['fog-warden'], () => {
+      // L1b: exactly this one live, the rest as with nothing live.
+      withRosterOnly(['fog-warden'], () => {
         const seen = setup(undefined, (g) => { g.state.bestiary = { 'fog-warden': { seen: 1, felled: 0 } }; });
         seen.goTab(H.tabs.codex);
         seen.pick(B.filters.bosses);
