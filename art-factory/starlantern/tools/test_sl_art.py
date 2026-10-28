@@ -2124,3 +2124,38 @@ def test_lone_tint_takes_the_crab_plates_rose_tip_and_the_bats_pink_claw_but_not
     assert A.lone_tint_pixels(Image.fromarray(two, 'RGBA')) == []
     _, fixed, _ = A.repair_lone_tint(crab, keep=[(25, 4)])
     assert fixed == []
+
+
+# --- F8 review round 1 (2026-10-29): residue the outline-key floors missed ------------------------------------------------------
+ETHER = F8_WORK / 'sheet-icons-2/icon-ether.png'
+THORN_FANG = F8_WORK / 'sheet-icons-2/icon-thorn-fang.png'
+ANTIDOTE = F8_WORK / 'sheet-icons-2/icon-antidote.png'
+
+
+def test_outline_key_takes_a_key_blend_under_the_saturation_floor_that_touches_key():
+    """F8 review: (4,9) (63,15,65) and (32,8) (60,18,65) on dusk-cloth sit between key pixels at its top corners; ether's
+    (20,27) (95,25,118) between two key pixels; thorn-fang's (21,3) (80,17,72) next to key (22,4); moss (12,12) (95,26,125)
+    next to the key speck (11,11), and (13,13) (77,29,77) next to (12,12). Saturation .62-.79, under outline_blend's .8:
+    taken when connected on the outline to outline key. Never: violet art at hue 278 next to key (crystal-shell (10,6)
+    (126,14,193), antidote's glass (10,2) (41,0,65)), or star-stone's lavender."""
+    for path, xys in ((DUSK_CLOTH, [(4, 9), (32, 8)]), (ETHER, [(20, 27)]), (THORN_FANG, [(21, 3)]), (MOSS, [(12, 12), (13, 13)])):
+        img = _rgba(path); got = A.outline_key_pixels(img)
+        for xy in xys: assert xy in got and xy not in A.outline_blend_pixels(img), (path.name, xy)
+        assert set(A.key_adjacent_blend_pixels(img)) == set(xys), path.name
+    assert (10, 6) not in A.outline_key_pixels(_rgba(CRYSTAL_SHELL)) and (10, 2) not in A.outline_key_pixels(_rgba(ANTIDOTE))
+    assert A.key_adjacent_blend_pixels(_rgba(STAR_STONE)) == [] and A.key_adjacent_blend_pixels(_rgba(ICE_CRYSTAL)) == []
+
+
+def test_repair_outline_key_takes_review_classified_residue_with_also():
+    """moss (15,12) (93,42,112) and (6,16) (80,19,82) touch no key, and ice-crystal's (19,8), (20,12) have hue 278-279.8,
+    where violet art also stands next to key (antidote, crystal-shell): no detector can take them, the review classifies
+    them, and `also` adds them to the repaired set. The values are the review's own trial of the median rule."""
+    img = _rgba(MOSS); new, fixed, skipped = A.repair_outline_key(img, also=[(15, 12), (6, 16)])
+    got = {(f[0], f[1]): f[3] for f in fixed}
+    assert {k: got[k] for k in [(12, 12), (15, 12), (13, 13), (6, 16)]} == {
+        (12, 12): (19, 59, 10), (15, 12): (70, 74, 9), (13, 13): (14, 49, 6), (6, 16): (63, 109, 10)}
+    ice = _rgba(ICE_CRYSTAL); new, fixed, _ = A.repair_outline_key(ice, also=[(19, 8), (20, 12)])
+    got = {(f[0], f[1]): f[3] for f in fixed}
+    assert got[(19, 8)] == (35, 150, 200) and got[(20, 12)] == (25, 136, 190) and got[(21, 13)] == (42, 74, 110)
+    with pytest.raises(ValueError):
+        A.repair_outline_key(img, also=[(0, 0)])                              # a transparent pixel is never residue

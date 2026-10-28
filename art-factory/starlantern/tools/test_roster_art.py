@@ -596,10 +596,26 @@ def test_an_id_on_two_pass_lines_refuses_the_round(factory, review):
 REAL_REG = Path(__file__).resolve().parents[1] / 'registry.json'
 
 
+def _before_f8(e):
+    """A real registry entry as it stood before plan Task F8 recorded (and published) its repair: the f8 repair dropped, a
+    published one rewound (final, QA, allowance), and the repair it replaced back in `repair`."""
+    rep = e.get('repair') or {}
+    if rep.get('publish_with') != 'f8': return e
+    if rep.get('status') == 'published':
+        last = e['history'].pop(); e.update(final=last['final'], qa=last['qa'])
+        if not e['history']: e.pop('history')
+        for k in ('allow_magenta_spill', 'allow_magenta_spill_reason'): e.pop(k, None)
+    e.pop('repair'); hist = e.pop('repair_history', [])
+    if hist:
+        e['repair'] = hist[-1]
+        if hist[:-1]: e['repair_history'] = hist[:-1]
+    return e
+
+
 def _real_entry(factory, aid):
     """The real registry entry of a published roster asset, its final copied into the test factory."""
     import copy, shutil
-    e = copy.deepcopy(json.loads(REAL_REG.read_text(encoding='utf-8'))['assets'][aid])
+    e = _before_f8(copy.deepcopy(json.loads(REAL_REG.read_text(encoding='utf-8'))['assets'][aid]))
     if (e.get('repair') or {}).get('status') == 'published':   # once R3 published the repair: the entry as it was before
         last = e['history'][-1]; e.update(final=last['final'], qa=last['qa']); e.pop('repair'); e.pop('history')
     dst = factory / 'work' / 'real' / f'{aid}.png'; dst.parent.mkdir(parents=True, exist_ok=True)
@@ -918,10 +934,10 @@ def test_roster_cells_fall_back_to_rows_when_columns_do_not_line_up(factory):
 
 # --- plan Task F8 (controller 2026-10-29): the older published icons' key residue, a repair-only round -------------------------
 def _real_entry_as_is(factory, aid, public=None):
-    """The real registry entry of a published asset exactly as it is now (a published repair kept), its final copied into the
-    test factory (and to its runtime path under `public`)."""
+    """The real registry entry of a published asset as it stood before F8 (an earlier published repair kept), its final
+    copied into the test factory (and to its runtime path under `public`)."""
     import copy, shutil
-    e = copy.deepcopy(json.loads(REAL_REG.read_text(encoding='utf-8'))['assets'][aid])
+    e = _before_f8(copy.deepcopy(json.loads(REAL_REG.read_text(encoding='utf-8'))['assets'][aid]))
     src = Path(__file__).resolve().parents[3] / e['final']
     dst = factory / 'work' / 'real' / f'{aid}.png'; dst.parent.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(src, dst); e['final'] = str(dst)
@@ -1027,3 +1043,21 @@ def test_repair_outliers_cli_takes_a_rule_list_keep_and_allowance(factory, capsy
                            '--allow-spill', '24', '--allow-reason', 'lavender highlights are art'])
     rep = A.Registry(R.REG_PATH).get('icon-star-stone')['repair']
     assert rep['rules'] == ['outline-key'] and rep['kept'][0]['x'] == 6 and rep['qa']['pass']
+
+
+def test_repair_outliers_takes_review_classified_residue_with_a_reason(factory, capsys):
+    """F8 review round 1: moss (15,12) and (6,16) touch no key; the review classifies them as residue and --also adds them
+    to outline-key's set (recorded under `also`, with its reason). Without a reason, or without outline-key, it refuses."""
+    _real_entry_as_is(factory, 'icon-moss'); snap = R.REG_PATH.read_bytes()
+    with pytest.raises(ValueError, match='reason'):
+        R.repair_outliers(A.Registry(R.REG_PATH), 'icon-moss', 'f8', rule='outline-key,speck-clear', also=[(15, 12), (6, 16)])
+    with pytest.raises(ValueError, match='outline-key'):
+        R.repair_outliers(A.Registry(R.REG_PATH), 'icon-moss', 'f8', rule='speck-clear', also=[(15, 12)], also_reason='F8 review')
+    assert R.REG_PATH.read_bytes() == snap
+    R.repair_outliers_cli(['--id', 'icon-moss', '--with', 'f8', '--rule', 'outline-key,speck-clear', '--also', '15,12;6,16',
+                           '--also-reason', 'F8 review round 1', '--allow-spill', '6', '--allow-reason', 'petals'])
+    rec = A.Registry(R.REG_PATH).get('icon-moss')['repair']
+    assert rec['also'] == [{'x': 15, 'y': 12, 'rgb': [93, 42, 112]}, {'x': 6, 'y': 16, 'rgb': [80, 19, 82]}]
+    assert rec['also_reason'] == 'F8 review round 1' and rec['qa']['pass'] and rec['qa']['magenta_spill'] == 6
+    fixed = {(p['x'], p['y']): p['to'] for p in rec['pixels']}
+    assert fixed[(15, 12)] == [70, 74, 9] and fixed[(6, 16)] == [63, 109, 10] and fixed[(12, 12)] == [19, 59, 10]

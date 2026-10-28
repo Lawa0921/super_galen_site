@@ -32,6 +32,7 @@ forget chip. Structure as gear_art.py (plan 5d).
                                          Task F8: --with f8 (a repair-only round), --rule a comma list in order (outline-key,
                                          gutter-clear, speck-clear, lone-tint too), --keep X,Y;... (art, never touched),
                                          --allow-spill N --allow-reason TEXT (the contract's allow_magenta_spill, with its reason);
+                                         --also X,Y;... --also-reason TEXT (review-classified residue no detector takes, for outline-key);
                                          approve --batch f8 --review PATH and publish --batch f8 as any round (same urls)
 
 Rounds (spec §13.5): r0 the style sample (5 foes, the R0+R1 icon sheet, the R0+R1 unique sheet, the forget chip), r1-r4 the
@@ -897,7 +898,7 @@ def _recorded_keys(e, img):
     return out
 
 
-def _run_rules(e, img, rules, keep):
+def _run_rules(e, img, rules, keep, also=()):
     """Apply the repair rules in order. Returns (image, fixed [(x, y, old, new, rule)], cleared [(x, y, old rgba, rule)],
     skipped [(x, y, rgb, n)]) where skipped are the median repairs' leftovers no later step took."""
     keep = {tuple(k) for k in keep}; cur = img.convert('RGBA'); fixed, cleared, skipped = [], [], {}
@@ -912,7 +913,7 @@ def _run_rules(e, img, rules, keep):
         if name in REPAIR_FN:
             if keep: raise ValueError(f'--keep is not taken by the {name} rule')
             cur, f, s = getattr(A, REPAIR_FN[name])(cur)
-        elif name == 'outline-key': cur, f, s = A.repair_outline_key(cur, keep)
+        elif name == 'outline-key': cur, f, s = A.repair_outline_key(cur, keep, also=also)
         else: cur, f, s = A.repair_lone_tint(cur, keep)
         fixed += [(x, y, o, n, name) for x, y, o, n in f]
         for x, y, *_ in f: skipped.pop((x, y), None)
@@ -964,7 +965,8 @@ def _final_ref(path):
     return path.relative_to(repo).as_posix() if path.is_relative_to(repo) else str(path)
 
 
-def repair_outliers(reg, aid, publish_with, rule='pink-outlier', keep=(), allow_spill=None, allow_reason=None):
+def repair_outliers(reg, aid, publish_with, rule='pink-outlier', keep=(), allow_spill=None, allow_reason=None, also=(),
+                    also_reason=None):
     """Repair a roster asset's pink outliers (key residue) as a deterministic postprocess of its current final, for review
     and publishing with round `publish_with`. Writes work/repair/<aid>.png and records registry `repair` (old and new
     sha256, every pixel, the rule, the colour gates run again under the current stamp, status pending). The asset's own
@@ -974,13 +976,18 @@ def repair_outliers(reg, aid, publish_with, rule='pink-outlier', keep=(), allow_
     Plan Task F8: `rule` may be a list (or comma list) of rules applied in order; the clear rules set alpha 0 and are
     recorded under `cleared`. `keep` lists pixels a review classified as art (never touched, recorded under `kept`).
     `allow_spill` with `allow_reason` is the contract's allow_magenta_spill for art in the spill band, used by the re-gate
-    and written on the entry when the repair publishes. A published earlier repair moves to `repair_history`, and the new
+    and written on the entry when the repair publishes. `also` (with `also_reason`) lists pixels a review classified as key
+    residue that no detector takes; outline-key repairs them with its own set (recorded under `also`). A published earlier
+    repair moves to `repair_history`, and the new
     file never overwrites the asset's current final (work/repair/<aid>.<round>.png then)."""
     from PIL import Image
     import numpy as np
     label(publish_with); rules = _rule_list(rule)
     if allow_spill is not None and not (allow_reason or '').strip():
         raise ValueError('allow_magenta_spill needs a reason (contract: art that really has magenta, with its reason)')
+    also = sorted({tuple(int(v) for v in a) for a in also}, key=lambda t: (t[1], t[0]))
+    if also and not (also_reason or '').strip(): raise ValueError('--also needs the reason (the review that classified the pixels)')
+    if also and 'outline-key' not in rules: raise ValueError('--also is repaired by the outline-key rule; list it in --rule')
     e = reg.data['assets'].get(aid)
     roster = bool(e) and str(e.get('batch', '')).startswith('roster-')
     if not e or not e.get('final') or not (roster or e.get('status') == 'published'):
@@ -989,7 +996,7 @@ def repair_outliers(reg, aid, publish_with, rule='pink-outlier', keep=(), allow_
     if old and old.get('status') != 'published' and old.get('publish_with') != publish_with:
         raise PermissionError(f'{aid} has a {old.get("status")} repair for {old.get("publish_with")}; finish or drop it first')
     src = A._final_path(e['final']); img = Image.open(src).convert('RGBA')
-    new, fixed, cleared, skipped = _run_rules(e, img, rules, keep)
+    new, fixed, cleared, skipped = _run_rules(e, img, rules, keep, also)
     if skipped: raise PermissionError(f'{aid}: pink outliers with fewer than {A.REPAIR_MIN_NEIGHBOURS} opaque neighbours, not repaired: {skipped}')
     if not fixed and not cleared:
         raise ValueError(f'{aid}: no pink outlier to repair' if rules == ['pink-outlier'] else f'{aid}: no {",".join(rules)} pixel to repair')
@@ -1016,6 +1023,7 @@ def repair_outliers(reg, aid, publish_with, rule='pink-outlier', keep=(), allow_
     if cleared: rec['cleared'] = [{'x': x, 'y': y, 'from': list(o), 'to': [0, 0, 0, 0], 'rule': r} for x, y, o, r in cleared]
     if keep: rec['kept'] = [{'x': int(x), 'y': int(y), 'rgb': [int(v) for v in a[int(y), int(x), :3]]} for x, y in sorted({tuple(k) for k in keep}, key=lambda t: (t[1], t[0]))]
     if allow_spill is not None: rec['allow_magenta_spill'] = {'count': int(allow_spill), 'reason': allow_reason.strip()}
+    if also: rec.update(also=[{'x': x, 'y': y, 'rgb': [int(v) for v in a[y, x, :3]]} for x, y in also], also_reason=also_reason.strip())
     if old and all(old.get(k) == v for k, v in rec.items()): return old
     rec.update(status='pending', date=datetime.date.today().isoformat())
     if old and old.get('status') == 'published': e.setdefault('repair_history', []).append(old)
@@ -1023,11 +1031,11 @@ def repair_outliers(reg, aid, publish_with, rule='pink-outlier', keep=(), allow_
     return rec
 
 
-def _keep_arg(argv):
-    """--keep X,Y (repeatable; several pairs in one value separated by ';' or spaces) -> [(x, y)]."""
+def _keep_arg(argv, flag='--keep'):
+    """--keep X,Y (or --also; repeatable; several pairs in one value separated by ';' or spaces) -> [(x, y)]."""
     out = []
     for i, a in enumerate(argv):
-        if a == '--keep' and i + 1 < len(argv):
+        if a == flag and i + 1 < len(argv):
             for pair in re.split(r'[;\s]+', argv[i + 1].strip()):
                 if pair: x, y = pair.split(','); out.append((int(x), int(y)))
     return out
@@ -1037,8 +1045,9 @@ def repair_outliers_cli(argv):
     allow = G._arg(argv, '--allow-spill')
     rec = repair_outliers(_registry(), G._arg(argv, '--id'), G._arg(argv, '--with'), rule=G._arg(argv, '--rule') or 'pink-outlier',
                           keep=_keep_arg(argv), allow_spill=int(allow) if allow is not None else None,
-                          allow_reason=G._arg(argv, '--allow-reason'))
-    print(json.dumps({k: rec.get(k) for k in ('from_sha256', 'to_sha256', 'final', 'pixels', 'cleared', 'kept', 'changed_pixels', 'status')},
+                          allow_reason=G._arg(argv, '--allow-reason'), also=_keep_arg(argv, '--also'),
+                          also_reason=G._arg(argv, '--also-reason'))
+    print(json.dumps({k: rec.get(k) for k in ('from_sha256', 'to_sha256', 'final', 'pixels', 'cleared', 'kept', 'also', 'changed_pixels', 'status')},
                      ensure_ascii=False))
     print('qa', json.dumps({k: rec['qa'].get(k) for k in ('pass', 'reasons', 'pink_outlier', 'bright_key', 'key_tint_inside', 'magenta_spill', 'spec')}))
 
