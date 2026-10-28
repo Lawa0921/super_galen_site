@@ -41488,7 +41488,7 @@
     },
     "enemy-mirage-lead": {
       "final": "art-factory/starlantern/work/enemy-mirage-lead/enemy-mirage-lead.png",
-      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-mirage-lead\\enemy-mirage-lead-a3.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-mirage-lead\\enemy-mirage-lead-a4.png",
       "qa": {
         "pass": true,
         "reasons": [],
@@ -41503,18 +41503,18 @@
         "key_tint_inside": 0,
         "block": 12,
         "size": [
-          91,
-          98
+          83,
+          99
         ],
         "bright_key": 0,
         "pink_outlier": 0,
-        "height": 96,
-        "width": 89,
-        "colours": 5035,
+        "height": 97,
+        "width": 81,
+        "colours": 3884,
         "lum": [
-          0.127,
-          0.916,
-          0.615
+          0.121,
+          0.917,
+          0.62
         ],
         "erased": 3,
         "palette_over": true,
@@ -41524,16 +41524,18 @@
       "kind": "roster-sprite",
       "roster_class": "warden",
       "mainline": false,
-      "chosen_attempt": "a3",
+      "chosen_attempt": "a4",
       "source_id": "enemy-mirage-lead",
       "batch": "roster-r3",
       "rejected_attempts": {
         "a1": "R3 review round 1 FAIL: a lone pink key pixel (192,42,145) at (35,33) that the gates then missed (now pink_outlier 1); almost no dark outline, a blur of orange flame at 1x; no visible copper anklet",
-        "a2": "failed QA: interior erased 35 in thin slits between arms, veils and copies; key tint 3 and pink outlier 2 on the pinkish mirror copies"
+        "a2": "failed QA: interior erased 35 in thin slits between arms, veils and copies; key tint 3 and pink outlier 2 on the pinkish mirror copies",
+        "a3": "R3 review round 2 FAIL: the raw composition was right, but at block 12 the outline broke into specks, the anklet vanished and the copies merged into her veils. No block (10-12) or sampler (centre, mode) on the a3 raw gave a continuous outline or a readable anklet at 1x, so it was redrawn on a cap extension"
       },
       "plain_reasons": {
         "a1": "胸口一個粉紅洋紅點；幾乎沒有描邊、糊成一團火；看不到銅腳環",
-        "a2": "手臂與紗之間的細縫被挖掉；鏡像偏粉紅留下洋紅點"
+        "a2": "手臂與紗之間的細縫被挖掉；鏡像偏粉紅留下洋紅點",
+        "a3": "原圖構圖對，但縮圖後描邊斷、腳環消失、鏡像黏在一起；改取樣也救不回"
       }
     },
     "enemy-ice-shrine": {
@@ -42256,7 +42258,7 @@
     },
     "icon-mourning-veil": {
       "final": "art-factory/starlantern/work/sheet-icons-roster-4/icon-mourning-veil.png",
-      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-4\\sheet-icons-roster-4-a3.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-4\\sheet-icons-roster-4-a4.png",
       "qa": {
         "pass": true,
         "reasons": [],
@@ -42267,10 +42269,10 @@
         "holes": 0,
         "magenta_spill": 0,
         "key_tint_inside": 0,
-        "block": 8,
+        "block": 7,
         "size": [
-          34,
-          26
+          35,
+          31
         ],
         "bright_key": 0,
         "pink_outlier": 0,
@@ -42279,29 +42281,27 @@
       },
       "status": "qa_passed",
       "kind": "roster-icon",
-      "chosen_attempt": "a3",
+      "chosen_attempt": "a4",
       "source_id": "sheet-icons-roster-4",
       "batch": "roster-r3"
     },
     "icon-mirage-sequin": {
       "final": "art-factory/starlantern/work/sheet-icons-roster-4/icon-mirage-sequin.png",
-      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-4\\sheet-icons-roster-4-a3.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-4\\sheet-icons-roster-4-a5.png",
       "qa": {
         "pass": true,
         "reasons": [],
-        "warnings": [
-          "enclosed holes"
-        ],
+        "warnings": [],
         "residue": 0,
         "semi": 0,
         "edge": 0,
-        "holes": 1,
+        "holes": 0,
         "magenta_spill": 0,
         "key_tint_inside": 0,
         "block": 7,
         "size": [
-          35,
-          33
+          32,
+          27
         ],
         "bright_key": 0,
         "pink_outlier": 0,
@@ -42310,7 +42310,7 @@
       },
       "status": "qa_passed",
       "kind": "roster-icon",
-      "chosen_attempt": "a3",
+      "chosen_attempt": "a5",
       "source_id": "sheet-icons-roster-4",
       "batch": "roster-r3"
     },
@@ -44303,12 +44303,16 @@
       "rejected_attempts": {
         "a1": "picked for every part except two that the R3 review round 1 failed: mirage-sequin (a solid holed disc, like the published market-token) and mourning-veil (a grey cone, the same silhouette as cinder-dust)",
         "a2": "mirage-sequin and mourning-veil improved but not used: the sequin's hole sat near the centre and the veil still had a mottled rocky texture; both taken from a3",
-        "a3": "mirage-sequin (a cup sequin with a rim hole and heat lines) and mourning-veil (a soft folded lace cloth with a scalloped dotted edge) picked from a3; every other part stays on a1"
+        "a3": "R3 review round 2 FAIL for both parts taken from a3: mirage-sequin read as a steaming bronze bowl (like spent-wick), and mourning-veil as a white speckled block (granite or snow, near marble-shard), not grey lace",
+        "a4": "mourning-veil picked from a4 (grey lace cloth with regular round holes and folds); its sequin had loose rosy twinkle specks, so the sequin was drawn again",
+        "a5": "mirage-sequin picked from a5 (flat sequins at an angle, a rim hole, two sparkles touching the rim); every other part keeps its reviewed pick"
       },
       "plain_reasons": {
         "a1": "亮片像市集籌碼；面紗像一堆灰石",
         "a2": "亮片的孔仍在中間；面紗紋理像石頭",
-        "a3": "採用亮片與面紗"
+        "a3": "亮片像冒煙的碗；面紗像白色花崗岩",
+        "a4": "採用面紗；亮片周圍有零散的粉色光點",
+        "a5": "採用亮片"
       }
     }
   },
@@ -46351,6 +46355,20 @@
         "extra": 3,
         "by": "controller 2026-10-28",
         "review": "C:/msys64/tmp/claude/C--Users-bag57/50dcf669-8aa8-4bb5-ac8e-fe7a03cde69f/scratchpad/roster-r3/r3-review.md"
+      }
+    ],
+    "enemy-mirage-lead": [
+      {
+        "extra": 3,
+        "by": "controller 2026-10-28",
+        "review": "C:/msys64/tmp/claude/C--Users-bag57/50dcf669-8aa8-4bb5-ac8e-fe7a03cde69f/scratchpad/roster-r3/r3-review-round2.md"
+      }
+    ],
+    "sheet-icons-roster-4": [
+      {
+        "extra": 3,
+        "by": "controller 2026-10-28",
+        "review": "C:/msys64/tmp/claude/C--Users-bag57/50dcf669-8aa8-4bb5-ac8e-fe7a03cde69f/scratchpad/roster-r3/r3-review-round2.md"
       }
     ]
   }

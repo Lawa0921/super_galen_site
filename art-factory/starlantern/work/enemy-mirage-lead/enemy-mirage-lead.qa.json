@@ -12,18 +12,18 @@
   "key_tint_inside": 0,
   "block": 12,
   "size": [
-    91,
-    98
+    83,
+    99
   ],
   "bright_key": 0,
   "pink_outlier": 0,
-  "height": 96,
-  "width": 89,
-  "colours": 5035,
+  "height": 97,
+  "width": 81,
+  "colours": 3884,
   "lum": [
-    0.127,
-    0.916,
-    0.615
+    0.121,
+    0.917,
+    0.62
   ],
   "erased": 3,
   "palette_over": true,

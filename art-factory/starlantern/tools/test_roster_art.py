@@ -685,3 +685,39 @@ def test_a_pending_repair_is_approved_with_its_round_and_published_over_the_old_
     assert urls.count('/assets/games/starlantern/icon/fog-gate-plate.png') == 1
     snap = R.REG_PATH.read_bytes()
     assert R.do_publish(A.Registry(R.REG_PATH), 'r1', public) == [] and R.REG_PATH.read_bytes() == snap
+
+
+# --- controller ruling 2026-10-28 (R3 rounds): one approval over several review records -------------------------------------
+def test_approve_takes_several_review_records_together_and_keeps_each(factory, review):
+    lines = _r1_record(factory, review); a, b = factory / 'round1.md', factory / 'round2.md'
+    a.write_text('# round 1\n' + '\n'.join(lines[:5]) + '\nFAIL enemy-x 00 nope\n', encoding='utf-8')
+    b.write_text('# round 2\n' + '\n'.join(lines[5:]) + '\n', encoding='utf-8')
+    _refused(factory, 'r1', review=str(a))                                    # one record alone misses assets
+    done = R.do_approve(A.Registry(R.REG_PATH), 'r1', review=[str(a), str(b)])
+    assert set(done) == set(R.batch_assets('r1'))
+    rec = A.Registry(R.REG_PATH).data['approved_batches']['roster-r1']
+    kept = [R.review_copy('r1'), R.review_copy('r1').with_name('roster-r1-review-2.md')]
+    assert [x.read_bytes() for x in kept] == [a.read_bytes(), b.read_bytes()]
+    assert rec['reviews'] == [{'record': R.repo_path(k), 'sha256': R.sha256(k)} for k in kept]
+    assert rec['review'] == R.repo_path(kept[0]) and rec['review_sha256'] == R.sha256(kept[0])
+
+
+def test_several_records_still_refuse_a_bad_line_or_only_a_stale_hash(factory, review):
+    lines = _r1_record(factory, review); a, b = factory / 'round1.md', factory / 'round2.md'
+    aid, sha = lines[0].split()[1:3]
+    stale = f'- {aid} {"0" * 64} 通過'
+    a.write_text('\n'.join([stale] + lines[1:]) + '\n', encoding='utf-8')
+    b.write_text(lines[0] + '\n', encoding='utf-8')
+    _refused(factory, 'r1', review=[str(a)])                                  # only a stale hash for that asset
+    b.write_text(lines[0][:-len('通過')] + '未通過\n', encoding='utf-8')
+    _refused(factory, 'r1', review=[str(a), str(b)])                          # a bad line in any record refuses
+    b.write_text(lines[0] + '\n', encoding='utf-8')
+    assert set(R.do_approve(A.Registry(R.REG_PATH), 'r1', review=[str(a), str(b)])) == set(R.batch_assets('r1'))
+
+
+def test_the_approve_cli_takes_the_review_flag_more_than_once(factory, review, monkeypatch):
+    lines = _r1_record(factory, review); a, b = factory / 'round1.md', factory / 'round2.md'
+    a.write_text('\n'.join(lines[:3]) + '\n', encoding='utf-8'); b.write_text('\n'.join(lines[3:]) + '\n', encoding='utf-8')
+    monkeypatch.setattr(R, '_registry', lambda: A.Registry(R.REG_PATH))
+    R.approve(['--batch', 'r1', '--review', str(a), '--review', str(b)])
+    assert len(A.Registry(R.REG_PATH).data['approved_batches']['roster-r1']['reviews']) == 2

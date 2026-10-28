@@ -13,8 +13,10 @@ forget chip. Structure as gear_art.py (plan 5d).
                                          --by, the review record it cites); gen counts it
   approve --batch r0 --by TEXT           R0 only: the USER's words and the date, after the review page (writes
                                          roster_style_approved and roster_style_anchor)
-  approve --batch rN --review PATH       R1-R4 (ruling 21): an independent fresh-context review record listing every image's
-                                         sha256 with 通過; no user approval is asked for or accepted
+  approve --batch rN --review PATH [--review PATH ...]
+                                         R1-R4 (ruling 21): independent fresh-context review records (one per review round)
+                                         whose 通過 lines together cover every image's current sha256; no user approval is
+                                         asked for or accepted
   publish --batch rN                     runtime, copy to public/, manifest, the round's ids into ROSTER_ART (data/monsters.ts)
                                          and the url count in render/artPaths.test.ts, all in the working tree
   plan-json                              write art-factory/starlantern/roster-plan.json (the exact lists per round)
@@ -902,19 +904,23 @@ def do_approve(reg, rnd, by=None, review=None):
     its final still the bytes the review page recorded (and, for R1-R4, the bytes the review passed). Any miss refuses the
     whole round and changes nothing."""
     lab = label(rnd)
+    reviews = [review] if isinstance(review, (str, Path)) else list(review or [])   # several records: one per review round
     if rnd == 'r0':
-        if review: raise ValueError('R0 is the style sample: only the user approves it (--by with their words and the date), never a review record')
+        if reviews: raise ValueError('R0 is the style sample: only the user approves it (--by with their words and the date), never a review record')
         if not by or not DATE.search(by) or not DATE.sub('', by).strip(' :：,，;；-—'):
             raise ValueError("--by must quote the user's approval and carry its date (YYYY-MM-DD)")
     else:
         if by: raise ValueError('R1-R4 are approved on an independent review record (--review), not on the user\'s words (ruling 21)')
         if not reg.data.get('roster_style_approved'):
             raise PermissionError('roster_style_approved is missing: the user has not approved the R0 style sample yet')
-        if not review or not Path(review).is_file(): raise PermissionError(f'no independent review record at {review}')
+        if not reviews or any(not Path(r).is_file() for r in reviews): raise PermissionError(f'no independent review record at {review}')
     sp = shown_path(rnd)
     if not sp.exists(): raise PermissionError(f'no review page record for {rnd} ({sp}); build and show the review page first')
     shown = json.loads(sp.read_text(encoding='utf-8')).get('parts', {})
-    passed, bad = review_passes(Path(review).read_text(encoding='utf-8')) if review else ({}, [])
+    passed, bad = {}, []   # {asset: every sha256 a record passes}: an asset passes when its current bytes are among them
+    for r in reviews:
+        ok, wrong = review_passes(Path(r).read_text(encoding='utf-8')); bad += wrong
+        for a, h in ok.items(): passed.setdefault(a, set()).add(h)
     aids = batch_assets(rnd); problems = {}
     if not shown: problems['nothing was shown'] = [rnd]
     if bad: problems['review lines not in the form "- <id> <sha256> 通過"'] = bad
@@ -925,23 +931,28 @@ def do_approve(reg, rnd, by=None, review=None):
         if A.qa_stale(e): problems.setdefault('QA recorded under an older spec (pick it again)', []).append(aid); continue
         h = sha256(f)
         if h != shown.get(aid): problems.setdefault('changed since (or missing from) the review page', []).append(aid)
-        elif review and passed.get(aid) != h: problems.setdefault('not passed by the independent review (id, sha256, 通過)', []).append(aid)
+        elif reviews and h not in passed.get(aid, ()): problems.setdefault('not passed by the independent review (id, sha256, 通過)', []).append(aid)
     reps = {a: r for a, r in repairs_with(reg, rnd).items() if r.get('status') != 'published'}
     for aid, rep in reps.items():
         e = reg.data['assets'][aid]; f = A._final_path(rep['final'])
         if not f.is_file() or sha256(f) != rep['to_sha256']: problems.setdefault('repair file changed since it was recorded', []).append(aid)
         elif sha256(A._final_path(e['final'])) != rep['from_sha256']: problems.setdefault('repair made from another file', []).append(aid)
         elif not rep['qa'].get('pass') or rep['qa'].get('spec') != A.qa_spec(e.get('kind')): problems.setdefault('repair QA', []).append(aid)
-        elif not review or passed.get(aid) != rep['to_sha256']:
+        elif not reviews or rep['to_sha256'] not in passed.get(aid, ()):
             problems.setdefault('repair not passed by the independent review (id, sha256, 通過)', []).append(aid)
     if problems: raise PermissionError(f'refusing to approve {rnd}: {problems}')
     today = datetime.date.today().isoformat()
     rec = {'date': today, 'record': repo_path(sp), 'shown': {a: sha256(A._final_path(reg.data['assets'][a]['final'])) for a in aids}}
-    if review:
-        kept = review_copy(rnd); kept.parent.mkdir(parents=True, exist_ok=True)
-        if Path(review).resolve() != kept.resolve(): shutil.copyfile(review, kept)
-        rec.update({'review': repo_path(kept), 'review_sha256': sha256(kept)})
-        who = f'independent review {repo_path(kept)} ({today})'
+    if reviews:
+        kept = []
+        for i, r in enumerate(reviews):
+            k = review_copy(rnd) if i == 0 else review_copy(rnd).with_name(f'roster-{rnd}-review-{i + 1}.md')
+            k.parent.mkdir(parents=True, exist_ok=True)
+            if Path(r).resolve() != k.resolve(): shutil.copyfile(r, k)
+            kept.append(k)
+        rec.update({'review': repo_path(kept[0]), 'review_sha256': sha256(kept[0])})
+        if len(kept) > 1: rec['reviews'] = [{'record': repo_path(k), 'sha256': sha256(k)} for k in kept]
+        who = f'independent review {", ".join(repo_path(k) for k in kept)} ({today})'
     else:
         rec['by'] = by; who = by
     done = []
@@ -1110,7 +1121,8 @@ def do_publish(reg, rnd, public=None):
 
 
 def approve(argv):
-    print(json.dumps(do_approve(_registry(), G._arg(argv, '--batch'), by=G._arg(argv, '--by'), review=G._arg(argv, '--review')), ensure_ascii=False))
+    reviews = [argv[i + 1] for i, a in enumerate(argv) if a == '--review' and i + 1 < len(argv)]   # --review may repeat
+    print(json.dumps(do_approve(_registry(), G._arg(argv, '--batch'), by=G._arg(argv, '--by'), review=reviews or None), ensure_ascii=False))
 
 
 def publish(argv):
