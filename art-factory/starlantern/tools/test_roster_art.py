@@ -589,3 +589,99 @@ def test_an_id_on_two_pass_lines_refuses_the_round(factory, review):
     rec.write_text('\n'.join(lines + [lines[0]]) + '\n', encoding='utf-8')
     _refused(factory, 'r1', review=str(rec))
     assert not R.review_copy('r1').exists()
+
+
+# --- controller ruling 2026-10-28: repair-outliers (the two published R0 pink outliers are key residue) ------------------------
+REAL_REG = Path(__file__).resolve().parents[1] / 'registry.json'
+
+
+def _real_entry(factory, aid):
+    """The real registry entry of a published roster asset, its final copied into the test factory."""
+    import copy, shutil
+    e = copy.deepcopy(json.loads(REAL_REG.read_text(encoding='utf-8'))['assets'][aid])
+    dst = factory / 'work' / 'real' / f'{aid}.png'; dst.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(A._final_path(e['final']), dst); e['final'] = str(dst)
+    reg = A.Registry(R.REG_PATH); reg.data['assets'][aid] = e; reg._save()
+    return e
+
+
+def test_repair_outliers_records_a_pending_postprocess_repair_and_touches_nothing_published(factory):
+    e = _real_entry(factory, 'enemy-fog-warden'); before = dict(e)
+    rec = R.repair_outliers(A.Registry(R.REG_PATH), 'enemy-fog-warden', 'r3')
+    reg = A.Registry(R.REG_PATH); now = reg.get('enemy-fog-warden')
+    for k in ('final', 'status', 'runtime', 'qa', 'batch'): assert now[k] == before[k], k       # the published record stays
+    rep = now['repair']; assert rep == rec
+    f = A._final_path(rep['final'])
+    assert f.is_file() and f.parent == R.WORK / 'repair'
+    assert rep['from_sha256'] == R.sha256(e['final']) and rep['to_sha256'] == R.sha256(f)
+    assert rep['pixels'] == [{'x': 34, 'y': 60, 'from': [188, 28, 147], 'to': rep['pixels'][0]['to']}] and rep['skipped'] == []
+    assert rep['postprocess_only'] is True and rep['publish_with'] == 'r3' and rep['status'] == 'pending'
+    old, new = np.asarray(Image.open(e['final']).convert('RGBA')), np.asarray(Image.open(f).convert('RGBA'))
+    assert int((old != new).any(axis=-1).sum()) == 1 and rep['changed_pixels'] == 1
+    q = rep['qa']
+    assert q['pass'] and q['reasons'] == [] and q['pink_outlier'] == 0 and q['bright_key'] == 0
+    assert q['spec'] == A.qa_spec('roster-sprite')
+    assert q['height'] == before['qa']['height'] and q['erased'] == before['qa']['erased']   # the alpha is the same
+    snap = R.REG_PATH.read_bytes(); same = f.read_bytes()
+    assert R.repair_outliers(A.Registry(R.REG_PATH), 'enemy-fog-warden', 'r3') == rec          # idempotent
+    assert R.REG_PATH.read_bytes() == snap and f.read_bytes() == same
+
+
+def test_repair_outliers_on_the_real_icon_regates_it_as_a_roster_icon(factory):
+    _real_entry(factory, 'icon-fog-gate-plate')
+    rep = R.repair_outliers(A.Registry(R.REG_PATH), 'icon-fog-gate-plate', 'r3')
+    assert [(p['x'], p['y'], p['from']) for p in rep['pixels']] == [(27, 21, [205, 6, 146])] and rep['changed_pixels'] == 1
+    assert rep['qa']['pass'] and rep['qa']['pink_outlier'] == 0 and rep['qa']['spec'] == A.qa_spec('roster-icon')
+
+
+def _pinked(path, xy=(12, 12), colour=(192, 42, 145)):
+    im = Image.open(path).convert('RGBA'); im.putpixel(xy, (*colour, 255)); im.save(path); return path
+
+
+def test_repair_outliers_reports_a_pixel_it_cannot_repair_and_records_nothing(factory):
+    reg = A.Registry(R.REG_PATH)
+    arr = np.zeros((26, 26, 4), np.uint8); arr[5, 5] = (192, 42, 145, 255); arr[5, 6] = arr[6, 5] = (60, 80, 100, 255)
+    p = factory / 'work/x/icon-fog-gate-plate.png'; p.parent.mkdir(parents=True); Image.fromarray(arr, 'RGBA').save(p)
+    reg.set('icon-fog-gate-plate', status='published', batch='roster-r0', kind='roster-icon', final=str(p),
+            runtime='/assets/games/starlantern/icon/fog-gate-plate.png', qa={'pass': True, 'reasons': []})
+    snap = R.REG_PATH.read_bytes()
+    with pytest.raises(PermissionError, match=r'\(5, 5'):
+        R.repair_outliers(A.Registry(R.REG_PATH), 'icon-fog-gate-plate', 'r3')
+    assert R.REG_PATH.read_bytes() == snap and not (R.WORK / 'repair').exists()
+    clean = factory / 'work/x/clean.png'; _png(clean)
+    reg = A.Registry(R.REG_PATH); reg.set('icon-fog-gate-plate', final=str(clean)); snap = R.REG_PATH.read_bytes()
+    with pytest.raises(ValueError, match='no pink outlier'):
+        R.repair_outliers(A.Registry(R.REG_PATH), 'icon-fog-gate-plate', 'r3')
+    assert R.REG_PATH.read_bytes() == snap
+
+
+def test_a_pending_repair_is_approved_with_its_round_and_published_over_the_old_runtime_file(factory, review, rooted):
+    public = rooted
+    _fill(factory, 'r0'); reg = A.Registry(R.REG_PATH); _pinked(A._final_path(reg.get('icon-fog-gate-plate')['final']))
+    review.main('r0'); R.do_approve(A.Registry(R.REG_PATH), 'r0', by='user: 可以 2026-10-27')
+    R.do_publish(A.Registry(R.REG_PATH), 'r0', public)
+    dst = public / 'assets/games/starlantern/icon/fog-gate-plate.png'; old_sha = R.sha256(dst)
+    rep = R.repair_outliers(A.Registry(R.REG_PATH), 'icon-fog-gate-plate', 'r1')
+    assert R.sha256(dst) == old_sha                                                        # nothing published yet
+    lines = _r1_record(factory, review); rec = factory / 'rec.md'
+    rec.write_text('\n'.join(lines) + '\n', encoding='utf-8')
+    _refused(factory, 'r1', review=str(rec))                                              # the repair was not reviewed
+    rec.write_text('\n'.join(lines + [f'- icon-fog-gate-plate {rep["to_sha256"]} 通過']) + '\n', encoding='utf-8')
+    R.do_approve(A.Registry(R.REG_PATH), 'r1', review=str(rec))
+    reg = A.Registry(R.REG_PATH)
+    assert reg.get('icon-fog-gate-plate')['repair']['status'] == 'approved'
+    assert reg.data['approved_batches']['roster-r1']['repairs'] == {'icon-fog-gate-plate': rep['to_sha256']}
+    total0 = R.url_totals()
+    done = R.do_publish(A.Registry(R.REG_PATH), 'r1', public)
+    reg = A.Registry(R.REG_PATH); e = reg.get('icon-fog-gate-plate')
+    assert set(done) == set(R.batch_assets('r1')) and R.sha256(dst) == rep['to_sha256']
+    assert R.sha256(A._final_path(e['final'])) == rep['to_sha256'] and e['qa'] == rep['qa'] and e['status'] == 'published'
+    assert e['repair']['status'] == 'published' and e['history'][-1]['final_sha256'] == old_sha
+    r0 = reg.data['approved_batches']['roster-r0']
+    assert r0['shown']['icon-fog-gate-plate'] == rep['to_sha256']
+    assert r0['repaired']['icon-fog-gate-plate'] == {'from': old_sha, 'to': rep['to_sha256'], 'with': 'roster-r1'}
+    assert R.url_totals() == (total0[0] + len(done), total0[1] + len(done))              # same url: no count for the repair
+    urls = json.loads((public / 'assets/games/starlantern/manifest.json').read_text(encoding='utf-8'))['urls']
+    assert urls.count('/assets/games/starlantern/icon/fog-gate-plate.png') == 1
+    snap = R.REG_PATH.read_bytes()
+    assert R.do_publish(A.Registry(R.REG_PATH), 'r1', public) == [] and R.REG_PATH.read_bytes() == snap

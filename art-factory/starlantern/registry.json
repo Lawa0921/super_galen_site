@@ -36384,7 +36384,66 @@
         "a2": "a2 城門鎧片蓋掉了霧的身體；a1 比較像霧門守衛"
       },
       "approved_by": "使用者 2026-10-26：核可，照這個畫風做下去",
-      "runtime": "/assets/games/starlantern/enemy/fog-warden.png"
+      "runtime": "/assets/games/starlantern/enemy/fog-warden.png",
+      "repair": {
+        "from_sha256": "e509aced22687f782de962d5f2f4d08080ca84d748b5d024edf51791ae2dfcfb",
+        "to_sha256": "d19b2760191ed738aa2b294f5022368e4327b1ac69dac0177757e69b8b7ea77f",
+        "final": "art-factory/starlantern/work/repair/enemy-fog-warden.png",
+        "pixels": [
+          {
+            "x": 34,
+            "y": 60,
+            "from": [
+              188,
+              28,
+              147
+            ],
+            "to": [
+              99,
+              67,
+              53
+            ]
+          }
+        ],
+        "skipped": [],
+        "changed_pixels": 1,
+        "rule": "pink_outlier key residue only: each such pixel takes the rounded per-channel median of its opaque 8-neighbours (sl_art.repair_pink_outliers), its alpha kept; no other pixel changes",
+        "postprocess_only": true,
+        "publish_with": "r3",
+        "qa": {
+          "pass": true,
+          "reasons": [],
+          "warnings": [
+            "enclosed holes"
+          ],
+          "residue": 0,
+          "semi": 0,
+          "edge": 0,
+          "holes": 15,
+          "magenta_spill": 0,
+          "key_tint_inside": 1,
+          "block": 8,
+          "size": [
+            152,
+            154
+          ],
+          "bright_key": 0,
+          "height": 151,
+          "width": 150,
+          "colours": 13334,
+          "lum": [
+            0.047,
+            0.893,
+            0.471
+          ],
+          "erased": 8,
+          "palette_over": true,
+          "spec": "roster-sprite:929ae0136de6",
+          "pink_outlier": 0
+        },
+        "status": "pending",
+        "date": "2026-10-28"
+      }
     },
     "icon-faded-letter": {
       "final": "art-factory/starlantern/work/sheet-icons-roster-1/icon-faded-letter.png",
@@ -36538,7 +36597,57 @@
       "source_id": "sheet-icons-roster-1",
       "batch": "roster-r0",
       "approved_by": "使用者 2026-10-26：核可，照這個畫風做下去",
-      "runtime": "/assets/games/starlantern/icon/fog-gate-plate.png"
+      "runtime": "/assets/games/starlantern/icon/fog-gate-plate.png",
+      "repair": {
+        "from_sha256": "26c1a99749f0b89037dd3ac474e43f62ced21d463f8ab2e203cf8f6414c9cc24",
+        "to_sha256": "8a8530e99186dd7d455df54b2619b2c7ce63a135531702dbb315ad38537b2b15",
+        "final": "art-factory/starlantern/work/repair/icon-fog-gate-plate.png",
+        "pixels": [
+          {
+            "x": 27,
+            "y": 21,
+            "from": [
+              205,
+              6,
+              146
+            ],
+            "to": [
+              162,
+              161,
+              248
+            ]
+          }
+        ],
+        "skipped": [],
+        "changed_pixels": 1,
+        "rule": "pink_outlier key residue only: each such pixel takes the rounded per-channel median of its opaque 8-neighbours (sl_art.repair_pink_outliers), its alpha kept; no other pixel changes",
+        "postprocess_only": true,
+        "publish_with": "r3",
+        "qa": {
+          "pass": true,
+          "reasons": [],
+          "warnings": [
+            "enclosed holes"
+          ],
+          "residue": 0,
+          "semi": 0,
+          "edge": 0,
+          "holes": 3,
+          "magenta_spill": 0,
+          "key_tint_inside": 0,
+          "block": 7,
+          "size": [
+            33,
+            36
+          ],
+          "bright_key": 0,
+          "erased": 3,
+          "spec": "roster-icon:8da249263f71",
+          "pink_outlier": 0
+        },
+        "status": "pending",
+        "date": "2026-10-28"
+      }
     },
     "icon-wight-wick": {
       "final": "art-factory/starlantern/work/sheet-icons-roster-1/icon-wight-wick.png",

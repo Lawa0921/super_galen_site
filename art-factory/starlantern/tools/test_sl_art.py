@@ -1954,3 +1954,49 @@ def test_the_pink_outlier_thresholds_are_in_the_roster_stamps():
     for kind in ('gear-cell', 'nine-slice', 'skill-cell'): assert 'PINK_OUTLIER_HUE' not in A.SPEC_INPUTS[kind], kind
     assert A.qa_spec('roster-sprite') != 'roster-sprite:2e0d0bc9e5f1'
     assert A.qa_spec('roster-icon') != 'roster-icon:ed1986056114' and A.qa_spec('roster-gear') != 'roster-gear:909b3e0e50cc'
+
+
+# --- controller ruling 2026-10-28: the two published R0 pink outliers are key residue, repaired by a deterministic step -------
+FOG_WARDEN = Path(__file__).resolve().parents[1] / 'work/enemy-fog-warden/enemy-fog-warden.png'
+FOG_GATE_PLATE = Path(__file__).resolve().parents[1] / 'work/sheet-icons-roster-1/icon-fog-gate-plate.png'
+
+
+def _median8(arr, x, y):
+    nb = [arr[yy, xx, :3] for yy in range(y - 1, y + 2) for xx in range(x - 1, x + 2)
+          if (yy, xx) != (y, x) and 0 <= yy < arr.shape[0] and 0 <= xx < arr.shape[1] and arr[yy, xx, 3] == 255]
+    return tuple(int(v) for v in np.round(np.median(np.array(nb, np.float64), axis=0)))
+
+
+@pytest.mark.parametrize('path, xy, rgb', [(FOG_WARDEN, (34, 60), (188, 28, 147)), (FOG_GATE_PLATE, (27, 21), (205, 6, 146))])
+def test_repair_pink_outliers_fixes_the_two_published_r0_pixels_and_nothing_else(path, xy, rgb):
+    img = Image.open(path).convert('RGBA'); arr = np.asarray(img)
+    assert img.getpixel(xy)[:3] == rgb and A.pink_outlier_count(img) == 1
+    new, fixed, skipped = A.repair_pink_outliers(img)
+    out = np.asarray(new)
+    assert skipped == [] and [(f[0], f[1]) for f in fixed] == [xy] and fixed[0][2] == rgb
+    assert tuple(out[xy[1], xy[0], :3]) == _median8(arr, *xy) == fixed[0][3]
+    assert (out[..., 3] == arr[..., 3]).all()                                            # alpha kept everywhere
+    assert int((out != arr).any(axis=-1).sum()) == 1                                     # exactly one pixel changed
+    assert A.pink_outlier_count(new) == 0
+
+
+def test_repair_pink_outliers_at_the_image_edge_uses_the_neighbours_inside():
+    arr = np.zeros((10, 10, 4), np.uint8); arr[:, :] = (60, 80, 100, 255); arr[4, 0] = (192, 42, 145, 255)
+    arr[3, 0] = (70, 80, 100, 255)
+    new, fixed, skipped = A.repair_pink_outliers(Image.fromarray(arr, 'RGBA'))
+    assert skipped == [] and [(f[0], f[1]) for f in fixed] == [(0, 4)]
+    assert fixed[0][3] == (60, 80, 100) and np.asarray(new)[4, 0, 3] == 255
+
+
+def test_repair_pink_outliers_with_fewer_than_three_opaque_neighbours_reports_and_leaves_it():
+    arr = np.zeros((10, 10, 4), np.uint8); arr[5, 5] = (192, 42, 145, 255); arr[5, 6] = arr[6, 5] = (60, 80, 100, 255)
+    img = Image.fromarray(arr, 'RGBA')
+    new, fixed, skipped = A.repair_pink_outliers(img)
+    assert fixed == [] and skipped == [(5, 5, (192, 42, 145), 2)]
+    assert np.array_equal(np.asarray(new), arr)
+
+
+def test_repair_pink_outliers_is_idempotent():
+    img = Image.open(FOG_WARDEN).convert('RGBA')
+    once, _, _ = A.repair_pink_outliers(img); twice, fixed, skipped = A.repair_pink_outliers(once)
+    assert fixed == [] and skipped == [] and np.array_equal(np.asarray(once), np.asarray(twice))

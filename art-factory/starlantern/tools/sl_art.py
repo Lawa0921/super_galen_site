@@ -449,25 +449,46 @@ PINK_OUTLIER_SIMILAR = 48      # ... and no opaque 8-neighbour within this max c
 PINK_OUTLIER_MAX = 0           # ... none anywhere on the sprite, outline band included
 
 
-def pink_outlier_count(img):
-    """Opaque pixels anywhere on the sprite in the pink key band (hue PINK_OUTLIER_HUE, saturation >= PINK_OUTLIER_SAT_MIN,
-    G <= PINK_OUTLIER_G_MAX, R >= PINK_OUTLIER_R_MIN) that no opaque 8-neighbour resembles (max channel difference >
-    PINK_OUTLIER_SIMILAR for all of them): a lone key speck the cutout and _bright_key miss. A pink ribbon or flower of
-    two pixels or more is art and never counts."""
+def pink_outliers(img):
+    """[(x, y)] of the opaque pixels anywhere on the sprite in the pink key band (hue PINK_OUTLIER_HUE, saturation >=
+    PINK_OUTLIER_SAT_MIN, G <= PINK_OUTLIER_G_MAX, R >= PINK_OUTLIER_R_MIN) that no opaque 8-neighbour resembles (max channel
+    difference > PINK_OUTLIER_SIMILAR for all of them): a lone key speck the cutout and _bright_key miss. A pink ribbon or
+    flower of two pixels or more is art and never counts."""
     arr = np.asarray(img.convert('RGBA')); rgb = arr[..., :3].astype(np.int16); op = arr[..., 3] == 255
     c = rgb.astype(np.float32); r, g, b = c[..., 0], c[..., 1], c[..., 2]
     mx = np.maximum(np.maximum(r, b), g); mn = np.minimum(np.minimum(r, b), g); sat = (mx - mn) / np.maximum(mx, 1)
     d = np.maximum(np.maximum(r, b) - g, 1e-6); hue = np.where(r >= b, (60 * (g - b) / d) % 360, 240 + 60 * (r - g) / d)
     pink = (op & (hue >= PINK_OUTLIER_HUE[0]) & (hue <= PINK_OUTLIER_HUE[1]) & (sat >= PINK_OUTLIER_SAT_MIN)
             & (g <= PINK_OUTLIER_G_MAX) & (r >= PINK_OUTLIER_R_MIN))
-    h, w = op.shape; n = 0
+    h, w = op.shape; out = []
     for y, x in zip(*np.nonzero(pink)):
-        alike = False
-        for yy in range(max(0, y - 1), min(h, y + 2)):
-            for xx in range(max(0, x - 1), min(w, x + 2)):
-                if (yy, xx) != (y, x) and op[yy, xx] and np.abs(rgb[yy, xx] - rgb[y, x]).max() <= PINK_OUTLIER_SIMILAR: alike = True
-        n += not alike
-    return int(n)
+        alike = any(op[yy, xx] and np.abs(rgb[yy, xx] - rgb[y, x]).max() <= PINK_OUTLIER_SIMILAR
+                    for yy in range(max(0, y - 1), min(h, y + 2)) for xx in range(max(0, x - 1), min(w, x + 2)) if (yy, xx) != (y, x))
+        if not alike: out.append((int(x), int(y)))
+    return out
+
+
+def pink_outlier_count(img):
+    return len(pink_outliers(img))
+
+
+REPAIR_MIN_NEIGHBOURS = 3   # repair_pink_outliers: fewer opaque 8-neighbours than this and the pixel is reported, not repaired
+
+
+def repair_pink_outliers(img, min_neighbours=REPAIR_MIN_NEIGHBOURS):
+    """Deterministic key-residue repair (controller ruling 2026-10-28): every pink outlier (`pink_outliers`) takes the
+    per-channel median (rounded) of its opaque 8-neighbours in the original image; its alpha is kept, and no other pixel
+    changes. A pixel with fewer than `min_neighbours` opaque neighbours is left as it is and reported. Returns (image,
+    repaired [(x, y, old rgb, new rgb)], skipped [(x, y, rgb, opaque neighbours)]). Running it again repairs nothing."""
+    src = np.asarray(img.convert('RGBA')); out = src.copy(); h, w = src.shape[:2]; fixed, skipped = [], []
+    for x, y in pink_outliers(img):
+        nb = [src[yy, xx, :3] for yy in range(max(0, y - 1), min(h, y + 2)) for xx in range(max(0, x - 1), min(w, x + 2))
+              if (yy, xx) != (y, x) and src[yy, xx, 3] == 255]
+        old = tuple(int(v) for v in src[y, x, :3])
+        if len(nb) < min_neighbours: skipped.append((x, y, old, len(nb))); continue
+        new = tuple(int(v) for v in np.round(np.median(np.array(nb, np.float64), axis=0)))
+        out[y, x, :3] = new; fixed.append((x, y, old, new))
+    return Image.fromarray(out, 'RGBA'), fixed, skipped
 
 
 def roster_key_tint_gate(qa, final):
