@@ -7,7 +7,7 @@ import type { SpecialDef } from './gear';
  * `pickSpecial` leave any `owner` out) and never silhouetted (`region: null`). It comes by replacing a legendary-tier drop
  * in its owner's fight, or by crafting once its owner has fallen (plan C). The `lore` lines are neutral until the bestiary
  * writing rewrites them (the W steps; L1a wrote the first wave's five: the false moon's, the bell warden's and the shallow
- * road's three bosses').
+ * road's three bosses'; L2a the deep road's ten: its three wardens', its six bosses' and the lantern-mother's).
  */
 type Row = [id: string, name: string, owner: string, source: 'boss' | 'elite', slot: GearSlot, fixed: AnyStat[], lore: string, weaponKind?: WeaponKind];
 
@@ -15,9 +15,9 @@ const ROWS: Row[] = [
   // the wardens (spec §5.5)
   ['moonless-mirror', '無月之鏡', 'false-moon', 'elite', 'offhand', ['res', 'heal', 'int'], '鏡子裡掛著一輪天上沒有的月亮。它從不預告明天，只陪照鏡子的人把頭髮梳好。'],
   ['unrung-clapper', '不響的鐘舌', 'bell-warden', 'elite', 'neck', ['sleepRes', 'tpCost', 'wil'], '守門人只用鐘槌敲，這根鐘舌一次也沒響過。掛在頸上沉甸甸的，夜裡倒是睡得特別安穩。'],
-  ['ancestor-gauntlet', '祖傳的手甲', 'toppled-automaton', 'elite', 'hands', ['armor', 'atk', 'int'], '關節裡的齒輪還在轉，彷彿記得上一個主人的握力。'],
-  ['requiem-staff', '鎮魂之杖', 'requiem-conductor', 'elite', 'weapon', ['mag', 'heal', 'wil'], '杖頭一揮，四周的雜音便安靜下來，只剩一段慢板。', 'staff'],
-  ['brood-lantern', '巢燈', 'lantern-brood', 'elite', 'neck', ['hp', 'res', 'gauge'], '殼裡透出暖光，提在手上像抱著一顆小小的心跳。'],
+  ['ancestor-gauntlet', '祖傳的手甲', 'toppled-automaton', 'elite', 'hands', ['armor', 'atk', 'int'], '機兵的手甲，關節裡的齒輪會跟著握拳轉一圈。戴上它，扛起重物時心裡也踏實一點。'],
+  ['requiem-staff', '鎮魂之杖', 'requiem-conductor', 'elite', 'weapon', ['mag', 'heal', 'wil'], '指揮棒長成了一根杖。揮下去的時候，傷口會先安靜下來，再慢慢合起。', 'staff'],
+  ['brood-lantern', '巢燈', 'lantern-brood', 'elite', 'neck', ['hp', 'res', 'gauge'], '巢殼磨成的小燈，裡面的東西早就孵走了，只留下一點餘溫。掛在胸前，心跳會跟著它慢下來。'],
   ['last-dance-veil', '最後一支舞的紗', 'mirage-lead', 'elite', 'body', ['agi', 'gauge', 'res'], '紗一揚起，腳步就自己踩上了拍子。'],
   ['ninety-nine-steps', '九十九級石階', 'ice-shrine', 'elite', 'feet', ['def', 'wil', 'iceRes'], '鞋底刻著石階的紋路，每一步都走得很穩。'],
   ['starbound-tome', '星封之書', 'burning-page', 'elite', 'offhand', ['mag', 'int', 'tp'], '書頁被星光封住，翻不開，卻總在需要的時候發熱。'],
@@ -28,13 +28,13 @@ const ROWS: Row[] = [
   ['fog-halberd', '霧門長戟', 'fog-warden', 'boss', 'weapon', ['atk', 'str', 'eliteDmg'], '戟刃一揮，霧就自己讓出一條路。守了一輩子門的傢伙，開起路來也很在行。', 'spear'],
   ['silent-chime', '無聲鐘墜', 'silent-bell', 'boss', 'neck', ['sleepRes', 'tpCost', 'res'], '一顆不會響的小鐘。戴著它念咒，聲音會放得很輕，力氣也省下不少。'],
   ['borrowed-blade', '借來的劍', 'hollow-champion', 'boss', 'weapon', ['multi', 'critDmg', 'str'], '劍柄上磨出了好幾種握法。握得久了，總有一種會變成你自己的。', 'sword'],
-  ['archon-crown', '古城之冠', 'old-city-archon', 'boss', 'head', ['res', 'tpCost', 'int'], '冠上的金漆斑駁，戴上它的人說話都慢了半拍。'],
-  ['glutton-gauntlet', '飽食手甲', 'gorged-beast', 'boss', 'hands', ['atk', 'crit', 'def'], '吃得多、打得重，手甲本人似乎很滿意這個安排。'],
-  ['cradled-light', '搖籃之光', 'lantern-mother', 'boss', 'neck', ['heal', 'wil', 'gauge'], '一小團光蜷在鍊墜裡，像在等誰把它抱回家。'],
-  ['festival-mask', '祭典面具', 'forgotten-festival', 'boss', 'head', ['goldFind', 'evasion', 'agi'], '面具的笑臉一直沒變，戴上它的人也跟著想笑。'],
-  ['whale-song-ring', '鯨歌指環', 'starless-whale', 'boss', 'ring', ['tp', 'tpRegen', 'mag'], '貼近耳朵，能聽見很遠很遠的低鳴。'],
-  ['still-hand-boots', '停針之靴', 'stopped-clock', 'boss', 'feet', ['spd', 'evasion', 'agi'], '穿上它的人，總覺得時間替自己多停了一秒。'],
-  ['first-lantern-staff', '最初的燈杖', 'first-lantern', 'boss', 'weapon', ['mag', 'fireDmg', 'int'], '杖頂的火苗很小，卻從來沒有熄過。', 'staff'],
+  ['archon-crown', '古城之冠', 'old-city-archon', 'boss', 'head', ['res', 'tpCost', 'int'], '執政像頭上的金冠。戴上它說話會不自覺慢半拍，每個字都想清楚了才出口。'],
+  ['glutton-gauntlet', '飽食手甲', 'gorged-beast', 'boss', 'hands', ['atk', 'crit', 'def'], '用飽食之獸的爪與皮縫成的手甲，握拳時會發出滿足的咕嚕聲。打得越重，它越開心。'],
+  ['cradled-light', '搖籃之光', 'lantern-mother', 'boss', 'neck', ['heal', 'wil', 'gauge'], '一小團光蜷在鍊墜裡，像嬰兒睡在搖籃裡。戴著它替人回復時，手心會暖起來。'],
+  ['festival-mask', '祭典面具', 'forgotten-festival', 'boss', 'head', ['goldFind', 'evasion', 'agi'], '狐狸面具的笑臉從來不變。戴著它在人群裡鑽來鑽去，總會撿到誰掉的零錢。'],
+  ['whale-song-ring', '鯨歌指環', 'starless-whale', 'boss', 'ring', ['tp', 'tpRegen', 'mag'], '貼在耳邊聽得見遠方的低鳴。那首歌唱得很慢，慢到念完一段咒語，力氣又回來了一點。'],
+  ['still-hand-boots', '停針之靴', 'stopped-clock', 'boss', 'feet', ['spd', 'evasion', 'agi'], '鞋跟上嵌著一根停住的指針。穿上它的人總比別人早一步動起來，好像偷到了一秒。'],
+  ['first-lantern-staff', '最初的燈杖', 'first-lantern', 'boss', 'weapon', ['mag', 'fireDmg', 'int'], '杖頂的火苗小得像一顆豆子，卻從來沒有熄過。念起火咒的時候，它會跟著跳一下。', 'staff'],
   // the regions' bosses (spec §5.6)
   ['burning-crown-ring', '焚冠之戒', 'ember-tyrant', 'boss', 'ring', ['fireDmg', 'atk', 'crit'], '戒圈燙手，脾氣也不太好，但打起架來很可靠。'],
   ['sand-veil-boots', '沙幕之靴', 'sandstorm-maw', 'boss', 'feet', ['evasion', 'fireRes', 'agi'], '靴底永遠倒得出一點沙，走過的路都被風抹平。'],

@@ -141,6 +141,27 @@ const L1_NEUTRAL_LORE: Record<string, string> = {
   'borrowed-blade': '劍柄上留著好幾種握法的痕跡，借來的招式也能變成自己的。',
 };
 
+/** Roster plan L2 (spec §13.5 R2): the twenty-seven of the second live wave, the lantern-mother with them (L2c). */
+const WAVE_2 = [
+  'old-city-sentinel', 'requiem-choir', 'lantern-larva', 'epitaph-golem', 'ancestor-automaton', 'ash-archivist', 'wick-shade',
+  'keeper-echo', 'ember-maw', 'sorrow-crystal', 'deep-tendril', 'music-box', 'paper-cranes', 'lost-shadow', 'returning-light',
+  'gilded-hoarder', 'old-city-archon', 'gorged-beast', 'lantern-mother', 'forgotten-festival', 'starless-whale', 'stopped-clock',
+  'first-lantern', 'archon-hand', 'toppled-automaton', 'requiem-conductor', 'lantern-brood',
+];
+/** The neutral lore PR A gave the second wave's ten own uniques (data/gear.roster.ts), for L2a to write over. */
+const L2_NEUTRAL_LORE: Record<string, string> = {
+  'ancestor-gauntlet': '關節裡的齒輪還在轉，彷彿記得上一個主人的握力。',
+  'requiem-staff': '杖頭一揮，四周的雜音便安靜下來，只剩一段慢板。',
+  'brood-lantern': '殼裡透出暖光，提在手上像抱著一顆小小的心跳。',
+  'archon-crown': '冠上的金漆斑駁，戴上它的人說話都慢了半拍。',
+  'glutton-gauntlet': '吃得多、打得重，手甲本人似乎很滿意這個安排。',
+  'cradled-light': '一小團光蜷在鍊墜裡，像在等誰把它抱回家。',
+  'festival-mask': '面具的笑臉一直沒變，戴上它的人也跟著想笑。',
+  'whale-song-ring': '貼近耳朵，能聽見很遠很遠的低鳴。',
+  'still-hand-boots': '穿上它的人，總覺得時間替自己多停了一秒。',
+  'first-lantern-staff': '杖頂的火苗很小，卻從來沒有熄過。',
+};
+
 const entries = (): [string, BestiaryText][] => Object.entries(BESTIARY).filter((x): x is [string, BestiaryText] => !!x[1]);
 
 describe('the bestiary text and its gates (roster plan Task C5)', () => {
@@ -183,6 +204,41 @@ describe('the bestiary text and its gates (roster plan Task C5)', () => {
       const lore = SPECIALS[id].lore ?? '';
       expect(problemsOf(id, { trait: lore, lines: [{ text: lore }] }), id).toEqual([]);
       expect(lore, id).not.toBe(L1_NEUTRAL_LORE[id]);   // rewritten by the W steps, not the placeholder PR A left
+    }
+  });
+
+  it('the second live wave is written, its story lines behind their gates (L2a)', () => {
+    // Roster plan Task L2a: E2's twenty-seven, each with an entry that passes the gates below.
+    const missing = WAVE_2.filter((id) => !BESTIARY[id]);
+    expect(missing).toEqual([]);
+    for (const id of WAVE_2) expect(problemsOf(id, BESTIARY[id]!), id).toEqual([]);
+    const gates = (id: string) => BESTIARY[id]!.lines.map((l) => l.after);
+    const all = (id: string) => [BESTIARY[id]!.trait, ...BESTIARY[id]!.lines.map((l) => l.text)].join('');
+    // Ruling 20, spec §4.2: the nameless lantern-bearer walks down with a lamp; act 4 may tell the legend of the one who made
+    // himself a wick; the hero's 9th piece that every shadow walks the same. Never the sword, never the lamp key.
+    expect(gates('keeper-echo')).toEqual([undefined, { seen: ['act4'] }, { seen: ['mem:hero:9'] }]);
+    expect(all('keeper-echo')).not.toMatch(/劍|燈鑰|每一次，都是一個人做的/);
+    // Spec §4.2: the old city's four may say 艾斯特拉 from act 4.
+    for (const id of ['old-city-sentinel', 'requiem-choir', 'requiem-conductor', 'old-city-archon']) expect(gates(id), id).toEqual([undefined, { seen: ['act4'] }]);
+    // Spec §4.2: the two machines are her family's work from Bobby's 4th piece; never the lamp's workings or its valve.
+    for (const id of ['ancestor-automaton', 'toppled-automaton']) {
+      expect(gates(id), id).toEqual([undefined, { seen: ['mem:bobby:4'] }]);
+      expect(all(id), id).not.toMatch(/閥|燈芯機構|構造圖/);
+    }
+    // Ruling 20, I-223: the lantern-eater's brood says whose young they are only after the finale; the mother is met there alone.
+    for (const id of ['lantern-larva', 'deep-tendril', 'lantern-brood', 'gorged-beast']) expect(gates(id), id).toEqual([undefined, { seen: ['finale'] }]);
+    expect(gates('lantern-mother')).toEqual([{ seen: ['finale'] }]);
+    // Every other one of the wave is one line, no story.
+    const story = ['keeper-echo', 'old-city-sentinel', 'requiem-choir', 'requiem-conductor', 'old-city-archon', 'ancestor-automaton',
+      'toppled-automaton', 'lantern-larva', 'deep-tendril', 'lantern-brood', 'gorged-beast', 'lantern-mother'];
+    for (const id of WAVE_2.filter((x) => !story.includes(x))) expect(gates(id), id).toEqual([undefined]);
+  });
+
+  it("the second wave's own uniques carry lore that keeps every gate (L2a)", () => {
+    for (const id of Object.keys(L2_NEUTRAL_LORE)) {
+      const lore = SPECIALS[id].lore ?? '';
+      expect(problemsOf(id, { trait: lore, lines: [{ text: lore }] }), id).toEqual([]);
+      expect(lore, id).not.toBe(L2_NEUTRAL_LORE[id]);   // rewritten by the W steps, not the placeholder PR A left
     }
   });
 
