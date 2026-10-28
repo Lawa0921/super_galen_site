@@ -29,6 +29,10 @@ forget chip. Structure as gear_art.py (plan 5d).
                                          is retired as superseded (E3c: icon-mourning-veil -> icon-ash-chrysanthemum)
   repair-outliers --id ASSET --with rN [--rule pink-outlier|key-hue]   a roster asset's pink outliers (key residue) repaired by postprocess only, recorded
                                          as a pending `repair`; reviewed, approved and published with round rN
+                                         Task F8: --with f8 (a repair-only round), --rule a comma list in order (outline-key,
+                                         gutter-clear, speck-clear, lone-tint too), --keep X,Y;... (art, never touched),
+                                         --allow-spill N --allow-reason TEXT (the contract's allow_magenta_spill, with its reason);
+                                         approve --batch f8 --review PATH and publish --batch f8 as any round (same urls)
 
 Rounds (spec §13.5): r0 the style sample (5 foes, the R0+R1 icon sheet, the R0+R1 unique sheet, the forget chip), r1-r4 the
 rest; the forget chip drawn with r0 is approved and published as its own round `forget` in E1c (ruling 27). Every asset belongs to the round of its owner (an R1 foe's icon drawn on the R0 sheet is published with R1), so a
@@ -607,8 +611,12 @@ def round_of(aid):
     return ROUND_OF[uniques()[u]['owner']]
 
 
+REPAIR_ROUNDS = ('f8',)   # repair-only rounds (plan Task F8): no assets of their own; reviewed, approved and published repairs
+
+
 def label(rnd):
-    if rnd not in ROUNDS and rnd != FORGET_ROUND: raise ValueError(f'batch must be one of {list(ROUNDS) + [FORGET_ROUND]}')
+    if rnd not in ROUNDS and rnd != FORGET_ROUND and rnd not in REPAIR_ROUNDS:
+        raise ValueError(f'batch must be one of {list(ROUNDS) + [FORGET_ROUND] + list(REPAIR_ROUNDS)}')
     return f'roster-{rnd}'
 
 
@@ -849,8 +857,67 @@ REPAIR_RULES = {   # repair-outliers --rule: which key residue, repaired how (co
     'key-hue': ('key-hue residue only (sl_art.key_hue_pixels: _bright_key anywhere, _deep_key on the outline): each such pixel takes '
                 'the rounded per-channel median of its opaque 8-neighbours that are not key hue, in passes; alpha kept; no other '
                 'pixel changes (R4 review: the published 5d lizard-scale)'),
+    # plan Task F8 (controller 2026-10-29): the older published icons; chained in the order given, `--keep` pixels never touched
+    'outline-key': ('outline-key residue (sl_art.outline_key_pixels: key-hue pixels plus outline_blend_pixels, the key blended '
+                    'into a dark outline under _deep_key\'s RB floor or hue floor): repaired together as key-hue repairs, the '
+                    'rounded median of opaque 8-neighbours outside the set, in passes; alpha kept (F8: 5d icons, enemy bat)'),
+    'gutter-clear': ('gutter key line (sl_art.gutter_key_lines: a bbox edge row or column whose opaque pixels are all outline key, '
+                     'or key by a published repair\'s record, at least 3): alpha 0 (F8: crystal-shell, old-coin; the R4 pad '
+                     'of lizard-scale)'),
+    'speck-clear': ('key speck (sl_art.key_specks: outline key with at least 5 transparent 8-neighbours and fewer than 3 opaque '
+                    'non-key ones, so nothing to repair from): alpha 0 (F8: moss, enemy bat)'),
+    'lone-tint': ('lone tint (sl_art.lone_tint_pixels: a pale key-ward rose alone on the outline, under pink_outlier\'s '
+                  'saturation and red floors): the rounded median of its opaque 8-neighbours; alpha kept (F8: crab-plate\'s '
+                  'spike tip (25,4), enemy bat)'),
 }
 REPAIR_FN = {'pink-outlier': 'repair_pink_outliers', 'key-hue': 'repair_key_hue'}
+CLEAR_RULES = ('gutter-clear', 'speck-clear')
+
+
+def _rule_list(rule):
+    rules = [r.strip() for r in (rule.split(',') if isinstance(rule, str) else rule) if r.strip()]
+    for r in rules:
+        if r not in REPAIR_RULES: raise ValueError(f'unknown repair rule {r!r}; one of {list(REPAIR_RULES)}')
+    if not rules or len(set(rules)) != len(rules): raise ValueError(f'repair rules must be listed once each: {rule!r}')
+    return rules
+
+
+def _recorded_keys(e, img):
+    """Pixels an earlier published repair of this asset recorded as key hue (from _bright_key or _deep_key) that still hold
+    the colour it gave them: evidence for gutter-clear when that repair already recoloured the key (lizard-scale's R4 row)."""
+    import numpy as np
+    arr = np.asarray(img.convert('RGBA')); out = set()
+    for rep in [e.get('repair') or {}] + list(e.get('repair_history') or []):
+        if rep.get('status') != 'published': continue
+        for p in rep.get('pixels', []):
+            c = np.array([p['from'][:3]], np.uint8)
+            if not (A._bright_key(c)[0] or A._deep_key(c)[0]): continue
+            x, y = p['x'], p['y']
+            if arr[y, x, 3] == 255 and list(int(v) for v in arr[y, x, :3]) == list(p['to'][:3]): out.add((x, y))
+    return out
+
+
+def _run_rules(e, img, rules, keep):
+    """Apply the repair rules in order. Returns (image, fixed [(x, y, old, new, rule)], cleared [(x, y, old rgba, rule)],
+    skipped [(x, y, rgb, n)]) where skipped are the median repairs' leftovers no later step took."""
+    keep = {tuple(k) for k in keep}; cur = img.convert('RGBA'); fixed, cleared, skipped = [], [], {}
+    for name in rules:
+        if name in CLEAR_RULES:
+            keys = set(A.outline_key_pixels(cur)) - keep
+            if name == 'gutter-clear': px = A.gutter_key_lines(cur, (keys | _recorded_keys(e, cur)) - keep)
+            else: px = A.key_specks(cur, keys)
+            cur, c = A.clear_pixels(cur, px); cleared += [(x, y, o, name) for x, y, o in c]
+            for x, y, _ in c: skipped.pop((x, y), None)
+            continue
+        if name in REPAIR_FN:
+            if keep: raise ValueError(f'--keep is not taken by the {name} rule')
+            cur, f, s = getattr(A, REPAIR_FN[name])(cur)
+        elif name == 'outline-key': cur, f, s = A.repair_outline_key(cur, keep)
+        else: cur, f, s = A.repair_lone_tint(cur, keep)
+        fixed += [(x, y, o, n, name) for x, y, o, n in f]
+        for x, y, *_ in f: skipped.pop((x, y), None)
+        for t in s: skipped[(t[0], t[1])] = t
+    return cur, fixed, cleared, sorted(skipped.values(), key=lambda t: (t[1], t[0]))
 
 
 def gate_kind(entry, aid):
@@ -862,13 +929,22 @@ def gate_kind(entry, aid):
 COLOUR_REASONS = ('magenta residue', 'magenta spill', 'too flat to tint', 'too dark to tint')
 
 
-def regate(entry, img):
-    """Every roster gate that reads colour, run again on a repaired final under the current stamp. The repair keeps the
-    alpha, so the alpha-only numbers of the entry's QA (size, height band, holes, edge, semi alpha, erased, the gear sizes
-    and mass) carry over unchanged."""
+ALPHA_REASONS = ('semi alpha', 'touches edge')
+
+
+def regate(entry, img, alpha_changed=False):
+    """Every roster gate that reads colour, run again on a repaired final under the current stamp. A repair that keeps the
+    alpha carries the alpha-only numbers of the entry's QA (size, height band, holes, edge, semi alpha, erased, the gear
+    sizes and mass) over unchanged; one that clears pixels (F8 gutter-clear, speck-clear) runs alpha_qa's semi alpha, edge
+    and holes again too (the canvas size never changes)."""
     import copy
     kind = entry.get('_gate_kind') or entry.get('kind'); q = copy.deepcopy(entry.get('qa') or {})
     q['reasons'] = [r for r in q.get('reasons', []) if r not in COLOUR_REASONS]
+    if alpha_changed:
+        aq = A.alpha_qa(img, allow_holes=entry.get('allow_holes', 0))
+        q['reasons'] = [r for r in q['reasons'] if r not in ALPHA_REASONS] + [r for r in aq['reasons'] if r in ALPHA_REASONS]
+        q.update(semi=aq['semi'], edge=aq['edge'], holes=aq['holes'],
+                 warnings=[w for w in q.get('warnings', []) if w != 'enclosed holes'] + aq['warnings'])
     q['residue'] = A.alpha_qa(img)['residue']
     if q['residue'] > entry.get('allow_residue', 0): q['reasons'].append('magenta residue')
     q['magenta_spill'] = A.magenta_spill_count(img)
@@ -888,45 +964,83 @@ def _final_ref(path):
     return path.relative_to(repo).as_posix() if path.is_relative_to(repo) else str(path)
 
 
-def repair_outliers(reg, aid, publish_with, rule='pink-outlier'):
+def repair_outliers(reg, aid, publish_with, rule='pink-outlier', keep=(), allow_spill=None, allow_reason=None):
     """Repair a roster asset's pink outliers (key residue) as a deterministic postprocess of its current final, for review
     and publishing with round `publish_with`. Writes work/repair/<aid>.png and records registry `repair` (old and new
     sha256, every pixel, the rule, the colour gates run again under the current stamp, status pending). The asset's own
     final, runtime, status and QA do not change until that round publishes. A pixel with too few opaque neighbours is
-    reported and nothing is recorded; an asset with no outlier is refused. Running it again changes nothing."""
+    reported and nothing is recorded; an asset with no outlier is refused. Running it again changes nothing.
+
+    Plan Task F8: `rule` may be a list (or comma list) of rules applied in order; the clear rules set alpha 0 and are
+    recorded under `cleared`. `keep` lists pixels a review classified as art (never touched, recorded under `kept`).
+    `allow_spill` with `allow_reason` is the contract's allow_magenta_spill for art in the spill band, used by the re-gate
+    and written on the entry when the repair publishes. A published earlier repair moves to `repair_history`, and the new
+    file never overwrites the asset's current final (work/repair/<aid>.<round>.png then)."""
     from PIL import Image
     import numpy as np
-    label(publish_with)
-    if rule not in REPAIR_RULES: raise ValueError(f'unknown repair rule {rule!r}; one of {list(REPAIR_RULES)}')
+    label(publish_with); rules = _rule_list(rule)
+    if allow_spill is not None and not (allow_reason or '').strip():
+        raise ValueError('allow_magenta_spill needs a reason (contract: art that really has magenta, with its reason)')
     e = reg.data['assets'].get(aid)
     roster = bool(e) and str(e.get('batch', '')).startswith('roster-')
     if not e or not e.get('final') or not (roster or e.get('status') == 'published'):
         raise ValueError(f'{aid} is neither a picked roster asset nor a published asset')
+    old = e.get('repair')
+    if old and old.get('status') != 'published' and old.get('publish_with') != publish_with:
+        raise PermissionError(f'{aid} has a {old.get("status")} repair for {old.get("publish_with")}; finish or drop it first')
     src = A._final_path(e['final']); img = Image.open(src).convert('RGBA')
-    new, fixed, skipped = getattr(A, REPAIR_FN[rule])(img)
+    new, fixed, cleared, skipped = _run_rules(e, img, rules, keep)
     if skipped: raise PermissionError(f'{aid}: pink outliers with fewer than {A.REPAIR_MIN_NEIGHBOURS} opaque neighbours, not repaired: {skipped}')
-    if not fixed: raise ValueError(f'{aid}: no pink outlier to repair' if rule == 'pink-outlier' else f'{aid}: no {rule} pixel to repair')
-    a, b = np.asarray(img), np.asarray(new); changed = int((a != b).any(axis=-1).sum())
-    if not (a[..., 3] == b[..., 3]).all() or changed != len(fixed): raise RuntimeError(f'{aid}: the repair changed more than its pixels')
-    out = WORK / 'repair' / f'{aid}.png'; out.parent.mkdir(parents=True, exist_ok=True)
+    if not fixed and not cleared:
+        raise ValueError(f'{aid}: no pink outlier to repair' if rules == ['pink-outlier'] else f'{aid}: no {",".join(rules)} pixel to repair')
+    a, b = np.asarray(img), np.asarray(new); diff = (a != b).any(axis=-1); changed = int(diff.sum())
+    touched = {(x, y) for x, y, *_ in fixed} | {(x, y) for x, y, *_ in cleared}
+    alpha_at = {(int(x), int(y)) for y, x in zip(*np.nonzero(a[..., 3] != b[..., 3]))}
+    if alpha_at != {(x, y) for x, y, *_ in cleared} or {(int(x), int(y)) for y, x in zip(*np.nonzero(diff))} != touched \
+            or any(tuple(k) in touched for k in keep):
+        raise RuntimeError(f'{aid}: the repair changed more than its pixels')
+    out = WORK / 'repair' / f'{aid}.png'
+    if out.resolve() == src.resolve(): out = WORK / 'repair' / f'{aid}.{publish_with}.png'
+    out.parent.mkdir(parents=True, exist_ok=True)
     tmp = out.with_name(out.name + '.tmp'); new.save(tmp, format='PNG')
     if out.is_file() and out.read_bytes() == tmp.read_bytes(): tmp.unlink()
     else: os.replace(tmp, out)
+    many = len(rules) > 1
+    gate = {**e, '_gate_kind': gate_kind(e, aid)}
+    if allow_spill is not None: gate['allow_magenta_spill'] = int(allow_spill)
     rec = {'from_sha256': sha256(src), 'to_sha256': sha256(out), 'final': _final_ref(out),
-           'pixels': [{'x': x, 'y': y, 'from': list(o), 'to': list(n)} for x, y, o, n in fixed], 'skipped': [],
-           'changed_pixels': changed, 'rule': REPAIR_RULES[rule], 'postprocess_only': True, 'publish_with': publish_with,
-           'qa': regate({**e, '_gate_kind': gate_kind(e, aid)}, new)}
-    old = e.get('repair')
+           'pixels': [{'x': x, 'y': y, 'from': list(o), 'to': list(n), **({'rule': r} if many else {})} for x, y, o, n, r in fixed],
+           'skipped': [], 'changed_pixels': changed,
+           'rule': ' + '.join(REPAIR_RULES[r] for r in rules), 'rules': rules, 'postprocess_only': True,
+           'publish_with': publish_with, 'qa': regate(gate, new, alpha_changed=bool(cleared))}
+    if cleared: rec['cleared'] = [{'x': x, 'y': y, 'from': list(o), 'to': [0, 0, 0, 0], 'rule': r} for x, y, o, r in cleared]
+    if keep: rec['kept'] = [{'x': int(x), 'y': int(y), 'rgb': [int(v) for v in a[int(y), int(x), :3]]} for x, y in sorted({tuple(k) for k in keep}, key=lambda t: (t[1], t[0]))]
+    if allow_spill is not None: rec['allow_magenta_spill'] = {'count': int(allow_spill), 'reason': allow_reason.strip()}
     if old and all(old.get(k) == v for k, v in rec.items()): return old
     rec.update(status='pending', date=datetime.date.today().isoformat())
+    if old and old.get('status') == 'published': e.setdefault('repair_history', []).append(old)
     e['repair'] = rec; reg._save()
     return rec
 
 
+def _keep_arg(argv):
+    """--keep X,Y (repeatable; several pairs in one value separated by ';' or spaces) -> [(x, y)]."""
+    out = []
+    for i, a in enumerate(argv):
+        if a == '--keep' and i + 1 < len(argv):
+            for pair in re.split(r'[;\s]+', argv[i + 1].strip()):
+                if pair: x, y = pair.split(','); out.append((int(x), int(y)))
+    return out
+
+
 def repair_outliers_cli(argv):
-    rec = repair_outliers(_registry(), G._arg(argv, '--id'), G._arg(argv, '--with'), rule=G._arg(argv, '--rule') or 'pink-outlier')
-    print(json.dumps({k: rec[k] for k in ('from_sha256', 'to_sha256', 'final', 'pixels', 'changed_pixels', 'status')}, ensure_ascii=False))
-    print('qa', json.dumps({k: rec['qa'].get(k) for k in ('pass', 'reasons', 'pink_outlier', 'bright_key', 'key_tint_inside', 'spec')}))
+    allow = G._arg(argv, '--allow-spill')
+    rec = repair_outliers(_registry(), G._arg(argv, '--id'), G._arg(argv, '--with'), rule=G._arg(argv, '--rule') or 'pink-outlier',
+                          keep=_keep_arg(argv), allow_spill=int(allow) if allow is not None else None,
+                          allow_reason=G._arg(argv, '--allow-reason'))
+    print(json.dumps({k: rec.get(k) for k in ('from_sha256', 'to_sha256', 'final', 'pixels', 'cleared', 'kept', 'changed_pixels', 'status')},
+                     ensure_ascii=False))
+    print('qa', json.dumps({k: rec['qa'].get(k) for k in ('pass', 'reasons', 'pink_outlier', 'bright_key', 'key_tint_inside', 'magenta_spill', 'spec')}))
 
 
 def supersede(reg, old, new, reason, by):
@@ -1072,6 +1186,53 @@ def approve_deferred(reg, rnd, reviews):
     return list(pending)
 
 
+def _repair_problems(reg, reps, reviews, passed, problems):
+    """The checks every pending repair passes before its round approves it (made from the current final, unchanged since,
+    QA passed under the current stamp, its new sha256 passed by a review record)."""
+    for aid, rep in reps.items():
+        e = reg.data['assets'][aid]; f = A._final_path(rep['final'])
+        if not f.is_file() or sha256(f) != rep['to_sha256']: problems.setdefault('repair file changed since it was recorded', []).append(aid)
+        elif sha256(A._final_path(e['final'])) != rep['from_sha256']: problems.setdefault('repair made from another file', []).append(aid)
+        elif not rep['qa'].get('pass') or rep['qa'].get('spec') != A.qa_spec(gate_kind(e, aid)): problems.setdefault('repair QA', []).append(aid)
+        elif not reviews or rep['to_sha256'] not in passed.get(aid, ()):
+            problems.setdefault('repair not passed by the independent review (id, sha256, 通過)', []).append(aid)
+
+
+def _keep_reviews(rnd, reviews, rec, today):
+    """Copy the review records to work/review/roster-<rN>-review[-k].md, note them (and their sha256) in `rec`, and return
+    the approver line."""
+    kept = []
+    for i, r in enumerate(reviews):
+        k = review_copy(rnd) if i == 0 else review_copy(rnd).with_name(f'roster-{rnd}-review-{i + 1}.md')
+        k.parent.mkdir(parents=True, exist_ok=True)
+        if Path(r).resolve() != k.resolve(): shutil.copyfile(r, k)
+        kept.append(k)
+    rec.update({'review': repo_path(kept[0]), 'review_sha256': sha256(kept[0])})
+    if len(kept) > 1: rec['reviews'] = [{'record': repo_path(k), 'sha256': sha256(k)} for k in kept]
+    return f'independent review {", ".join(repo_path(k) for k in kept)} ({today})'
+
+
+def approve_repairs(reg, rnd, reviews, by=None):
+    """Plan Task F8: a repair-only round. Every pending repair recorded for it must pass _repair_problems on independent
+    review records (`- <id> <new sha256> 通過`); no user words are taken. The round's approval records no shown assets
+    (`shown` {}) and the approved repairs; publish then writes them over their runtime files (same urls)."""
+    if by: raise ValueError('a repair round is approved on an independent review record (--review), not on words')
+    if not reviews or any(not Path(r).is_file() for r in reviews): raise PermissionError(f'no independent review record at {reviews}')
+    reps = {a: r for a, r in repairs_with(reg, rnd).items() if r.get('status') != 'published'}
+    if not reps: raise PermissionError(f'{rnd} has no pending repair to approve')
+    passed, bad = _review_passes_all(reviews); problems = {}
+    if bad: problems['review lines not in the form "- <id> <sha256> 通過"'] = bad
+    _repair_problems(reg, reps, reviews, passed, problems)
+    if problems: raise PermissionError(f'refusing to approve {rnd}: {problems}')
+    today = datetime.date.today().isoformat(); rec = {'date': today, 'shown': {}}
+    _keep_reviews(rnd, reviews, rec, today)
+    rec['repairs'] = {a: r['to_sha256'] for a, r in reps.items()}
+    for r in reps.values(): r['status'] = 'approved'
+    reg.data.setdefault('approved_batches', {})[label(rnd)] = rec
+    reg._save()
+    return list(reps)
+
+
 def do_approve(reg, rnd, by=None, review=None, defer=None, deferred=False):
     """R0: the USER's approval of the style sample (their words and the date in `by`). R1-R4 (ruling 21) and the forget
     chip (ruling 27): an independent fresh-context review record (`review`) whose lines `- <id> <sha256> 通過` cover every
@@ -1084,6 +1245,7 @@ def do_approve(reg, rnd, by=None, review=None, defer=None, deferred=False):
     lab = label(rnd)
     reviews = [review] if isinstance(review, (str, Path)) else list(review or [])   # several records: one per review round
     if deferred: return approve_deferred(reg, rnd, reviews)                           # plan Task E3c
+    if rnd in REPAIR_ROUNDS: return approve_repairs(reg, rnd, reviews, by)           # plan Task F8
     if rnd == 'r0':
         if reviews: raise ValueError('R0 is the style sample: only the user approves it (--by with their words and the date), never a review record')
         if not by or not DATE.search(by) or not DATE.sub('', by).strip(' :：,，;；-—'):
@@ -1117,26 +1279,12 @@ def do_approve(reg, rnd, by=None, review=None, defer=None, deferred=False):
         if h != shown.get(aid): problems.setdefault('changed since (or missing from) the review page', []).append(aid)
         elif reviews and h not in passed.get(aid, ()): problems.setdefault('not passed by the independent review (id, sha256, 通過)', []).append(aid)
     reps = {a: r for a, r in repairs_with(reg, rnd).items() if r.get('status') != 'published'}
-    for aid, rep in reps.items():
-        e = reg.data['assets'][aid]; f = A._final_path(rep['final'])
-        if not f.is_file() or sha256(f) != rep['to_sha256']: problems.setdefault('repair file changed since it was recorded', []).append(aid)
-        elif sha256(A._final_path(e['final'])) != rep['from_sha256']: problems.setdefault('repair made from another file', []).append(aid)
-        elif not rep['qa'].get('pass') or rep['qa'].get('spec') != A.qa_spec(gate_kind(e, aid)): problems.setdefault('repair QA', []).append(aid)
-        elif not reviews or rep['to_sha256'] not in passed.get(aid, ()):
-            problems.setdefault('repair not passed by the independent review (id, sha256, 通過)', []).append(aid)
+    _repair_problems(reg, reps, reviews, passed, problems)
     if problems: raise PermissionError(f'refusing to approve {rnd}: {problems}')
     today = datetime.date.today().isoformat()
     rec = {'date': today, 'record': repo_path(sp), 'shown': {a: sha256(A._final_path(reg.data['assets'][a]['final'])) for a in aids}}
     if reviews:
-        kept = []
-        for i, r in enumerate(reviews):
-            k = review_copy(rnd) if i == 0 else review_copy(rnd).with_name(f'roster-{rnd}-review-{i + 1}.md')
-            k.parent.mkdir(parents=True, exist_ok=True)
-            if Path(r).resolve() != k.resolve(): shutil.copyfile(r, k)
-            kept.append(k)
-        rec.update({'review': repo_path(kept[0]), 'review_sha256': sha256(kept[0])})
-        if len(kept) > 1: rec['reviews'] = [{'record': repo_path(k), 'sha256': sha256(k)} for k in kept]
-        who = f'independent review {", ".join(repo_path(k) for k in kept)} ({today})'
+        who = _keep_reviews(rnd, reviews, rec, today)
     else:
         rec['by'] = by; who = by
     done = []
@@ -1299,12 +1447,15 @@ def do_publish(reg, rnd, public=None):
         e.setdefault('history', []).append({'final': e['final'], 'final_sha256': rep['from_sha256'], 'qa': e.get('qa'),
                                             'replaced_on': today, 'by': f'repair-outliers, published with {lab}'})
         e['final'] = rep['final']; e['qa'] = rep['qa']; rep.update(status='published', published_on=today)
+        if rep.get('allow_magenta_spill'):   # F8: the contract's allowance for art in the spill band, with its reason
+            e['allow_magenta_spill'] = rep['allow_magenta_spill']['count']
+            e['allow_magenta_spill_reason'] = rep['allow_magenta_spill']['reason']
         own = reg.data.get('approved_batches', {}).get(e.get('batch'))
         if own is not None:
             if isinstance(own.get('shown'), dict): own['shown'][aid] = rep['to_sha256']
             own.setdefault('repaired', {})[aid] = {'from': rep['from_sha256'], 'to': rep['to_sha256'], 'with': lab}
     reg._save(); reg.write_manifest(public)
-    if not todo: return []
+    if not todo: return rep_todo if rnd in REPAIR_ROUNDS else []
     if ROUNDS.get(rnd): add_roster_art([e for e in ROUNDS[rnd] if e not in owners])
     foes = sum(a.startswith('enemy-') for a in todo); icons = sum(a.startswith('icon-') and a != FORGET_ASSET for a in todo)
     gear = sum(a.startswith('gear-') and not a.endswith('-large') for a in todo)

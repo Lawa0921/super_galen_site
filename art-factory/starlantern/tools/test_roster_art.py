@@ -914,3 +914,116 @@ def test_roster_cells_fall_back_to_rows_when_columns_do_not_line_up(factory):
     assert [c.tobytes() for c in R.roster_cells(good, 3, 2)] == [c.tobytes() for c in P.sheet_cells(good, 3, 2)]   # aligned: same cells
     with pytest.raises(ValueError):
         R.roster_cells(_staggered(factory / 'bridge.png', bridge=True), 3, 2)       # a real bridge still refuses
+
+
+# --- plan Task F8 (controller 2026-10-29): the older published icons' key residue, a repair-only round -------------------------
+def _real_entry_as_is(factory, aid, public=None):
+    """The real registry entry of a published asset exactly as it is now (a published repair kept), its final copied into the
+    test factory (and to its runtime path under `public`)."""
+    import copy, shutil
+    e = copy.deepcopy(json.loads(REAL_REG.read_text(encoding='utf-8'))['assets'][aid])
+    src = Path(__file__).resolve().parents[3] / e['final']
+    dst = factory / 'work' / 'real' / f'{aid}.png'; dst.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(src, dst); e['final'] = str(dst)
+    if public is not None:
+        rt = Path(public) / e['runtime'].lstrip('/'); rt.parent.mkdir(parents=True, exist_ok=True); shutil.copyfile(src, rt)
+    reg = A.Registry(R.REG_PATH); reg.data['assets'][aid] = e; reg._save()
+    return e
+
+
+def test_repair_outliers_chains_rules_and_clears_the_lizard_scales_gutter_pad(factory):
+    """R4 round 2: lizard-scale's R4 repair left a pad where its gutter key row was (7-12,35). gutter-clear takes that row
+    off (alpha 0), found from the R4 record's key pixels; outline-key repairs (4,14) (39,3,47). The R4 record moves to
+    repair_history, and the new file never overwrites the current final."""
+    e = _real_entry_as_is(factory, 'icon-lizard-scale'); before = dict(e); r4 = e['repair']
+    rec = R.repair_outliers(A.Registry(R.REG_PATH), 'icon-lizard-scale', 'f8', rule=['gutter-clear', 'outline-key'])
+    now = A.Registry(R.REG_PATH).get('icon-lizard-scale')
+    for k in ('final', 'status', 'runtime', 'qa'): assert now[k] == before[k], k
+    assert now['repair'] == rec and now['repair_history'] == [r4]
+    assert rec['rules'] == ['gutter-clear', 'outline-key'] and rec['publish_with'] == 'f8' and rec['postprocess_only'] is True
+    assert [(c['x'], c['y']) for c in rec['cleared']] == [(x, 35) for x in range(7, 13)] and rec['cleared'][0]['to'] == [0, 0, 0, 0]
+    assert [(p['x'], p['y'], p['from'], p['rule']) for p in rec['pixels']] == [(4, 14, [39, 3, 47], 'outline-key')]
+    assert rec['changed_pixels'] == 7 and rec['skipped'] == []
+    f = A._final_path(rec['final']); assert f != A._final_path(before['final']) and f.is_file()
+    old, new = np.asarray(Image.open(before['final']).convert('RGBA')), np.asarray(Image.open(f).convert('RGBA'))
+    diff = (old != new).any(axis=-1); assert int(diff.sum()) == 7 and (old[..., 3] != new[..., 3]).sum() == 6
+    q = rec['qa']; assert q['pass'] and q['magenta_spill'] == 0 and q['edge'] == 0 and q['semi'] == 0
+    snap = R.REG_PATH.read_bytes()
+    assert R.repair_outliers(A.Registry(R.REG_PATH), 'icon-lizard-scale', 'f8', rule=['gutter-clear', 'outline-key']) == rec
+    assert R.REG_PATH.read_bytes() == snap
+
+
+def test_repair_outliers_keeps_classified_art_and_takes_a_reasoned_spill_allowance(factory):
+    """star-stone: (6,8) (44,9,56) is kept as art; its lavender highlights are art in the spill band, so the re-gate fails
+    unless the repair carries the contract's allow_magenta_spill with a reason; an allowance without a reason is refused."""
+    _real_entry_as_is(factory, 'icon-star-stone')
+    rec = R.repair_outliers(A.Registry(R.REG_PATH), 'icon-star-stone', 'f8', rule='outline-key', keep=[(6, 8)])
+    assert rec['kept'] == [{'x': 6, 'y': 8, 'rgb': [44, 9, 56]}] and (6, 8) not in [(p['x'], p['y']) for p in rec['pixels']]
+    assert not rec['qa']['pass'] and 'magenta spill' in rec['qa']['reasons']
+    snap = R.REG_PATH.read_bytes()
+    with pytest.raises(ValueError, match='reason'):
+        R.repair_outliers(A.Registry(R.REG_PATH), 'icon-star-stone', 'f8', rule='outline-key', keep=[(6, 8)], allow_spill=24)
+    assert R.REG_PATH.read_bytes() == snap
+    rec = R.repair_outliers(A.Registry(R.REG_PATH), 'icon-star-stone', 'f8', rule='outline-key', keep=[(6, 8)], allow_spill=24,
+                            allow_reason='lavender highlights are art')
+    assert rec['qa']['pass'] and rec['qa']['magenta_spill'] == 24
+    assert rec['allow_magenta_spill'] == {'count': 24, 'reason': 'lavender highlights are art'}
+
+
+def test_repair_outliers_refuses_a_speck_unless_speck_clear_follows(factory):
+    _real_entry_as_is(factory, 'icon-moss'); snap = R.REG_PATH.read_bytes()
+    with pytest.raises(PermissionError, match=r'\(11, 11'):
+        R.repair_outliers(A.Registry(R.REG_PATH), 'icon-moss', 'f8', rule='outline-key')
+    assert R.REG_PATH.read_bytes() == snap
+    rec = R.repair_outliers(A.Registry(R.REG_PATH), 'icon-moss', 'f8', rule=['outline-key', 'speck-clear'])
+    assert [(c['x'], c['y'], c['rule']) for c in rec['cleared']] == [(11, 11, 'speck-clear'), (32, 15, 'speck-clear')]
+    assert rec['skipped'] == [] and rec['changed_pixels'] == len(rec['pixels']) + 2
+
+
+def test_a_repair_only_round_is_approved_on_its_review_and_published_without_new_urls(factory, rooted):
+    public = rooted
+    assert R.label('f8') == 'roster-f8' and R.batch_assets('f8') == []
+    reg = A.Registry(R.REG_PATH); reg.data['roster_style_approved'] = '2026-10-26'; reg._save()
+    crab = _real_entry_as_is(factory, 'icon-crab-plate', public); _real_entry_as_is(factory, 'icon-bat-wing', public)
+    dst = public / crab['runtime'].lstrip('/'); old_sha = R.sha256(dst)
+    a = R.repair_outliers(A.Registry(R.REG_PATH), 'icon-crab-plate', 'f8', rule='lone-tint')
+    b = R.repair_outliers(A.Registry(R.REG_PATH), 'icon-bat-wing', 'f8', rule='outline-key')
+    rec = factory / 'f8-review.md'
+    rec.write_text(f'# F8\n- icon-crab-plate {a["to_sha256"]} 通過\n', encoding='utf-8')
+    _refused(factory, 'f8', review=str(rec))                                              # bat-wing not reviewed
+    with pytest.raises(PermissionError):
+        R.do_publish(A.Registry(R.REG_PATH), 'f8', public)
+    rec.write_text(f'# F8\n- icon-crab-plate {a["to_sha256"]} 通過\n- icon-bat-wing {b["to_sha256"]} 通過\n', encoding='utf-8')
+    R.do_approve(A.Registry(R.REG_PATH), 'f8', review=str(rec))
+    reg = A.Registry(R.REG_PATH); ab = reg.data['approved_batches']['roster-f8']
+    assert ab['repairs'] == {'icon-crab-plate': a['to_sha256'], 'icon-bat-wing': b['to_sha256']} and ab['shown'] == {}
+    assert R.review_copy('f8').is_file() and reg.get('icon-crab-plate')['repair']['status'] == 'approved'
+    total0 = R.url_totals(); ids0 = R.roster_art_ids()
+    done = R.do_publish(A.Registry(R.REG_PATH), 'f8', public)
+    reg = A.Registry(R.REG_PATH); e = reg.get('icon-crab-plate')
+    assert sorted(done) == ['icon-bat-wing', 'icon-crab-plate'] and R.sha256(dst) == a['to_sha256'] != old_sha
+    assert e['qa'] == a['qa'] and e['repair']['status'] == 'published' and e['history'][-1]['final_sha256'] == old_sha
+    assert e['history'][-1]['by'] == 'repair-outliers, published with roster-f8'
+    assert R.url_totals() == total0 and R.roster_art_ids() == ids0                       # same urls, no counts
+    snap = R.REG_PATH.read_bytes()
+    assert R.do_publish(A.Registry(R.REG_PATH), 'f8', public) == [] and R.REG_PATH.read_bytes() == snap
+
+
+def test_publishing_a_repair_with_a_spill_allowance_records_it_on_the_entry(factory, rooted):
+    public = rooted
+    reg = A.Registry(R.REG_PATH); reg.data['roster_style_approved'] = '2026-10-26'; reg._save()
+    _real_entry_as_is(factory, 'icon-star-stone', public)
+    a = R.repair_outliers(A.Registry(R.REG_PATH), 'icon-star-stone', 'f8', rule='outline-key', keep=[(6, 8)], allow_spill=24,
+                          allow_reason='lavender highlights are art')
+    rec = factory / 'f8-review.md'; rec.write_text(f'- icon-star-stone {a["to_sha256"]} 通過\n', encoding='utf-8')
+    R.do_approve(A.Registry(R.REG_PATH), 'f8', review=str(rec)); R.do_publish(A.Registry(R.REG_PATH), 'f8', public)
+    e = A.Registry(R.REG_PATH).get('icon-star-stone')
+    assert e['allow_magenta_spill'] == 24 and e['allow_magenta_spill_reason'] == 'lavender highlights are art'
+
+
+def test_repair_outliers_cli_takes_a_rule_list_keep_and_allowance(factory, capsys):
+    _real_entry_as_is(factory, 'icon-star-stone')
+    R.repair_outliers_cli(['--id', 'icon-star-stone', '--with', 'f8', '--rule', 'outline-key', '--keep', '6,8',
+                           '--allow-spill', '24', '--allow-reason', 'lavender highlights are art'])
+    rep = A.Registry(R.REG_PATH).get('icon-star-stone')['repair']
+    assert rep['rules'] == ['outline-key'] and rep['kept'][0]['x'] == 6 and rep['qa']['pass']
