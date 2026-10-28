@@ -1,0 +1,40 @@
+{
+  "assets": {
+    "enemy-glacier-tortoise": {
+      "final": "art-factory/starlantern/work/enemy-glacier-tortoise/cand/a1/enemy-glacier-tortoise.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-glacier-tortoise\\enemy-glacier-tortoise-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 11,
+        "size": [
+          96,
+          75
+        ],
+        "bright_key": 0,
+        "height": 73,
+        "width": 94,
+        "colours": 3740,
+        "lum": [
+          0.126,
+          0.994,
+          0.6
+        ],
+        "erased": 0,
+        "palette_over": true,
+        "spec": "roster-sprite:2e0d0bc9e5f1"
+      },
+      "status": "qa_passed",
+      "kind": "roster-sprite",
+      "roster_class": "heavy",
+      "mainline": false
+    }
+  }
+}

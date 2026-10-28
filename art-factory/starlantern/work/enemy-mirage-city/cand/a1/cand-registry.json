@@ -1,0 +1,42 @@
+{
+  "assets": {
+    "enemy-mirage-city": {
+      "final": "art-factory/starlantern/work/enemy-mirage-city/cand/a1/enemy-mirage-city.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-mirage-city\\enemy-mirage-city-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 3,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 8,
+        "size": [
+          150,
+          146
+        ],
+        "bright_key": 0,
+        "height": 144,
+        "width": 148,
+        "colours": 11441,
+        "lum": [
+          0.217,
+          0.825,
+          0.541
+        ],
+        "erased": 2,
+        "palette_over": true,
+        "spec": "roster-sprite:2e0d0bc9e5f1"
+      },
+      "status": "qa_passed",
+      "kind": "roster-sprite",
+      "roster_class": "boss",
+      "mainline": false
+    }
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "assets": {
+    "enemy-ember-tyrant": {
+      "final": "art-factory/starlantern/work/enemy-ember-tyrant/cand/a1/enemy-ember-tyrant.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-ember-tyrant\\enemy-ember-tyrant-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 15,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 8,
+        "size": [
+          146,
+          148
+        ],
+        "bright_key": 0,
+        "height": 145,
+        "width": 144,
+        "colours": 13600,
+        "lum": [
+          0.076,
+          0.732,
+          0.345
+        ],
+        "erased": 8,
+        "palette_over": true,
+        "spec": "roster-sprite:2e0d0bc9e5f1"
+      },
+      "status": "qa_passed",
+      "kind": "roster-sprite",
+      "roster_class": "boss",
+      "mainline": false
+    }
+  }
+}

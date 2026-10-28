@@ -1,0 +1,40 @@
+{
+  "assets": {
+    "enemy-thunder-kite": {
+      "final": "art-factory/starlantern/work/enemy-thunder-kite/cand/a1/enemy-thunder-kite.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-thunder-kite\\enemy-thunder-kite-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 13,
+        "size": [
+          63,
+          55
+        ],
+        "bright_key": 0,
+        "height": 53,
+        "width": 61,
+        "colours": 1604,
+        "lum": [
+          0.027,
+          0.846,
+          0.338
+        ],
+        "erased": 0,
+        "palette_over": true,
+        "spec": "roster-sprite:2e0d0bc9e5f1"
+      },
+      "status": "qa_passed",
+      "kind": "roster-sprite",
+      "roster_class": "swarm",
+      "mainline": false
+    }
+  }
+}
