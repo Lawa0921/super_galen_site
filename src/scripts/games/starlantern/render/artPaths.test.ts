@@ -44,8 +44,9 @@ describe('artPaths', () => {
     // + roster R1 (independent review 2026-10-27): 13 foes, 13 material icons, 3 own uniques x 2 = 768
     // + roster R2 (independent review 2026-10-27): 27 foes, 26 material icons, 10 own uniques x 2 = 841
     // + roster FORGET (independent review 2026-10-27): 0 foes, 0 material icons, 0 own uniques x 2, the forget chip = 842
-    expect(urls).toHaveLength(842);
-    expect(new Set(urls).size).toBe(842);
+    // + roster R3 (independent review 2026-10-28): 27 foes, 26 material icons, 12 own uniques x 2 (deferred: icon-mourning-veil with ash-mourner) = 919
+    expect(urls).toHaveLength(919);
+    expect(new Set(urls).size).toBe(919);
     for (const id of Object.keys(SKILLS)) {
       expect(urls, id).not.toContain(art.icon(id));
       for (const px of SKILL_ICON_SIZES) expect(urls, id).toContain(art.skillIcon(id, px));

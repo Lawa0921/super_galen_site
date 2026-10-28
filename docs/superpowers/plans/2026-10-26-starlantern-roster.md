@@ -809,6 +809,12 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 
 ### Task E3a、E3b
 - [ ] 照 E2：28 隻、`sheet-icons-roster-4`、`-5`（27）、`sheet-gear-roster-4`、`-5`（12）；故事物種的閘門清單隨審核頁一起給使用者參考，不等他回覆（裁定 21）；發布 ＋79。commit：`feat(art): roster R3, the fire, frost and storm lands`。
+- 實際（2026-10-28）：獨立審核 5 輪（第 1 輪 73／79 通過；第 2–5 輪只審重畫與 R0 修復），`approve --batch r3` 一次引用 5 份紀錄。`icon-mourning-veil` 第 5 輪仍不通過，照控制者裁定延後（`--defer icon-mourning-veil --reason <第 5 輪紀錄>`）：發布 ＋77（28 隻減 `ash-mourner`、26 個圖示、12 件專屬獨特 ×2），`allArtUrls` 842 → 919；`ash-mourner` 的立繪已核准但跟面紗一起等，不進 `ROSTER_ART`。同一次發布把 R0 的 `enemy-fog-warden`、`icon-fog-gate-plate` 換成 `repair-outliers` 修過的版本（網址不變）。
+
+### Task E3c：延後的面紗（L3 的硬性前提）
+- [ ] **工具（測試先行）**：`approve --batch r3` 目前只能核准整輪，已發布的素材會讓它拒絕。先寫失敗的測試，再讓延後的素材可以單獨核准：只審這一件（審核紀錄的 `- icon-mourning-veil <sha256> 通過`），已發布的其他件不重審、不動；`publish --batch r3` 只發布它與它主人`ash-mourner` 的立繪，把 `ash-mourner` 加進 `ROSTER_ART`，網址總數 ＋2，核准紀錄的 `deferred` 改成已完成並記下審核紀錄。
+- [ ] **重畫**：以第 5 輪紀錄 `extend-cap` 一次（新的審核紀錄），重畫 `sheet-icons-roster-4`，只挑面紗。第 5 輪審核者的方向：上緣是寬的弧線，最上面一列至少有最寬一列的 60%；寬高比 ≥ 1.4、斜放；兩道橫向、階梯狀的摺；每個孔的核心至少 3×3；正面是平的中灰；外框中性深灰（不帶紫或洋紅）。驗收：蓋住孔，16 px 的剪影仍讀得出是一塊布（不是錐形堆、磚或長條）。
+- [ ] 獨立審核通過後照上面的工具核准、發布，收尾 G；commit：`feat(art): the mourning veil and ash-mourner published`。**L3b 的上線切換要等這一項完成**（`ash-mourner` 不在 `ROSTER_ART` 就不能進 `ROSTER_LIVE`）。
 
 # PR L3：上線三（熾焰、霜凍、雷鳴）
 
@@ -854,6 +860,7 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 
 ### Task F2：大取樣塊的雜訊（R3、R4 生成前考慮）
 - [ ] R2 獨立審核（2026-10-27）指出：codex 原圖的主體遠大於目標美術像素，`process_roster_sprite` 以 11–18 的 block 中心取樣（例：`toppled-automaton` 11、`requiem-conductor` 11、`keeper-echo` 18；頭目約 8），在 `toppled-automaton`、`requiem-conductor`、`keeper-echo` 留下看得見的雜訊點。本次不改管線（控制者 2026-10-27 裁定）。R3、R4 生成前評估：prompt 要求主體在畫布裡畫得接近目標尺寸（block 收斂到約 8 以下，例如加「the sprite is small on the canvas, drawn with big chunky art pixels」之類的句子），或其他不產生新顏色、不放寬任何閘門的取樣方式；改了要先寫失敗的測試，QA 戳記隨之改變，已發布的 R0–R2 不重做。
+- 評估結果（E3，2026-10-27）：管線不改。拿已發布的 7 張原圖比較中心取樣與每塊眾數、內圈眾數、內圈中位數三種取樣，雜點只少 0–45%、而且不一致，眾數還會讓描邊變暗、和已發布的圖不一致；原因是細節密度（codex 每個美術像素約 6 個原圖像素，block 11–18），濾鏡救不回。R3 改在 prompt 給一般怪物加「用少數大形狀、不要細碎紋理」。R3 的 `mirage-lead`（a3）與面紗（a4）在 block 10–12、7 試過中心、眾數、覆蓋率取樣也一樣救不回，最後都靠重畫成較大的形狀解決（面紗延後）。
 
 ### Task F3：遺忘圖示的 1 px 外框（選擇性）
 - [ ] 遺忘圖示（`icon-ail-forget-14`）在 E1c 審核時放在深色視窗上、`#66B87E` 的「遺忘」前面讀起來沒問題；但圖示本身是淡霧綠，沒有深色外框。若之後要放到亮色底（例如亮色主題、白底的提示框），考慮一個確定性的 1 px 深色外框（由已核准的圖轉出、不產生手繪像素，做法比照 5d 剪影的確定性轉換），走「轉出 → QA → 獨立審核 → 重新發布」。目前沒有亮色底，不做（控制者 2026-10-27）。

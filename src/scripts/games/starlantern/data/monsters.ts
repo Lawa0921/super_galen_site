@@ -24,7 +24,11 @@ export const ROSTER_ART: ReadonlySet<string> = new Set<string>([
   'epitaph-golem', 'ancestor-automaton', 'ash-archivist', 'wick-shade', 'keeper-echo', 'ember-maw', 'sorrow-crystal',
   'deep-tendril', 'music-box', 'paper-cranes', 'lost-shadow', 'returning-light', 'gilded-hoarder', 'old-city-archon',
   'gorged-beast', 'lantern-mother', 'forgotten-festival', 'starless-whale', 'stopped-clock', 'first-lantern',
-  'archon-hand', 'toppled-automaton', 'requiem-conductor', 'lantern-brood',
+  'archon-hand', 'toppled-automaton', 'requiem-conductor', 'lantern-brood', 'cinder-imp', 'forge-hound',
+  'mirage-dancer', 'sand-scorpion', 'frost-doll', 'glacier-tortoise', 'snow-caller', 'ice-komainu', 'frozen-pilgrim',
+  'thunder-kite', 'storm-totem', 'charge-jelly', 'star-ember', 'stolen-tome', 'ember-tyrant', 'sandstorm-maw',
+  'mirage-city', 'rime-sovereign', 'white-silence', 'rift-maw', 'thunder-roc', 'storm-conductor',
+  'starfire-colossus', 'mirage-lead', 'ice-shrine', 'burning-page', 'rime-pillar',
 ]);
 /**
  * Roster ids met in the encounter tables, the boss table, warden rooms and the bestiary. Only a go-live commit adds to it,
