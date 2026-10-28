@@ -64,10 +64,11 @@ describe('bond data', () => {
       // Roster plan L1a (ruling 13): Rin's keepsake and Selene's, declined until her pieces are all told, liked after.
       rin: { loved: ['dusk-cloth', 'thorn-fang'], liked: ['shade-crystal', 'star-tear'], declined: ['king-scale', 'tower-dust'], healed: { 'tower-dust': 'liked' } },
       selene: { loved: ['star-tear', 'crystal-shell'], liked: ['moss', 'ice-crystal', 'star-stone'], declined: ['old-coin', 'moon-silver'], healed: { 'old-coin': 'liked', 'moon-silver': 'liked' } },
-      chizuru: { loved: ['old-coin', 'moss'], liked: ['star-stone', 'crystal-shell'], declined: ['ice-crystal', 'frost-heart'], healed: {} },
-      safira: { loved: ['lizard-scale', 'king-scale'], liked: ['star-stone', 'bat-wing'], declined: ['blaze-core'], healed: { 'blaze-core': 'liked' } },
+      // Roster plan L3a (ruling 13): Chizuru's, Safira's and Noel's keepsakes, declined until her pieces are all told.
+      chizuru: { loved: ['old-coin', 'moss'], liked: ['star-stone', 'crystal-shell'], declined: ['ice-crystal', 'frost-heart', 'shrine-rope'], healed: { 'shrine-rope': 'liked' } },
+      safira: { loved: ['lizard-scale', 'king-scale'], liked: ['star-stone', 'bat-wing'], declined: ['blaze-core', 'copper-anklet'], healed: { 'blaze-core': 'liked', 'copper-anklet': 'liked' } },
       sylvie: { loved: ['moss', 'thorn-fang'], liked: ['bat-wing', 'lizard-scale'], declined: ['mire-gland'], healed: { 'mire-gland': 'neutral' } },
-      noel: { loved: ['storm-stone', 'crystal-shell'], liked: ['king-scale', 'star-tear'], declined: ['star-stone'], healed: { 'star-stone': 'liked' } },
+      noel: { loved: ['storm-stone', 'crystal-shell'], liked: ['king-scale', 'star-tear'], declined: ['star-stone', 'ash-page'], healed: { 'star-stone': 'liked', 'ash-page': 'liked' } },
       // Roster plan L2a (ruling 13): Bobby's keepsake, the fallen automaton's core, declined until her pieces are all told.
       bobby: { loved: ['ancient-gear', 'iron-shard'], liked: ['star-stone', 'crystal-shell', 'storm-stone'], declined: ['mire-gland', 'automaton-core'], healed: { 'automaton-core': 'liked' } },
       liz: { loved: ['old-coin', 'king-scale'], liked: ['star-tear', 'ancient-gear'], declined: ['shade-crystal'], healed: { 'shade-crystal': 'neutral' } },

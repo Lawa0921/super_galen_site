@@ -162,6 +162,29 @@ const L2_NEUTRAL_LORE: Record<string, string> = {
   'first-lantern-staff': '杖頂的火苗很小，卻從來沒有熄過。',
 };
 
+/** Roster plan L3 (spec §13.5 R3): the twenty-eight of the third live wave, the fire, frost and storm lands. */
+const WAVE_3 = [
+  'cinder-imp', 'forge-hound', 'ash-mourner', 'mirage-dancer', 'sand-scorpion', 'frost-doll', 'glacier-tortoise', 'snow-caller',
+  'ice-komainu', 'frozen-pilgrim', 'thunder-kite', 'storm-totem', 'charge-jelly', 'star-ember', 'stolen-tome', 'ember-tyrant',
+  'sandstorm-maw', 'mirage-city', 'rime-sovereign', 'white-silence', 'rift-maw', 'thunder-roc', 'storm-conductor', 'starfire-colossus',
+  'mirage-lead', 'ice-shrine', 'burning-page', 'rime-pillar',
+];
+/** The neutral lore PR A gave the third wave's twelve own uniques (data/gear.roster.ts), for L3a to write over. */
+const L3_NEUTRAL_LORE: Record<string, string> = {
+  'last-dance-veil': '紗一揚起，腳步就自己踩上了拍子。',
+  'ninety-nine-steps': '鞋底刻著石階的紋路，每一步都走得很穩。',
+  'starbound-tome': '書頁被星光封住，翻不開，卻總在需要的時候發熱。',
+  'burning-crown-ring': '戒圈燙手，脾氣也不太好，但打起架來很可靠。',
+  'sand-veil-boots': '靴底永遠倒得出一點沙，走過的路都被風抹平。',
+  'troupe-drum': '鼓面一響，連最怕跳舞的人都會踏兩步。',
+  'everwinter-veil': '披上它便不怕冷，只是說話時會冒出白氣。',
+  'snowmute-ring': '指環裡下著一場不會停的小雪。',
+  'sealing-spear': '槍尖纏著舊舊的紙籤，一刺出去，寒氣就跟著收攏。',
+  'roc-feather-boots': '腳步輕得像羽毛，落地時卻帶著一聲雷。',
+  'conductor-ring': '舉起手的時候，雷聲會乖乖等你數到三。',
+  'starfire-tiara': '頭冠上的星火一閃一閃，想事情的時候閃得特別快。',
+};
+
 const entries = (): [string, BestiaryText][] => Object.entries(BESTIARY).filter((x): x is [string, BestiaryText] => !!x[1]);
 
 describe('the bestiary text and its gates (roster plan Task C5)', () => {
@@ -239,6 +262,45 @@ describe('the bestiary text and its gates (roster plan Task C5)', () => {
       const lore = SPECIALS[id].lore ?? '';
       expect(problemsOf(id, { trait: lore, lines: [{ text: lore }] }), id).toEqual([]);
       expect(lore, id).not.toBe(L2_NEUTRAL_LORE[id]);   // rewritten by the W steps, not the placeholder PR A left
+    }
+  });
+
+  it('the third live wave is written, its story lines behind their gates (L3a)', () => {
+    // Roster plan Task L3a: E3's twenty-eight, each with an entry that passes the gates below.
+    const missing = WAVE_3.filter((id) => !BESTIARY[id]);
+    expect(missing).toEqual([]);
+    for (const id of WAVE_3) expect(problemsOf(id, BESTIARY[id]!), id).toEqual([]);
+    const gates = (id: string) => BESTIARY[id]!.lines.map((l) => l.after);
+    const all = (id: string) => [BESTIARY[id]!.trait, ...BESTIARY[id]!.lines.map((l) => l.text)].join('');
+    // Spec §4.2: the mirage's dancers say Safira's troupe from her 1st piece; the city that it was false and burned, from her 5th,
+    // as the sand's two say the fire was a desert. The leader's words never (團長 waits for her 4th piece, its words for her 5th).
+    for (const id of ['mirage-dancer', 'mirage-lead']) expect(gates(id), id).toEqual([undefined, { seen: ['mem:safira:1'] }]);
+    for (const id of ['mirage-city', 'sand-scorpion', 'sandstorm-maw']) expect(gates(id), id).toEqual([undefined, { seen: ['mem:safira:5'] }]);
+    for (const id of ['mirage-dancer', 'mirage-lead', 'mirage-city', 'sand-scorpion', 'sandstorm-maw']) expect(all(id), id).not.toMatch(/團長|繼續跳/);
+    // Spec §4.2: the shrine is gone from Chizuru's 4th piece, the rift is what she came to seal from her 2nd; the komainu stand
+    // at her mountain shrine (1st) and the pilgrims grow fewer (4th). Never the bell (her 5th piece, I-62).
+    expect(gates('ice-shrine')).toEqual([undefined, { seen: ['mem:chizuru:4'] }]);
+    expect(gates('rift-maw')).toEqual([undefined, { seen: ['mem:chizuru:2'] }]);
+    expect(gates('ice-komainu')).toEqual([undefined, { seen: ['mem:chizuru:1'] }]);
+    expect(gates('frozen-pilgrim')).toEqual([undefined, { seen: ['mem:chizuru:4'] }]);
+    for (const id of ['ice-shrine', 'rift-maw', 'ice-komainu', 'frozen-pilgrim']) expect(all(id), id).not.toMatch(/鈴/);
+    // Spec §4.2: the burning page burns memory from Noel's 3rd piece, her teacher kept her from it from her 4th; the ember, the
+    // book and the colossus each behind the piece they echo. Never the merchant (her 5th piece).
+    expect(gates('burning-page')).toEqual([undefined, { seen: ['mem:noel:3'] }, { seen: ['mem:noel:4'] }]);
+    expect(gates('stolen-tome')).toEqual([undefined, { seen: ['mem:noel:1'] }]);
+    for (const id of ['star-ember', 'starfire-colossus']) expect(gates(id), id).toEqual([undefined, { seen: ['mem:noel:3'] }]);
+    for (const id of ['burning-page', 'stolen-tome', 'star-ember', 'starfire-colossus']) expect(all(id), id).not.toMatch(/商人/);
+    // Every other one of the wave is one line, no story.
+    const story = ['mirage-dancer', 'mirage-lead', 'mirage-city', 'sand-scorpion', 'sandstorm-maw', 'ice-shrine', 'rift-maw', 'ice-komainu',
+      'frozen-pilgrim', 'burning-page', 'stolen-tome', 'star-ember', 'starfire-colossus'];
+    for (const id of WAVE_3.filter((x) => !story.includes(x))) expect(gates(id), id).toEqual([undefined]);
+  });
+
+  it("the third wave's own uniques carry lore that keeps every gate (L3a)", () => {
+    for (const id of Object.keys(L3_NEUTRAL_LORE)) {
+      const lore = SPECIALS[id].lore ?? '';
+      expect(problemsOf(id, { trait: lore, lines: [{ text: lore }] }), id).toEqual([]);
+      expect(lore, id).not.toBe(L3_NEUTRAL_LORE[id]);   // rewritten by the W steps, not the placeholder PR A left
     }
   });
 
