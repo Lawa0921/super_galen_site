@@ -1,0 +1,538 @@
+{
+  "assets": {
+    "gear-colossus-gauntlet-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-7/cand/a2/gear-colossus-gauntlet-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-7\\sheet-gear-roster-7-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 56,
+          "short": 50,
+          "mass": 0.648,
+          "box": [
+            4,
+            7,
+            60,
+            57
+          ],
+          "centre_off": 0.0
+        },
+        "block": 7.071,
+        "scale": 7.071,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "roster-gear:91c76b116bcd",
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0
+      },
+      "status": "qa_passed",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-7\\sheet-gear-roster-7-a2.png",
+        "cell": "colossus-gauntlet"
+      },
+      "slot": "hands"
+    },
+    "gear-colossus-gauntlet": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-7/cand/a2/gear-colossus-gauntlet.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-7\\sheet-gear-roster-7-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 22,
+          "short": 20,
+          "mass": 0.661,
+          "box": [
+            2,
+            3,
+            24,
+            23
+          ],
+          "centre_off": 0.0
+        },
+        "block": 18.0,
+        "scale": 18.0,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "roster-gear:91c76b116bcd",
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0
+      },
+      "status": "qa_passed",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-7\\sheet-gear-roster-7-a2.png",
+        "cell": "colossus-gauntlet"
+      },
+      "slot": "hands"
+    },
+    "gear-wallclimber-boots-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-7/cand/a2/gear-wallclimber-boots-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-7\\sheet-gear-roster-7-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 56,
+          "short": 53,
+          "mass": 0.666,
+          "box": [
+            4,
+            5,
+            60,
+            58
+          ],
+          "centre_off": 0.5
+        },
+        "block": 7.286,
+        "scale": 7.286,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "roster-gear:91c76b116bcd",
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0
+      },
+      "status": "qa_passed",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-7\\sheet-gear-roster-7-a2.png",
+        "cell": "wallclimber-boots"
+      },
+      "slot": "feet"
+    },
+    "gear-wallclimber-boots": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-7/cand/a2/gear-wallclimber-boots.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-7\\sheet-gear-roster-7-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 22,
+          "short": 21,
+          "mass": 0.674,
+          "box": [
+            2,
+            2,
+            24,
+            23
+          ],
+          "centre_off": 0.5
+        },
+        "block": 18.545,
+        "scale": 18.545,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "roster-gear:91c76b116bcd",
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0
+      },
+      "status": "qa_passed",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-7\\sheet-gear-roster-7-a2.png",
+        "cell": "wallclimber-boots"
+      },
+      "slot": "feet"
+    },
+    "gear-red-horn-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-7/cand/a2/gear-red-horn-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-7\\sheet-gear-roster-7-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 56,
+          "short": 50,
+          "mass": 0.408,
+          "box": [
+            4,
+            7,
+            60,
+            57
+          ],
+          "centre_off": 0.0
+        },
+        "block": 7.625,
+        "scale": 7.625,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "roster-gear:91c76b116bcd",
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0
+      },
+      "status": "qa_passed",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-7\\sheet-gear-roster-7-a2.png",
+        "cell": "red-horn"
+      },
+      "slot": "neck"
+    },
+    "gear-red-horn": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-7/cand/a2/gear-red-horn.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-7\\sheet-gear-roster-7-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 22,
+          "short": 20,
+          "mass": 0.424,
+          "box": [
+            2,
+            3,
+            24,
+            23
+          ],
+          "centre_off": 0.0
+        },
+        "block": 19.409,
+        "scale": 19.409,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "roster-gear:91c76b116bcd",
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0
+      },
+      "status": "qa_passed",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-7\\sheet-gear-roster-7-a2.png",
+        "cell": "red-horn"
+      },
+      "slot": "neck"
+    },
+    "gear-arrowmark-bow-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-7/cand/a2/gear-arrowmark-bow-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-7\\sheet-gear-roster-7-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 56,
+          "short": 52,
+          "mass": 0.228,
+          "box": [
+            6,
+            4,
+            58,
+            60
+          ],
+          "centre_off": 0.0
+        },
+        "block": 8.214,
+        "scale": 8.214,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "roster-gear:91c76b116bcd",
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0
+      },
+      "status": "qa_passed",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-7\\sheet-gear-roster-7-a2.png",
+        "cell": "arrowmark-bow"
+      },
+      "slot": "weapon",
+      "weapon_kind": "bow"
+    },
+    "gear-arrowmark-bow": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-7/cand/a2/gear-arrowmark-bow.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-7\\sheet-gear-roster-7-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 22,
+          "short": 20,
+          "mass": 0.229,
+          "box": [
+            3,
+            2,
+            23,
+            24
+          ],
+          "centre_off": 0.0
+        },
+        "block": 20.909,
+        "scale": 20.909,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "roster-gear:91c76b116bcd",
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0
+      },
+      "status": "qa_passed",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-7\\sheet-gear-roster-7-a2.png",
+        "cell": "arrowmark-bow"
+      },
+      "slot": "weapon",
+      "weapon_kind": "bow"
+    },
+    "gear-hungry-purse-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-7/cand/a2/gear-hungry-purse-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-7\\sheet-gear-roster-7-a2.png",
+      "qa": {
+        "pass": false,
+        "reasons": [
+          "magenta residue"
+        ],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 1,
+        "subject": {
+          "long": 56,
+          "short": 54,
+          "mass": 0.696,
+          "box": [
+            5,
+            4,
+            59,
+            60
+          ],
+          "centre_off": 0.0
+        },
+        "block": 6.393,
+        "scale": 6.393,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "roster-gear:91c76b116bcd",
+        "bright_key": 1,
+        "pink_outlier": 0,
+        "erased": 0
+      },
+      "status": "qa_failed",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-7\\sheet-gear-roster-7-a2.png",
+        "cell": "hungry-purse"
+      },
+      "slot": "ring"
+    },
+    "gear-hungry-purse": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-7/cand/a2/gear-hungry-purse.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-7\\sheet-gear-roster-7-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 22,
+          "short": 21,
+          "mass": 0.686,
+          "box": [
+            2,
+            2,
+            23,
+            24
+          ],
+          "centre_off": 0.5
+        },
+        "block": 16.273,
+        "scale": 16.273,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "roster-gear:91c76b116bcd",
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0
+      },
+      "status": "qa_passed",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-7\\sheet-gear-roster-7-a2.png",
+        "cell": "hungry-purse"
+      },
+      "slot": "ring"
+    },
+    "gear-gatewarden-shield-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-7/cand/a2/gear-gatewarden-shield-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-7\\sheet-gear-roster-7-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 56,
+          "short": 46,
+          "mass": 0.609,
+          "box": [
+            9,
+            4,
+            55,
+            60
+          ],
+          "centre_off": 0.0
+        },
+        "block": 8.339,
+        "scale": 8.339,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "roster-gear:91c76b116bcd",
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0
+      },
+      "status": "qa_passed",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-7\\sheet-gear-roster-7-a2.png",
+        "cell": "gatewarden-shield"
+      },
+      "slot": "offhand"
+    },
+    "gear-gatewarden-shield": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-7/cand/a2/gear-gatewarden-shield.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-7\\sheet-gear-roster-7-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 22,
+          "short": 18,
+          "mass": 0.61,
+          "box": [
+            4,
+            2,
+            22,
+            24
+          ],
+          "centre_off": 0.0
+        },
+        "block": 21.227,
+        "scale": 21.227,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "roster-gear:91c76b116bcd",
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0
+      },
+      "status": "qa_passed",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-7\\sheet-gear-roster-7-a2.png",
+        "cell": "gatewarden-shield"
+      },
+      "slot": "offhand"
+    }
+  }
+}

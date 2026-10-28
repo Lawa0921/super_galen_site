@@ -1,0 +1,43 @@
+{
+  "assets": {
+    "enemy-debt-collector": {
+      "final": "art-factory/starlantern/work/enemy-debt-collector/cand/a1/enemy-debt-collector.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-debt-collector\\enemy-debt-collector-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 14,
+        "size": [
+          42,
+          64
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "height": 62,
+        "width": 39,
+        "colours": 1220,
+        "lum": [
+          0.072,
+          0.773,
+          0.274
+        ],
+        "erased": 1,
+        "palette_over": true,
+        "spec": "roster-sprite:929ae0136de6"
+      },
+      "status": "qa_passed",
+      "kind": "roster-sprite",
+      "roster_class": "normal",
+      "mainline": false
+    }
+  }
+}

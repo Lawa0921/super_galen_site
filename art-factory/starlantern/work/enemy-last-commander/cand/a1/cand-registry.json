@@ -1,0 +1,43 @@
+{
+  "assets": {
+    "enemy-last-commander": {
+      "final": "art-factory/starlantern/work/enemy-last-commander/cand/a1/enemy-last-commander.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-last-commander\\enemy-last-commander-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 8,
+        "size": [
+          131,
+          149
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "height": 147,
+        "width": 129,
+        "colours": 6366,
+        "lum": [
+          0.009,
+          0.67,
+          0.262
+        ],
+        "erased": 0,
+        "palette_over": true,
+        "spec": "roster-sprite:929ae0136de6"
+      },
+      "status": "qa_passed",
+      "kind": "roster-sprite",
+      "roster_class": "boss",
+      "mainline": false
+    }
+  }
+}

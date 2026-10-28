@@ -1,0 +1,41 @@
+{
+  "assets": {
+    "enemy-vault-mimic": {
+      "final": "art-factory/starlantern/work/enemy-vault-mimic/cand/a1/enemy-vault-mimic.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-vault-mimic\\enemy-vault-mimic-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 11,
+        "size": [
+          83,
+          76
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "height": 74,
+        "width": 81,
+        "colours": 3924,
+        "lum": [
+          0.017,
+          0.839,
+          0.282
+        ],
+        "erased": 0,
+        "palette_over": true,
+        "spec": "roster-sprite:929ae0136de6"
+      },
+      "status": "qa_passed",
+      "kind": "roster-sprite",
+      "roster_class": "heavy",
+      "mainline": false
+    }
+  }
+}

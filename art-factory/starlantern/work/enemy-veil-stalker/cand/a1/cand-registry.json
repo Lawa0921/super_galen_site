@@ -1,0 +1,41 @@
+{
+  "assets": {
+    "enemy-veil-stalker": {
+      "final": "art-factory/starlantern/work/enemy-veil-stalker/cand/a1/enemy-veil-stalker.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-veil-stalker\\enemy-veil-stalker-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 14,
+        "size": [
+          73,
+          65
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "height": 63,
+        "width": 71,
+        "colours": 1768,
+        "lum": [
+          0.023,
+          0.652,
+          0.166
+        ],
+        "erased": 0,
+        "palette_over": true,
+        "spec": "roster-sprite:929ae0136de6"
+      },
+      "status": "qa_passed",
+      "kind": "roster-sprite",
+      "roster_class": "normal",
+      "mainline": false
+    }
+  }
+}

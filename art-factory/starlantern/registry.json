@@ -2391,7 +2391,7 @@
       "kind": "sprite",
       "status": "published",
       "runtime": "/assets/games/starlantern/icon/lizard-scale.png",
-      "final": "art-factory/starlantern/work/sheet-icons-2/icon-lizard-scale.png",
+      "final": "art-factory/starlantern/work/repair/icon-lizard-scale.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
       "qa": {
         "pass": true,
@@ -2405,9 +2405,210 @@
         "size": [
           30,
           37
-        ]
+        ],
+        "magenta_spill": 1,
+        "key_tint_inside": 0,
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "spec": "roster-icon:8da249263f71"
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "repair": {
+        "from_sha256": "72cfc7afd2f35040b7cc1e9ac5b246b6ca0116eb7da4208f90ccc9d9b70624cd",
+        "to_sha256": "622dbf5055d29fa04be9324e7382e467dec15a7993ea8e009c4767a9b8d92671",
+        "final": "art-factory/starlantern/work/repair/icon-lizard-scale.png",
+        "pixels": [
+          {
+            "x": 12,
+            "y": 6,
+            "from": [
+              101,
+              8,
+              97
+            ],
+            "to": [
+              21,
+              16,
+              42
+            ]
+          },
+          {
+            "x": 11,
+            "y": 7,
+            "from": [
+              115,
+              18,
+              126
+            ],
+            "to": [
+              6,
+              56,
+              80
+            ]
+          },
+          {
+            "x": 21,
+            "y": 29,
+            "from": [
+              114,
+              8,
+              143
+            ],
+            "to": [
+              5,
+              13,
+              39
+            ]
+          },
+          {
+            "x": 8,
+            "y": 35,
+            "from": [
+              130,
+              3,
+              134
+            ],
+            "to": [
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "x": 9,
+            "y": 35,
+            "from": [
+              132,
+              4,
+              133
+            ],
+            "to": [
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "x": 10,
+            "y": 35,
+            "from": [
+              138,
+              6,
+              136
+            ],
+            "to": [
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "x": 11,
+            "y": 35,
+            "from": [
+              144,
+              5,
+              155
+            ],
+            "to": [
+              2,
+              0,
+              7
+            ]
+          },
+          {
+            "x": 10,
+            "y": 7,
+            "from": [
+              135,
+              11,
+              118
+            ],
+            "to": [
+              6,
+              56,
+              80
+            ]
+          },
+          {
+            "x": 7,
+            "y": 35,
+            "from": [
+              132,
+              10,
+              134
+            ],
+            "to": [
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "x": 12,
+            "y": 35,
+            "from": [
+              128,
+              11,
+              143
+            ],
+            "to": [
+              2,
+              0,
+              7
+            ]
+          }
+        ],
+        "skipped": [],
+        "changed_pixels": 10,
+        "rule": "key-hue residue only (sl_art.key_hue_pixels: _bright_key anywhere, _deep_key on the outline): each such pixel takes the rounded per-channel median of its opaque 8-neighbours that are not key hue, in passes; alpha kept; no other pixel changes (R4 review: the published 5d lizard-scale)",
+        "postprocess_only": true,
+        "publish_with": "r4",
+        "qa": {
+          "pass": true,
+          "reasons": [],
+          "warnings": [],
+          "residue": 0,
+          "semi": 0,
+          "edge": 0,
+          "holes": 0,
+          "block": 6,
+          "size": [
+            30,
+            37
+          ],
+          "magenta_spill": 1,
+          "key_tint_inside": 0,
+          "bright_key": 0,
+          "pink_outlier": 0,
+          "spec": "roster-icon:8da249263f71"
+        },
+        "status": "published",
+        "date": "2026-10-28",
+        "published_on": "2026-10-29"
+      },
+      "history": [
+        {
+          "final": "art-factory/starlantern/work/sheet-icons-2/icon-lizard-scale.png",
+          "final_sha256": "72cfc7afd2f35040b7cc1e9ac5b246b6ca0116eb7da4208f90ccc9d9b70624cd",
+          "qa": {
+            "pass": true,
+            "reasons": [],
+            "warnings": [],
+            "residue": 0,
+            "semi": 0,
+            "edge": 0,
+            "holes": 0,
+            "block": 6,
+            "size": [
+              30,
+              37
+            ]
+          },
+          "replaced_on": "2026-10-29",
+          "by": "repair-outliers, published with roster-r4"
+        }
+      ]
     },
     "icon-star-stone": {
       "kind": "sprite",
@@ -41875,14 +42076,15 @@
         "palette_over": true,
         "spec": "roster-sprite:929ae0136de6"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "roster-sprite",
       "roster_class": "normal",
       "mainline": false,
       "chosen_attempt": "a1",
       "source_id": "enemy-ash-mourner",
       "batch": "roster-r3",
-      "approved_by": "independent review art-factory/starlantern/work/review/roster-r3-review.md, art-factory/starlantern/work/review/roster-r3-review-2.md, art-factory/starlantern/work/review/roster-r3-review-3.md, art-factory/starlantern/work/review/roster-r3-review-4.md, art-factory/starlantern/work/review/roster-r3-review-5.md (2026-10-28)"
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r3-review.md, art-factory/starlantern/work/review/roster-r3-review-2.md, art-factory/starlantern/work/review/roster-r3-review-3.md, art-factory/starlantern/work/review/roster-r3-review-4.md, art-factory/starlantern/work/review/roster-r3-review-5.md (2026-10-28)",
+      "runtime": "/assets/games/starlantern/enemy/ash-mourner.png"
     },
     "enemy-mirage-dancer": {
       "final": "art-factory/starlantern/work/enemy-mirage-dancer/enemy-mirage-dancer.png",
@@ -42382,39 +42584,40 @@
     },
     "icon-mourning-veil": {
       "final": "art-factory/starlantern/work/sheet-icons-roster-4/icon-mourning-veil.png",
-      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-4\\sheet-icons-roster-4-a7.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-4\\sheet-icons-roster-4-a10.png",
       "qa": {
         "pass": true,
         "reasons": [],
-        "warnings": [
-          "enclosed holes"
-        ],
+        "warnings": [],
         "residue": 0,
         "semi": 0,
         "edge": 0,
-        "holes": 5,
+        "holes": 0,
         "magenta_spill": 0,
         "key_tint_inside": 0,
         "block": 7,
         "size": [
-          33,
-          30
+          36,
+          28
         ],
         "bright_key": 0,
         "pink_outlier": 0,
-        "erased": 4,
+        "erased": 0,
         "spec": "roster-icon:8da249263f71"
       },
-      "status": "qa_passed",
+      "status": "superseded",
       "kind": "roster-icon",
-      "chosen_attempt": "a7",
+      "chosen_attempt": "a10",
       "source_id": "sheet-icons-roster-4",
       "batch": "roster-r3",
       "deferred": {
         "batch": "roster-r3",
         "reason": "art-factory/starlantern/work/review/roster-r3-defer-icon-mourning-veil.md",
         "date": "2026-10-28"
-      }
+      },
+      "superseded_by": "icon-ash-chrysanthemum",
+      "superseded_on": "2026-10-28",
+      "superseded_record": "art-factory/starlantern/work/review/roster-r3-veil-review-6.md"
     },
     "icon-mirage-sequin": {
       "final": "art-factory/starlantern/work/sheet-icons-roster-4/icon-mirage-sequin.png",
@@ -44541,7 +44744,9 @@
         "a5": "mirage-sequin picked from a5 (flat sequins at an angle, a rim hole, two sparkles touching the rim); every other part keeps its reviewed pick",
         "a6": "mourning-veil from a6 failed R3 review round 4: a rigid grey bar with 4 holes (knuckle-dusters or a harmonica), a grey block at 16 px",
         "a7": "mourning-veil picked from a7 (a draped grey veil with folds and a holed scalloped hem); every other part keeps its reviewed pick",
-        "a8": "mourning-veil a8 failed QA: magenta residue (key tint 3, violet key left in the lace holes)"
+        "a8": "mourning-veil a8 failed QA: magenta residue (key tint 3, violet key left in the lace holes)",
+        "a9": "E3c: wide and folded, but its top row was a narrow arc (4 of 31 px) and the key showed pink through one lace hole, (24,12) = (118,22,111)",
+        "a10": "E3c: mourning-veil picked from a10 (a folded mid-grey cloth with three large dark-filled holes, no tinted pixels); every other part keeps its published pick"
       },
       "plain_reasons": {
         "a1": "亮片像市集籌碼；面紗像一堆灰石",
@@ -44551,8 +44756,3291 @@
         "a5": "採用亮片",
         "a6": "像硬的灰色長條（指虎、口琴），16 px 是灰塊",
         "a7": "採用面紗（垂掛的灰紗）",
-        "a8": "蕾絲孔裡留下洋紅"
+        "a8": "蕾絲孔裡留下洋紅",
+        "a9": "上緣太窄，蕾絲孔透出粉紅",
+        "a10": "採用面紗"
       }
+    },
+    "enemy-mire-hydra": {
+      "final": "art-factory/starlantern/work/enemy-mire-hydra/enemy-mire-hydra.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-mire-hydra\\enemy-mire-hydra-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 7,
+        "size": [
+          163,
+          157
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "height": 155,
+        "width": 161,
+        "colours": 13611,
+        "lum": [
+          0.059,
+          0.719,
+          0.325
+        ],
+        "erased": 1,
+        "palette_over": true,
+        "spec": "roster-sprite:929ae0136de6"
+      },
+      "status": "published",
+      "kind": "roster-sprite",
+      "roster_class": "boss",
+      "mainline": false,
+      "chosen_attempt": "a1",
+      "source_id": "enemy-mire-hydra",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/enemy/mire-hydra.png"
+    },
+    "enemy-grey-blight": {
+      "final": "art-factory/starlantern/work/enemy-grey-blight/enemy-grey-blight.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-grey-blight\\enemy-grey-blight-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 5,
+        "size": [
+          243,
+          162
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "height": 160,
+        "width": 241,
+        "colours": 21055,
+        "lum": [
+          0.061,
+          0.866,
+          0.452
+        ],
+        "erased": 0,
+        "palette_over": true,
+        "spec": "roster-sprite:929ae0136de6"
+      },
+      "status": "published",
+      "kind": "roster-sprite",
+      "roster_class": "boss",
+      "mainline": false,
+      "chosen_attempt": "a1",
+      "source_id": "enemy-grey-blight",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/enemy/grey-blight.png"
+    },
+    "enemy-bog-leviathan": {
+      "final": "art-factory/starlantern/work/enemy-bog-leviathan/enemy-bog-leviathan.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-bog-leviathan\\enemy-bog-leviathan-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 7,
+        "size": [
+          165,
+          143
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "height": 141,
+        "width": 163,
+        "colours": 12214,
+        "lum": [
+          0.076,
+          0.559,
+          0.26
+        ],
+        "erased": 0,
+        "palette_over": true,
+        "spec": "roster-sprite:929ae0136de6"
+      },
+      "status": "published",
+      "kind": "roster-sprite",
+      "roster_class": "boss",
+      "mainline": false,
+      "chosen_attempt": "a1",
+      "source_id": "enemy-bog-leviathan",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/enemy/bog-leviathan.png"
+    },
+    "enemy-faceless-host": {
+      "final": "art-factory/starlantern/work/enemy-faceless-host/enemy-faceless-host.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-faceless-host\\enemy-faceless-host-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 8,
+        "size": [
+          114,
+          147
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "height": 145,
+        "width": 112,
+        "colours": 5618,
+        "lum": [
+          0.047,
+          0.737,
+          0.222
+        ],
+        "erased": 0,
+        "palette_over": true,
+        "spec": "roster-sprite:929ae0136de6"
+      },
+      "status": "published",
+      "kind": "roster-sprite",
+      "roster_class": "boss",
+      "mainline": false,
+      "chosen_attempt": "a1",
+      "source_id": "enemy-faceless-host",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/enemy/faceless-host.png"
+    },
+    "enemy-vault-dragon": {
+      "final": "art-factory/starlantern/work/enemy-vault-dragon/enemy-vault-dragon.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-vault-dragon\\enemy-vault-dragon-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 7,
+        "size": [
+          164,
+          161
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "height": 159,
+        "width": 162,
+        "colours": 15325,
+        "lum": [
+          0.015,
+          0.835,
+          0.319
+        ],
+        "erased": 1,
+        "palette_over": true,
+        "spec": "roster-sprite:929ae0136de6"
+      },
+      "status": "published",
+      "kind": "roster-sprite",
+      "roster_class": "boss",
+      "mainline": false,
+      "chosen_attempt": "a1",
+      "source_id": "enemy-vault-dragon",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/enemy/vault-dragon.png"
+    },
+    "enemy-shadow-parade": {
+      "final": "art-factory/starlantern/work/enemy-shadow-parade/enemy-shadow-parade.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-shadow-parade\\enemy-shadow-parade-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 7,
+        "size": [
+          161,
+          154
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "height": 152,
+        "width": 159,
+        "colours": 7912,
+        "lum": [
+          0.029,
+          0.538,
+          0.162
+        ],
+        "erased": 0,
+        "palette_over": true,
+        "spec": "roster-sprite:929ae0136de6"
+      },
+      "status": "published",
+      "kind": "roster-sprite",
+      "roster_class": "boss",
+      "mainline": false,
+      "chosen_attempt": "a1",
+      "source_id": "enemy-shadow-parade",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/enemy/shadow-parade.png"
+    },
+    "enemy-fortress-colossus": {
+      "final": "art-factory/starlantern/work/enemy-fortress-colossus/enemy-fortress-colossus.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-fortress-colossus\\enemy-fortress-colossus-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 7,
+        "size": [
+          173,
+          146
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "height": 144,
+        "width": 171,
+        "colours": 13840,
+        "lum": [
+          0.018,
+          0.613,
+          0.249
+        ],
+        "erased": 0,
+        "palette_over": true,
+        "spec": "roster-sprite:929ae0136de6"
+      },
+      "status": "published",
+      "kind": "roster-sprite",
+      "roster_class": "boss",
+      "mainline": false,
+      "chosen_attempt": "a1",
+      "source_id": "enemy-fortress-colossus",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/enemy/fortress-colossus.png"
+    },
+    "enemy-siege-titan": {
+      "final": "art-factory/starlantern/work/enemy-siege-titan/enemy-siege-titan.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-siege-titan\\enemy-siege-titan-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 7,
+        "size": [
+          153,
+          151
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "height": 149,
+        "width": 151,
+        "colours": 11642,
+        "lum": [
+          0.076,
+          0.544,
+          0.314
+        ],
+        "erased": 0,
+        "palette_over": true,
+        "spec": "roster-sprite:929ae0136de6"
+      },
+      "status": "published",
+      "kind": "roster-sprite",
+      "roster_class": "boss",
+      "mainline": false,
+      "chosen_attempt": "a1",
+      "source_id": "enemy-siege-titan",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/enemy/siege-titan.png"
+    },
+    "enemy-last-commander": {
+      "final": "art-factory/starlantern/work/enemy-last-commander/enemy-last-commander.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-last-commander\\enemy-last-commander-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 8,
+        "size": [
+          131,
+          149
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "height": 147,
+        "width": 129,
+        "colours": 6366,
+        "lum": [
+          0.009,
+          0.67,
+          0.262
+        ],
+        "erased": 0,
+        "palette_over": true,
+        "spec": "roster-sprite:929ae0136de6"
+      },
+      "status": "published",
+      "kind": "roster-sprite",
+      "roster_class": "boss",
+      "mainline": false,
+      "chosen_attempt": "a1",
+      "source_id": "enemy-last-commander",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/enemy/last-commander.png"
+    },
+    "enemy-locked-vault": {
+      "final": "art-factory/starlantern/work/enemy-locked-vault/enemy-locked-vault.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-locked-vault\\enemy-locked-vault-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 10,
+        "size": [
+          106,
+          98
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "height": 96,
+        "width": 104,
+        "colours": 6260,
+        "lum": [
+          0.067,
+          0.888,
+          0.381
+        ],
+        "erased": 0,
+        "palette_over": true,
+        "spec": "roster-sprite:929ae0136de6"
+      },
+      "status": "published",
+      "kind": "roster-sprite",
+      "roster_class": "warden",
+      "mainline": false,
+      "chosen_attempt": "a1",
+      "source_id": "enemy-locked-vault",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/enemy/locked-vault.png"
+    },
+    "enemy-gate-breaker": {
+      "final": "art-factory/starlantern/work/enemy-gate-breaker/enemy-gate-breaker.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-gate-breaker\\enemy-gate-breaker-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 10,
+        "size": [
+          116,
+          98
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "height": 96,
+        "width": 114,
+        "colours": 5090,
+        "lum": [
+          0.079,
+          0.557,
+          0.267
+        ],
+        "erased": 0,
+        "palette_over": true,
+        "spec": "roster-sprite:929ae0136de6"
+      },
+      "status": "published",
+      "kind": "roster-sprite",
+      "roster_class": "warden",
+      "mainline": false,
+      "chosen_attempt": "a1",
+      "source_id": "enemy-gate-breaker",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/enemy/gate-breaker.png"
+    },
+    "enemy-bog-mother": {
+      "final": "art-factory/starlantern/work/enemy-bog-mother/enemy-bog-mother.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-bog-mother\\enemy-bog-mother-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 11,
+        "size": [
+          105,
+          76
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "height": 74,
+        "width": 103,
+        "colours": 4009,
+        "lum": [
+          0.097,
+          0.735,
+          0.368
+        ],
+        "erased": 0,
+        "palette_over": true,
+        "spec": "roster-sprite:929ae0136de6"
+      },
+      "status": "published",
+      "kind": "roster-sprite",
+      "roster_class": "heavy",
+      "mainline": false,
+      "chosen_attempt": "a1",
+      "source_id": "enemy-bog-mother",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/enemy/bog-mother.png"
+    },
+    "enemy-rot-lily": {
+      "final": "art-factory/starlantern/work/enemy-rot-lily/enemy-rot-lily.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-rot-lily\\enemy-rot-lily-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 16,
+        "size": [
+          47,
+          68
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "height": 66,
+        "width": 45,
+        "colours": 1830,
+        "lum": [
+          0.08,
+          0.754,
+          0.361
+        ],
+        "erased": 0,
+        "palette_over": true,
+        "spec": "roster-sprite:929ae0136de6"
+      },
+      "status": "published",
+      "kind": "roster-sprite",
+      "roster_class": "normal",
+      "mainline": false,
+      "chosen_attempt": "a1",
+      "source_id": "enemy-rot-lily",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/enemy/rot-lily.png"
+    },
+    "enemy-leech-knight": {
+      "final": "art-factory/starlantern/work/enemy-leech-knight/enemy-leech-knight.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-leech-knight\\enemy-leech-knight-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 15,
+        "size": [
+          48,
+          64
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "height": 62,
+        "width": 46,
+        "colours": 1540,
+        "lum": [
+          0.003,
+          0.618,
+          0.242
+        ],
+        "erased": 0,
+        "palette_over": true,
+        "spec": "roster-sprite:929ae0136de6"
+      },
+      "status": "published",
+      "kind": "roster-sprite",
+      "roster_class": "normal",
+      "mainline": false,
+      "chosen_attempt": "a1",
+      "source_id": "enemy-leech-knight",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/enemy/leech-knight.png"
+    },
+    "enemy-spore-moth": {
+      "final": "art-factory/starlantern/work/enemy-spore-moth/enemy-spore-moth.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-spore-moth\\enemy-spore-moth-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          72,
+          56
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "height": 54,
+        "width": 70,
+        "colours": 2130,
+        "lum": [
+          0.095,
+          0.875,
+          0.515
+        ],
+        "erased": 0,
+        "palette_over": true,
+        "spec": "roster-sprite:929ae0136de6"
+      },
+      "status": "published",
+      "kind": "roster-sprite",
+      "roster_class": "swarm",
+      "mainline": false,
+      "chosen_attempt": "a1",
+      "source_id": "enemy-spore-moth",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/enemy/spore-moth.png"
+    },
+    "enemy-mirror-thief": {
+      "final": "art-factory/starlantern/work/enemy-mirror-thief/enemy-mirror-thief.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-mirror-thief\\enemy-mirror-thief-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 15,
+        "size": [
+          35,
+          65
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "height": 63,
+        "width": 33,
+        "colours": 1105,
+        "lum": [
+          0.041,
+          0.711,
+          0.221
+        ],
+        "erased": 0,
+        "palette_over": true,
+        "spec": "roster-sprite:929ae0136de6"
+      },
+      "status": "published",
+      "kind": "roster-sprite",
+      "roster_class": "normal",
+      "mainline": false,
+      "chosen_attempt": "a1",
+      "source_id": "enemy-mirror-thief",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/enemy/mirror-thief.png"
+    },
+    "enemy-veil-stalker": {
+      "final": "art-factory/starlantern/work/enemy-veil-stalker/enemy-veil-stalker.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-veil-stalker\\enemy-veil-stalker-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 14,
+        "size": [
+          73,
+          65
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "height": 63,
+        "width": 71,
+        "colours": 1768,
+        "lum": [
+          0.023,
+          0.652,
+          0.166
+        ],
+        "erased": 0,
+        "palette_over": true,
+        "spec": "roster-sprite:929ae0136de6"
+      },
+      "status": "published",
+      "kind": "roster-sprite",
+      "roster_class": "normal",
+      "mainline": false,
+      "chosen_attempt": "a1",
+      "source_id": "enemy-veil-stalker",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/enemy/veil-stalker.png"
+    },
+    "enemy-hush-acolyte": {
+      "final": "art-factory/starlantern/work/enemy-hush-acolyte/enemy-hush-acolyte.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-hush-acolyte\\enemy-hush-acolyte-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          44,
+          67
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "height": 65,
+        "width": 42,
+        "colours": 1705,
+        "lum": [
+          0.066,
+          0.714,
+          0.32
+        ],
+        "erased": 0,
+        "palette_over": true,
+        "spec": "roster-sprite:929ae0136de6"
+      },
+      "status": "published",
+      "kind": "roster-sprite",
+      "roster_class": "normal",
+      "mainline": false,
+      "chosen_attempt": "a1",
+      "source_id": "enemy-hush-acolyte",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/enemy/hush-acolyte.png"
+    },
+    "enemy-vault-mimic": {
+      "final": "art-factory/starlantern/work/enemy-vault-mimic/enemy-vault-mimic.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-vault-mimic\\enemy-vault-mimic-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 11,
+        "size": [
+          83,
+          76
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "height": 74,
+        "width": 81,
+        "colours": 3924,
+        "lum": [
+          0.017,
+          0.839,
+          0.282
+        ],
+        "erased": 0,
+        "palette_over": true,
+        "spec": "roster-sprite:929ae0136de6"
+      },
+      "status": "published",
+      "kind": "roster-sprite",
+      "roster_class": "heavy",
+      "mainline": false,
+      "chosen_attempt": "a1",
+      "source_id": "enemy-vault-mimic",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/enemy/vault-mimic.png"
+    },
+    "enemy-debt-collector": {
+      "final": "art-factory/starlantern/work/enemy-debt-collector/enemy-debt-collector.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-debt-collector\\enemy-debt-collector-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 14,
+        "size": [
+          42,
+          64
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "height": 62,
+        "width": 39,
+        "colours": 1220,
+        "lum": [
+          0.072,
+          0.773,
+          0.274
+        ],
+        "erased": 1,
+        "palette_over": true,
+        "spec": "roster-sprite:929ae0136de6"
+      },
+      "status": "published",
+      "kind": "roster-sprite",
+      "roster_class": "normal",
+      "mainline": false,
+      "chosen_attempt": "a1",
+      "source_id": "enemy-debt-collector",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/enemy/debt-collector.png"
+    },
+    "enemy-rivet-golem": {
+      "final": "art-factory/starlantern/work/enemy-rivet-golem/enemy-rivet-golem.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-rivet-golem\\enemy-rivet-golem-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          96,
+          76
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "height": 74,
+        "width": 93,
+        "colours": 3540,
+        "lum": [
+          0.005,
+          0.639,
+          0.275
+        ],
+        "erased": 0,
+        "palette_over": true,
+        "spec": "roster-sprite:929ae0136de6"
+      },
+      "status": "published",
+      "kind": "roster-sprite",
+      "roster_class": "heavy",
+      "mainline": false,
+      "chosen_attempt": "a1",
+      "source_id": "enemy-rivet-golem",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/enemy/rivet-golem.png"
+    },
+    "enemy-siege-crab": {
+      "final": "art-factory/starlantern/work/enemy-siege-crab/enemy-siege-crab.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-siege-crab\\enemy-siege-crab-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 9,
+        "size": [
+          163,
+          77
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "height": 75,
+        "width": 161,
+        "colours": 6719,
+        "lum": [
+          0.056,
+          0.715,
+          0.313
+        ],
+        "erased": 0,
+        "palette_over": true,
+        "spec": "roster-sprite:929ae0136de6"
+      },
+      "status": "published",
+      "kind": "roster-sprite",
+      "roster_class": "heavy",
+      "mainline": false,
+      "chosen_attempt": "a1",
+      "source_id": "enemy-siege-crab",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/enemy/siege-crab.png"
+    },
+    "enemy-herald-engine": {
+      "final": "art-factory/starlantern/work/enemy-herald-engine/enemy-herald-engine.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-herald-engine\\enemy-herald-engine-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 17,
+        "size": [
+          56,
+          65
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "height": 63,
+        "width": 54,
+        "colours": 1629,
+        "lum": [
+          0.052,
+          0.86,
+          0.383
+        ],
+        "erased": 1,
+        "palette_over": true,
+        "spec": "roster-sprite:929ae0136de6"
+      },
+      "status": "published",
+      "kind": "roster-sprite",
+      "roster_class": "normal",
+      "mainline": false,
+      "chosen_attempt": "a1",
+      "source_id": "enemy-herald-engine",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/enemy/herald-engine.png"
+    },
+    "enemy-fallen-knight": {
+      "final": "art-factory/starlantern/work/enemy-fallen-knight/enemy-fallen-knight.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-fallen-knight\\enemy-fallen-knight-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          45,
+          77
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "height": 75,
+        "width": 43,
+        "colours": 1937,
+        "lum": [
+          0.073,
+          0.806,
+          0.343
+        ],
+        "erased": 0,
+        "palette_over": true,
+        "spec": "roster-sprite:929ae0136de6"
+      },
+      "status": "published",
+      "kind": "roster-sprite",
+      "roster_class": "heavy",
+      "mainline": false,
+      "chosen_attempt": "a1",
+      "source_id": "enemy-fallen-knight",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/enemy/fallen-knight.png"
+    },
+    "enemy-banner-bearer": {
+      "final": "art-factory/starlantern/work/enemy-banner-bearer/enemy-banner-bearer.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-banner-bearer\\enemy-banner-bearer-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 6,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 17,
+        "size": [
+          41,
+          68
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "height": 66,
+        "width": 39,
+        "colours": 1128,
+        "lum": [
+          0.028,
+          0.55,
+          0.239
+        ],
+        "erased": 8,
+        "palette_over": true,
+        "spec": "roster-sprite:929ae0136de6"
+      },
+      "status": "published",
+      "kind": "roster-sprite",
+      "roster_class": "normal",
+      "mainline": false,
+      "chosen_attempt": "a1",
+      "source_id": "enemy-banner-bearer",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/enemy/banner-bearer.png"
+    },
+    "enemy-grey-elder": {
+      "final": "art-factory/starlantern/work/enemy-grey-elder/enemy-grey-elder.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-grey-elder\\enemy-grey-elder-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 9,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 11,
+        "size": [
+          103,
+          99
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "height": 97,
+        "width": 101,
+        "colours": 5941,
+        "lum": [
+          0.056,
+          0.766,
+          0.416
+        ],
+        "erased": 3,
+        "palette_over": true,
+        "spec": "roster-sprite:929ae0136de6"
+      },
+      "status": "published",
+      "kind": "roster-sprite",
+      "roster_class": "warden",
+      "mainline": false,
+      "chosen_attempt": "a2",
+      "source_id": "enemy-grey-elder",
+      "batch": "roster-r4",
+      "rejected_attempts": {
+        "a1": "passed QA, but the spec's ancient grey tree came out tan and olive; a2 has ash-grey bark"
+      },
+      "plain_reasons": {
+        "a1": "樹皮畫成土黃色，不是灰色"
+      },
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/enemy/grey-elder.png"
+    },
+    "enemy-ashen-treant": {
+      "final": "art-factory/starlantern/work/enemy-ashen-treant/enemy-ashen-treant.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-ashen-treant\\enemy-ashen-treant-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 13,
+        "size": [
+          67,
+          79
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "height": 77,
+        "width": 65,
+        "colours": 1962,
+        "lum": [
+          0.099,
+          0.802,
+          0.416
+        ],
+        "erased": 0,
+        "palette_over": true,
+        "spec": "roster-sprite:929ae0136de6"
+      },
+      "status": "published",
+      "kind": "roster-sprite",
+      "roster_class": "heavy",
+      "mainline": false,
+      "chosen_attempt": "a2",
+      "source_id": "enemy-ashen-treant",
+      "batch": "roster-r4",
+      "rejected_attempts": {
+        "a1": "passed QA, but the spec's grey dead tree came out tan and olive; a2 has ash-grey bark"
+      },
+      "plain_reasons": {
+        "a1": "樹皮畫成土黃色，不是灰色"
+      },
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/enemy/ashen-treant.png"
+    },
+    "icon-bog-peat": {
+      "final": "art-factory/starlantern/work/sheet-icons-roster-6/icon-bog-peat.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-6\\sheet-icons-roster-6-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 7,
+        "size": [
+          33,
+          33
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 1,
+        "spec": "roster-icon:8da249263f71"
+      },
+      "status": "published",
+      "kind": "roster-icon",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-icons-roster-6",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/icon/bog-peat.png"
+    },
+    "icon-rot-petal": {
+      "final": "art-factory/starlantern/work/sheet-icons-roster-6/icon-rot-petal.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-6\\sheet-icons-roster-6-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 7,
+        "size": [
+          29,
+          34
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "roster-icon:8da249263f71"
+      },
+      "status": "published",
+      "kind": "roster-icon",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-icons-roster-6",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/icon/rot-petal.png"
+    },
+    "icon-leech-plate": {
+      "final": "art-factory/starlantern/work/sheet-icons-roster-6/icon-leech-plate.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-6\\sheet-icons-roster-6-a4.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 9,
+        "size": [
+          34,
+          20
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "roster-icon:8da249263f71"
+      },
+      "status": "published",
+      "kind": "roster-icon",
+      "chosen_attempt": "a4",
+      "source_id": "sheet-icons-roster-6",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/icon/leech-plate.png"
+    },
+    "icon-carved-bark": {
+      "final": "art-factory/starlantern/work/sheet-icons-roster-6/icon-carved-bark.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-6\\sheet-icons-roster-6-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 8,
+        "size": [
+          25,
+          34
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "roster-icon:8da249263f71"
+      },
+      "status": "published",
+      "kind": "roster-icon",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-icons-roster-6",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/icon/carved-bark.png"
+    },
+    "icon-spore-sac": {
+      "final": "art-factory/starlantern/work/sheet-icons-roster-6/icon-spore-sac.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-6\\sheet-icons-roster-6-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 8,
+        "size": [
+          28,
+          34
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 1,
+        "spec": "roster-icon:8da249263f71"
+      },
+      "status": "published",
+      "kind": "roster-icon",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-icons-roster-6",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/icon/spore-sac.png"
+    },
+    "icon-mirror-sliver": {
+      "final": "art-factory/starlantern/work/sheet-icons-roster-6/icon-mirror-sliver.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-6\\sheet-icons-roster-6-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 8,
+        "size": [
+          24,
+          35
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "roster-icon:8da249263f71"
+      },
+      "status": "published",
+      "kind": "roster-icon",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-icons-roster-6",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/icon/mirror-sliver.png"
+    },
+    "icon-black-veil": {
+      "final": "art-factory/starlantern/work/sheet-icons-roster-6/icon-black-veil.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-6\\sheet-icons-roster-6-a5.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 8,
+        "size": [
+          33,
+          30
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "roster-icon:8da249263f71"
+      },
+      "status": "published",
+      "kind": "roster-icon",
+      "chosen_attempt": "a5",
+      "source_id": "sheet-icons-roster-6",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/icon/black-veil.png"
+    },
+    "icon-hush-bell": {
+      "final": "art-factory/starlantern/work/sheet-icons-roster-6/icon-hush-bell.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-6\\sheet-icons-roster-6-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 7,
+        "size": [
+          33,
+          33
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "roster-icon:8da249263f71"
+      },
+      "status": "published",
+      "kind": "roster-icon",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-icons-roster-6",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/icon/hush-bell.png"
+    },
+    "icon-vault-lock": {
+      "final": "art-factory/starlantern/work/sheet-icons-roster-6/icon-vault-lock.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-6\\sheet-icons-roster-6-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 8,
+        "size": [
+          27,
+          33
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "roster-icon:8da249263f71"
+      },
+      "status": "published",
+      "kind": "roster-icon",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-icons-roster-6",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/icon/vault-lock.png"
+    },
+    "icon-iou-slip": {
+      "final": "art-factory/starlantern/work/sheet-icons-roster-6/icon-iou-slip.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-6\\sheet-icons-roster-6-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 7,
+        "size": [
+          32,
+          35
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "roster-icon:8da249263f71"
+      },
+      "status": "published",
+      "kind": "roster-icon",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-icons-roster-6",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/icon/iou-slip.png"
+    },
+    "icon-rivet": {
+      "final": "art-factory/starlantern/work/sheet-icons-roster-6/icon-rivet.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-6\\sheet-icons-roster-6-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 7,
+        "size": [
+          34,
+          31
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "roster-icon:8da249263f71"
+      },
+      "status": "published",
+      "kind": "roster-icon",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-icons-roster-6",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/icon/rivet.png"
+    },
+    "icon-crab-plate": {
+      "final": "art-factory/starlantern/work/sheet-icons-roster-6/icon-crab-plate.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-6\\sheet-icons-roster-6-a4.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 9,
+        "size": [
+          36,
+          24
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "roster-icon:8da249263f71"
+      },
+      "status": "published",
+      "kind": "roster-icon",
+      "chosen_attempt": "a4",
+      "source_id": "sheet-icons-roster-6",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/icon/crab-plate.png"
+    },
+    "icon-herald-horn": {
+      "final": "art-factory/starlantern/work/sheet-icons-roster-6/icon-herald-horn.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-6\\sheet-icons-roster-6-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 7,
+        "size": [
+          35,
+          28
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "roster-icon:8da249263f71"
+      },
+      "status": "published",
+      "kind": "roster-icon",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-icons-roster-6",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/icon/herald-horn.png"
+    },
+    "icon-knight-crest": {
+      "final": "art-factory/starlantern/work/sheet-icons-roster-6/icon-knight-crest.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-6\\sheet-icons-roster-6-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 7,
+        "size": [
+          29,
+          36
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "roster-icon:8da249263f71"
+      },
+      "status": "published",
+      "kind": "roster-icon",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-icons-roster-6",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/icon/knight-crest.png"
+    },
+    "gear-hydra-fang-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-6/gear-hydra-fang-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-6\\sheet-gear-roster-6-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 56,
+          "short": 55,
+          "mass": 0.366,
+          "box": [
+            4,
+            4,
+            60,
+            59
+          ],
+          "centre_off": 0.5
+        },
+        "block": 7.714,
+        "scale": 7.714,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "roster-gear:91c76b116bcd",
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0
+      },
+      "status": "published",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-6\\sheet-gear-roster-6-a1.png",
+        "cell": "hydra-fang"
+      },
+      "slot": "weapon",
+      "weapon_kind": "dagger",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gear-roster-6",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/gear/hydra-fang-large.png"
+    },
+    "gear-hydra-fang": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-6/gear-hydra-fang.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-6\\sheet-gear-roster-6-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 22,
+          "short": 21,
+          "mass": 0.362,
+          "box": [
+            2,
+            2,
+            24,
+            23
+          ],
+          "centre_off": 0.5
+        },
+        "block": 19.636,
+        "scale": 19.636,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "roster-gear:91c76b116bcd",
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0
+      },
+      "status": "published",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-6\\sheet-gear-roster-6-a1.png",
+        "cell": "hydra-fang"
+      },
+      "slot": "weapon",
+      "weapon_kind": "dagger",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gear-roster-6",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/gear/hydra-fang.png"
+    },
+    "gear-greenward-cloak-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-6/gear-greenward-cloak-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-6\\sheet-gear-roster-6-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 56,
+          "short": 54,
+          "mass": 0.638,
+          "box": [
+            5,
+            4,
+            59,
+            60
+          ],
+          "centre_off": 0.0
+        },
+        "block": 8.179,
+        "scale": 8.179,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "roster-gear:91c76b116bcd",
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0
+      },
+      "status": "published",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-6\\sheet-gear-roster-6-a1.png",
+        "cell": "greenward-cloak"
+      },
+      "slot": "body",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gear-roster-6",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/gear/greenward-cloak-large.png"
+    },
+    "gear-greenward-cloak": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-6/gear-greenward-cloak.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-6\\sheet-gear-roster-6-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 22,
+          "short": 21,
+          "mass": 0.632,
+          "box": [
+            2,
+            2,
+            23,
+            24
+          ],
+          "centre_off": 0.5
+        },
+        "block": 20.818,
+        "scale": 20.818,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "roster-gear:91c76b116bcd",
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0
+      },
+      "status": "published",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-6\\sheet-gear-roster-6-a1.png",
+        "cell": "greenward-cloak"
+      },
+      "slot": "body",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gear-roster-6",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/gear/greenward-cloak.png"
+    },
+    "gear-bog-ring-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-6/gear-bog-ring-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-6\\sheet-gear-roster-6-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 56,
+          "short": 50,
+          "mass": 0.689,
+          "box": [
+            4,
+            7,
+            60,
+            57
+          ],
+          "centre_off": 0.0
+        },
+        "block": 7.589,
+        "scale": 7.589,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "roster-gear:91c76b116bcd",
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0
+      },
+      "status": "published",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-6\\sheet-gear-roster-6-a1.png",
+        "cell": "bog-ring"
+      },
+      "slot": "ring",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gear-roster-6",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/gear/bog-ring-large.png"
+    },
+    "gear-bog-ring": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-6/gear-bog-ring.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-6\\sheet-gear-roster-6-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 22,
+          "short": 20,
+          "mass": 0.707,
+          "box": [
+            2,
+            3,
+            24,
+            23
+          ],
+          "centre_off": 0.0
+        },
+        "block": 19.318,
+        "scale": 19.318,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "roster-gear:91c76b116bcd",
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0
+      },
+      "status": "published",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-6\\sheet-gear-roster-6-a1.png",
+        "cell": "bog-ring"
+      },
+      "slot": "ring",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gear-roster-6",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/gear/bog-ring.png"
+    },
+    "gear-faceless-mask-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-6/gear-faceless-mask-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-6\\sheet-gear-roster-6-a3.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 56,
+          "short": 53,
+          "mass": 0.544,
+          "box": [
+            5,
+            4,
+            58,
+            60
+          ],
+          "centre_off": 0.5
+        },
+        "block": 7.964,
+        "scale": 7.964,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "roster-gear:91c76b116bcd",
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0
+      },
+      "status": "published",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-6\\sheet-gear-roster-6-a3.png",
+        "cell": "faceless-mask"
+      },
+      "slot": "head",
+      "chosen_attempt": "a3",
+      "source_id": "sheet-gear-roster-6",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/gear/faceless-mask-large.png"
+    },
+    "gear-faceless-mask": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-6/gear-faceless-mask.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-6\\sheet-gear-roster-6-a3.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 22,
+          "short": 21,
+          "mass": 0.558,
+          "box": [
+            2,
+            2,
+            23,
+            24
+          ],
+          "centre_off": 0.5
+        },
+        "block": 20.273,
+        "scale": 20.273,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "roster-gear:91c76b116bcd",
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0
+      },
+      "status": "published",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-6\\sheet-gear-roster-6-a3.png",
+        "cell": "faceless-mask"
+      },
+      "slot": "head",
+      "chosen_attempt": "a3",
+      "source_id": "sheet-gear-roster-6",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/gear/faceless-mask.png"
+    },
+    "gear-gilded-mail-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-6/gear-gilded-mail-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-6\\sheet-gear-roster-6-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 56,
+          "short": 50,
+          "mass": 0.679,
+          "box": [
+            4,
+            7,
+            60,
+            57
+          ],
+          "centre_off": 0.0
+        },
+        "block": 8.625,
+        "scale": 8.625,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "roster-gear:91c76b116bcd",
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0
+      },
+      "status": "published",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-6\\sheet-gear-roster-6-a1.png",
+        "cell": "gilded-mail"
+      },
+      "slot": "body",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gear-roster-6",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/gear/gilded-mail-large.png"
+    },
+    "gear-gilded-mail": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-6/gear-gilded-mail.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-6\\sheet-gear-roster-6-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 22,
+          "short": 20,
+          "mass": 0.688,
+          "box": [
+            2,
+            3,
+            24,
+            23
+          ],
+          "centre_off": 0.0
+        },
+        "block": 21.955,
+        "scale": 21.955,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "roster-gear:91c76b116bcd",
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0
+      },
+      "status": "published",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-6\\sheet-gear-roster-6-a1.png",
+        "cell": "gilded-mail"
+      },
+      "slot": "body",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gear-roster-6",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/gear/gilded-mail.png"
+    },
+    "gear-parade-boots-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-6/gear-parade-boots-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-6\\sheet-gear-roster-6-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 1,
+        "subject": {
+          "long": 56,
+          "short": 55,
+          "mass": 0.845,
+          "box": [
+            4,
+            4,
+            60,
+            59
+          ],
+          "centre_off": 0.5
+        },
+        "block": 7.571,
+        "scale": 7.571,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "roster-gear:91c76b116bcd",
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0
+      },
+      "status": "published",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-6\\sheet-gear-roster-6-a1.png",
+        "cell": "parade-boots"
+      },
+      "slot": "feet",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gear-roster-6",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/gear/parade-boots-large.png"
+    },
+    "gear-parade-boots": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-6/gear-parade-boots.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-6\\sheet-gear-roster-6-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 22,
+          "short": 22,
+          "mass": 0.864,
+          "box": [
+            2,
+            2,
+            24,
+            24
+          ],
+          "centre_off": 0.0
+        },
+        "block": 19.273,
+        "scale": 19.273,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "roster-gear:91c76b116bcd",
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0
+      },
+      "status": "published",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-6\\sheet-gear-roster-6-a1.png",
+        "cell": "parade-boots"
+      },
+      "slot": "feet",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gear-roster-6",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/gear/parade-boots.png"
+    },
+    "gear-colossus-gauntlet-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-7/gear-colossus-gauntlet-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-7\\sheet-gear-roster-7-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 56,
+          "short": 50,
+          "mass": 0.642,
+          "box": [
+            4,
+            7,
+            60,
+            57
+          ],
+          "centre_off": 0.0
+        },
+        "block": 7.821,
+        "scale": 7.821,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "roster-gear:91c76b116bcd",
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0
+      },
+      "status": "published",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-7\\sheet-gear-roster-7-a1.png",
+        "cell": "colossus-gauntlet"
+      },
+      "slot": "hands",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gear-roster-7",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/gear/colossus-gauntlet-large.png"
+    },
+    "gear-colossus-gauntlet": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-7/gear-colossus-gauntlet.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-7\\sheet-gear-roster-7-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 22,
+          "short": 20,
+          "mass": 0.663,
+          "box": [
+            2,
+            3,
+            24,
+            23
+          ],
+          "centre_off": 0.0
+        },
+        "block": 19.909,
+        "scale": 19.909,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "roster-gear:91c76b116bcd",
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0
+      },
+      "status": "published",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-7\\sheet-gear-roster-7-a1.png",
+        "cell": "colossus-gauntlet"
+      },
+      "slot": "hands",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gear-roster-7",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/gear/colossus-gauntlet.png"
+    },
+    "gear-wallclimber-boots-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-7/gear-wallclimber-boots-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-7\\sheet-gear-roster-7-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 56,
+          "short": 50,
+          "mass": 0.631,
+          "box": [
+            4,
+            7,
+            60,
+            57
+          ],
+          "centre_off": 0.0
+        },
+        "block": 8.143,
+        "scale": 8.143,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "roster-gear:91c76b116bcd",
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0
+      },
+      "status": "published",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-7\\sheet-gear-roster-7-a1.png",
+        "cell": "wallclimber-boots"
+      },
+      "slot": "feet",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gear-roster-7",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/gear/wallclimber-boots-large.png"
+    },
+    "gear-wallclimber-boots": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-7/gear-wallclimber-boots.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-7\\sheet-gear-roster-7-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 22,
+          "short": 20,
+          "mass": 0.632,
+          "box": [
+            2,
+            3,
+            24,
+            23
+          ],
+          "centre_off": 0.0
+        },
+        "block": 20.727,
+        "scale": 20.727,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "roster-gear:91c76b116bcd",
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0
+      },
+      "status": "published",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-7\\sheet-gear-roster-7-a1.png",
+        "cell": "wallclimber-boots"
+      },
+      "slot": "feet",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gear-roster-7",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/gear/wallclimber-boots.png"
+    },
+    "gear-red-horn-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-7/gear-red-horn-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-7\\sheet-gear-roster-7-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 56,
+          "short": 54,
+          "mass": 0.488,
+          "box": [
+            4,
+            5,
+            60,
+            59
+          ],
+          "centre_off": 0.0
+        },
+        "block": 7.929,
+        "scale": 7.929,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "roster-gear:91c76b116bcd",
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0
+      },
+      "status": "published",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-7\\sheet-gear-roster-7-a1.png",
+        "cell": "red-horn"
+      },
+      "slot": "neck",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gear-roster-7",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/gear/red-horn-large.png"
+    },
+    "gear-red-horn": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-7/gear-red-horn.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-7\\sheet-gear-roster-7-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 22,
+          "short": 21,
+          "mass": 0.486,
+          "box": [
+            2,
+            2,
+            24,
+            23
+          ],
+          "centre_off": 0.5
+        },
+        "block": 20.182,
+        "scale": 20.182,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "roster-gear:91c76b116bcd",
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0
+      },
+      "status": "published",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-7\\sheet-gear-roster-7-a1.png",
+        "cell": "red-horn"
+      },
+      "slot": "neck",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gear-roster-7",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/gear/red-horn.png"
+    },
+    "gear-arrowmark-bow-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-7/gear-arrowmark-bow-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-7\\sheet-gear-roster-7-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 56,
+          "short": 55,
+          "mass": 0.263,
+          "box": [
+            4,
+            4,
+            59,
+            60
+          ],
+          "centre_off": 0.5
+        },
+        "block": 8.214,
+        "scale": 8.214,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "roster-gear:91c76b116bcd",
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 1
+      },
+      "status": "published",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-7\\sheet-gear-roster-7-a1.png",
+        "cell": "arrowmark-bow"
+      },
+      "slot": "weapon",
+      "weapon_kind": "bow",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gear-roster-7",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/gear/arrowmark-bow-large.png"
+    },
+    "gear-arrowmark-bow": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-7/gear-arrowmark-bow.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-7\\sheet-gear-roster-7-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 22,
+          "short": 22,
+          "mass": 0.279,
+          "box": [
+            2,
+            2,
+            24,
+            24
+          ],
+          "centre_off": 0.0
+        },
+        "block": 20.909,
+        "scale": 20.909,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "roster-gear:91c76b116bcd",
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0
+      },
+      "status": "published",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-7\\sheet-gear-roster-7-a1.png",
+        "cell": "arrowmark-bow"
+      },
+      "slot": "weapon",
+      "weapon_kind": "bow",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gear-roster-7",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/gear/arrowmark-bow.png"
+    },
+    "gear-hungry-purse-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-7/gear-hungry-purse-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-7\\sheet-gear-roster-7-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 4,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 56,
+          "short": 52,
+          "mass": 0.646,
+          "box": [
+            4,
+            6,
+            60,
+            58
+          ],
+          "centre_off": 0.0
+        },
+        "block": 6.911,
+        "scale": 6.911,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "roster-gear:91c76b116bcd",
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 3
+      },
+      "status": "published",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-7\\sheet-gear-roster-7-a1.png",
+        "cell": "hungry-purse"
+      },
+      "slot": "ring",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gear-roster-7",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/gear/hungry-purse-large.png"
+    },
+    "gear-hungry-purse": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-7/gear-hungry-purse.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-7\\sheet-gear-roster-7-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 22,
+          "short": 21,
+          "mass": 0.671,
+          "box": [
+            2,
+            2,
+            24,
+            23
+          ],
+          "centre_off": 0.5
+        },
+        "block": 17.591,
+        "scale": 17.591,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "roster-gear:91c76b116bcd",
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0
+      },
+      "status": "published",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-7\\sheet-gear-roster-7-a1.png",
+        "cell": "hungry-purse"
+      },
+      "slot": "ring",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gear-roster-7",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/gear/hungry-purse.png"
+    },
+    "gear-gatewarden-shield-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-7/gear-gatewarden-shield-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-7\\sheet-gear-roster-7-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 56,
+          "short": 46,
+          "mass": 0.609,
+          "box": [
+            9,
+            4,
+            55,
+            60
+          ],
+          "centre_off": 0.0
+        },
+        "block": 8.339,
+        "scale": 8.339,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "roster-gear:91c76b116bcd",
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0
+      },
+      "status": "published",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-7\\sheet-gear-roster-7-a2.png",
+        "cell": "gatewarden-shield"
+      },
+      "slot": "offhand",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-gear-roster-7",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/gear/gatewarden-shield-large.png"
+    },
+    "gear-gatewarden-shield": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-7/gear-gatewarden-shield.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-7\\sheet-gear-roster-7-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 22,
+          "short": 18,
+          "mass": 0.61,
+          "box": [
+            4,
+            2,
+            22,
+            24
+          ],
+          "centre_off": 0.0
+        },
+        "block": 21.227,
+        "scale": 21.227,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "roster-gear:91c76b116bcd",
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0
+      },
+      "status": "published",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-7\\sheet-gear-roster-7-a2.png",
+        "cell": "gatewarden-shield"
+      },
+      "slot": "offhand",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-gear-roster-7",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/gear/gatewarden-shield.png"
+    },
+    "icon-red-pennant": {
+      "final": "art-factory/starlantern/work/sheet-icons-roster-7/icon-red-pennant.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-7\\sheet-icons-roster-7-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 6,
+        "size": [
+          32,
+          36
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "roster-icon:8da249263f71"
+      },
+      "status": "published",
+      "kind": "roster-icon",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-icons-roster-7",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/icon/red-pennant.png"
+    },
+    "icon-hydra-scale": {
+      "final": "art-factory/starlantern/work/sheet-icons-roster-7/icon-hydra-scale.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-7\\sheet-icons-roster-7-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 6,
+        "size": [
+          30,
+          34
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "roster-icon:8da249263f71"
+      },
+      "status": "published",
+      "kind": "roster-icon",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-icons-roster-7",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/icon/hydra-scale.png"
+    },
+    "icon-blight-ash": {
+      "final": "art-factory/starlantern/work/sheet-icons-roster-7/icon-blight-ash.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-7\\sheet-icons-roster-7-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 7,
+        "size": [
+          33,
+          23
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "roster-icon:8da249263f71"
+      },
+      "status": "published",
+      "kind": "roster-icon",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-icons-roster-7",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/icon/blight-ash.png"
+    },
+    "icon-leviathan-tooth": {
+      "final": "art-factory/starlantern/work/sheet-icons-roster-7/icon-leviathan-tooth.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-7\\sheet-icons-roster-7-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 7,
+        "size": [
+          26,
+          32
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "roster-icon:8da249263f71"
+      },
+      "status": "published",
+      "kind": "roster-icon",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-icons-roster-7",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/icon/leviathan-tooth.png"
+    },
+    "icon-blank-mirror": {
+      "final": "art-factory/starlantern/work/sheet-icons-roster-7/icon-blank-mirror.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-7\\sheet-icons-roster-7-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 7,
+        "size": [
+          24,
+          32
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "roster-icon:8da249263f71"
+      },
+      "status": "published",
+      "kind": "roster-icon",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-icons-roster-7",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/icon/blank-mirror.png"
+    },
+    "icon-dragon-gold": {
+      "final": "art-factory/starlantern/work/sheet-icons-roster-7/icon-dragon-gold.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-7\\sheet-icons-roster-7-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 7,
+        "size": [
+          28,
+          33
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "roster-icon:8da249263f71"
+      },
+      "status": "published",
+      "kind": "roster-icon",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-icons-roster-7",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/icon/dragon-gold.png"
+    },
+    "icon-parade-lantern": {
+      "final": "art-factory/starlantern/work/sheet-icons-roster-7/icon-parade-lantern.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-7\\sheet-icons-roster-7-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 7,
+        "size": [
+          27,
+          34
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "roster-icon:8da249263f71"
+      },
+      "status": "published",
+      "kind": "roster-icon",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-icons-roster-7",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/icon/parade-lantern.png"
+    },
+    "icon-colossus-bolt": {
+      "final": "art-factory/starlantern/work/sheet-icons-roster-7/icon-colossus-bolt.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-7\\sheet-icons-roster-7-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 6,
+        "size": [
+          35,
+          32
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "roster-icon:8da249263f71"
+      },
+      "status": "published",
+      "kind": "roster-icon",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-icons-roster-7",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/icon/colossus-bolt.png"
+    },
+    "icon-titan-hide": {
+      "final": "art-factory/starlantern/work/sheet-icons-roster-7/icon-titan-hide.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-7\\sheet-icons-roster-7-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 7,
+        "size": [
+          36,
+          28
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "roster-icon:8da249263f71"
+      },
+      "status": "published",
+      "kind": "roster-icon",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-icons-roster-7",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/icon/titan-hide.png"
+    },
+    "icon-commander-medal": {
+      "final": "art-factory/starlantern/work/sheet-icons-roster-7/icon-commander-medal.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-7\\sheet-icons-roster-7-a4.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 8,
+        "size": [
+          34,
+          31
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "roster-icon:8da249263f71"
+      },
+      "status": "published",
+      "kind": "roster-icon",
+      "chosen_attempt": "a4",
+      "source_id": "sheet-icons-roster-7",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/icon/commander-medal.png"
+    },
+    "icon-ashen-acorn": {
+      "final": "art-factory/starlantern/work/sheet-icons-roster-7/icon-ashen-acorn.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-7\\sheet-icons-roster-7-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 6,
+        "size": [
+          31,
+          34
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "roster-icon:8da249263f71"
+      },
+      "status": "published",
+      "kind": "roster-icon",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-icons-roster-7",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/icon/ashen-acorn.png"
+    },
+    "icon-vault-coin": {
+      "final": "art-factory/starlantern/work/sheet-icons-roster-7/icon-vault-coin.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-7\\sheet-icons-roster-7-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 6,
+        "size": [
+          35,
+          35
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "roster-icon:8da249263f71"
+      },
+      "status": "published",
+      "kind": "roster-icon",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-icons-roster-7",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/icon/vault-coin.png"
+    },
+    "icon-gate-splinter": {
+      "final": "art-factory/starlantern/work/sheet-icons-roster-7/icon-gate-splinter.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-7\\sheet-icons-roster-7-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 7,
+        "size": [
+          34,
+          34
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "roster-icon:8da249263f71"
+      },
+      "status": "published",
+      "kind": "roster-icon",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-icons-roster-7",
+      "batch": "roster-r4",
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/icon/gate-splinter.png"
+    },
+    "sheet-icons-roster-6": {
+      "rejected_attempts": {
+        "a1": "picked for every part except four, taken from a2: bog-peat read as a game grass cube; iou-slip read as a sealed letter like the published faded-letter; rivet read as a mushroom; black-veil had violet streaks (a2 still has some)",
+        "a3": "would not slice 5x4 (found 4x4); it was drawn to separate leech-plate from hydra-scale and crab-plate from rivet at 16 px. Cap 3 is reached, so those parts stay on a1 and a2",
+        "a4": "R4 review round 1 redraw: leech-plate and crab-plate picked from a4 (a segmented leech plate with a sucker mouth and steel rim; a fan shell with a rust-red spiked rim); its black-veil had 8 mauve pixels. It slices only row by row (roster_cells), because its columns do not line up across rows",
+        "a5": "R4 review round 1 redraw: black-veil picked from a5 (black and charcoal with grey rim highlights, 1 faintly mauve pixel against a4's 8); sliced row by row"
+      },
+      "plain_reasons": {
+        "a1": "泥炭像方塊、借條像封蠟信、鉚釘像蘑菇、黑紗帶紫",
+        "a3": "切不出 5x4；已到上限",
+        "a4": "採用蛭甲片與蟹甲；逐列切格",
+        "a5": "採用黑紗"
+      }
+    },
+    "sheet-icons-roster-7": {
+      "rejected_attempts": {
+        "a1": "would not slice 5x4 (found 4x4): the metal parade lantern's handle crossed a gutter",
+        "a2": "picked for every part except commander-medal, which failed QA (larger than the icon box: ribbon too long); the medal is taken from a3",
+        "a3": "commander-medal picked from a3 (compact, short ribbon); its parade-lantern failed QA (larger than the icon box)",
+        "a4": "R4 review round 1 redraw: commander-medal picked from a4 (a smaller disc with a star relief under a wide swallowtail ribbon, no potion outline)"
+      },
+      "plain_reasons": {
+        "a1": "提燈的柄跨過格線，切不出 5x4",
+        "a2": "勳章太高、超出圖示框",
+        "a3": "採用勳章",
+        "a4": "採用勳章（燕尾緞帶）"
+      }
+    },
+    "sheet-gear-roster-6": {
+      "rejected_attempts": {
+        "a1": "picked for every part except faceless-mask, taken from a2: a1 read as a framed oval mirror, not a mask",
+        "a3": "R4 review round 1 redraw: faceless-mask (both sizes) picked from a3 (three-quarter view, brow and nose in its outline, a mirror highlight band, long ties)"
+      },
+      "plain_reasons": {
+        "a1": "面具畫成鏡子",
+        "a3": "採用無面面具（四分之三側面）"
+      }
+    },
+    "sheet-gear-roster-7": {
+      "rejected_attempts": {
+        "a1": "picked for every part except gatewarden-shield, taken from a2: a1 read as a barrel, not a shield",
+        "a2": "only gatewarden-shield picked from a2; its hungry-purse-large failed QA (magenta residue)"
+      },
+      "plain_reasons": {
+        "a1": "盾畫成木桶",
+        "a2": "只採用盾"
+      }
+    },
+    "icon-ash-chrysanthemum": {
+      "final": "art-factory/starlantern/work/single-icon-ash-chrysanthemum/icon-ash-chrysanthemum.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\single-icon-ash-chrysanthemum\\single-icon-ash-chrysanthemum-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 25,
+        "size": [
+          32,
+          34
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "roster-icon:8da249263f71"
+      },
+      "status": "published",
+      "kind": "roster-icon",
+      "chosen_attempt": "a1",
+      "source_id": "single-icon-ash-chrysanthemum",
+      "batch": "roster-r3",
+      "deferred": {
+        "batch": "roster-r3",
+        "reason": "art-factory/starlantern/work/review/roster-r3-defer-icon-mourning-veil.md",
+        "date": "2026-10-28",
+        "supersedes": "icon-mourning-veil",
+        "completed": "2026-10-29"
+      },
+      "approved_by": "independent review art-factory/starlantern/work/review/roster-r3-deferred-review.md (2026-10-29)",
+      "runtime": "/assets/games/starlantern/icon/ash-chrysanthemum.png"
     }
   },
   "requa_log": [
@@ -46626,7 +50114,8 @@
         "gear-ninety-nine-steps-large": "c2f4b0a7ef080dbe8fa59e02ffa285a96606f5f6d2d988fc57a09d77340a4077",
         "gear-ninety-nine-steps": "9ed00691d7f197f4b3a568fe75e6adc556341c6c4834b673304b13b100f6c880",
         "gear-starbound-tome-large": "6144b8f628e53a606f9c97181b0488b0ac900b31a24e5d3f365829040a817ca5",
-        "gear-starbound-tome": "7c5d13b2b6920059bf9ae00a881e6a9c46e3c1a9eebcae81886a37fdc161355c"
+        "gear-starbound-tome": "7c5d13b2b6920059bf9ae00a881e6a9c46e3c1a9eebcae81886a37fdc161355c",
+        "icon-ash-chrysanthemum": "38bc2ee786f829224b133f24771f2c9e1460558d8a59fbb1a4343b426cb77a01"
       },
       "review": "art-factory/starlantern/work/review/roster-r3-review.md",
       "review_sha256": "4be69396e23e6506a15946bb4e40ab9922ef8a68fde57cec39f95d5c10a058b7",
@@ -46657,11 +50146,120 @@
         "icon-fog-gate-plate": "8a8530e99186dd7d455df54b2619b2c7ce63a135531702dbb315ad38537b2b15"
       },
       "deferred": {
-        "icon-mourning-veil": {
+        "icon-ash-chrysanthemum": {
           "reason": "art-factory/starlantern/work/review/roster-r3-defer-icon-mourning-veil.md",
           "sha256": "230048e5953d099c880173f89172fc65ef4cac6a327840f25aedaef70a71f72f",
-          "owner": "ash-mourner"
+          "owner": "ash-mourner",
+          "supersedes": "icon-mourning-veil",
+          "superseded_on": "2026-10-28",
+          "superseded_by_record": "art-factory/starlantern/work/review/roster-r3-veil-review-6.md",
+          "superseded_by": "controller 2026-10-28: concept changed after six failed reviews of the veil",
+          "completed": {
+            "review": "art-factory/starlantern/work/review/roster-r3-deferred-review.md",
+            "review_sha256": "4079892d0f7732e6888d84fd40134c9ed6b08632726122e87bf380fa135b85d1",
+            "sha256": "38bc2ee786f829224b133f24771f2c9e1460558d8a59fbb1a4343b426cb77a01",
+            "date": "2026-10-29"
+          }
         }
+      }
+    },
+    "roster-r4": {
+      "date": "2026-10-29",
+      "record": "art-factory/starlantern/work/review/roster-r4-shown.json",
+      "shown": {
+        "enemy-bog-mother": "df7d2b51fc40beb5a20b886a823bb221e7a9c3b64149c07dcf8fa0fb90737622",
+        "enemy-rot-lily": "56ea51cbd52aaa3aab3df0233e2a9a837850b6c2edb92fcb342af4a3aef435ab",
+        "enemy-leech-knight": "510b416ddedb0f23ac23d6b56c6d512cbd90506f104f4bbd583738a78a3e08bf",
+        "enemy-ashen-treant": "eebfa55c580fa32b75db353ee98bf79106ba169e78dc9a10f400bf98ed78c1bb",
+        "enemy-spore-moth": "96e23a768827052aaa168d4246a14184d16466d630a874010262b425bef0dd0a",
+        "enemy-mirror-thief": "55cb913398c24b4b08e2712370ab8372c34cdd5a3e8ab54f94ee4f690cb05be6",
+        "enemy-veil-stalker": "df307d269f067e0f7fbfc9a8938e0043ee5f6039636ce2dc2f59e54b587b40f4",
+        "enemy-hush-acolyte": "317d931c081f5313a77ac9770e92b092ae108596eedb87a2e11d3607c482349c",
+        "enemy-vault-mimic": "5b849d8fa31a73c22ea96422141b7bb84dac73b80a03d6d72a844a68353a1139",
+        "enemy-debt-collector": "a6ac317f69a7ed0d2d913d99ade3533af702db6744b0b11bec0c2997df63b4ed",
+        "enemy-rivet-golem": "dbb065f4f3732c2193af5c768c1093fd070ade411f4c4004e43c2eb8550c285d",
+        "enemy-siege-crab": "43a129243a0300f705fce7429889fdcbfb30cff8d92e99e5e19a3b7d4db78445",
+        "enemy-herald-engine": "30eac7b01d62bda4f39ff7e5255e06ba5b98a9a675cc2c69ac4aa9756e9db6fe",
+        "enemy-fallen-knight": "155c90d9800576462e9a5c43c937b004513cfe321d305b51d4d950bc1703e4c7",
+        "enemy-banner-bearer": "ed4749319013bdd528c0780e310e6c6b496f1a7dcf7199cbed516f79fe0263cf",
+        "enemy-mire-hydra": "433d1c4f85352f34cb0bce360ce0fc8480ec48f159a1dbe1b596861e4168f459",
+        "enemy-grey-blight": "174db3abfd5e2e849da15efcb13e2e69b4d202a0ddde2e727bae24db9efe4827",
+        "enemy-bog-leviathan": "02f20c546334f37b6b9ac03bb2d53e6d861be61995a6f7d180e15b156314c321",
+        "enemy-faceless-host": "c003f050a9a6f5e9b930e2a5e19ca719cf97e2d3362c8343cb9844e5cdec19ef",
+        "enemy-vault-dragon": "d13ec44ef83e3cc7c0e3a06ebd78206c82ad3895b8920e787679d8d2d6841c12",
+        "enemy-shadow-parade": "d930dae7f6b05f7c4c007d88a5aa67969ca41911df6d454eb27b29b01237ef16",
+        "enemy-fortress-colossus": "26427b6363ee72a6e1e514468c3dc1be55be27d29974cda70c079178d2b0404b",
+        "enemy-siege-titan": "0294fd64cb3019fa41f35a8061a245be1f1c3bae5ae0fa383ce33ec71f5332c4",
+        "enemy-last-commander": "5693d3686b0d1f3ebbdb0bf53d75cebcb452870bc8d8237632dce54bf53db60e",
+        "enemy-grey-elder": "f5427065fa45a54545bf2783919c43d426eb6c9faf6ce0c98aab7d5aa10ee0cd",
+        "enemy-locked-vault": "61f5edfdb046bbb815a4cba615abf026ec72db9f8fc60b1d11fc0d12f970d8a4",
+        "enemy-gate-breaker": "f4404efd43fb2f972a062e8b1076dae757aaa1d07fb3b020c1dc865dfa1e0ab1",
+        "icon-bog-peat": "820d5a8835ac1e91f3f6f9b5b6fa94b137fe189e04f71c4681243493039ebd90",
+        "icon-rot-petal": "924d6703a90b0056ed65646fce55fe8fc3d33d69fb73b38981fe941b552e987e",
+        "icon-leech-plate": "cf80e5ae1e34e3c76c9b2c268dd0f30a12a790685ae0a87778e10407b86e91d8",
+        "icon-carved-bark": "f8a848e556f8316afc0b233dc2627bc6c2482a83e0a2450f286be5fe82a8cd91",
+        "icon-spore-sac": "42fe53ff315cb3d4b0edd96bc7d182b166df4e682737f673605980ad6b1af484",
+        "icon-mirror-sliver": "b6b4b5c113ecd5b29fe50b8e4303fd43dbf0d1f37d3ce2d80acef3693b6f7e3a",
+        "icon-black-veil": "ed2874d127cb0a26d6cebec07cfca7cd9154d46c75d63ca66798e18990dd8059",
+        "icon-hush-bell": "105fadf89cad31ce3a3f8223a57138a2ed8807b900631deefa708fb1bb68d0d9",
+        "icon-vault-lock": "1bd4238d72023fcba4f695ddc8d31b597ed91e3e5326634328249922a8ab8600",
+        "icon-iou-slip": "c4e0f554599b847d50c55f8d2cecb4214b2f061ed124d440e41ddde324664b18",
+        "icon-rivet": "5352e371476b2b45fbddeaf5811adb13e9a34a64e44bfb50bac41f696398c936",
+        "icon-crab-plate": "96973e7cc50460108af8a20f187f92c9f2c6d77361bdc11b19193fb0552b1086",
+        "icon-herald-horn": "fc74fced959f8a4077996248c6005e71faf26dbe04ffbd8c27559cfbc20c9eec",
+        "icon-knight-crest": "61621194ae5cacb09011e04ac1215f60783617a37356e0a66240e4cdc971a5fb",
+        "icon-red-pennant": "1b7f3d8ce160e47e006a41be4c61cd4042ca2d0895312804944bd87e9cb897dd",
+        "icon-hydra-scale": "7fd17d34304f28b777116eab330c28cd3417b44da08b673561721a09a294316a",
+        "icon-blight-ash": "cc99783e52c78ca4568058e2af5020b167db3715b8b91ba4f76a76f8ae55cd1f",
+        "icon-leviathan-tooth": "4dfcaaad926098f3b86b9ef40f14aaa8771528421c7dcfd8e4efaf16922493e5",
+        "icon-blank-mirror": "c2773e3dea9a950a8f16e663e6eda34dd85def91e8a5918f98608ed3bb7c63b8",
+        "icon-dragon-gold": "de9dd041972e231f7d392bfddf8355536b120092d27bd097599538917d153443",
+        "icon-parade-lantern": "09b1441ca636d15ab0e6267f99dfb3486c11fcd33a82d47810f6bb2a962fc4ef",
+        "icon-colossus-bolt": "60382c3139feafbf825396ca8a2dc11fd83bec9141e3704abb0a5596f85acb54",
+        "icon-titan-hide": "228df295651661d6ee6cc64055542371a4dfa67599d9c8866e4173cd5f7b2570",
+        "icon-commander-medal": "ec23a4dc852cf1bcea14a514757acb4cb1fdbc9cfed8b4678ee982685fb62d83",
+        "icon-ashen-acorn": "a52210b65f0aa9de2ff412cd4fd7e0de544a97b320d6592a1fc56d748b553ec2",
+        "icon-vault-coin": "e50131f99b851dcc2d7284b742625f9e92b02320a3c50a6fe4227054bb70c387",
+        "icon-gate-splinter": "4aaa27284ccb6ec2a56aeca0b8cc5eb3815aa758033e82fac3ee24410c0c20df",
+        "gear-hydra-fang-large": "13d7256fc7fa84b828972ef513d8d4052d42cf394348a459b5df291cff008690",
+        "gear-hydra-fang": "459ab6e9978f8cf868d13386a7126628fc2a700eb47e0317894412e121b177ad",
+        "gear-greenward-cloak-large": "542c0542fb7193d7327abc2c0c90291a5a7b17a8ba480d75be14bbdfb4bf89a7",
+        "gear-greenward-cloak": "d6f4e29bc89a1de8282c7c2c8714850ae91fa0ba41b9917d416aabff2489a789",
+        "gear-bog-ring-large": "ca6389203db5003d96eb61b1ae59dc83af87e6c66866a7895d9af3e12d34059b",
+        "gear-bog-ring": "002aeba45f93b1fae6279377512c5034e03d3b688d566d039d53c8185cb16cf5",
+        "gear-faceless-mask-large": "35d5ca90831375bb940e7bd449907c9ac9532ffc128cf50878d0d591b930835b",
+        "gear-faceless-mask": "05dcfed42b91dd4ec6d017632ba3be083d2e8470964fed4c177c8bc63125fac6",
+        "gear-gilded-mail-large": "b8a07452cf954a8bb270f2e8624095abea5bdd76de584bba80c546c50b84fece",
+        "gear-gilded-mail": "737cb958c0a37bb327436cefd1bf71b661f9d5789d338de6f1a599713c21f5ce",
+        "gear-parade-boots-large": "a1176a15b0cac33ec99d238bc491ab6c4957819abd0db7e1e2264e3bae4beafb",
+        "gear-parade-boots": "99f374f5c5ad29610bf9cb4c50d313c985d277029ec4f98fe3cc829269f929e8",
+        "gear-colossus-gauntlet-large": "c068f0be80251329d518ebbd0cd041c214301d302283a3a593f9faed85dbd5db",
+        "gear-colossus-gauntlet": "8870dad4cd12043c177f5878e9c71566f33d87334aab7d29e808b982066e49c6",
+        "gear-wallclimber-boots-large": "43279b74b4edb481cda6440e1aa951ccc00a5f245fc160a0c477127cbe645b13",
+        "gear-wallclimber-boots": "ccbdf21bd9c768ea0de4daa09f8a8508619abdaaf19d3b0b1f00bee793cd3609",
+        "gear-red-horn-large": "bc623fc31e4b77c60583b26e34557edcd9c7eb8a77679b28279090127b081cfe",
+        "gear-red-horn": "0864c99e410f4a778a2bed0bb21a26f8527baff9fb580115524130e0419803f7",
+        "gear-arrowmark-bow-large": "48a221dc636c484a2302ecd0c066667904802ee7a9042a542b793e7a6bc724ad",
+        "gear-arrowmark-bow": "a73fa019812918fd663bead0ef6de0c132e3a07cdd2be1757fa545817d7aad7e",
+        "gear-hungry-purse-large": "eeb658d1f10a83c3a4c1c24fee82e75bfad9011c265673ab1b50425d4ebcb8cb",
+        "gear-hungry-purse": "52c34ef36249136cbb7a5dde84a5a99930cb0fdb1f6c712f8bd4e23b07d24911",
+        "gear-gatewarden-shield-large": "051125e0e100106499ee69e90b2279adfd2958e0e660acdd5ebf5795d5925f8f",
+        "gear-gatewarden-shield": "a554e1533c9b383acd7136e4345ec6770fc4a51c11b955d0196849f8382588b3"
+      },
+      "review": "art-factory/starlantern/work/review/roster-r4-review.md",
+      "review_sha256": "e65539bf601f5544a0bbf323b75b97986337404344b9e10f0b5449b04c960690",
+      "reviews": [
+        {
+          "record": "art-factory/starlantern/work/review/roster-r4-review.md",
+          "sha256": "e65539bf601f5544a0bbf323b75b97986337404344b9e10f0b5449b04c960690"
+        },
+        {
+          "record": "art-factory/starlantern/work/review/roster-r4-review-2.md",
+          "sha256": "4079892d0f7732e6888d84fd40134c9ed6b08632726122e87bf380fa135b85d1"
+        }
+      ],
+      "repairs": {
+        "icon-lizard-scale": "622dbf5055d29fa04be9324e7382e467dec15a7993ea8e009c4767a9b8d92671"
       }
     }
   },
@@ -46744,6 +50342,32 @@
         "extra": 3,
         "by": "controller 2026-10-28",
         "review": "C:/msys64/tmp/claude/C--Users-bag57/50dcf669-8aa8-4bb5-ac8e-fe7a03cde69f/scratchpad/roster-r3/r3-review-round3.md"
+      },
+      {
+        "extra": 3,
+        "by": "controller 2026-10-28",
+        "review": "art-factory/starlantern/work/review/roster-r3-review-5.md"
+      }
+    ],
+    "sheet-icons-roster-6": [
+      {
+        "extra": 3,
+        "by": "controller 2026-10-28",
+        "review": "C:/msys64/tmp/claude/C--Users-bag57/50dcf669-8aa8-4bb5-ac8e-fe7a03cde69f/scratchpad/roster-r4/r4-review.md"
+      }
+    ],
+    "sheet-icons-roster-7": [
+      {
+        "extra": 3,
+        "by": "controller 2026-10-28",
+        "review": "C:/msys64/tmp/claude/C--Users-bag57/50dcf669-8aa8-4bb5-ac8e-fe7a03cde69f/scratchpad/roster-r4/r4-review.md"
+      }
+    ],
+    "sheet-gear-roster-6": [
+      {
+        "extra": 3,
+        "by": "controller 2026-10-28",
+        "review": "C:/msys64/tmp/claude/C--Users-bag57/50dcf669-8aa8-4bb5-ac8e-fe7a03cde69f/scratchpad/roster-r4/r4-review.md"
       }
     ]
   }

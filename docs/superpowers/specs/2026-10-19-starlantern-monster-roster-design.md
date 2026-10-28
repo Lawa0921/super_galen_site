@@ -122,6 +122,7 @@
       - 見過的敵人圖站在左邊立繪的位置，整數倍放大（頭目 ×1，其他 ×2，CSS `zoom`，像素不糊）；沒見過的不畫任何圖（裁定 18）。
       - e2e 用除錯把手 `__starlanternDebug.roster`（只給測試）把一隻上線，量 1280×720、844×390 與手機直向三種尺寸：清單與說明不超出面板、圖是整數倍、字體只用 12／24px。
     - **圖鑑的記錄（C3）**：開戰時記一次 `seen`（每種一次），回合中被召喚進來的種類在加入的那一回合記一次；`felled` 只在勝利時記（逃跑、全滅不記），倒下的召喚物算、幻影與離場的不算；劇情戰的敵人也照記（圖鑑只列 `listedEnemy` 且非劇情的）。銘文裝備進了冒險背包（`pack`）就記 `inscribed`。
+21. **設計變更：灰衣弔者的素材從「弔者面紗」改成「弔菊」（控制者 2026-10-28 裁定，E3c）**：`mourning-veil` 弔者面紗的圖示經 6 次獨立審核仍不通過（半透明的薄紗在 16 px 讀不出來，而且 R4 已有 `black-veil` 黑紗，會有兩件紗），改成 `ash-chrysanthemum` 弔菊：一朵灰白、花瓣下垂的葬儀菊，短莖，花瓣上有幾點餘燼或灰。葬儀用花不算宗教標誌。資料（`data/materials.roster.ts`）、登錄表與 §5.4 一併改名；舊的 `icon-mourning-veil` 在登錄表標成 `superseded`（嘗試與淘汰紀錄留作歷史，從未發布），R3 核准紀錄裡的延後改由 `icon-ash-chrysanthemum` 接手（`roster_art.py supersede`）；弔菊用它自己的單張圖示工作 `single-icon-ash-chrysanthemum` 畫（自己的上限），`sheet-icons-roster-4` 的那一格留空、版面不動。圖鑑與遺物文字都沒有提到面紗。
 
 21. **PR L1 上線一（L1b，控制者 2026-10-28 裁定）**：
     - **深層特性從 L1 起**：照 §5.8 與本節第 19 條，`isRosterTable` 為真（該帶的表已是名冊表，包括地區「舊表＋已上線新組」）就套 `DEEP_TRAITS`；計畫 L2 那兩處「從 L2 起」是舊字樣，L1b 一併更正。
@@ -315,7 +316,7 @@
 | `star-ember` 星屑火、`stolen-tome` 飛舞的魔法書、`burning-page` 燃燒的那一頁、`starfire-colossus` 星火巨像 | 雷鳴一般、中頭目、頭目 | 雷鳴 4、8、15 | 諾艾兒：偷來的書、燒記憶的那一頁（I-67） | 名字不寫「記憶」；牠吸的是 TP | 那一頁的第二句 `mem:noel:3`（燒的是記憶）；第三句 `mem:noel:4`（老師在保護她）。不寫商人（`mem:noel:5`） | 自足 |
 | `ashen-treant` 枯灰樹人、`grey-elder` 灰化的老樹、`grey-blight` 灰枯 | 腐毒一般、中頭目、頭目 | 腐毒 4、8、10 | 希爾薇：她守的林子、樹皮上的箭頭、灰化（I-66） | 「樹人」「老樹」中性 | 樹人第二句 `mem:sylvie:1`（沼澤是她的林子）；老樹第二句 `mem:sylvie:5`（最後一顆種子）；灰枯第二句 `mem:sylvie:2`（霧是射不死的） | 自足 |
 | `vault-mimic` 餓肚子的寶庫、`locked-vault` 鎖著的金庫 | 暗影一般、中頭目 | 暗影 4、8 | 莉茲：上鎖的寶庫、餓著肚子（§6 相遇） | 相遇已經演出 | 第二句 `mem:liz:3`（還債）。**永遠不寫道具店、露米亞、歐里克**（ledger §3 莉茲列） | 自足 |
-| `debt-collector` 討債的影子 | 暗影一般 | 暗影 10 | 莉茲：家裡的債 | 中性 | 第二句 `mem:liz:2`。同上 | 自足 |
+| `debt-collector` 敲門的影子（§0 第 11 條改名） | 暗影一般 | 暗影 10 | 莉茲：家裡的債 | 中性 | 第二句 `mem:liz:2`。同上 | 自足 |
 | `fallen-knight` 要塞的騎士殘影、`banner-bearer` 紅旗旗手、`gate-breaker` 撞門的巨影、`last-commander` 最後的指揮官 | 鋼鐵一般、中頭目、頭目 | 鋼鐵 4、8、15 | 絲嘉蕾：被吞下的要塞、紅旗、被撞的城門（I-77、I-78） | 相遇（鋼鐵 8）就是守城門；名字不寫公主、撤退 | 騎士第二句 `mem:scarlet:2`（要塞是她的國家）；撞門第二句 `mem:scarlet:3`；指揮官第二句 `mem:scarlet:5`。**任何地方都不寫「撤退」「號角是撤退的」**，直到 `mem:scarlet:5` | 自足 |
 
 - 總計：故事怪物 **42 種**（一般 20、守關者 11、頭目 11），其餘 58 個定義是世界觀的迴響與部件。
@@ -390,7 +391,7 @@
 |---|---|---|---|---|---|---|---|
 | 熾焰 | `cinder-imp` | 灰燼小鬼 | 群 | 倒下時 row 火 35（M10） | `cinder-dust` 灰燼塵 | — | `fireDmg` |
 | | `forge-hound` | 熔爐犬 | 標準 | 蓄力「熔吼」row 火 150（M1） | `forge-slag` 爐渣 | — | `atk` |
-| | `ash-mourner` | 灰衣弔者 | 輔 | 同伴 mag +30%；補血（D） | `mourning-veil` 弔者面紗 | — | `heal` |
+| | `ash-mourner` | 灰衣弔者 | 輔 | 同伴 mag +30%；補血（D） | `ash-chrysanthemum` 弔菊（§0 第 21 條） | — | `heal` |
 | | `mirage-dancer` | 蜃樓舞者（故事） | 標準 | 開戰召出 1 個 1 HP 的幻影（無報酬）；幻影在時本體閃避 +20%（M19） | `mirage-sequin` 蜃樓亮片 | `king-scale` 1% | `evasion` |
 | | `sand-scorpion` | 沙海蠍（故事） | 標準 | 毒針；對已中毒的目標傷害 ×1.5（`wounded` 的變體 `vsPoisoned`）（M25） | `scorpion-stinger` 蠍尾針 | — | `poisonRes` |
 | 霜凍 | `frost-doll` | 霜人偶 | 重 | 守護（M2） | `porcelain-chip` 瓷片 | — | `iceRes` |
@@ -412,7 +413,7 @@
 | | `veil-stalker` | 帷幕潛行者 | 標準 | 「背刺」打後排、必暴（D） | `black-veil` 黑紗 | — | `critDmg` |
 | | `hush-acolyte` | 靜默侍者（故事） | 術 | cross 遺忘（M9） | `hush-bell` 無聲小鈴 | — | `tpCost` |
 | | `vault-mimic` | 餓肚子的寶庫（故事） | 重 | 偽裝＋偷金幣（M14、M13） | `vault-lock` 寶庫的鎖 | `old-coin` 20% | `goldFind` |
-| | `debt-collector` | 討債的影子（故事） | 標準 | 宣告標記＋偷金幣（M24、M13） | `iou-slip` 泛黃的借條 | — | `vuln` |
+| | `debt-collector` | 敲門的影子（故事；§0 第 11 條改名） | 標準 | 宣告標記＋偷金幣（M24、M13） | `iou-slip` 泛黃的借條 | — | `vuln` |
 | 鋼鐵 | `rivet-golem` | 鉚釘機兵 | 重 | 守護（M2） | `rivet` 鉚釘 | `ancient-gear` 2% | `armor` |
 | | `siege-crab` | 攻城蟹 | 重 | 蓄力「破城鉗」row 170（M1） | `crab-plate` 蟹甲 | — | `meleeDR` |
 | | `herald-engine` | 號令機 | 輔 | 同伴 atk +25%、def +20%（D） | `herald-horn` 號令喇叭 | — | `gauge` |

@@ -1,0 +1,41 @@
+{
+  "assets": {
+    "enemy-ashen-treant": {
+      "final": "art-factory/starlantern/work/enemy-ashen-treant/cand/a1/enemy-ashen-treant.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-ashen-treant\\enemy-ashen-treant-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 14,
+        "size": [
+          66,
+          78
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "height": 76,
+        "width": 64,
+        "colours": 2180,
+        "lum": [
+          0.081,
+          0.656,
+          0.361
+        ],
+        "erased": 0,
+        "palette_over": true,
+        "spec": "roster-sprite:929ae0136de6"
+      },
+      "status": "qa_passed",
+      "kind": "roster-sprite",
+      "roster_class": "heavy",
+      "mainline": false
+    }
+  }
+}
