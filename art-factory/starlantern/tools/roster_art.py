@@ -16,7 +16,8 @@ forget chip. Structure as gear_art.py (plan 5d).
   approve --batch rN --review PATH [--review PATH ...]
                                          R1-R4 (ruling 21): independent fresh-context review records (one per review round)
                                          whose 通過 lines together cover every image's current sha256; no user approval is
-                                         asked for or accepted
+                                         asked for or accepted. [--defer ASSET --reason RECORD ...]: approve and publish the
+                                         round without ASSET (the record that failed it kept; refused when its species is live)
   publish --batch rN                     runtime, copy to public/, manifest, the round's ids into ROSTER_ART (data/monsters.ts)
                                          and the url count in render/artPaths.test.ts, all in the working tree
   plan-json                              write art-factory/starlantern/roster-plan.json (the exact lists per round)
@@ -894,7 +895,28 @@ def review_copy(rnd):
     return WORK / 'review' / f'roster-{rnd}-review.md'
 
 
-def do_approve(reg, rnd, by=None, review=None):
+def owner_of(aid):
+    """The roster species an asset belongs to (a foe's sprite, its material icon, its own unique at either size)."""
+    if aid.startswith('enemy-'): return aid[len('enemy-'):]
+    if aid.startswith('icon-'): return materials().get(aid[len('icon-'):])
+    u = aid[len('gear-'):]; u = u[:-len('-large')] if u.endswith('-large') else u
+    return (uniques().get(u) or {}).get('owner')
+
+
+LIVE_RE = re.compile(r'export const ROSTER_LIVE: ReadonlySet<string> = new Set<string>\(\[(.*?)\]\);', re.S)
+
+
+def roster_live_ids(path=None):
+    m = LIVE_RE.search(_read_keep_eol(path or MONSTERS_TS)[0])
+    if not m: raise ValueError(f'ROSTER_LIVE not found in {path or MONSTERS_TS}')
+    return re.findall(r"'([a-z0-9-]+)'", m.group(1))
+
+
+def defer_copy(rnd, aid):
+    return WORK / 'review' / f'roster-{rnd}-defer-{aid}.md'
+
+
+def do_approve(reg, rnd, by=None, review=None, defer=None):
     """R0: the USER's approval of the style sample (their words and the date in `by`). R1-R4 (ruling 21) and the forget
     chip (ruling 27): an independent fresh-context review record (`review`) whose lines `- <id> <sha256> 通過` cover every
     asset of the round; no user words are asked for or taken. The record is kept at work/review/roster-<round>-review.md
@@ -914,6 +936,14 @@ def do_approve(reg, rnd, by=None, review=None):
         if not reg.data.get('roster_style_approved'):
             raise PermissionError('roster_style_approved is missing: the user has not approved the R0 style sample yet')
         if not reviews or any(not Path(r).is_file() for r in reviews): raise PermissionError(f'no independent review record at {review}')
+    defer = dict(defer or {})   # {asset: the review record that failed it}: approved and published without it (controller 2026-10-28)
+    if defer:
+        if rnd == 'r0': raise ValueError('R0 is the style sample: nothing in it is deferred')
+        live = set(roster_live_ids()); mine = set(batch_assets(rnd))
+        for aid, why in defer.items():
+            if aid not in mine: raise ValueError(f'{aid} is not an asset of {rnd}; only an asset of the round can be deferred')
+            if not why or not Path(why).is_file(): raise PermissionError(f'deferring {aid} needs the review record that failed it ({why})')
+            if owner_of(aid) in live: raise PermissionError(f'{aid}: its species {owner_of(aid)} is live, so its art cannot be deferred')
     sp = shown_path(rnd)
     if not sp.exists(): raise PermissionError(f'no review page record for {rnd} ({sp}); build and show the review page first')
     shown = json.loads(sp.read_text(encoding='utf-8')).get('parts', {})
@@ -921,7 +951,7 @@ def do_approve(reg, rnd, by=None, review=None):
     for r in reviews:
         ok, wrong = review_passes(Path(r).read_text(encoding='utf-8')); bad += wrong
         for a, h in ok.items(): passed.setdefault(a, set()).add(h)
-    aids = batch_assets(rnd); problems = {}
+    aids = [a for a in batch_assets(rnd) if a not in defer]; problems = {}
     if not shown: problems['nothing was shown'] = [rnd]
     if bad: problems['review lines not in the form "- <id> <sha256> 通過"'] = bad
     for aid in aids:
@@ -960,6 +990,13 @@ def do_approve(reg, rnd, by=None, review=None):
         e = reg.data['assets'][aid]
         if e['status'] == 'qa_passed': e['status'] = 'approved'; e['approved_by'] = who; done.append(aid)
     if reps: rec['repairs'] = {a: r['to_sha256'] for a, r in reps.items()}
+    if defer:
+        rec['deferred'] = {}
+        for aid, why in defer.items():
+            k = defer_copy(rnd, aid); k.parent.mkdir(parents=True, exist_ok=True)
+            if Path(why).resolve() != k.resolve(): shutil.copyfile(why, k)
+            rec['deferred'][aid] = {'reason': repo_path(k), 'sha256': sha256(k), 'owner': owner_of(aid)}
+            reg.data['assets'][aid]['deferred'] = {'batch': lab, 'reason': repo_path(k), 'date': today}
     for r in reps.values(): r['status'] = 'approved'
     reg.data.setdefault('approved_batches', {})[lab] = rec
     if rnd == 'r0':
@@ -1053,7 +1090,8 @@ def do_publish(reg, rnd, public=None):
     rec = reg.data.get('approved_batches', {}).get(lab)
     if not rec: raise PermissionError(f'round {rnd} has no current approval; build its review page and approve it first')
     shown = rec.get('shown') if isinstance(rec.get('shown'), dict) else {}
-    aids = batch_assets(rnd); problems = {}; todo = []
+    deferred = rec.get('deferred') or {}   # recorded at approval: no runtime file, no manifest url, no count, owner not in ROSTER_ART
+    aids = [a for a in batch_assets(rnd) if a not in deferred]; problems = {}; todo = []
     for aid in aids:
         e = reg.data['assets'].get(aid, {}); f = A._final_path(e['final']) if e.get('final') else None
         if e.get('status') not in ('approved', 'published'): problems.setdefault(f'status {e.get("status")}', []).append(aid); continue
@@ -1110,7 +1148,7 @@ def do_publish(reg, rnd, public=None):
             own.setdefault('repaired', {})[aid] = {'from': rep['from_sha256'], 'to': rep['to_sha256'], 'with': lab}
     reg._save(); reg.write_manifest(public)
     if not todo: return []
-    if ROUNDS.get(rnd): add_roster_art(ROUNDS[rnd])
+    if ROUNDS.get(rnd): add_roster_art([e for e in ROUNDS[rnd] if e not in {d.get('owner') for d in deferred.values()}])
     foes = sum(a.startswith('enemy-') for a in todo); icons = sum(a.startswith('icon-') and a != FORGET_ASSET for a in todo)
     gear = sum(a.startswith('gear-') and not a.endswith('-large') for a in todo)
     who = rec.get('by') or f'independent review {rec.get("date")}'
@@ -1122,7 +1160,11 @@ def do_publish(reg, rnd, public=None):
 
 def approve(argv):
     reviews = [argv[i + 1] for i, a in enumerate(argv) if a == '--review' and i + 1 < len(argv)]   # --review may repeat
-    print(json.dumps(do_approve(_registry(), G._arg(argv, '--batch'), by=G._arg(argv, '--by'), review=reviews or None), ensure_ascii=False))
+    defers = [argv[i + 1] for i, a in enumerate(argv) if a == '--defer' and i + 1 < len(argv)]
+    reasons = [argv[i + 1] for i, a in enumerate(argv) if a == '--reason' and i + 1 < len(argv)]
+    if len(defers) != len(reasons): raise ValueError('each --defer ASSET needs its own --reason RECORD')
+    print(json.dumps(do_approve(_registry(), G._arg(argv, '--batch'), by=G._arg(argv, '--by'), review=reviews or None,
+                                defer=dict(zip(defers, reasons)) or None), ensure_ascii=False))
 
 
 def publish(argv):

@@ -721,3 +721,53 @@ def test_the_approve_cli_takes_the_review_flag_more_than_once(factory, review, m
     monkeypatch.setattr(R, '_registry', lambda: A.Registry(R.REG_PATH))
     R.approve(['--batch', 'r1', '--review', str(a), '--review', str(b)])
     assert len(A.Registry(R.REG_PATH).data['approved_batches']['roster-r1']['reviews']) == 2
+
+
+# --- controller ruling 2026-10-28 (R3 veil): a recorded deferral of one asset out of a round's approval and publish ----------
+def _defer_setup(factory, review):
+    lines = _r1_record(factory, review)
+    keep = [l for l in lines if l.split()[1] != 'icon-wight-wick']
+    rec = factory / 'rec.md'; rec.write_text('\n'.join(keep) + '\n', encoding='utf-8')
+    why = factory / 'veil-review.md'; why.write_text('FAIL icon-wight-wick: still unreadable\n', encoding='utf-8')
+    return rec, why
+
+
+def test_approve_defers_a_recorded_asset_and_approves_the_rest(factory, review, rooted):
+    rec, why = _defer_setup(factory, review)
+    _refused(factory, 'r1', review=str(rec))                                  # without the deferral the round is short
+    done = R.do_approve(A.Registry(R.REG_PATH), 'r1', review=str(rec), defer={'icon-wight-wick': str(why)})
+    assert set(done) == set(R.batch_assets('r1')) - {'icon-wight-wick'}
+    reg = A.Registry(R.REG_PATH); ab = reg.data['approved_batches']['roster-r1']
+    kept = R.WORK / 'review' / 'roster-r1-defer-icon-wight-wick.md'
+    assert ab['deferred'] == {'icon-wight-wick': {'reason': R.repo_path(kept), 'sha256': R.sha256(why), 'owner': 'lamp-wight'}}
+    assert kept.read_bytes() == why.read_bytes()
+    e = reg.get('icon-wight-wick')
+    assert e['status'] == 'qa_passed' and e['deferred']['batch'] == 'roster-r1' and 'icon-wight-wick' not in ab['shown']
+
+
+def test_defer_refuses_a_live_owner_an_asset_outside_the_round_or_no_reason(factory, review, rooted):
+    rec, why = _defer_setup(factory, review)
+    R.MONSTERS_TS.write_text(MONSTERS.replace("ROSTER_LIVE: ReadonlySet<string> = new Set<string>([])",
+                                              "ROSTER_LIVE: ReadonlySet<string> = new Set<string>(['lamp-wight'])"), encoding='utf-8')
+    _refused(factory, 'r1', review=str(rec), defer={'icon-wight-wick': str(why)})          # its species is live
+    R.MONSTERS_TS.write_text(MONSTERS, encoding='utf-8')
+    _refused(factory, 'r1', review=str(rec), defer={'icon-wight-wick': str(factory / 'nope.md')})   # no reason record
+    _refused(factory, 'r1', review=str(rec), defer={'icon-wight-wick': str(why), 'icon-faded-letter': str(why)})   # not R1's
+    assert not (R.WORK / 'review' / 'roster-r1-defer-icon-wight-wick.md').exists()
+
+
+def test_publish_leaves_a_deferred_asset_and_its_owner_out_of_runtime_manifest_counts_and_roster_art(factory, review, rooted):
+    public = rooted; rec, why = _defer_setup(factory, review)
+    R.do_approve(A.Registry(R.REG_PATH), 'r1', review=str(rec), defer={'icon-wight-wick': str(why)})
+    total0 = R.url_totals()
+    done = R.do_publish(A.Registry(R.REG_PATH), 'r1', public)
+    reg = A.Registry(R.REG_PATH)
+    assert set(done) == set(R.batch_assets('r1')) - {'icon-wight-wick'}
+    assert not (public / 'assets/games/starlantern/icon/wight-wick.png').exists()
+    e = reg.get('icon-wight-wick'); assert e['status'] == 'qa_passed' and 'runtime' not in e
+    urls = json.loads((public / 'assets/games/starlantern/manifest.json').read_text(encoding='utf-8'))['urls']
+    assert '/assets/games/starlantern/icon/wight-wick.png' not in urls and len(urls) == len(done)
+    assert R.url_totals() == (total0[0] + len(done), total0[1] + len(done))
+    art = R.roster_art_ids(R.MONSTERS_TS)
+    assert 'lamp-wight' not in art and set(art) == set(R.ROUNDS['r1']) - {'lamp-wight'}
+    assert (public / 'assets/games/starlantern/enemy/lamp-wight.png').is_file()         # its other art is out, unused until then
