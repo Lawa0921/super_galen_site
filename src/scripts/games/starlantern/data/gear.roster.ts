@@ -6,14 +6,15 @@ import type { SpecialDef } from './gear';
  * `owner`. Merged into SPECIALS for lookups, but never in a drop pool (`regionSpecials`, `generalLegendaries`,
  * `pickSpecial` leave any `owner` out) and never silhouetted (`region: null`). It comes by replacing a legendary-tier drop
  * in its owner's fight, or by crafting once its owner has fallen (plan C). The `lore` lines are neutral until the bestiary
- * writing rewrites them (the W steps).
+ * writing rewrites them (the W steps; L1a wrote the first wave's five: the false moon's, the bell warden's and the shallow
+ * road's three bosses').
  */
 type Row = [id: string, name: string, owner: string, source: 'boss' | 'elite', slot: GearSlot, fixed: AnyStat[], lore: string, weaponKind?: WeaponKind];
 
 const ROWS: Row[] = [
   // the wardens (spec §5.5)
-  ['moonless-mirror', '無月之鏡', 'false-moon', 'elite', 'offhand', ['res', 'heal', 'int'], '鏡面映著一輪不在天上的月，照久了，連影子都變得溫柔。'],
-  ['unrung-clapper', '不響的鐘舌', 'bell-warden', 'elite', 'neck', ['sleepRes', 'tpCost', 'wil'], '從沒敲響過的鐘舌，掛在胸前卻意外地讓人安心。'],
+  ['moonless-mirror', '無月之鏡', 'false-moon', 'elite', 'offhand', ['res', 'heal', 'int'], '鏡子裡掛著一輪天上沒有的月亮。它從不預告明天，只陪照鏡子的人把頭髮梳好。'],
+  ['unrung-clapper', '不響的鐘舌', 'bell-warden', 'elite', 'neck', ['sleepRes', 'tpCost', 'wil'], '守門人只用鐘槌敲，這根鐘舌一次也沒響過。掛在頸上沉甸甸的，夜裡倒是睡得特別安穩。'],
   ['ancestor-gauntlet', '祖傳的手甲', 'toppled-automaton', 'elite', 'hands', ['armor', 'atk', 'int'], '關節裡的齒輪還在轉，彷彿記得上一個主人的握力。'],
   ['requiem-staff', '鎮魂之杖', 'requiem-conductor', 'elite', 'weapon', ['mag', 'heal', 'wil'], '杖頭一揮，四周的雜音便安靜下來，只剩一段慢板。', 'staff'],
   ['brood-lantern', '巢燈', 'lantern-brood', 'elite', 'neck', ['hp', 'res', 'gauge'], '殼裡透出暖光，提在手上像抱著一顆小小的心跳。'],
@@ -24,9 +25,9 @@ const ROWS: Row[] = [
   ['hungry-purse', '空腹的錢袋', 'locked-vault', 'elite', 'ring', ['goldFind', 'matFind', 'agi'], '錢袋永遠覺得自己不夠飽，所以總能多撿一點。'],
   ['gatewarden-shield', '守門者之盾', 'gate-breaker', 'elite', 'offhand', ['block', 'def', 'hp'], '盾面坑坑疤疤，卻一次也沒讓身後的人受傷。'],
   // the main road's bosses (spec §5.6)
-  ['fog-halberd', '霧門長戟', 'fog-warden', 'boss', 'weapon', ['atk', 'str', 'eliteDmg'], '戟刃揮過的地方，霧會自己讓出一條路。', 'spear'],
-  ['silent-chime', '無聲鐘墜', 'silent-bell', 'boss', 'neck', ['sleepRes', 'tpCost', 'res'], '輕輕一晃也沒有聲音，心卻跟著靜了下來。'],
-  ['borrowed-blade', '借來的劍', 'hollow-champion', 'boss', 'weapon', ['multi', 'critDmg', 'str'], '劍柄上留著好幾種握法的痕跡，借來的招式也能變成自己的。', 'sword'],
+  ['fog-halberd', '霧門長戟', 'fog-warden', 'boss', 'weapon', ['atk', 'str', 'eliteDmg'], '戟刃一揮，霧就自己讓出一條路。守了一輩子門的傢伙，開起路來也很在行。', 'spear'],
+  ['silent-chime', '無聲鐘墜', 'silent-bell', 'boss', 'neck', ['sleepRes', 'tpCost', 'res'], '一顆不會響的小鐘。戴著它念咒，聲音會放得很輕，力氣也省下不少。'],
+  ['borrowed-blade', '借來的劍', 'hollow-champion', 'boss', 'weapon', ['multi', 'critDmg', 'str'], '劍柄上磨出了好幾種握法。握得久了，總有一種會變成你自己的。', 'sword'],
   ['archon-crown', '古城之冠', 'old-city-archon', 'boss', 'head', ['res', 'tpCost', 'int'], '冠上的金漆斑駁，戴上它的人說話都慢了半拍。'],
   ['glutton-gauntlet', '飽食手甲', 'gorged-beast', 'boss', 'hands', ['atk', 'crit', 'def'], '吃得多、打得重，手甲本人似乎很滿意這個安排。'],
   ['cradled-light', '搖籃之光', 'lantern-mother', 'boss', 'neck', ['heal', 'wil', 'gauge'], '一小團光蜷在鍊墜裡，像在等誰把它抱回家。'],
