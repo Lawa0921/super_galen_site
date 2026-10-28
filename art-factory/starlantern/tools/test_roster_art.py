@@ -777,3 +777,56 @@ def test_publish_holds_a_deferred_asset_and_its_owners_other_art_out_of_runtime_
     assert 'lamp-wight' not in art and set(art) == set(R.ROUNDS['r1']) - {'lamp-wight'}
     t = R.ARTPATHS_TEST.read_bytes().decode('utf-8')
     assert f'12 foes, 12 material icons, 3 own uniques x 2 (deferred: icon-wight-wick with lamp-wight) = {total0[0] + len(done)}' in t
+
+
+# --- plan Task E3c (controller 2026-10-28): a deferred asset approved and published later, on its own review record --------
+def _deferred_published(factory, review, rooted):
+    rec, why = _defer_setup(factory, review)
+    R.do_approve(A.Registry(R.REG_PATH), 'r1', review=str(rec), defer={'icon-wight-wick': str(why)})
+    R.do_publish(A.Registry(R.REG_PATH), 'r1', rooted)
+    reg = A.Registry(R.REG_PATH)                                                  # the redraw: a new final for the deferred icon
+    reg.set('icon-wight-wick', final=_png(factory / 'work' / 'sheet-icons-roster-1' / 'icon-wight-wick-a2.png', colour=(90, 150, 60)))
+    review.main('r1')                                                             # the review page shows the new bytes
+    shown = json.loads(R.shown_path('r1').read_text(encoding='utf-8'))['parts']
+    later = factory / 'veil-round6.md'
+    later.write_text(f'# round 6\n- icon-wight-wick {shown["icon-wight-wick"]} 通過\n', encoding='utf-8')
+    return later, shown['icon-wight-wick']
+
+
+def test_a_deferred_asset_is_approved_later_on_its_own_record(factory, review, rooted):
+    later, h = _deferred_published(factory, review, rooted)
+    before = {a: e.get('status') for a, e in A.Registry(R.REG_PATH).data['assets'].items()}
+    done = R.do_approve(A.Registry(R.REG_PATH), 'r1', review=str(later), deferred=True)
+    reg = A.Registry(R.REG_PATH); ab = reg.data['approved_batches']['roster-r1']
+    assert done == ['icon-wight-wick'] and reg.get('icon-wight-wick')['status'] == 'approved'
+    assert {a: e.get('status') for a, e in reg.data['assets'].items() if a != 'icon-wight-wick'} == {a: s for a, s in before.items() if a != 'icon-wight-wick'}
+    kept = R.WORK / 'review' / 'roster-r1-deferred-review.md'
+    assert kept.read_bytes() == later.read_bytes() and ab['shown']['icon-wight-wick'] == h
+    d = ab['deferred']['icon-wight-wick']
+    assert d['completed'] == {'review': R.repo_path(kept), 'review_sha256': R.sha256(kept), 'sha256': h, 'date': d['completed']['date']}
+
+
+def test_a_deferred_asset_approved_later_publishes_with_its_owners_held_art(factory, review, rooted):
+    later, h = _deferred_published(factory, review, rooted); public = rooted
+    R.do_approve(A.Registry(R.REG_PATH), 'r1', review=str(later), deferred=True)
+    total0 = R.url_totals()
+    done = R.do_publish(A.Registry(R.REG_PATH), 'r1', public)
+    reg = A.Registry(R.REG_PATH)
+    assert set(done) == {'icon-wight-wick', 'enemy-lamp-wight'}
+    assert R.sha256(public / 'assets/games/starlantern/icon/wight-wick.png') == h
+    assert (public / 'assets/games/starlantern/enemy/lamp-wight.png').is_file() and reg.get('enemy-lamp-wight')['status'] == 'published'
+    assert 'lamp-wight' in R.roster_art_ids(R.MONSTERS_TS) and R.url_totals() == (total0[0] + 2, total0[1] + 2)
+    urls = json.loads((public / 'assets/games/starlantern/manifest.json').read_text(encoding='utf-8'))['urls']
+    assert '/assets/games/starlantern/icon/wight-wick.png' in urls and '/assets/games/starlantern/enemy/lamp-wight.png' in urls
+    snap = R.REG_PATH.read_bytes()
+    assert R.do_publish(A.Registry(R.REG_PATH), 'r1', public) == [] and R.REG_PATH.read_bytes() == snap
+
+
+def test_approving_a_deferred_asset_later_refuses_without_a_pass_a_deferral_or_with_held_art_changed(factory, review, rooted):
+    later, h = _deferred_published(factory, review, rooted)
+    bad = factory / 'bad.md'; bad.write_text(f'- icon-wight-wick {"0" * 64} 通過\n', encoding='utf-8')
+    _refused(factory, 'r1', review=str(bad), deferred=True)                      # the record does not pass the shown bytes
+    reg = A.Registry(R.REG_PATH); _png(A._final_path(reg.get('enemy-lamp-wight')['final']), (60, 64), colour=(1, 2, 3))
+    _refused(factory, 'r1', review=str(later), deferred=True)                    # the owner's held art changed since its approval
+    with pytest.raises(PermissionError, match='no deferred'):
+        R.do_approve(A.Registry(R.REG_PATH), 'r2', review=str(later), deferred=True)

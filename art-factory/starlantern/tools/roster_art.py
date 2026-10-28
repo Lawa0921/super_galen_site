@@ -18,6 +18,9 @@ forget chip. Structure as gear_art.py (plan 5d).
                                          whose 通過 lines together cover every image's current sha256; no user approval is
                                          asked for or accepted. [--defer ASSET --reason RECORD ...]: approve and publish the
                                          round without ASSET (the record that failed it kept; refused when its species is live)
+  approve --batch rN --deferred --review PATH [...]
+                                         Task E3c: the round's deferred assets alone, later, on their own review record(s); the
+                                         next publish of the round sends them out with their owners' held art
   publish --batch rN                     runtime, copy to public/, manifest, the round's ids into ROSTER_ART (data/monsters.ts)
                                          and the url count in render/artPaths.test.ts, all in the working tree
   plan-json                              write art-factory/starlantern/roster-plan.json (the exact lists per round)
@@ -916,7 +919,61 @@ def defer_copy(rnd, aid):
     return WORK / 'review' / f'roster-{rnd}-defer-{aid}.md'
 
 
-def do_approve(reg, rnd, by=None, review=None, defer=None):
+def _review_passes_all(reviews):
+    """({asset: every sha256 the records pass}, [malformed lines]) over several review records."""
+    passed, bad = {}, []
+    for r in reviews:
+        ok, wrong = review_passes(Path(r).read_text(encoding='utf-8')); bad += wrong
+        for a, h in ok.items(): passed.setdefault(a, set()).add(h)
+    return passed, bad
+
+
+def approve_deferred(reg, rnd, reviews):
+    """Plan Task E3c: approve a round's deferred assets later, on their own review record(s), without touching what the round
+    already approved or published. Each deferred asset must be picked, QA passed under the current spec, the bytes the review
+    page shows, and passed by a record; its owner's held art must still be the bytes approved with the round. The records
+    are kept as work/review/roster-<rN>-deferred-review*.md; the deferral is marked completed and the next publish of the
+    round sends the asset out with its owner's held art."""
+    lab = label(rnd); rec = reg.data.get('approved_batches', {}).get(lab) or {}
+    pending = {a: d for a, d in (rec.get('deferred') or {}).items() if not d.get('completed')}
+    if not pending: raise PermissionError(f'{rnd} has no deferred asset waiting for a later approval')
+    if not reviews or any(not Path(r).is_file() for r in reviews): raise PermissionError(f'no independent review record at {reviews}')
+    passed, bad = _review_passes_all(reviews); problems = {}
+    if bad: problems['review lines not in the form "- <id> <sha256> 通過"'] = bad
+    sp = shown_path(rnd); shown = json.loads(sp.read_text(encoding='utf-8')).get('parts', {}) if sp.exists() else {}
+    owners = {d.get('owner') for d in pending.values()}; now = {}
+    for aid in pending:
+        e = reg.data['assets'].get(aid, {}); f = A._final_path(e['final']) if e.get('final') else None
+        if not e.get('chosen_attempt') or f is None or not f.is_file(): problems.setdefault('not picked', []).append(aid); continue
+        if e.get('status') not in ('qa_passed', 'approved'): problems.setdefault(f'status {e.get("status")}', []).append(aid); continue
+        if A.qa_stale(e): problems.setdefault('QA recorded under an older spec (pick it again)', []).append(aid); continue
+        h = sha256(f); now[aid] = h
+        if h != shown.get(aid): problems.setdefault('changed since (or missing from) the review page', []).append(aid)
+        elif h not in passed.get(aid, ()): problems.setdefault('not passed by the independent review (id, sha256, 通過)', []).append(aid)
+    for aid in batch_assets(rnd):
+        if aid in pending or owner_of(aid) not in owners: continue
+        e = reg.data['assets'].get(aid, {}); f = A._final_path(e['final']) if e.get('final') else None
+        if e.get('status') != 'approved' or f is None or not f.is_file() or sha256(f) != (rec.get('shown') or {}).get(aid):
+            problems.setdefault("the owner's held art changed since the round's approval", []).append(aid)
+    if problems: raise PermissionError(f'refusing to approve the deferred assets of {rnd}: {problems}')
+    today = datetime.date.today().isoformat(); kept = []
+    for i, r in enumerate(reviews):
+        k = WORK / 'review' / (f'roster-{rnd}-deferred-review.md' if i == 0 else f'roster-{rnd}-deferred-review-{i + 1}.md')
+        k.parent.mkdir(parents=True, exist_ok=True)
+        if Path(r).resolve() != k.resolve(): shutil.copyfile(r, k)
+        kept.append(k)
+    who = f'independent review {", ".join(repo_path(k) for k in kept)} ({today})'
+    for aid, d in pending.items():
+        e = reg.data['assets'][aid]; e['status'] = 'approved'; e['approved_by'] = who
+        if isinstance(e.get('deferred'), dict): e['deferred']['completed'] = today
+        rec['shown'][aid] = now[aid]
+        d['completed'] = {'review': repo_path(kept[0]), 'review_sha256': sha256(kept[0]), 'sha256': now[aid], 'date': today}
+        if len(kept) > 1: d['completed']['reviews'] = [{'record': repo_path(k), 'sha256': sha256(k)} for k in kept]
+    reg._save()
+    return list(pending)
+
+
+def do_approve(reg, rnd, by=None, review=None, defer=None, deferred=False):
     """R0: the USER's approval of the style sample (their words and the date in `by`). R1-R4 (ruling 21) and the forget
     chip (ruling 27): an independent fresh-context review record (`review`) whose lines `- <id> <sha256> 通過` cover every
     asset of the round; no user words are asked for or taken. The record is kept at work/review/roster-<round>-review.md
@@ -927,6 +984,7 @@ def do_approve(reg, rnd, by=None, review=None, defer=None):
     whole round and changes nothing."""
     lab = label(rnd)
     reviews = [review] if isinstance(review, (str, Path)) else list(review or [])   # several records: one per review round
+    if deferred: return approve_deferred(reg, rnd, reviews)                           # plan Task E3c
     if rnd == 'r0':
         if reviews: raise ValueError('R0 is the style sample: only the user approves it (--by with their words and the date), never a review record')
         if not by or not DATE.search(by) or not DATE.sub('', by).strip(' :：,，;；-—'):
@@ -947,10 +1005,7 @@ def do_approve(reg, rnd, by=None, review=None, defer=None):
     sp = shown_path(rnd)
     if not sp.exists(): raise PermissionError(f'no review page record for {rnd} ({sp}); build and show the review page first')
     shown = json.loads(sp.read_text(encoding='utf-8')).get('parts', {})
-    passed, bad = {}, []   # {asset: every sha256 a record passes}: an asset passes when its current bytes are among them
-    for r in reviews:
-        ok, wrong = review_passes(Path(r).read_text(encoding='utf-8')); bad += wrong
-        for a, h in ok.items(): passed.setdefault(a, set()).add(h)
+    passed, bad = _review_passes_all(reviews)   # {asset: every sha256 a record passes}: its current bytes must be among them
     aids = [a for a in batch_assets(rnd) if a not in defer]; problems = {}
     if not shown: problems['nothing was shown'] = [rnd]
     if bad: problems['review lines not in the form "- <id> <sha256> 通過"'] = bad
@@ -1090,7 +1145,8 @@ def do_publish(reg, rnd, public=None):
     rec = reg.data.get('approved_batches', {}).get(lab)
     if not rec: raise PermissionError(f'round {rnd} has no current approval; build its review page and approve it first')
     shown = rec.get('shown') if isinstance(rec.get('shown'), dict) else {}
-    deferred = rec.get('deferred') or {}   # recorded at approval: no runtime file, no manifest url, no count, owner not in ROSTER_ART
+    # recorded at approval and not yet approved later (Task E3c): no runtime file, no manifest url, no count, owner not in ROSTER_ART
+    deferred = {a: d for a, d in (rec.get('deferred') or {}).items() if not d.get('completed')}
     owners = {d.get('owner') for d in deferred.values()}
     # the owner's other art waits too: a published url must be a known art url (allArtUrls follows ROSTER_ART)
     aids = [a for a in batch_assets(rnd) if a not in deferred and owner_of(a) not in owners]; problems = {}; todo = []
@@ -1167,7 +1223,7 @@ def approve(argv):
     reasons = [argv[i + 1] for i, a in enumerate(argv) if a == '--reason' and i + 1 < len(argv)]
     if len(defers) != len(reasons): raise ValueError('each --defer ASSET needs its own --reason RECORD')
     print(json.dumps(do_approve(_registry(), G._arg(argv, '--batch'), by=G._arg(argv, '--by'), review=reviews or None,
-                                defer=dict(zip(defers, reasons)) or None), ensure_ascii=False))
+                                defer=dict(zip(defers, reasons)) or None, deferred='--deferred' in argv), ensure_ascii=False))
 
 
 def publish(argv):
