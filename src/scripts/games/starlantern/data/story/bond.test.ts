@@ -61,13 +61,15 @@ describe('bond data', () => {
   it('the taste table', () => {
     // Spec §6.2, cell by cell (reviewed against the lore ledger in bond plan Task 1, spec §0 D19).
     expect(GIFT_TASTE).toEqual({
-      rin: { loved: ['dusk-cloth', 'thorn-fang'], liked: ['shade-crystal', 'star-tear'], declined: ['king-scale'], healed: {} },
-      selene: { loved: ['star-tear', 'crystal-shell'], liked: ['moss', 'ice-crystal', 'star-stone'], declined: ['old-coin'], healed: { 'old-coin': 'liked' } },
+      // Roster plan L1a (ruling 13): Rin's keepsake and Selene's, declined until her pieces are all told, liked after.
+      rin: { loved: ['dusk-cloth', 'thorn-fang'], liked: ['shade-crystal', 'star-tear'], declined: ['king-scale', 'tower-dust'], healed: { 'tower-dust': 'liked' } },
+      selene: { loved: ['star-tear', 'crystal-shell'], liked: ['moss', 'ice-crystal', 'star-stone'], declined: ['old-coin', 'moon-silver'], healed: { 'old-coin': 'liked', 'moon-silver': 'liked' } },
       chizuru: { loved: ['old-coin', 'moss'], liked: ['star-stone', 'crystal-shell'], declined: ['ice-crystal', 'frost-heart'], healed: {} },
       safira: { loved: ['lizard-scale', 'king-scale'], liked: ['star-stone', 'bat-wing'], declined: ['blaze-core'], healed: { 'blaze-core': 'liked' } },
       sylvie: { loved: ['moss', 'thorn-fang'], liked: ['bat-wing', 'lizard-scale'], declined: ['mire-gland'], healed: { 'mire-gland': 'neutral' } },
       noel: { loved: ['storm-stone', 'crystal-shell'], liked: ['king-scale', 'star-tear'], declined: ['star-stone'], healed: { 'star-stone': 'liked' } },
-      bobby: { loved: ['ancient-gear', 'iron-shard'], liked: ['star-stone', 'crystal-shell', 'storm-stone'], declined: ['mire-gland'], healed: {} },
+      // Roster plan L2a (ruling 13): Bobby's keepsake, the fallen automaton's core, declined until her pieces are all told.
+      bobby: { loved: ['ancient-gear', 'iron-shard'], liked: ['star-stone', 'crystal-shell', 'storm-stone'], declined: ['mire-gland', 'automaton-core'], healed: { 'automaton-core': 'liked' } },
       liz: { loved: ['old-coin', 'king-scale'], liked: ['star-tear', 'ancient-gear'], declined: ['shade-crystal'], healed: { 'shade-crystal': 'neutral' } },
       scarlet: { loved: ['blaze-core', 'dusk-cloth'], liked: ['king-scale', 'star-stone'], declined: ['iron-shard'], healed: { 'iron-shard': 'liked' } },
     });

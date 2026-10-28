@@ -10,10 +10,12 @@ export const ACT_DEPTHS: Record<ActNode, number> = { act2: 4, act3: 10, act4: 16
 export const ACT_NODES: ActNode[] = ['act2', 'act3', 'act4'];
 export const FINALE_DEPTH = 30;
 /**
- * The finale's boss: the 燈喰之獸 under another name (spec §8.4; the name is `STORY.finaleBossName`). `power` multiplies its hp, atk and mag after the party-size
- * scale (1 leaves the ordinary boss as it is). It is a balance knob: 6b Task 20c set it 1 -> 0.8 (band 19b, the finale, .125 -> .575).
+ * The finale's boss: the 燈喰之獸's numbers and skills in the lantern-mother's own shape (spec §8.4; roster plan L2c, ruling
+ * 11: `lantern-mother` is the lantern-eater's copy with its own id and picture; the name is `STORY.finaleBossName`). `power`
+ * multiplies its hp, atk and mag after the party-size scale (1 leaves the ordinary boss as it is). It is a balance knob: 6b
+ * Task 20c set it 1 -> 0.8 (band 19b, the finale, .125 -> .575).
  */
-export const FINALE_BOSS = { base: 'lanterneater', power: 0.8 };
+export const FINALE_BOSS = { base: 'lantern-mother', power: 0.8 };
 
 export type Stage = 'prologue' | 'act1' | 'act2' | 'act3' | 'act4' | 'after';
 export const STAGES: Stage[] = ['prologue', 'act1', 'act2', 'act3', 'act4', 'after'];

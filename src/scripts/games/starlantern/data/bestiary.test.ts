@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { BESTIARY, type BestiaryText } from './bestiary.zh-TW';
 import { CHARACTERS, CHARACTER_IDS } from './characters';
 import { ENEMIES } from './enemies';
+import { SPECIALS } from './gear';
 import { LEGACY_ENEMY_IDS, ROSTER_LIVE } from './monsters';
 import { STAGES, type Stage, type StoryGate } from './story/scenes';
 import { withRosterLive } from '../engine/testing';
@@ -125,6 +126,42 @@ function problemsOf(id: string, e: BestiaryText): string[] {
   return out;
 }
 
+/** Roster plan L1 (spec §13.5 R0 and R1): the eighteen of the first live wave. */
+const WAVE_1 = [
+  'paper-moth', 'lamp-wight', 'root-hound', 'tin-soldier', 'dust-mimic', 'market-ghost', 'tongueless-bell', 'hollow-hunter',
+  'mist-twin', 'moon-crow', 'bell-watcher', 'sleepwalker', 'hoarder', 'fog-warden', 'silent-bell', 'hollow-champion',
+  'false-moon', 'bell-warden',
+];
+/** The neutral lore PR A gave the first wave's five own uniques (data/gear.roster.ts), for L1a to write over. */
+const L1_NEUTRAL_LORE: Record<string, string> = {
+  'moonless-mirror': '鏡面映著一輪不在天上的月，照久了，連影子都變得溫柔。',
+  'unrung-clapper': '從沒敲響過的鐘舌，掛在胸前卻意外地讓人安心。',
+  'fog-halberd': '戟刃揮過的地方，霧會自己讓出一條路。',
+  'silent-chime': '輕輕一晃也沒有聲音，心卻跟著靜了下來。',
+  'borrowed-blade': '劍柄上留著好幾種握法的痕跡，借來的招式也能變成自己的。',
+};
+
+/** Roster plan L2 (spec §13.5 R2): the twenty-seven of the second live wave, the lantern-mother with them (L2c). */
+const WAVE_2 = [
+  'old-city-sentinel', 'requiem-choir', 'lantern-larva', 'epitaph-golem', 'ancestor-automaton', 'ash-archivist', 'wick-shade',
+  'keeper-echo', 'ember-maw', 'sorrow-crystal', 'deep-tendril', 'music-box', 'paper-cranes', 'lost-shadow', 'returning-light',
+  'gilded-hoarder', 'old-city-archon', 'gorged-beast', 'lantern-mother', 'forgotten-festival', 'starless-whale', 'stopped-clock',
+  'first-lantern', 'archon-hand', 'toppled-automaton', 'requiem-conductor', 'lantern-brood',
+];
+/** The neutral lore PR A gave the second wave's ten own uniques (data/gear.roster.ts), for L2a to write over. */
+const L2_NEUTRAL_LORE: Record<string, string> = {
+  'ancestor-gauntlet': '關節裡的齒輪還在轉，彷彿記得上一個主人的握力。',
+  'requiem-staff': '杖頭一揮，四周的雜音便安靜下來，只剩一段慢板。',
+  'brood-lantern': '殼裡透出暖光，提在手上像抱著一顆小小的心跳。',
+  'archon-crown': '冠上的金漆斑駁，戴上它的人說話都慢了半拍。',
+  'glutton-gauntlet': '吃得多、打得重，手甲本人似乎很滿意這個安排。',
+  'cradled-light': '一小團光蜷在鍊墜裡，像在等誰把它抱回家。',
+  'festival-mask': '面具的笑臉一直沒變，戴上它的人也跟著想笑。',
+  'whale-song-ring': '貼近耳朵，能聽見很遠很遠的低鳴。',
+  'still-hand-boots': '穿上它的人，總覺得時間替自己多停了一秒。',
+  'first-lantern-staff': '杖頂的火苗很小，卻從來沒有熄過。',
+};
+
 const entries = (): [string, BestiaryText][] => Object.entries(BESTIARY).filter((x): x is [string, BestiaryText] => !!x[1]);
 
 describe('the bestiary text and its gates (roster plan Task C5)', () => {
@@ -134,6 +171,75 @@ describe('the bestiary text and its gates (roster plan Task C5)', () => {
     expect(missing).toEqual([]);
     // The check itself: a foe made live without an entry is caught.
     withRosterLive(['paper-moth'], () => expect([...ROSTER_LIVE].filter((id) => !BESTIARY[id])).toEqual(BESTIARY['paper-moth'] ? [] : ['paper-moth']));
+  });
+
+  it('the first live wave is written, its story lines behind their gates (L1a)', () => {
+    // Roster plan Task L1a: E1's eighteen, each with an entry that passes the gates below.
+    const missing = WAVE_1.filter((id) => !BESTIARY[id]);
+    expect(missing).toEqual([]);
+    for (const id of WAVE_1) expect(problemsOf(id, BESTIARY[id]!), id).toEqual([]);
+    const gates = (id: string) => BESTIARY[id]!.lines.map((l) => l.after);
+    // Ruling 20: the false moon's first line tells only its turning; Selene's 2nd piece the bright ending, her 3rd that
+    // there is more than one. 新月 is never written (her 5th piece's word, I-201).
+    expect(gates('false-moon')).toEqual([undefined, { seen: ['mem:selene:2'] }, { seen: ['mem:selene:3'] }]);
+    expect(BESTIARY['false-moon']!.lines.some((l) => /新月/.test(l.text))).toBe(false);
+    // Ruling 20, I-222: the bell tower's two remnants may say 靜鐘會 from act 3; never Rin, the bellkeeper, the errand or
+    // the one who walked out of the deep, and the warden's door no stone and no exit (I-12 is Rin's picture).
+    for (const id of ['bell-watcher', 'bell-warden']) {
+      expect(gates(id), id).toEqual([undefined, { seen: ['act3'] }]);
+      const all = [BESTIARY[id]!.trait, ...BESTIARY[id]!.lines.map((l) => l.text)].join('');
+      expect(all, id).not.toMatch(/凜|鐘守|師父|從深處走出來|殺|石門|出口/);
+    }
+    // The hollow ones need no gate (空殼 is the town's common word, spec §4.2): two lines each, open once felled.
+    for (const id of ['hollow-hunter', 'hollow-champion']) expect(gates(id), id).toEqual([undefined, undefined]);
+    // Every other one of the wave is one line, no story.
+    for (const id of WAVE_1.filter((x) => !['false-moon', 'bell-watcher', 'bell-warden', 'hollow-hunter', 'hollow-champion'].includes(x))) {
+      expect(gates(id), id).toEqual([undefined]);
+    }
+  });
+
+  it("the first wave's own uniques carry lore that keeps every gate (L1a)", () => {
+    // Shown when the piece is had, with no gate at all: as a trait is (no secret word, no companion's name).
+    for (const id of ['moonless-mirror', 'unrung-clapper', 'fog-halberd', 'silent-chime', 'borrowed-blade']) {
+      const lore = SPECIALS[id].lore ?? '';
+      expect(problemsOf(id, { trait: lore, lines: [{ text: lore }] }), id).toEqual([]);
+      expect(lore, id).not.toBe(L1_NEUTRAL_LORE[id]);   // rewritten by the W steps, not the placeholder PR A left
+    }
+  });
+
+  it('the second live wave is written, its story lines behind their gates (L2a)', () => {
+    // Roster plan Task L2a: E2's twenty-seven, each with an entry that passes the gates below.
+    const missing = WAVE_2.filter((id) => !BESTIARY[id]);
+    expect(missing).toEqual([]);
+    for (const id of WAVE_2) expect(problemsOf(id, BESTIARY[id]!), id).toEqual([]);
+    const gates = (id: string) => BESTIARY[id]!.lines.map((l) => l.after);
+    const all = (id: string) => [BESTIARY[id]!.trait, ...BESTIARY[id]!.lines.map((l) => l.text)].join('');
+    // Ruling 20, spec §4.2: the nameless lantern-bearer walks down with a lamp; act 4 may tell the legend of the one who made
+    // himself a wick; the hero's 9th piece that every shadow walks the same. Never the sword, never the lamp key.
+    expect(gates('keeper-echo')).toEqual([undefined, { seen: ['act4'] }, { seen: ['mem:hero:9'] }]);
+    expect(all('keeper-echo')).not.toMatch(/劍|燈鑰|每一次，都是一個人做的/);
+    // Spec §4.2: the old city's four may say 艾斯特拉 from act 4.
+    for (const id of ['old-city-sentinel', 'requiem-choir', 'requiem-conductor', 'old-city-archon']) expect(gates(id), id).toEqual([undefined, { seen: ['act4'] }]);
+    // Spec §4.2: the two machines are her family's work from Bobby's 4th piece; never the lamp's workings or its valve.
+    for (const id of ['ancestor-automaton', 'toppled-automaton']) {
+      expect(gates(id), id).toEqual([undefined, { seen: ['mem:bobby:4'] }]);
+      expect(all(id), id).not.toMatch(/閥|燈芯機構|構造圖/);
+    }
+    // Ruling 20, I-223: the lantern-eater's brood says whose young they are only after the finale; the mother is met there alone.
+    for (const id of ['lantern-larva', 'deep-tendril', 'lantern-brood', 'gorged-beast']) expect(gates(id), id).toEqual([undefined, { seen: ['finale'] }]);
+    expect(gates('lantern-mother')).toEqual([{ seen: ['finale'] }]);
+    // Every other one of the wave is one line, no story.
+    const story = ['keeper-echo', 'old-city-sentinel', 'requiem-choir', 'requiem-conductor', 'old-city-archon', 'ancestor-automaton',
+      'toppled-automaton', 'lantern-larva', 'deep-tendril', 'lantern-brood', 'gorged-beast', 'lantern-mother'];
+    for (const id of WAVE_2.filter((x) => !story.includes(x))) expect(gates(id), id).toEqual([undefined]);
+  });
+
+  it("the second wave's own uniques carry lore that keeps every gate (L2a)", () => {
+    for (const id of Object.keys(L2_NEUTRAL_LORE)) {
+      const lore = SPECIALS[id].lore ?? '';
+      expect(problemsOf(id, { trait: lore, lines: [{ text: lore }] }), id).toEqual([]);
+      expect(lore, id).not.toBe(L2_NEUTRAL_LORE[id]);   // rewritten by the W steps, not the placeholder PR A left
+    }
   });
 
   it('no entry for a foe that does not exist', () => {

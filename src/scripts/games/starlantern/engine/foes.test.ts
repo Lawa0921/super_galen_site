@@ -3,7 +3,7 @@ import { BOSS_GROUP_CAP, ROW_MAX, createBattle, intentLabel, planEnemies, resolv
 import { scaleEnemy } from './scaling';
 import { REGIONS } from '../data/regions';
 import { choosable, guardTargets, syncParts, syncRallies } from './foes';
-import { constRng, fullParty, makeBattle, makeCombatant, withRosterLive } from './testing';
+import { constRng, fullParty, makeBattle, makeCombatant, withRosterLive, withRosterOnly } from './testing';
 import { LEGACY_LINEUP, activeIds } from './party';
 import { wardenGroup } from '../data/monsters';
 import { mulberry32, type Rng } from './rng';
@@ -415,11 +415,12 @@ describe('M4 summon (roster plan B4)', () => {
     expect(acted(s, 'e0')).toEqual(['攻擊']);
   });
 
-  it('calls no one not yet live', () => {
+  it('calls no one not yet live', () => withRosterOnly([], () => {
+    // L1b: measures the game as it was with nothing live.
     const r = resolveRound(field(4, 0, caller(9, 'lamp-wight')), defend(field(4)), constRng(0.5));
     expect(r.enemies).toHaveLength(1);
     expect(acted(r, 'e0')).toEqual(['攻擊']);
-  });
+  }));
 
   it('the target id must exist', () => {
     for (const d of Object.values(ENEMIES)) for (const k of d.skills) for (const e of k.effects) {

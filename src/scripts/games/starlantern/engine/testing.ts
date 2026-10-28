@@ -144,3 +144,38 @@ export function withRosterLive<T>(ids: string[], f: () => T): T {
     for (const id of addedArt) art.delete(id);
   }
 }
+
+/**
+ * Roster plan L2b: the roster ids the first go-live wave (L1b) made live, in its order; with `withRosterOnly` it measures
+ * the game as it was with only that wave live, for the pins written for that wave's state.
+ */
+export const WAVE_1_LIVE: readonly string[] = [
+  'paper-moth', 'lamp-wight', 'root-hound', 'tin-soldier', 'dust-mimic', 'market-ghost', 'tongueless-bell', 'hollow-hunter', 'mist-twin',
+  'moon-crow', 'bell-watcher', 'sleepwalker', 'hoarder', 'fog-warden', 'silent-bell', 'hollow-champion', 'false-moon', 'bell-warden',
+];
+
+/**
+ * Roster plan L1b (controller ruling 2026-10-28): runs `f` with exactly `ids` live (their art published too), then puts both
+ * sets back as they were, in their order, when `f` returns, throws, or (async) settles. For the pins written for the
+ * game as it was with nothing live, once a wave is. Test support only: nothing in the game imports it.
+ */
+export function withRosterOnly<T>(ids: string[], f: () => T): T {
+  const art = ROSTER_ART as Set<string>, live = ROSTER_LIVE as Set<string>;
+  const was = { art: [...art], live: [...live] };
+  const restore = () => {
+    live.clear();
+    for (const id of was.live) live.add(id);
+    art.clear();
+    for (const id of was.art) art.add(id);
+  };
+  live.clear();
+  for (const id of ids) { live.add(id); art.add(id); }
+  let later = false;
+  try {
+    const out = f();
+    if (out instanceof Promise) { later = true; return out.finally(restore) as T; }
+    return out;
+  } finally {
+    if (!later) restore();
+  }
+}

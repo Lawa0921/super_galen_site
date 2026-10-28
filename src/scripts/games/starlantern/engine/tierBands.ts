@@ -572,6 +572,35 @@ export function bandMisses(band: BandId, runsOf: (b: BandId) => readonly BandRun
   return out;
 }
 
+/**
+ * Spec §0 item 22 (roster plan L2b; the user's direction 2026-10-28, balance is not the priority): the misses the live
+ * roster's D and E tables still leave after their wave's one tuning attempt (the group swap for band 19a), kept as the
+ * controller's named exceptions. Keyed by a miss's head (its band and depth, pooled, and what missed), each holds its own
+ * floor: the measured rate less .01, or for a `loss … not above` miss the measured loss over the twin less .01. The
+ * Nightmare and Hell band tests drop a named miss only while it stays on its floor; under it, and every other miss, still
+ * fails (`bandMisses` itself reports every miss). Pinned in tierBands.test.ts.
+ */
+export const TIER_EXCEPTIONS: Readonly<Record<string, { decider: 'controller'; floor: number; reason: string }>> = {
+  'H1 d20: loss': { decider: 'controller', floor: -0.011, reason: 'the swapped D table on Hell loses .155 to the Nightmare twin .156 (item 22)' },
+  'H1 d25: rate': { decider: 'controller', floor: 0.755, reason: 'the E table on Hell (sorrow, tendril and bearer groups) .765 after the swap (item 22)' },
+  'HE d25: rate': { decider: 'controller', floor: 0.499, reason: 'the elites of the E table on Hell .509 after the swap (item 22)' },
+  'N1 d25: rate': { decider: 'controller', floor: 0.807, reason: 'the E table on Nightmare .817 after the swap (item 22)' },
+};
+
+/**
+ * Whether a miss is a named exception still on its floor (TIER_EXCEPTIONS); an excused one is said through `say` (`exception
+ * <miss>; <reason>; floor >= <floor>`), as band 22's are.
+ */
+export function excusedMiss(miss: string, say?: (line: string) => void): boolean {
+  const m = /^(\S+ d\d+): (rate|loss) ([\d.]+)(?:.* twin's ([\d.]+))?/.exec(miss);
+  const e = m ? TIER_EXCEPTIONS[`${m[1]}: ${m[2]}`] : undefined;
+  if (!m || !e) return false;
+  const value = m[2] === 'rate' ? Number(m[3]) : Number(m[3]) - Number(m[4]);
+  if (value < e.floor) return false;
+  say?.(`exception ${miss}; ${e.reason}; floor >= ${f3(e.floor)}`);
+  return true;
+}
+
 /** HX (spec §6.2): every cell whose party spent a round frozen, one line a cell. */
 export const frozenMisses = (band: string, runs: readonly BandRun[]): string[] =>
   runs.filter((m) => m.run.partyFrozen !== 0).map((m) => `${band} ${m.cell.label}: frozen ${m.run.partyFrozen}`);

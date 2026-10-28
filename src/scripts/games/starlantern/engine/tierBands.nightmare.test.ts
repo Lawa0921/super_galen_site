@@ -6,7 +6,7 @@
  * each band, then the crowd gap of each depth (magic against bare, report only).
  */
 import { describe, expect, it } from 'vitest';
-import { NIGHTMARE_BANDS, bandLine, bandMisses, frozenMisses, gapLine, measureBand, pooled, pooledLines } from './tierBands';
+import { NIGHTMARE_BANDS, bandLine, bandMisses, excusedMiss, frozenMisses, gapLine, measureBand, pooled, pooledLines } from './tierBands';
 
 const on = process.env.BANDS === '1';
 const report = !!process.env.BALANCE_REPORT && process.env.BALANCE_REPORT !== '0';
@@ -34,7 +34,7 @@ describe.skipIf(!on)('the Nightmare bands (difficulty plan Tasks 5a-5b)', () => 
   }, 3_000_000);
 
   it('N1 Nightmare crowds are won with magic runes, harder than Normal', () => {
-    expect(bandMisses('N1', measureBand)).toEqual([]);
+    expect(bandMisses('N1', measureBand).filter((m) => !excusedMiss(m, say))).toEqual([]);   // spec §0 item 22: TIER_EXCEPTIONS
   }, 3_000_000);
 
   it('N2 no affix is a death sentence', () => {

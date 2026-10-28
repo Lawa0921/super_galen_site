@@ -113,6 +113,11 @@ export interface BattleScale {
    * foe `floor(pick x foes)` of a plain crowd (no elite, no boss) only when the tier has a crowd affix chance.
    */
   crowdAffix?: { pick: number; id: AffixId };
+  /**
+   * Roster plan L1b (controller ruling 2026-10-28, on plan ruling 7): the old roster as it was, whatever is live: no old
+   * foe brings a deep trait. Only parity sets it (engine/parity.ts; engine/parityScale.test.ts).
+   */
+  legacy?: true;
 }
 
 /**
@@ -305,7 +310,7 @@ export function meetEnemy(s: BattleState, id: string, m: Meeting, as: MeetAs = {
   // The affixes go on the elite, or in a boss fight on each boss (ruling 5), only on a higher tier; none drawn here.
   const aff = t && sc?.affixes?.length && (elite || (m.boss && ENEMIES[id].boss)) ? sc.affixes : as.crowd ? [as.crowd] : undefined;
   // An old foe met where the table is a roster table brings its deep trait (roster plan B11, spec §5.8); never while nothing is live.
-  const deep = !!sc && isRosterTable(sc.region, sc.depth);
+  const deep = !!sc && !sc.legacy && isRosterTable(sc.region, sc.depth);
   const met = !sc || !region ? ENEMIES[id] : t ? scaleEnemy(ENEMIES[id], sc.depth, region, elite, CONDITIONS[sc.condition ?? 'plain'], t, aff, deep) : scaleEnemy(ENEMIES[id], sc.depth, region, elite, CONDITIONS[sc.condition ?? 'plain'], null, undefined, deep);
   // An enemy is met at its level for the fight's depth (enemyLevelAt; the deep road's own extra power on top), or at
   // its own home level when the fight has no scale.

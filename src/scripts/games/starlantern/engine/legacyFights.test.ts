@@ -5,6 +5,7 @@ import { autoActions } from './builds';
 import { partyAt } from './sim';
 import { mulberry32 } from './rng';
 import { encounterTable } from './scaling';
+import { withRosterOnly } from './testing';
 import { activeIds } from './party';
 import type { RegionId } from '../data/regions';
 
@@ -54,7 +55,8 @@ export function legacyFights(): { cases: number; fights: number; draws: number; 
 
 describe('the old roster fights as it did (roster plan B1 review, item 10)', () => {
   it('every legacy fight, whole, hashes as on origin/master', () => {
-    const r = legacyFights();
+    // L1b: measures the game as it was with nothing live (the old roster on the old tables, no deep trait).
+    const r = withRosterOnly([], legacyFights);
     expect([r.cases, r.fights]).toEqual([517, 3102]);
     expect(r.draws).toBe(377689);
     expect(r.hash).toBe('681458a8fb72cfa58bb485858355f4a78c6d1b47dfc4e04ab6e0b364398d80bf');

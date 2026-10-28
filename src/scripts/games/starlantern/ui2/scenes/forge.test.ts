@@ -4,7 +4,7 @@ import { artMissing, artSrc } from '../lateArt';
 import { T } from '../../data/text.zh-TW';
 import { Game } from '../../engine/game';
 import type { ForgeResult } from '../../engine/forge/cost';
-import { constRng, memoryStorage } from '../../engine/testing';
+import { constRng, memoryStorage, withRosterOnly } from '../../engine/testing';
 import type { ItemInstance, Rarity } from '../../engine/types';
 import { NO_ART, type ArtIndex } from '../../render/textures';
 import { art } from '../../render/artPaths';
@@ -1108,7 +1108,8 @@ describe('ForgeScene craft page', () => {
     expect(cut.right('potion').textContent).toBe(F.craftRow(cheaper, '6 G'));
   });
 
-  it('three categories; a potion recipe crafts the chosen quantity', () => {
+  it('three categories; a potion recipe crafts the chosen quantity', () => withRosterOnly([], () => {
+    // L1b: measures the game as it was with nothing live.
     const { ids, row, right, go, qty, game, line, sfx, info } = open((g) => { g.state.inventory = { moss: 10 }; g.state.gold = 100; });
     expect(ids()).toEqual(['item', 'base', 'set']);
     expect(row('item').textContent).toContain(F.craftCats.item);
@@ -1128,7 +1129,7 @@ describe('ForgeScene craft page', () => {
     expect(line()).toBe(F.craftedItem('回復藥', 3));
     expect(qty()).toBeNull();
     expect(info().textContent).toContain('發光苔 4／2');   // the detail refreshed
-  });
+  }));
 
   it('the quantity box stops at what the materials and gold allow', () => {
     const a = open((g) => { g.state.inventory = { moss: 5 }; });
@@ -1269,7 +1270,8 @@ describe('ForgeScene craft page', () => {
     expect(game.state.gold).toBe(1000);
   });
 
-  it('Esc steps back layer by layer and leaves no stray window, with no inline styles', () => {
+  it('Esc steps back layer by layer and leaves no stray window, with no inline styles', () => withRosterOnly([], () => {
+    // L1b: measures the game as it was with nothing live.
     const { row, go, root, ids } = open();
     row('item').click();
     go('cancel');
@@ -1281,7 +1283,7 @@ describe('ForgeScene craft page', () => {
     go('cancel');
     expect(root.querySelectorAll('.slx-forge-list').length).toBe(0);
     expect(root.querySelectorAll('[style]').length).toBe(0);
-  });
+  }));
 });
 
 describe('the rune tab (plan 8f Task 5)', () => {
