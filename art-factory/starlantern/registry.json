@@ -1127,7 +1127,868 @@
           65
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "repair": {
+        "from_sha256": "6de3d0c120a580d232ed23f253c8316f72057085161463a5f3c24df99eb58068",
+        "to_sha256": "40846f62b558489d3311bcbf73283654aff7b768f098a074bdece2a9d7cf87a0",
+        "final": "art-factory/starlantern/work/repair/enemy-bat.png",
+        "pixels": [
+          {
+            "x": 27,
+            "y": 6,
+            "from": [
+              127,
+              11,
+              123
+            ],
+            "to": [
+              110,
+              86,
+              76
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 24,
+            "y": 8,
+            "from": [
+              130,
+              5,
+              109
+            ],
+            "to": [
+              206,
+              195,
+              178
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 25,
+            "y": 8,
+            "from": [
+              135,
+              4,
+              108
+            ],
+            "to": [
+              146,
+              132,
+              122
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 94,
+            "y": 8,
+            "from": [
+              76,
+              0,
+              56
+            ],
+            "to": [
+              126,
+              106,
+              92
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 96,
+            "y": 9,
+            "from": [
+              129,
+              6,
+              115
+            ],
+            "to": [
+              97,
+              76,
+              69
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 68,
+            "y": 16,
+            "from": [
+              124,
+              10,
+              99
+            ],
+            "to": [
+              171,
+              160,
+              149
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 10,
+            "y": 17,
+            "from": [
+              85,
+              3,
+              44
+            ],
+            "to": [
+              232,
+              225,
+              210
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 53,
+            "y": 17,
+            "from": [
+              145,
+              7,
+              118
+            ],
+            "to": [
+              149,
+              143,
+              130
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 80,
+            "y": 22,
+            "from": [
+              147,
+              10,
+              121
+            ],
+            "to": [
+              174,
+              164,
+              148
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 63,
+            "y": 23,
+            "from": [
+              87,
+              3,
+              56
+            ],
+            "to": [
+              158,
+              146,
+              134
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 113,
+            "y": 23,
+            "from": [
+              141,
+              11,
+              138
+            ],
+            "to": [
+              202,
+              197,
+              178
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 63,
+            "y": 24,
+            "from": [
+              90,
+              3,
+              51
+            ],
+            "to": [
+              146,
+              134,
+              126
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 113,
+            "y": 24,
+            "from": [
+              150,
+              4,
+              146
+            ],
+            "to": [
+              202,
+              194,
+              178
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 56,
+            "y": 25,
+            "from": [
+              146,
+              18,
+              117
+            ],
+            "to": [
+              47,
+              29,
+              24
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 63,
+            "y": 25,
+            "from": [
+              73,
+              3,
+              42
+            ],
+            "to": [
+              126,
+              114,
+              107
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 44,
+            "y": 27,
+            "from": [
+              96,
+              11,
+              72
+            ],
+            "to": [
+              159,
+              145,
+              132
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 74,
+            "y": 27,
+            "from": [
+              163,
+              3,
+              138
+            ],
+            "to": [
+              86,
+              62,
+              55
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 116,
+            "y": 29,
+            "from": [
+              96,
+              10,
+              72
+            ],
+            "to": [
+              82,
+              65,
+              56
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 117,
+            "y": 31,
+            "from": [
+              71,
+              11,
+              62
+            ],
+            "to": [
+              147,
+              125,
+              115
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 117,
+            "y": 32,
+            "from": [
+              58,
+              7,
+              51
+            ],
+            "to": [
+              147,
+              125,
+              115
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 117,
+            "y": 33,
+            "from": [
+              62,
+              6,
+              50
+            ],
+            "to": [
+              182,
+              168,
+              154
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 4,
+            "y": 34,
+            "from": [
+              50,
+              0,
+              33
+            ],
+            "to": [
+              86,
+              76,
+              76
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 15,
+            "y": 35,
+            "from": [
+              139,
+              14,
+              107
+            ],
+            "to": [
+              60,
+              40,
+              34
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 115,
+            "y": 35,
+            "from": [
+              149,
+              15,
+              127
+            ],
+            "to": [
+              52,
+              27,
+              24
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 27,
+            "y": 36,
+            "from": [
+              100,
+              10,
+              71
+            ],
+            "to": [
+              103,
+              90,
+              89
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 27,
+            "y": 37,
+            "from": [
+              92,
+              11,
+              65
+            ],
+            "to": [
+              143,
+              131,
+              126
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 18,
+            "y": 44,
+            "from": [
+              111,
+              5,
+              82
+            ],
+            "to": [
+              94,
+              75,
+              68
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 24,
+            "y": 44,
+            "from": [
+              94,
+              8,
+              79
+            ],
+            "to": [
+              81,
+              74,
+              73
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 77,
+            "y": 44,
+            "from": [
+              114,
+              7,
+              96
+            ],
+            "to": [
+              114,
+              98,
+              100
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 84,
+            "y": 44,
+            "from": [
+              89,
+              6,
+              59
+            ],
+            "to": [
+              108,
+              101,
+              101
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 89,
+            "y": 44,
+            "from": [
+              115,
+              7,
+              97
+            ],
+            "to": [
+              160,
+              150,
+              142
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 90,
+            "y": 44,
+            "from": [
+              107,
+              9,
+              87
+            ],
+            "to": [
+              160,
+              150,
+              142
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 91,
+            "y": 44,
+            "from": [
+              105,
+              13,
+              88
+            ],
+            "to": [
+              160,
+              148,
+              141
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 93,
+            "y": 44,
+            "from": [
+              93,
+              12,
+              88
+            ],
+            "to": [
+              104,
+              86,
+              91
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 96,
+            "y": 47,
+            "from": [
+              146,
+              22,
+              132
+            ],
+            "to": [
+              62,
+              38,
+              45
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 100,
+            "y": 47,
+            "from": [
+              54,
+              4,
+              35
+            ],
+            "to": [
+              83,
+              62,
+              64
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 71,
+            "y": 49,
+            "from": [
+              84,
+              2,
+              79
+            ],
+            "to": [
+              88,
+              78,
+              76
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 63,
+            "y": 51,
+            "from": [
+              81,
+              3,
+              51
+            ],
+            "to": [
+              71,
+              52,
+              52
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 63,
+            "y": 52,
+            "from": [
+              94,
+              3,
+              59
+            ],
+            "to": [
+              45,
+              20,
+              15
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 55,
+            "y": 57,
+            "from": [
+              84,
+              1,
+              55
+            ],
+            "to": [
+              36,
+              17,
+              13
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 71,
+            "y": 59,
+            "from": [
+              72,
+              8,
+              67
+            ],
+            "to": [
+              164,
+              155,
+              136
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 71,
+            "y": 60,
+            "from": [
+              70,
+              10,
+              69
+            ],
+            "to": [
+              164,
+              155,
+              136
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 68,
+            "y": 61,
+            "from": [
+              115,
+              6,
+              113
+            ],
+            "to": [
+              115,
+              108,
+              106
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 71,
+            "y": 61,
+            "from": [
+              71,
+              6,
+              74
+            ],
+            "to": [
+              109,
+              100,
+              99
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 68,
+            "y": 62,
+            "from": [
+              110,
+              4,
+              96
+            ],
+            "to": [
+              82,
+              66,
+              64
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 49,
+            "y": 63,
+            "from": [
+              109,
+              6,
+              91
+            ],
+            "to": [
+              44,
+              19,
+              14
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 53,
+            "y": 63,
+            "from": [
+              101,
+              9,
+              89
+            ],
+            "to": [
+              47,
+              19,
+              14
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 52,
+            "y": 16,
+            "from": [
+              93,
+              9,
+              51
+            ],
+            "to": [
+              151,
+              143,
+              132
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 68,
+            "y": 63,
+            "from": [
+              106,
+              3,
+              92
+            ],
+            "to": [
+              82,
+              66,
+              64
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 108,
+            "y": 17,
+            "from": [
+              158,
+              97,
+              142
+            ],
+            "to": [
+              212,
+              205,
+              190
+            ],
+            "rule": "lone-tint"
+          },
+          {
+            "x": 62,
+            "y": 26,
+            "from": [
+              93,
+              29,
+              51
+            ],
+            "to": [
+              124,
+              110,
+              100
+            ],
+            "rule": "lone-tint"
+          },
+          {
+            "x": 49,
+            "y": 53,
+            "from": [
+              81,
+              18,
+              56
+            ],
+            "to": [
+              132,
+              121,
+              117
+            ],
+            "rule": "lone-tint"
+          },
+          {
+            "x": 49,
+            "y": 57,
+            "from": [
+              104,
+              36,
+              78
+            ],
+            "to": [
+              140,
+              126,
+              120
+            ],
+            "rule": "lone-tint"
+          }
+        ],
+        "skipped": [],
+        "changed_pixels": 54,
+        "rule": "outline-key residue (sl_art.outline_key_pixels: key-hue pixels plus outline_blend_pixels, the key blended into a dark outline under _deep_key's RB floor or hue floor): repaired together as key-hue repairs, the rounded median of opaque 8-neighbours outside the set, in passes; alpha kept (F8: 5d icons, enemy bat) + key speck (sl_art.key_specks: outline key with at least 5 transparent 8-neighbours and fewer than 3 opaque non-key ones, so nothing to repair from): alpha 0 (F8: moss, enemy bat) + lone tint (sl_art.lone_tint_pixels: a pale key-ward rose alone on the outline, under pink_outlier's saturation and red floors): the rounded median of its opaque 8-neighbours; alpha kept (F8: crab-plate's spike tip (25,4), enemy bat)",
+        "rules": [
+          "outline-key",
+          "speck-clear",
+          "lone-tint"
+        ],
+        "postprocess_only": true,
+        "publish_with": "f8",
+        "qa": {
+          "pass": true,
+          "reasons": [],
+          "warnings": [
+            "enclosed holes"
+          ],
+          "residue": 0,
+          "semi": 0,
+          "edge": 0,
+          "holes": 12,
+          "block": 10,
+          "size": [
+            119,
+            65
+          ],
+          "magenta_spill": 0,
+          "colours": 2851,
+          "lum": [
+            0.079,
+            0.789,
+            0.389
+          ],
+          "palette_over": true,
+          "key_tint_inside": 0,
+          "bright_key": 0,
+          "pink_outlier": 0,
+          "spec": "roster-sprite:929ae0136de6"
+        },
+        "cleared": [
+          {
+            "x": 63,
+            "y": 58,
+            "from": [
+              66,
+              3,
+              42,
+              255
+            ],
+            "to": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "rule": "speck-clear"
+          }
+        ],
+        "status": "pending",
+        "date": "2026-10-29"
+      }
     },
     "enemy-wolf": {
       "kind": "sprite",
@@ -2183,7 +3044,71 @@
           32
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "repair": {
+        "from_sha256": "33ee83a8ea8e194eedd5ac3dd35c9d4d98c56d7df4b7097fdaf839e161592e3c",
+        "to_sha256": "c0b02336fcda1a6601a96bde64bb578cf0d87582c414056b033fa61c5fa1606a",
+        "final": "art-factory/starlantern/work/repair/icon-potion.png",
+        "pixels": [
+          {
+            "x": 1,
+            "y": 16,
+            "from": [
+              48,
+              2,
+              52
+            ],
+            "to": [
+              74,
+              70,
+              79
+            ]
+          },
+          {
+            "x": 15,
+            "y": 30,
+            "from": [
+              70,
+              6,
+              78
+            ],
+            "to": [
+              48,
+              40,
+              49
+            ]
+          }
+        ],
+        "skipped": [],
+        "changed_pixels": 2,
+        "rule": "outline-key residue (sl_art.outline_key_pixels: key-hue pixels plus outline_blend_pixels, the key blended into a dark outline under _deep_key's RB floor or hue floor): repaired together as key-hue repairs, the rounded median of opaque 8-neighbours outside the set, in passes; alpha kept (F8: 5d icons, enemy bat)",
+        "rules": [
+          "outline-key"
+        ],
+        "postprocess_only": true,
+        "publish_with": "f8",
+        "qa": {
+          "pass": true,
+          "reasons": [],
+          "warnings": [],
+          "residue": 0,
+          "semi": 0,
+          "edge": 0,
+          "holes": 0,
+          "block": 7,
+          "size": [
+            24,
+            32
+          ],
+          "magenta_spill": 1,
+          "key_tint_inside": 0,
+          "bright_key": 0,
+          "pink_outlier": 0,
+          "spec": "roster-icon:8da249263f71"
+        },
+        "status": "pending",
+        "date": "2026-10-29"
+      }
     },
     "icon-ether": {
       "kind": "sprite",
@@ -2205,7 +3130,197 @@
           32
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "repair": {
+        "from_sha256": "b9aac344913a8c2d72d504d1e18b1c7c42d9bd60a3fb87f3a37b9e9f8cb3a93d",
+        "to_sha256": "dbc92fa72924d91fd01473e2079597f57a9333ea3c5fd19379ce6fd8d571f369",
+        "final": "art-factory/starlantern/work/repair/icon-ether.png",
+        "pixels": [
+          {
+            "x": 8,
+            "y": 2,
+            "from": [
+              70,
+              7,
+              60
+            ],
+            "to": [
+              190,
+              125,
+              42
+            ]
+          },
+          {
+            "x": 19,
+            "y": 11,
+            "from": [
+              137,
+              6,
+              151
+            ],
+            "to": [
+              7,
+              12,
+              21
+            ]
+          },
+          {
+            "x": 20,
+            "y": 12,
+            "from": [
+              102,
+              13,
+              105
+            ],
+            "to": [
+              55,
+              77,
+              101
+            ]
+          },
+          {
+            "x": 21,
+            "y": 13,
+            "from": [
+              67,
+              10,
+              80
+            ],
+            "to": [
+              46,
+              64,
+              84
+            ]
+          },
+          {
+            "x": 22,
+            "y": 15,
+            "from": [
+              30,
+              0,
+              37
+            ],
+            "to": [
+              36,
+              89,
+              134
+            ]
+          },
+          {
+            "x": 1,
+            "y": 16,
+            "from": [
+              44,
+              1,
+              50
+            ],
+            "to": [
+              65,
+              70,
+              88
+            ]
+          },
+          {
+            "x": 23,
+            "y": 16,
+            "from": [
+              42,
+              0,
+              56
+            ],
+            "to": [
+              76,
+              89,
+              144
+            ]
+          },
+          {
+            "x": 22,
+            "y": 24,
+            "from": [
+              32,
+              1,
+              40
+            ],
+            "to": [
+              66,
+              82,
+              106
+            ]
+          },
+          {
+            "x": 21,
+            "y": 26,
+            "from": [
+              49,
+              4,
+              51
+            ],
+            "to": [
+              82,
+              76,
+              112
+            ]
+          },
+          {
+            "x": 8,
+            "y": 1,
+            "from": [
+              76,
+              7,
+              68
+            ],
+            "to": [
+              190,
+              125,
+              42
+            ]
+          },
+          {
+            "x": 22,
+            "y": 25,
+            "from": [
+              56,
+              5,
+              56
+            ],
+            "to": [
+              68,
+              79,
+              106
+            ]
+          }
+        ],
+        "skipped": [],
+        "changed_pixels": 11,
+        "rule": "outline-key residue (sl_art.outline_key_pixels: key-hue pixels plus outline_blend_pixels, the key blended into a dark outline under _deep_key's RB floor or hue floor): repaired together as key-hue repairs, the rounded median of opaque 8-neighbours outside the set, in passes; alpha kept (F8: 5d icons, enemy bat)",
+        "rules": [
+          "outline-key"
+        ],
+        "postprocess_only": true,
+        "publish_with": "f8",
+        "qa": {
+          "pass": true,
+          "reasons": [],
+          "warnings": [],
+          "residue": 0,
+          "semi": 0,
+          "edge": 0,
+          "holes": 0,
+          "block": 7,
+          "size": [
+            25,
+            32
+          ],
+          "magenta_spill": 1,
+          "key_tint_inside": 0,
+          "bright_key": 0,
+          "pink_outlier": 0,
+          "spec": "roster-icon:8da249263f71"
+        },
+        "status": "pending",
+        "date": "2026-10-29"
+      }
     },
     "icon-antidote": {
       "kind": "sprite",
@@ -2227,7 +3342,295 @@
           32
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "repair": {
+        "from_sha256": "66d574880f6d3e268c9bb334e0841369d10988244e94faeb06ae304652253575",
+        "to_sha256": "8e0b4533f8e8ab36b3d2521f5f5e535f57665816e6ec9c0be6aee96f750444c8",
+        "final": "art-factory/starlantern/work/repair/icon-antidote.png",
+        "pixels": [
+          {
+            "x": 9,
+            "y": 1,
+            "from": [
+              54,
+              2,
+              43
+            ],
+            "to": [
+              68,
+              34,
+              38
+            ]
+          },
+          {
+            "x": 10,
+            "y": 3,
+            "from": [
+              58,
+              0,
+              69
+            ],
+            "to": [
+              68,
+              40,
+              49
+            ]
+          },
+          {
+            "x": 3,
+            "y": 4,
+            "from": [
+              141,
+              4,
+              146
+            ],
+            "to": [
+              12,
+              7,
+              12
+            ]
+          },
+          {
+            "x": 1,
+            "y": 12,
+            "from": [
+              130,
+              2,
+              124
+            ],
+            "to": [
+              40,
+              54,
+              49
+            ]
+          },
+          {
+            "x": 14,
+            "y": 12,
+            "from": [
+              130,
+              2,
+              127
+            ],
+            "to": [
+              32,
+              115,
+              29
+            ]
+          },
+          {
+            "x": 12,
+            "y": 13,
+            "from": [
+              43,
+              0,
+              50
+            ],
+            "to": [
+              37,
+              103,
+              45
+            ]
+          },
+          {
+            "x": 13,
+            "y": 13,
+            "from": [
+              53,
+              0,
+              44
+            ],
+            "to": [
+              34,
+              109,
+              29
+            ]
+          },
+          {
+            "x": 24,
+            "y": 13,
+            "from": [
+              46,
+              1,
+              61
+            ],
+            "to": [
+              58,
+              130,
+              26
+            ]
+          },
+          {
+            "x": 24,
+            "y": 14,
+            "from": [
+              41,
+              2,
+              53
+            ],
+            "to": [
+              51,
+              124,
+              24
+            ]
+          },
+          {
+            "x": 24,
+            "y": 15,
+            "from": [
+              49,
+              5,
+              65
+            ],
+            "to": [
+              35,
+              97,
+              24
+            ]
+          },
+          {
+            "x": 23,
+            "y": 18,
+            "from": [
+              41,
+              4,
+              49
+            ],
+            "to": [
+              26,
+              58,
+              28
+            ]
+          },
+          {
+            "x": 22,
+            "y": 19,
+            "from": [
+              31,
+              0,
+              32
+            ],
+            "to": [
+              39,
+              90,
+              26
+            ]
+          },
+          {
+            "x": 22,
+            "y": 20,
+            "from": [
+              74,
+              11,
+              82
+            ],
+            "to": [
+              28,
+              53,
+              33
+            ]
+          },
+          {
+            "x": 19,
+            "y": 23,
+            "from": [
+              147,
+              10,
+              139
+            ],
+            "to": [
+              30,
+              66,
+              54
+            ]
+          },
+          {
+            "x": 13,
+            "y": 26,
+            "from": [
+              106,
+              2,
+              98
+            ],
+            "to": [
+              28,
+              2,
+              38
+            ]
+          },
+          {
+            "x": 16,
+            "y": 26,
+            "from": [
+              109,
+              0,
+              126
+            ],
+            "to": [
+              10,
+              0,
+              12
+            ]
+          },
+          {
+            "x": 2,
+            "y": 29,
+            "from": [
+              43,
+              1,
+              41
+            ],
+            "to": [
+              6,
+              10,
+              11
+            ]
+          },
+          {
+            "x": 12,
+            "y": 12,
+            "from": [
+              118,
+              0,
+              111
+            ],
+            "to": [
+              36,
+              106,
+              40
+            ]
+          }
+        ],
+        "skipped": [],
+        "changed_pixels": 18,
+        "rule": "outline-key residue (sl_art.outline_key_pixels: key-hue pixels plus outline_blend_pixels, the key blended into a dark outline under _deep_key's RB floor or hue floor): repaired together as key-hue repairs, the rounded median of opaque 8-neighbours outside the set, in passes; alpha kept (F8: 5d icons, enemy bat)",
+        "rules": [
+          "outline-key"
+        ],
+        "postprocess_only": true,
+        "publish_with": "f8",
+        "qa": {
+          "pass": true,
+          "reasons": [],
+          "warnings": [],
+          "residue": 0,
+          "semi": 0,
+          "edge": 0,
+          "holes": 0,
+          "block": 7,
+          "size": [
+            26,
+            32
+          ],
+          "magenta_spill": 0,
+          "key_tint_inside": 0,
+          "bright_key": 0,
+          "pink_outlier": 0,
+          "spec": "roster-icon:8da249263f71"
+        },
+        "status": "pending",
+        "date": "2026-10-29"
+      }
     },
     "icon-phoenix": {
       "kind": "sprite",
@@ -2251,7 +3654,217 @@
           32
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "repair": {
+        "from_sha256": "22d972b9d40bc9c6465e90fa13aae9b34ed4eedcb33bc1c7ded790d6f6f609bf",
+        "to_sha256": "9555e8c88a9c21b945472473a93ab7179bf82b2e7a32500494e8f993fc0b3a1a",
+        "final": "art-factory/starlantern/work/repair/icon-phoenix.png",
+        "pixels": [
+          {
+            "x": 15,
+            "y": 8,
+            "from": [
+              113,
+              0,
+              68
+            ],
+            "to": [
+              77,
+              2,
+              8
+            ]
+          },
+          {
+            "x": 13,
+            "y": 10,
+            "from": [
+              156,
+              0,
+              116
+            ],
+            "to": [
+              128,
+              5,
+              30
+            ]
+          },
+          {
+            "x": 12,
+            "y": 11,
+            "from": [
+              163,
+              9,
+              92
+            ],
+            "to": [
+              93,
+              1,
+              13
+            ]
+          },
+          {
+            "x": 9,
+            "y": 14,
+            "from": [
+              171,
+              15,
+              133
+            ],
+            "to": [
+              85,
+              9,
+              29
+            ]
+          },
+          {
+            "x": 26,
+            "y": 14,
+            "from": [
+              146,
+              2,
+              115
+            ],
+            "to": [
+              124,
+              9,
+              15
+            ]
+          },
+          {
+            "x": 22,
+            "y": 20,
+            "from": [
+              129,
+              3,
+              122
+            ],
+            "to": [
+              154,
+              40,
+              15
+            ]
+          },
+          {
+            "x": 19,
+            "y": 21,
+            "from": [
+              98,
+              3,
+              51
+            ],
+            "to": [
+              188,
+              62,
+              20
+            ]
+          },
+          {
+            "x": 10,
+            "y": 27,
+            "from": [
+              163,
+              9,
+              146
+            ],
+            "to": [
+              96,
+              40,
+              8
+            ]
+          },
+          {
+            "x": 12,
+            "y": 27,
+            "from": [
+              103,
+              4,
+              97
+            ],
+            "to": [
+              85,
+              0,
+              29
+            ]
+          },
+          {
+            "x": 1,
+            "y": 28,
+            "from": [
+              45,
+              7,
+              39
+            ],
+            "to": [
+              88,
+              78,
+              8
+            ]
+          },
+          {
+            "x": 5,
+            "y": 28,
+            "from": [
+              136,
+              3,
+              138
+            ],
+            "to": [
+              47,
+              19,
+              20
+            ]
+          },
+          {
+            "x": 20,
+            "y": 22,
+            "from": [
+              108,
+              7,
+              76
+            ],
+            "to": [
+              145,
+              25,
+              20
+            ]
+          }
+        ],
+        "skipped": [],
+        "changed_pixels": 12,
+        "rule": "outline-key residue (sl_art.outline_key_pixels: key-hue pixels plus outline_blend_pixels, the key blended into a dark outline under _deep_key's RB floor or hue floor): repaired together as key-hue repairs, the rounded median of opaque 8-neighbours outside the set, in passes; alpha kept (F8: 5d icons, enemy bat)",
+        "rules": [
+          "outline-key"
+        ],
+        "postprocess_only": true,
+        "publish_with": "f8",
+        "qa": {
+          "pass": true,
+          "reasons": [],
+          "warnings": [
+            "enclosed holes"
+          ],
+          "residue": 0,
+          "semi": 0,
+          "edge": 0,
+          "holes": 1,
+          "block": 7,
+          "size": [
+            29,
+            32
+          ],
+          "magenta_spill": 6,
+          "key_tint_inside": 0,
+          "bright_key": 0,
+          "pink_outlier": 0,
+          "spec": "roster-icon:8da249263f71"
+        },
+        "allow_magenta_spill": {
+          "count": 6,
+          "reason": "F8 classification: kept as art: the maroon outline (17,6) (90,1,38), (14,9) (97,2,35), (8,15) (85,0,41), (13,26) (85,0,38), hue 331-339 like the feather's dark red outline; the pink embers (25,20) (252,124,157) and (20,26) (250,162,205) float with the other sparkles"
+        },
+        "status": "pending",
+        "date": "2026-10-29"
+      }
     },
     "icon-return-lamp": {
       "kind": "sprite",
@@ -2275,7 +3888,87 @@
           35
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "repair": {
+        "from_sha256": "587a54759dfbae7d192348fd5900d636bb60fbe4ef5e197ed16ec851668a6520",
+        "to_sha256": "de2fa6df8ad3d8244d01e2b6e26a1ba56d2b5417ab615dd525ec2589f7af743c",
+        "final": "art-factory/starlantern/work/repair/icon-return-lamp.png",
+        "pixels": [
+          {
+            "x": 7,
+            "y": 2,
+            "from": [
+              74,
+              13,
+              74
+            ],
+            "to": [
+              78,
+              60,
+              50
+            ]
+          },
+          {
+            "x": 18,
+            "y": 30,
+            "from": [
+              80,
+              4,
+              92
+            ],
+            "to": [
+              26,
+              14,
+              27
+            ]
+          },
+          {
+            "x": 4,
+            "y": 31,
+            "from": [
+              36,
+              1,
+              37
+            ],
+            "to": [
+              60,
+              38,
+              26
+            ]
+          }
+        ],
+        "skipped": [],
+        "changed_pixels": 3,
+        "rule": "outline-key residue (sl_art.outline_key_pixels: key-hue pixels plus outline_blend_pixels, the key blended into a dark outline under _deep_key's RB floor or hue floor): repaired together as key-hue repairs, the rounded median of opaque 8-neighbours outside the set, in passes; alpha kept (F8: 5d icons, enemy bat)",
+        "rules": [
+          "outline-key"
+        ],
+        "postprocess_only": true,
+        "publish_with": "f8",
+        "qa": {
+          "pass": true,
+          "reasons": [],
+          "warnings": [
+            "enclosed holes"
+          ],
+          "residue": 0,
+          "semi": 0,
+          "edge": 0,
+          "holes": 1,
+          "block": 7,
+          "size": [
+            21,
+            35
+          ],
+          "magenta_spill": 0,
+          "key_tint_inside": 0,
+          "bright_key": 0,
+          "pink_outlier": 0,
+          "spec": "roster-icon:8da249263f71"
+        },
+        "status": "pending",
+        "date": "2026-10-29"
+      }
     },
     "icon-moss": {
       "kind": "sprite",
@@ -2297,7 +3990,204 @@
           36
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "repair": {
+        "from_sha256": "94d62ade0bcdd97cca11f1f622437726c8d1734bbf8ccb126811d0c7a6ad478d",
+        "to_sha256": "34d3b0b157c81ff2440942b28af4451db7114ad4e8873d361305bd6eb621d994",
+        "final": "art-factory/starlantern/work/repair/icon-moss.png",
+        "pixels": [
+          {
+            "x": 28,
+            "y": 12,
+            "from": [
+              130,
+              20,
+              121
+            ],
+            "to": [
+              16,
+              26,
+              21
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 36,
+            "y": 21,
+            "from": [
+              61,
+              3,
+              62
+            ],
+            "to": [
+              18,
+              15,
+              16
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 37,
+            "y": 23,
+            "from": [
+              69,
+              2,
+              68
+            ],
+            "to": [
+              16,
+              9,
+              14
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 31,
+            "y": 31,
+            "from": [
+              86,
+              3,
+              89
+            ],
+            "to": [
+              10,
+              10,
+              8
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 6,
+            "y": 32,
+            "from": [
+              115,
+              3,
+              119
+            ],
+            "to": [
+              10,
+              9,
+              10
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 11,
+            "y": 32,
+            "from": [
+              85,
+              2,
+              90
+            ],
+            "to": [
+              8,
+              6,
+              9
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 35,
+            "y": 32,
+            "from": [
+              50,
+              8,
+              40
+            ],
+            "to": [
+              8,
+              5,
+              9
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 22,
+            "y": 34,
+            "from": [
+              72,
+              6,
+              81
+            ],
+            "to": [
+              22,
+              10,
+              20
+            ],
+            "rule": "outline-key"
+          }
+        ],
+        "skipped": [],
+        "changed_pixels": 10,
+        "rule": "outline-key residue (sl_art.outline_key_pixels: key-hue pixels plus outline_blend_pixels, the key blended into a dark outline under _deep_key's RB floor or hue floor): repaired together as key-hue repairs, the rounded median of opaque 8-neighbours outside the set, in passes; alpha kept (F8: 5d icons, enemy bat) + key speck (sl_art.key_specks: outline key with at least 5 transparent 8-neighbours and fewer than 3 opaque non-key ones, so nothing to repair from): alpha 0 (F8: moss, enemy bat)",
+        "rules": [
+          "outline-key",
+          "speck-clear"
+        ],
+        "postprocess_only": true,
+        "publish_with": "f8",
+        "qa": {
+          "pass": true,
+          "reasons": [],
+          "warnings": [],
+          "residue": 0,
+          "semi": 0,
+          "edge": 0,
+          "holes": 0,
+          "block": 6,
+          "size": [
+            40,
+            36
+          ],
+          "magenta_spill": 10,
+          "key_tint_inside": 0,
+          "bright_key": 0,
+          "pink_outlier": 0,
+          "spec": "roster-icon:8da249263f71"
+        },
+        "cleared": [
+          {
+            "x": 11,
+            "y": 11,
+            "from": [
+              94,
+              18,
+              87,
+              255
+            ],
+            "to": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "rule": "speck-clear"
+          },
+          {
+            "x": 32,
+            "y": 15,
+            "from": [
+              68,
+              15,
+              92,
+              255
+            ],
+            "to": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "rule": "speck-clear"
+          }
+        ],
+        "allow_magenta_spill": {
+          "count": 10,
+          "reason": "F8 classification: kept as art: the floating flower petals (9,5) (27,5) (31,8) (6,10) (30,11) (6,13) are pale pink (saturation .30-.61) in multi-pixel flowers; (12,12) (95,26,125), (15,12) (93,42,112), (13,13) (77,29,77), (6,16) (80,19,82) are dark violet like the soil (65,34,54), saturation .62-.79, no narrow rule takes them, kept conservatively"
+        },
+        "status": "pending",
+        "date": "2026-10-29"
+      }
     },
     "icon-bat-wing": {
       "kind": "sprite",
@@ -2319,7 +4209,85 @@
           33
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "repair": {
+        "from_sha256": "9ccb28a1ad898addc011de9cf69e5c699c985d12a799492bd1ebc951904b0111",
+        "to_sha256": "61c0ea07412e3c34eccc110bc474b2f0182235136fe650cb7d9326895813704a",
+        "final": "art-factory/starlantern/work/repair/icon-bat-wing.png",
+        "pixels": [
+          {
+            "x": 5,
+            "y": 15,
+            "from": [
+              55,
+              1,
+              52
+            ],
+            "to": [
+              61,
+              54,
+              60
+            ]
+          },
+          {
+            "x": 4,
+            "y": 18,
+            "from": [
+              140,
+              5,
+              140
+            ],
+            "to": [
+              80,
+              68,
+              76
+            ]
+          },
+          {
+            "x": 22,
+            "y": 18,
+            "from": [
+              138,
+              4,
+              156
+            ],
+            "to": [
+              30,
+              28,
+              29
+            ]
+          }
+        ],
+        "skipped": [],
+        "changed_pixels": 3,
+        "rule": "outline-key residue (sl_art.outline_key_pixels: key-hue pixels plus outline_blend_pixels, the key blended into a dark outline under _deep_key's RB floor or hue floor): repaired together as key-hue repairs, the rounded median of opaque 8-neighbours outside the set, in passes; alpha kept (F8: 5d icons, enemy bat)",
+        "rules": [
+          "outline-key"
+        ],
+        "postprocess_only": true,
+        "publish_with": "f8",
+        "qa": {
+          "pass": true,
+          "reasons": [],
+          "warnings": [],
+          "residue": 0,
+          "semi": 0,
+          "edge": 0,
+          "holes": 0,
+          "block": 7,
+          "size": [
+            31,
+            33
+          ],
+          "magenta_spill": 0,
+          "key_tint_inside": 0,
+          "bright_key": 0,
+          "pink_outlier": 0,
+          "spec": "roster-icon:8da249263f71"
+        },
+        "status": "pending",
+        "date": "2026-10-29"
+      }
     },
     "icon-thorn-fang": {
       "kind": "sprite",
@@ -2341,7 +4309,211 @@
           32
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "repair": {
+        "from_sha256": "7a0b06ef9e643d02d39c380f943eafb90f511a22f2ad3538549c87adeeb3ad5f",
+        "to_sha256": "354019a2ef7c4533e3da4555de345658e6d04bb670feac6b105c0ad0dbe1fc9d",
+        "final": "art-factory/starlantern/work/repair/icon-thorn-fang.png",
+        "pixels": [
+          {
+            "x": 22,
+            "y": 4,
+            "from": [
+              92,
+              12,
+              97
+            ],
+            "to": [
+              112,
+              64,
+              70
+            ]
+          },
+          {
+            "x": 14,
+            "y": 6,
+            "from": [
+              70,
+              0,
+              79
+            ],
+            "to": [
+              125,
+              78,
+              65
+            ]
+          },
+          {
+            "x": 24,
+            "y": 6,
+            "from": [
+              82,
+              4,
+              86
+            ],
+            "to": [
+              1,
+              1,
+              0
+            ]
+          },
+          {
+            "x": 13,
+            "y": 11,
+            "from": [
+              68,
+              0,
+              64
+            ],
+            "to": [
+              15,
+              13,
+              9
+            ]
+          },
+          {
+            "x": 22,
+            "y": 17,
+            "from": [
+              64,
+              8,
+              67
+            ],
+            "to": [
+              30,
+              22,
+              31
+            ]
+          },
+          {
+            "x": 8,
+            "y": 21,
+            "from": [
+              155,
+              8,
+              133
+            ],
+            "to": [
+              17,
+              15,
+              13
+            ]
+          },
+          {
+            "x": 22,
+            "y": 21,
+            "from": [
+              78,
+              9,
+              89
+            ],
+            "to": [
+              31,
+              59,
+              24
+            ]
+          },
+          {
+            "x": 4,
+            "y": 26,
+            "from": [
+              41,
+              0,
+              40
+            ],
+            "to": [
+              142,
+              116,
+              90
+            ]
+          },
+          {
+            "x": 16,
+            "y": 27,
+            "from": [
+              135,
+              4,
+              140
+            ],
+            "to": [
+              12,
+              56,
+              25
+            ]
+          },
+          {
+            "x": 17,
+            "y": 27,
+            "from": [
+              124,
+              2,
+              128
+            ],
+            "to": [
+              12,
+              56,
+              25
+            ]
+          },
+          {
+            "x": 22,
+            "y": 22,
+            "from": [
+              91,
+              9,
+              103
+            ],
+            "to": [
+              31,
+              59,
+              24
+            ]
+          },
+          {
+            "x": 18,
+            "y": 27,
+            "from": [
+              102,
+              5,
+              104
+            ],
+            "to": [
+              12,
+              56,
+              25
+            ]
+          }
+        ],
+        "skipped": [],
+        "changed_pixels": 12,
+        "rule": "outline-key residue (sl_art.outline_key_pixels: key-hue pixels plus outline_blend_pixels, the key blended into a dark outline under _deep_key's RB floor or hue floor): repaired together as key-hue repairs, the rounded median of opaque 8-neighbours outside the set, in passes; alpha kept (F8: 5d icons, enemy bat)",
+        "rules": [
+          "outline-key"
+        ],
+        "postprocess_only": true,
+        "publish_with": "f8",
+        "qa": {
+          "pass": true,
+          "reasons": [],
+          "warnings": [],
+          "residue": 0,
+          "semi": 0,
+          "edge": 0,
+          "holes": 0,
+          "block": 7,
+          "size": [
+            29,
+            32
+          ],
+          "magenta_spill": 1,
+          "key_tint_inside": 0,
+          "bright_key": 0,
+          "pink_outlier": 0,
+          "spec": "roster-icon:8da249263f71"
+        },
+        "status": "pending",
+        "date": "2026-10-29"
+      }
     },
     "icon-crystal-shell": {
       "kind": "sprite",
@@ -2363,7 +4535,234 @@
           37
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "repair": {
+        "from_sha256": "45abc6f09340e2064c37291a40dbf70238392509035be86d88cfad5e5841aa79",
+        "to_sha256": "bded8e04b5f77b7f436f3f5289da4adf6fe1252333ce16090a5040bcc8c383e9",
+        "final": "art-factory/starlantern/work/repair/icon-crystal-shell.png",
+        "pixels": [
+          {
+            "x": 11,
+            "y": 5,
+            "from": [
+              42,
+              0,
+              44
+            ],
+            "to": [
+              29,
+              25,
+              95
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 12,
+            "y": 5,
+            "from": [
+              48,
+              0,
+              53
+            ],
+            "to": [
+              44,
+              30,
+              114
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 9,
+            "y": 6,
+            "from": [
+              116,
+              6,
+              118
+            ],
+            "to": [
+              52,
+              14,
+              187
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 8,
+            "y": 7,
+            "from": [
+              123,
+              7,
+              141
+            ],
+            "to": [
+              19,
+              13,
+              51
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 7,
+            "y": 8,
+            "from": [
+              96,
+              10,
+              113
+            ],
+            "to": [
+              32,
+              21,
+              114
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 6,
+            "y": 9,
+            "from": [
+              34,
+              1,
+              35
+            ],
+            "to": [
+              38,
+              32,
+              138
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 28,
+            "y": 22,
+            "from": [
+              94,
+              3,
+              102
+            ],
+            "to": [
+              30,
+              67,
+              132
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 27,
+            "y": 23,
+            "from": [
+              38,
+              2,
+              37
+            ],
+            "to": [
+              30,
+              67,
+              132
+            ],
+            "rule": "outline-key"
+          }
+        ],
+        "skipped": [],
+        "changed_pixels": 12,
+        "rule": "gutter key line (sl_art.gutter_key_lines: a bbox edge row or column whose opaque pixels are all outline key, or key by a published repair's record, at least 3): alpha 0 (F8: crystal-shell, old-coin; the R4 pad of lizard-scale) + outline-key residue (sl_art.outline_key_pixels: key-hue pixels plus outline_blend_pixels, the key blended into a dark outline under _deep_key's RB floor or hue floor): repaired together as key-hue repairs, the rounded median of opaque 8-neighbours outside the set, in passes; alpha kept (F8: 5d icons, enemy bat)",
+        "rules": [
+          "gutter-clear",
+          "outline-key"
+        ],
+        "postprocess_only": true,
+        "publish_with": "f8",
+        "qa": {
+          "pass": true,
+          "reasons": [],
+          "warnings": [],
+          "residue": 0,
+          "semi": 0,
+          "edge": 0,
+          "holes": 0,
+          "block": 6,
+          "size": [
+            33,
+            37
+          ],
+          "magenta_spill": 0,
+          "key_tint_inside": 0,
+          "bright_key": 0,
+          "pink_outlier": 0,
+          "spec": "roster-icon:8da249263f71"
+        },
+        "cleared": [
+          {
+            "x": 5,
+            "y": 35,
+            "from": [
+              121,
+              11,
+              124,
+              255
+            ],
+            "to": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "rule": "gutter-clear"
+          },
+          {
+            "x": 6,
+            "y": 35,
+            "from": [
+              140,
+              7,
+              144,
+              255
+            ],
+            "to": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "rule": "gutter-clear"
+          },
+          {
+            "x": 7,
+            "y": 35,
+            "from": [
+              143,
+              6,
+              150,
+              255
+            ],
+            "to": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "rule": "gutter-clear"
+          },
+          {
+            "x": 8,
+            "y": 35,
+            "from": [
+              139,
+              12,
+              150,
+              255
+            ],
+            "to": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "rule": "gutter-clear"
+          }
+        ],
+        "status": "pending",
+        "date": "2026-10-29"
+      }
     },
     "icon-ice-crystal": {
       "kind": "sprite",
@@ -2385,7 +4784,183 @@
           33
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "repair": {
+        "from_sha256": "30e4c93a238a119922f9036850c59615b8a5332094c09ee4e4aa0ac524a3c489",
+        "to_sha256": "e3a823e87a46d4c60c5ccde4c104eab8fb3231e1eceffc46e29db5f8849e7d26",
+        "final": "art-factory/starlantern/work/repair/icon-ice-crystal.png",
+        "pixels": [
+          {
+            "x": 20,
+            "y": 9,
+            "from": [
+              77,
+              8,
+              99
+            ],
+            "to": [
+              70,
+              138,
+              169
+            ]
+          },
+          {
+            "x": 20,
+            "y": 10,
+            "from": [
+              94,
+              13,
+              127
+            ],
+            "to": [
+              64,
+              157,
+              190
+            ]
+          },
+          {
+            "x": 20,
+            "y": 11,
+            "from": [
+              99,
+              16,
+              137
+            ],
+            "to": [
+              76,
+              139,
+              178
+            ]
+          },
+          {
+            "x": 20,
+            "y": 13,
+            "from": [
+              93,
+              6,
+              130
+            ],
+            "to": [
+              32,
+              128,
+              168
+            ]
+          },
+          {
+            "x": 21,
+            "y": 13,
+            "from": [
+              95,
+              3,
+              135
+            ],
+            "to": [
+              79,
+              10,
+              129
+            ]
+          },
+          {
+            "x": 17,
+            "y": 30,
+            "from": [
+              48,
+              3,
+              68
+            ],
+            "to": [
+              48,
+              128,
+              216
+            ]
+          },
+          {
+            "x": 19,
+            "y": 30,
+            "from": [
+              120,
+              11,
+              142
+            ],
+            "to": [
+              29,
+              57,
+              134
+            ]
+          },
+          {
+            "x": 11,
+            "y": 31,
+            "from": [
+              105,
+              12,
+              120
+            ],
+            "to": [
+              43,
+              4,
+              75
+            ]
+          },
+          {
+            "x": 12,
+            "y": 31,
+            "from": [
+              104,
+              15,
+              119
+            ],
+            "to": [
+              103,
+              162,
+              179
+            ]
+          },
+          {
+            "x": 15,
+            "y": 31,
+            "from": [
+              141,
+              9,
+              147
+            ],
+            "to": [
+              53,
+              109,
+              170
+            ]
+          }
+        ],
+        "skipped": [],
+        "changed_pixels": 10,
+        "rule": "outline-key residue (sl_art.outline_key_pixels: key-hue pixels plus outline_blend_pixels, the key blended into a dark outline under _deep_key's RB floor or hue floor): repaired together as key-hue repairs, the rounded median of opaque 8-neighbours outside the set, in passes; alpha kept (F8: 5d icons, enemy bat)",
+        "rules": [
+          "outline-key"
+        ],
+        "postprocess_only": true,
+        "publish_with": "f8",
+        "qa": {
+          "pass": true,
+          "reasons": [],
+          "warnings": [],
+          "residue": 0,
+          "semi": 0,
+          "edge": 0,
+          "holes": 0,
+          "block": 7,
+          "size": [
+            27,
+            33
+          ],
+          "magenta_spill": 0,
+          "key_tint_inside": 0,
+          "bright_key": 0,
+          "pink_outlier": 0,
+          "spec": "roster-icon:8da249263f71"
+        },
+        "status": "pending",
+        "date": "2026-10-29"
+      }
     },
     "icon-lizard-scale": {
       "kind": "sprite",
@@ -2414,156 +4989,35 @@
       },
       "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
       "repair": {
-        "from_sha256": "72cfc7afd2f35040b7cc1e9ac5b246b6ca0116eb7da4208f90ccc9d9b70624cd",
-        "to_sha256": "622dbf5055d29fa04be9324e7382e467dec15a7993ea8e009c4767a9b8d92671",
-        "final": "art-factory/starlantern/work/repair/icon-lizard-scale.png",
+        "from_sha256": "622dbf5055d29fa04be9324e7382e467dec15a7993ea8e009c4767a9b8d92671",
+        "to_sha256": "2175b9f6bfd011993232757759b29b751300bf2cbbce3ed78fdc2083820b1dcd",
+        "final": "art-factory/starlantern/work/repair/icon-lizard-scale.f8.png",
         "pixels": [
           {
-            "x": 12,
-            "y": 6,
+            "x": 4,
+            "y": 14,
             "from": [
-              101,
-              8,
-              97
-            ],
-            "to": [
-              21,
-              16,
-              42
-            ]
-          },
-          {
-            "x": 11,
-            "y": 7,
-            "from": [
-              115,
-              18,
-              126
-            ],
-            "to": [
-              6,
-              56,
-              80
-            ]
-          },
-          {
-            "x": 21,
-            "y": 29,
-            "from": [
-              114,
-              8,
-              143
-            ],
-            "to": [
-              5,
-              13,
-              39
-            ]
-          },
-          {
-            "x": 8,
-            "y": 35,
-            "from": [
-              130,
+              39,
               3,
-              134
+              47
             ],
             "to": [
-              0,
-              0,
-              0
-            ]
-          },
-          {
-            "x": 9,
-            "y": 35,
-            "from": [
-              132,
               4,
-              133
+              21,
+              56
             ],
-            "to": [
-              0,
-              0,
-              0
-            ]
-          },
-          {
-            "x": 10,
-            "y": 35,
-            "from": [
-              138,
-              6,
-              136
-            ],
-            "to": [
-              0,
-              0,
-              0
-            ]
-          },
-          {
-            "x": 11,
-            "y": 35,
-            "from": [
-              144,
-              5,
-              155
-            ],
-            "to": [
-              2,
-              0,
-              7
-            ]
-          },
-          {
-            "x": 10,
-            "y": 7,
-            "from": [
-              135,
-              11,
-              118
-            ],
-            "to": [
-              6,
-              56,
-              80
-            ]
-          },
-          {
-            "x": 7,
-            "y": 35,
-            "from": [
-              132,
-              10,
-              134
-            ],
-            "to": [
-              0,
-              0,
-              0
-            ]
-          },
-          {
-            "x": 12,
-            "y": 35,
-            "from": [
-              128,
-              11,
-              143
-            ],
-            "to": [
-              2,
-              0,
-              7
-            ]
+            "rule": "outline-key"
           }
         ],
         "skipped": [],
-        "changed_pixels": 10,
-        "rule": "key-hue residue only (sl_art.key_hue_pixels: _bright_key anywhere, _deep_key on the outline): each such pixel takes the rounded per-channel median of its opaque 8-neighbours that are not key hue, in passes; alpha kept; no other pixel changes (R4 review: the published 5d lizard-scale)",
+        "changed_pixels": 7,
+        "rule": "gutter key line (sl_art.gutter_key_lines: a bbox edge row or column whose opaque pixels are all outline key, or key by a published repair's record, at least 3): alpha 0 (F8: crystal-shell, old-coin; the R4 pad of lizard-scale) + outline-key residue (sl_art.outline_key_pixels: key-hue pixels plus outline_blend_pixels, the key blended into a dark outline under _deep_key's RB floor or hue floor): repaired together as key-hue repairs, the rounded median of opaque 8-neighbours outside the set, in passes; alpha kept (F8: 5d icons, enemy bat)",
+        "rules": [
+          "gutter-clear",
+          "outline-key"
+        ],
         "postprocess_only": true,
-        "publish_with": "r4",
+        "publish_with": "f8",
         "qa": {
           "pass": true,
           "reasons": [],
@@ -2577,15 +5031,118 @@
             30,
             37
           ],
-          "magenta_spill": 1,
+          "magenta_spill": 0,
           "key_tint_inside": 0,
           "bright_key": 0,
           "pink_outlier": 0,
           "spec": "roster-icon:8da249263f71"
         },
-        "status": "published",
-        "date": "2026-10-28",
-        "published_on": "2026-10-29"
+        "cleared": [
+          {
+            "x": 7,
+            "y": 35,
+            "from": [
+              0,
+              0,
+              0,
+              255
+            ],
+            "to": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "rule": "gutter-clear"
+          },
+          {
+            "x": 8,
+            "y": 35,
+            "from": [
+              0,
+              0,
+              0,
+              255
+            ],
+            "to": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "rule": "gutter-clear"
+          },
+          {
+            "x": 9,
+            "y": 35,
+            "from": [
+              0,
+              0,
+              0,
+              255
+            ],
+            "to": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "rule": "gutter-clear"
+          },
+          {
+            "x": 10,
+            "y": 35,
+            "from": [
+              0,
+              0,
+              0,
+              255
+            ],
+            "to": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "rule": "gutter-clear"
+          },
+          {
+            "x": 11,
+            "y": 35,
+            "from": [
+              2,
+              0,
+              7,
+              255
+            ],
+            "to": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "rule": "gutter-clear"
+          },
+          {
+            "x": 12,
+            "y": 35,
+            "from": [
+              2,
+              0,
+              7,
+              255
+            ],
+            "to": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "rule": "gutter-clear"
+          }
+        ],
+        "status": "pending",
+        "date": "2026-10-29"
       },
       "history": [
         {
@@ -2607,6 +5164,182 @@
           },
           "replaced_on": "2026-10-29",
           "by": "repair-outliers, published with roster-r4"
+        }
+      ],
+      "repair_history": [
+        {
+          "from_sha256": "72cfc7afd2f35040b7cc1e9ac5b246b6ca0116eb7da4208f90ccc9d9b70624cd",
+          "to_sha256": "622dbf5055d29fa04be9324e7382e467dec15a7993ea8e009c4767a9b8d92671",
+          "final": "art-factory/starlantern/work/repair/icon-lizard-scale.png",
+          "pixels": [
+            {
+              "x": 12,
+              "y": 6,
+              "from": [
+                101,
+                8,
+                97
+              ],
+              "to": [
+                21,
+                16,
+                42
+              ]
+            },
+            {
+              "x": 11,
+              "y": 7,
+              "from": [
+                115,
+                18,
+                126
+              ],
+              "to": [
+                6,
+                56,
+                80
+              ]
+            },
+            {
+              "x": 21,
+              "y": 29,
+              "from": [
+                114,
+                8,
+                143
+              ],
+              "to": [
+                5,
+                13,
+                39
+              ]
+            },
+            {
+              "x": 8,
+              "y": 35,
+              "from": [
+                130,
+                3,
+                134
+              ],
+              "to": [
+                0,
+                0,
+                0
+              ]
+            },
+            {
+              "x": 9,
+              "y": 35,
+              "from": [
+                132,
+                4,
+                133
+              ],
+              "to": [
+                0,
+                0,
+                0
+              ]
+            },
+            {
+              "x": 10,
+              "y": 35,
+              "from": [
+                138,
+                6,
+                136
+              ],
+              "to": [
+                0,
+                0,
+                0
+              ]
+            },
+            {
+              "x": 11,
+              "y": 35,
+              "from": [
+                144,
+                5,
+                155
+              ],
+              "to": [
+                2,
+                0,
+                7
+              ]
+            },
+            {
+              "x": 10,
+              "y": 7,
+              "from": [
+                135,
+                11,
+                118
+              ],
+              "to": [
+                6,
+                56,
+                80
+              ]
+            },
+            {
+              "x": 7,
+              "y": 35,
+              "from": [
+                132,
+                10,
+                134
+              ],
+              "to": [
+                0,
+                0,
+                0
+              ]
+            },
+            {
+              "x": 12,
+              "y": 35,
+              "from": [
+                128,
+                11,
+                143
+              ],
+              "to": [
+                2,
+                0,
+                7
+              ]
+            }
+          ],
+          "skipped": [],
+          "changed_pixels": 10,
+          "rule": "key-hue residue only (sl_art.key_hue_pixels: _bright_key anywhere, _deep_key on the outline): each such pixel takes the rounded per-channel median of its opaque 8-neighbours that are not key hue, in passes; alpha kept; no other pixel changes (R4 review: the published 5d lizard-scale)",
+          "postprocess_only": true,
+          "publish_with": "r4",
+          "qa": {
+            "pass": true,
+            "reasons": [],
+            "warnings": [],
+            "residue": 0,
+            "semi": 0,
+            "edge": 0,
+            "holes": 0,
+            "block": 6,
+            "size": [
+              30,
+              37
+            ],
+            "magenta_spill": 1,
+            "key_tint_inside": 0,
+            "bright_key": 0,
+            "pink_outlier": 0,
+            "spec": "roster-icon:8da249263f71"
+          },
+          "status": "published",
+          "date": "2026-10-28",
+          "published_on": "2026-10-29"
         }
       ]
     },
@@ -2632,7 +5365,158 @@
           33
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "repair": {
+        "from_sha256": "3efa3b75d1329f4087470b91f12acb53d26979b5256469dd0bb460dcd55e8cfb",
+        "to_sha256": "c1d2cf87d6418590b0ed3560519a787f6418b0b5c4b4d5397b58fa8689932685",
+        "final": "art-factory/starlantern/work/repair/icon-star-stone.png",
+        "pixels": [
+          {
+            "x": 22,
+            "y": 1,
+            "from": [
+              46,
+              5,
+              44
+            ],
+            "to": [
+              45,
+              20,
+              76
+            ]
+          },
+          {
+            "x": 23,
+            "y": 3,
+            "from": [
+              146,
+              6,
+              160
+            ],
+            "to": [
+              42,
+              20,
+              68
+            ]
+          },
+          {
+            "x": 24,
+            "y": 5,
+            "from": [
+              138,
+              5,
+              165
+            ],
+            "to": [
+              39,
+              16,
+              67
+            ]
+          },
+          {
+            "x": 27,
+            "y": 18,
+            "from": [
+              33,
+              1,
+              37
+            ],
+            "to": [
+              20,
+              9,
+              41
+            ]
+          },
+          {
+            "x": 24,
+            "y": 24,
+            "from": [
+              54,
+              4,
+              68
+            ],
+            "to": [
+              14,
+              4,
+              24
+            ]
+          },
+          {
+            "x": 23,
+            "y": 25,
+            "from": [
+              135,
+              12,
+              147
+            ],
+            "to": [
+              31,
+              9,
+              65
+            ]
+          },
+          {
+            "x": 22,
+            "y": 26,
+            "from": [
+              45,
+              2,
+              49
+            ],
+            "to": [
+              48,
+              19,
+              95
+            ]
+          }
+        ],
+        "skipped": [],
+        "changed_pixels": 7,
+        "rule": "outline-key residue (sl_art.outline_key_pixels: key-hue pixels plus outline_blend_pixels, the key blended into a dark outline under _deep_key's RB floor or hue floor): repaired together as key-hue repairs, the rounded median of opaque 8-neighbours outside the set, in passes; alpha kept (F8: 5d icons, enemy bat)",
+        "rules": [
+          "outline-key"
+        ],
+        "postprocess_only": true,
+        "publish_with": "f8",
+        "qa": {
+          "pass": true,
+          "reasons": [],
+          "warnings": [
+            "enclosed holes"
+          ],
+          "residue": 0,
+          "semi": 0,
+          "edge": 0,
+          "holes": 3,
+          "block": 7,
+          "size": [
+            29,
+            33
+          ],
+          "magenta_spill": 24,
+          "key_tint_inside": 0,
+          "bright_key": 0,
+          "pink_outlier": 0,
+          "spec": "roster-icon:8da249263f71"
+        },
+        "kept": [
+          {
+            "x": 6,
+            "y": 8,
+            "rgb": [
+              44,
+              9,
+              56
+            ]
+          }
+        ],
+        "allow_magenta_spill": {
+          "count": 24,
+          "reason": "F8 classification: kept as art: the stone's lavender highlights (23 pixels, saturation .33-.63, green 54-141) on its upper left rim and (6,8) (44,9,56), dark violet like the stone's own shading (50,20,83)"
+        },
+        "status": "pending",
+        "date": "2026-10-29"
+      }
     },
     "icon-dusk-cloth": {
       "kind": "sprite",
@@ -2654,7 +5538,229 @@
           36
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "repair": {
+        "from_sha256": "0fdcbdae03bd4e2b4e821d3de5e7b4b75339420e09e4442c4c51cd21f741b70f",
+        "to_sha256": "e01588e55bec68b311c71581b33f0d48d05d26ebf6bfeb58a2930a9ac125f758",
+        "final": "art-factory/starlantern/work/repair/icon-dusk-cloth.png",
+        "pixels": [
+          {
+            "x": 32,
+            "y": 7,
+            "from": [
+              118,
+              4,
+              125
+            ],
+            "to": [
+              26,
+              10,
+              32
+            ]
+          },
+          {
+            "x": 5,
+            "y": 8,
+            "from": [
+              91,
+              0,
+              93
+            ],
+            "to": [
+              63,
+              41,
+              74
+            ]
+          },
+          {
+            "x": 33,
+            "y": 8,
+            "from": [
+              108,
+              4,
+              108
+            ],
+            "to": [
+              44,
+              18,
+              64
+            ]
+          },
+          {
+            "x": 3,
+            "y": 9,
+            "from": [
+              109,
+              0,
+              103
+            ],
+            "to": [
+              63,
+              15,
+              65
+            ]
+          },
+          {
+            "x": 35,
+            "y": 10,
+            "from": [
+              80,
+              6,
+              78
+            ],
+            "to": [
+              23,
+              2,
+              20
+            ]
+          },
+          {
+            "x": 2,
+            "y": 11,
+            "from": [
+              95,
+              7,
+              94
+            ],
+            "to": [
+              45,
+              23,
+              63
+            ]
+          },
+          {
+            "x": 2,
+            "y": 12,
+            "from": [
+              100,
+              5,
+              97
+            ],
+            "to": [
+              45,
+              23,
+              63
+            ]
+          },
+          {
+            "x": 2,
+            "y": 13,
+            "from": [
+              82,
+              2,
+              78
+            ],
+            "to": [
+              33,
+              16,
+              49
+            ]
+          },
+          {
+            "x": 37,
+            "y": 13,
+            "from": [
+              38,
+              3,
+              34
+            ],
+            "to": [
+              25,
+              2,
+              23
+            ]
+          },
+          {
+            "x": 3,
+            "y": 15,
+            "from": [
+              109,
+              3,
+              117
+            ],
+            "to": [
+              14,
+              6,
+              20
+            ]
+          },
+          {
+            "x": 3,
+            "y": 16,
+            "from": [
+              145,
+              6,
+              150
+            ],
+            "to": [
+              4,
+              0,
+              3
+            ]
+          },
+          {
+            "x": 2,
+            "y": 10,
+            "from": [
+              118,
+              2,
+              117
+            ],
+            "to": [
+              48,
+              19,
+              64
+            ]
+          },
+          {
+            "x": 2,
+            "y": 14,
+            "from": [
+              78,
+              1,
+              70
+            ],
+            "to": [
+              30,
+              14,
+              43
+            ]
+          }
+        ],
+        "skipped": [],
+        "changed_pixels": 13,
+        "rule": "outline-key residue (sl_art.outline_key_pixels: key-hue pixels plus outline_blend_pixels, the key blended into a dark outline under _deep_key's RB floor or hue floor): repaired together as key-hue repairs, the rounded median of opaque 8-neighbours outside the set, in passes; alpha kept (F8: 5d icons, enemy bat)",
+        "rules": [
+          "outline-key"
+        ],
+        "postprocess_only": true,
+        "publish_with": "f8",
+        "qa": {
+          "pass": true,
+          "reasons": [],
+          "warnings": [],
+          "residue": 0,
+          "semi": 0,
+          "edge": 0,
+          "holes": 0,
+          "block": 6,
+          "size": [
+            40,
+            36
+          ],
+          "magenta_spill": 3,
+          "key_tint_inside": 0,
+          "bright_key": 0,
+          "pink_outlier": 0,
+          "spec": "roster-icon:8da249263f71"
+        },
+        "allow_magenta_spill": {
+          "count": 3,
+          "reason": "F8 classification: the violet cloth is art in the spill band: (32,8) (60,18,65) and (4,9) (63,15,65) are its own dark violet (saturation .72/.77, never key); (3,9) is repaired to its neighbours' median, the same cloth violet (63,15,65)"
+        },
+        "status": "pending",
+        "date": "2026-10-29"
+      }
     },
     "icon-old-coin": {
       "kind": "sprite",
@@ -2676,7 +5782,385 @@
           35
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "repair": {
+        "from_sha256": "7dc034b797943e7701841dd845863c4c19b3f5963db0dbef2502f6a67fb5f5d4",
+        "to_sha256": "30b84170302ed92d5cf3040f898c086b3af68b52731c8b3093244576e2858989",
+        "final": "art-factory/starlantern/work/repair/icon-old-coin.png",
+        "pixels": [
+          {
+            "x": 10,
+            "y": 2,
+            "from": [
+              34,
+              1,
+              34
+            ],
+            "to": [
+              46,
+              38,
+              46
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 3,
+            "y": 8,
+            "from": [
+              72,
+              10,
+              67
+            ],
+            "to": [
+              27,
+              0,
+              32
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 31,
+            "y": 10,
+            "from": [
+              148,
+              9,
+              147
+            ],
+            "to": [
+              5,
+              3,
+              5
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 31,
+            "y": 11,
+            "from": [
+              141,
+              16,
+              137
+            ],
+            "to": [
+              23,
+              23,
+              24
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 31,
+            "y": 24,
+            "from": [
+              128,
+              1,
+              132
+            ],
+            "to": [
+              4,
+              3,
+              4
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 5,
+            "y": 29,
+            "from": [
+              55,
+              2,
+              56
+            ],
+            "to": [
+              29,
+              26,
+              29
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 25,
+            "y": 31,
+            "from": [
+              35,
+              0,
+              41
+            ],
+            "to": [
+              9,
+              2,
+              10
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 2,
+            "y": 8,
+            "from": [
+              148,
+              4,
+              145
+            ],
+            "to": [
+              27,
+              0,
+              32
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 31,
+            "y": 9,
+            "from": [
+              139,
+              14,
+              141
+            ],
+            "to": [
+              5,
+              3,
+              5
+            ],
+            "rule": "outline-key"
+          }
+        ],
+        "skipped": [],
+        "changed_pixels": 21,
+        "rule": "gutter key line (sl_art.gutter_key_lines: a bbox edge row or column whose opaque pixels are all outline key, or key by a published repair's record, at least 3): alpha 0 (F8: crystal-shell, old-coin; the R4 pad of lizard-scale) + outline-key residue (sl_art.outline_key_pixels: key-hue pixels plus outline_blend_pixels, the key blended into a dark outline under _deep_key's RB floor or hue floor): repaired together as key-hue repairs, the rounded median of opaque 8-neighbours outside the set, in passes; alpha kept (F8: 5d icons, enemy bat)",
+        "rules": [
+          "gutter-clear",
+          "outline-key"
+        ],
+        "postprocess_only": true,
+        "publish_with": "f8",
+        "qa": {
+          "pass": true,
+          "reasons": [],
+          "warnings": [],
+          "residue": 0,
+          "semi": 0,
+          "edge": 0,
+          "holes": 0,
+          "block": 5,
+          "size": [
+            34,
+            35
+          ],
+          "magenta_spill": 0,
+          "key_tint_inside": 0,
+          "bright_key": 0,
+          "pink_outlier": 0,
+          "spec": "roster-icon:8da249263f71"
+        },
+        "cleared": [
+          {
+            "x": 11,
+            "y": 33,
+            "from": [
+              90,
+              6,
+              92,
+              255
+            ],
+            "to": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "rule": "gutter-clear"
+          },
+          {
+            "x": 12,
+            "y": 33,
+            "from": [
+              100,
+              3,
+              102,
+              255
+            ],
+            "to": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "rule": "gutter-clear"
+          },
+          {
+            "x": 13,
+            "y": 33,
+            "from": [
+              93,
+              2,
+              90,
+              255
+            ],
+            "to": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "rule": "gutter-clear"
+          },
+          {
+            "x": 14,
+            "y": 33,
+            "from": [
+              90,
+              2,
+              91,
+              255
+            ],
+            "to": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "rule": "gutter-clear"
+          },
+          {
+            "x": 15,
+            "y": 33,
+            "from": [
+              98,
+              3,
+              98,
+              255
+            ],
+            "to": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "rule": "gutter-clear"
+          },
+          {
+            "x": 16,
+            "y": 33,
+            "from": [
+              97,
+              3,
+              97,
+              255
+            ],
+            "to": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "rule": "gutter-clear"
+          },
+          {
+            "x": 17,
+            "y": 33,
+            "from": [
+              89,
+              2,
+              89,
+              255
+            ],
+            "to": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "rule": "gutter-clear"
+          },
+          {
+            "x": 18,
+            "y": 33,
+            "from": [
+              89,
+              3,
+              90,
+              255
+            ],
+            "to": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "rule": "gutter-clear"
+          },
+          {
+            "x": 19,
+            "y": 33,
+            "from": [
+              93,
+              2,
+              93,
+              255
+            ],
+            "to": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "rule": "gutter-clear"
+          },
+          {
+            "x": 20,
+            "y": 33,
+            "from": [
+              90,
+              2,
+              92,
+              255
+            ],
+            "to": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "rule": "gutter-clear"
+          },
+          {
+            "x": 21,
+            "y": 33,
+            "from": [
+              91,
+              1,
+              96,
+              255
+            ],
+            "to": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "rule": "gutter-clear"
+          },
+          {
+            "x": 22,
+            "y": 33,
+            "from": [
+              100,
+              7,
+              106,
+              255
+            ],
+            "to": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "rule": "gutter-clear"
+          }
+        ],
+        "status": "pending",
+        "date": "2026-10-29"
+      }
     },
     "icon-ancient-gear": {
       "kind": "sprite",
@@ -2698,7 +6182,365 @@
           32
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "repair": {
+        "from_sha256": "92f765c94364f3c8847a968da9fa3cfc9fa271d46eec37827b0125d3de3948d0",
+        "to_sha256": "7efdcccca6066bdc25d10f86bde265487007929786eb34f743a5e928dbc4ff7e",
+        "final": "art-factory/starlantern/work/repair/icon-ancient-gear.png",
+        "pixels": [
+          {
+            "x": 13,
+            "y": 1,
+            "from": [
+              122,
+              17,
+              133
+            ],
+            "to": [
+              14,
+              6,
+              12
+            ]
+          },
+          {
+            "x": 25,
+            "y": 4,
+            "from": [
+              86,
+              14,
+              90
+            ],
+            "to": [
+              20,
+              6,
+              12
+            ]
+          },
+          {
+            "x": 10,
+            "y": 5,
+            "from": [
+              126,
+              3,
+              133
+            ],
+            "to": [
+              12,
+              2,
+              4
+            ]
+          },
+          {
+            "x": 26,
+            "y": 5,
+            "from": [
+              117,
+              6,
+              118
+            ],
+            "to": [
+              9,
+              6,
+              7
+            ]
+          },
+          {
+            "x": 27,
+            "y": 6,
+            "from": [
+              117,
+              2,
+              123
+            ],
+            "to": [
+              65,
+              43,
+              29
+            ]
+          },
+          {
+            "x": 28,
+            "y": 8,
+            "from": [
+              106,
+              3,
+              119
+            ],
+            "to": [
+              12,
+              11,
+              7
+            ]
+          },
+          {
+            "x": 4,
+            "y": 11,
+            "from": [
+              32,
+              1,
+              31
+            ],
+            "to": [
+              52,
+              35,
+              26
+            ]
+          },
+          {
+            "x": 27,
+            "y": 11,
+            "from": [
+              42,
+              1,
+              45
+            ],
+            "to": [
+              4,
+              2,
+              2
+            ]
+          },
+          {
+            "x": 14,
+            "y": 14,
+            "from": [
+              124,
+              2,
+              132
+            ],
+            "to": [
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "x": 14,
+            "y": 19,
+            "from": [
+              50,
+              1,
+              49
+            ],
+            "to": [
+              30,
+              21,
+              14
+            ]
+          },
+          {
+            "x": 2,
+            "y": 20,
+            "from": [
+              51,
+              8,
+              57
+            ],
+            "to": [
+              3,
+              2,
+              2
+            ]
+          },
+          {
+            "x": 3,
+            "y": 20,
+            "from": [
+              104,
+              11,
+              100
+            ],
+            "to": [
+              17,
+              14,
+              10
+            ]
+          },
+          {
+            "x": 28,
+            "y": 20,
+            "from": [
+              73,
+              4,
+              70
+            ],
+            "to": [
+              26,
+              20,
+              14
+            ]
+          },
+          {
+            "x": 29,
+            "y": 20,
+            "from": [
+              71,
+              2,
+              72
+            ],
+            "to": [
+              25,
+              20,
+              15
+            ]
+          },
+          {
+            "x": 28,
+            "y": 24,
+            "from": [
+              116,
+              2,
+              132
+            ],
+            "to": [
+              37,
+              27,
+              16
+            ]
+          },
+          {
+            "x": 4,
+            "y": 26,
+            "from": [
+              75,
+              5,
+              65
+            ],
+            "to": [
+              22,
+              15,
+              14
+            ]
+          },
+          {
+            "x": 27,
+            "y": 26,
+            "from": [
+              81,
+              11,
+              93
+            ],
+            "to": [
+              15,
+              8,
+              6
+            ]
+          },
+          {
+            "x": 5,
+            "y": 27,
+            "from": [
+              39,
+              0,
+              38
+            ],
+            "to": [
+              27,
+              22,
+              15
+            ]
+          },
+          {
+            "x": 9,
+            "y": 28,
+            "from": [
+              55,
+              2,
+              77
+            ],
+            "to": [
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "x": 28,
+            "y": 7,
+            "from": [
+              125,
+              13,
+              133
+            ],
+            "to": [
+              38,
+              27,
+              18
+            ]
+          },
+          {
+            "x": 28,
+            "y": 9,
+            "from": [
+              117,
+              14,
+              137
+            ],
+            "to": [
+              12,
+              11,
+              7
+            ]
+          },
+          {
+            "x": 28,
+            "y": 23,
+            "from": [
+              112,
+              4,
+              127
+            ],
+            "to": [
+              37,
+              27,
+              16
+            ]
+          },
+          {
+            "x": 28,
+            "y": 25,
+            "from": [
+              118,
+              9,
+              133
+            ],
+            "to": [
+              26,
+              18,
+              11
+            ]
+          }
+        ],
+        "skipped": [],
+        "changed_pixels": 23,
+        "rule": "outline-key residue (sl_art.outline_key_pixels: key-hue pixels plus outline_blend_pixels, the key blended into a dark outline under _deep_key's RB floor or hue floor): repaired together as key-hue repairs, the rounded median of opaque 8-neighbours outside the set, in passes; alpha kept (F8: 5d icons, enemy bat)",
+        "rules": [
+          "outline-key"
+        ],
+        "postprocess_only": true,
+        "publish_with": "f8",
+        "qa": {
+          "pass": true,
+          "reasons": [],
+          "warnings": [],
+          "residue": 0,
+          "semi": 0,
+          "edge": 0,
+          "holes": 0,
+          "block": 6,
+          "size": [
+            32,
+            32
+          ],
+          "magenta_spill": 0,
+          "key_tint_inside": 0,
+          "bright_key": 0,
+          "pink_outlier": 0,
+          "spec": "roster-icon:8da249263f71"
+        },
+        "status": "pending",
+        "date": "2026-10-29"
+      }
     },
     "icon-wooden-staff": {
       "kind": "sprite",
@@ -5919,7 +9761,113 @@
       "chosen_attempt": "a4",
       "source_id": "sheet-trait-icons",
       "batch": "portal-dungeon",
-      "runtime": "/assets/games/starlantern/icon/trait-shade.png"
+      "runtime": "/assets/games/starlantern/icon/trait-shade.png",
+      "repair": {
+        "from_sha256": "44434eec0707afad9b768c8224f448f279f23572d0af7bd0c4a097c9e2e6bef1",
+        "to_sha256": "d2ea3982e4e9dc804a236ee9bf8562868cb7bcbccebf0027a37f89ca1132e7d5",
+        "final": "art-factory/starlantern/work/repair/icon-trait-shade.png",
+        "pixels": [
+          {
+            "x": 4,
+            "y": 8,
+            "from": [
+              122,
+              2,
+              107
+            ],
+            "to": [
+              4,
+              18,
+              26
+            ]
+          },
+          {
+            "x": 25,
+            "y": 13,
+            "from": [
+              39,
+              0,
+              42
+            ],
+            "to": [
+              11,
+              4,
+              76
+            ]
+          },
+          {
+            "x": 26,
+            "y": 14,
+            "from": [
+              113,
+              4,
+              144
+            ],
+            "to": [
+              22,
+              11,
+              135
+            ]
+          },
+          {
+            "x": 25,
+            "y": 29,
+            "from": [
+              107,
+              12,
+              130
+            ],
+            "to": [
+              37,
+              17,
+              180
+            ]
+          },
+          {
+            "x": 16,
+            "y": 31,
+            "from": [
+              45,
+              0,
+              62
+            ],
+            "to": [
+              6,
+              2,
+              39
+            ]
+          }
+        ],
+        "skipped": [],
+        "changed_pixels": 5,
+        "rule": "outline-key residue (sl_art.outline_key_pixels: key-hue pixels plus outline_blend_pixels, the key blended into a dark outline under _deep_key's RB floor or hue floor): repaired together as key-hue repairs, the rounded median of opaque 8-neighbours outside the set, in passes; alpha kept (F8: 5d icons, enemy bat)",
+        "rules": [
+          "outline-key"
+        ],
+        "postprocess_only": true,
+        "publish_with": "f8",
+        "qa": {
+          "pass": true,
+          "reasons": [],
+          "warnings": [],
+          "residue": 0,
+          "semi": 0,
+          "edge": 0,
+          "holes": 0,
+          "block": 11,
+          "size": [
+            31,
+            34
+          ],
+          "magenta_spill": 0,
+          "key_tint_inside": 0,
+          "bright_key": 0,
+          "pink_outlier": 0,
+          "spec": "roster-icon:8da249263f71"
+        },
+        "status": "pending",
+        "date": "2026-10-29"
+      }
     },
     "icon-trait-poison": {
       "final": "art-factory/starlantern/work/icon-trait-poison/icon-trait-poison.png",
@@ -5942,7 +9890,113 @@
       "chosen_attempt": "a2",
       "source_id": "sheet-trait-icons",
       "batch": "portal-dungeon",
-      "runtime": "/assets/games/starlantern/icon/trait-poison.png"
+      "runtime": "/assets/games/starlantern/icon/trait-poison.png",
+      "repair": {
+        "from_sha256": "13aa63c24aaf3503451124d3a33c0434f78480ebb1a7418d7e1aa2e0050cc3f6",
+        "to_sha256": "54b993d51c32be3a41df9fc6ba6cbfd317a463012d2565963ed03013efc9139b",
+        "final": "art-factory/starlantern/work/repair/icon-trait-poison.png",
+        "pixels": [
+          {
+            "x": 12,
+            "y": 1,
+            "from": [
+              118,
+              14,
+              135
+            ],
+            "to": [
+              6,
+              32,
+              10
+            ]
+          },
+          {
+            "x": 20,
+            "y": 15,
+            "from": [
+              133,
+              9,
+              161
+            ],
+            "to": [
+              24,
+              11,
+              16
+            ]
+          },
+          {
+            "x": 21,
+            "y": 29,
+            "from": [
+              44,
+              6,
+              52
+            ],
+            "to": [
+              5,
+              32,
+              8
+            ]
+          },
+          {
+            "x": 20,
+            "y": 31,
+            "from": [
+              148,
+              8,
+              180
+            ],
+            "to": [
+              7,
+              32,
+              12
+            ]
+          },
+          {
+            "x": 22,
+            "y": 29,
+            "from": [
+              67,
+              1,
+              84
+            ],
+            "to": [
+              5,
+              28,
+              8
+            ]
+          }
+        ],
+        "skipped": [],
+        "changed_pixels": 5,
+        "rule": "outline-key residue (sl_art.outline_key_pixels: key-hue pixels plus outline_blend_pixels, the key blended into a dark outline under _deep_key's RB floor or hue floor): repaired together as key-hue repairs, the rounded median of opaque 8-neighbours outside the set, in passes; alpha kept (F8: 5d icons, enemy bat)",
+        "rules": [
+          "outline-key"
+        ],
+        "postprocess_only": true,
+        "publish_with": "f8",
+        "qa": {
+          "pass": true,
+          "reasons": [],
+          "warnings": [],
+          "residue": 0,
+          "semi": 0,
+          "edge": 0,
+          "holes": 0,
+          "block": 12,
+          "size": [
+            28,
+            35
+          ],
+          "magenta_spill": 0,
+          "key_tint_inside": 0,
+          "bright_key": 0,
+          "pink_outlier": 0,
+          "spec": "roster-icon:8da249263f71"
+        },
+        "status": "pending",
+        "date": "2026-10-29"
+      }
     },
     "char-hero-standee": {
       "kind": "sprite",
@@ -46301,7 +50355,58 @@
       "source_id": "sheet-icons-roster-6",
       "batch": "roster-r4",
       "approved_by": "independent review art-factory/starlantern/work/review/roster-r4-review.md, art-factory/starlantern/work/review/roster-r4-review-2.md (2026-10-29)",
-      "runtime": "/assets/games/starlantern/icon/crab-plate.png"
+      "runtime": "/assets/games/starlantern/icon/crab-plate.png",
+      "repair": {
+        "from_sha256": "96973e7cc50460108af8a20f187f92c9f2c6d77361bdc11b19193fb0552b1086",
+        "to_sha256": "977462b6c54d1fc1ff9d3bfe7e0a7a0f7fc3cada182a00f9946e2107706d8971",
+        "final": "art-factory/starlantern/work/repair/icon-crab-plate.png",
+        "pixels": [
+          {
+            "x": 25,
+            "y": 4,
+            "from": [
+              131,
+              71,
+              85
+            ],
+            "to": [
+              82,
+              53,
+              40
+            ]
+          }
+        ],
+        "skipped": [],
+        "changed_pixels": 1,
+        "rule": "lone tint (sl_art.lone_tint_pixels: a pale key-ward rose alone on the outline, under pink_outlier's saturation and red floors): the rounded median of its opaque 8-neighbours; alpha kept (F8: crab-plate's spike tip (25,4), enemy bat)",
+        "rules": [
+          "lone-tint"
+        ],
+        "postprocess_only": true,
+        "publish_with": "f8",
+        "qa": {
+          "pass": true,
+          "reasons": [],
+          "warnings": [],
+          "residue": 0,
+          "semi": 0,
+          "edge": 0,
+          "holes": 0,
+          "magenta_spill": 0,
+          "key_tint_inside": 0,
+          "block": 9,
+          "size": [
+            36,
+            24
+          ],
+          "bright_key": 0,
+          "pink_outlier": 0,
+          "erased": 0,
+          "spec": "roster-icon:8da249263f71"
+        },
+        "status": "pending",
+        "date": "2026-10-29"
+      }
     },
     "icon-herald-horn": {
       "final": "art-factory/starlantern/work/sheet-icons-roster-6/icon-herald-horn.png",
