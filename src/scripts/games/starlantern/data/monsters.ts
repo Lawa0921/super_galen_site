@@ -138,7 +138,7 @@ export const REGION_BOSSES: Record<Land, readonly string[]> = {
 };
 /** A many-part boss comes with its parts (spec §5.6), the parts first in its line (roster plan B12: the first foe is the one a
  * plain attack meets, and 「先拆部件」 is the fight's lesson). */
-const BOSS_PARTS: Record<string, string[]> = { 'old-city-archon': x2('archon-hand'), 'rime-sovereign': x2('rime-pillar') };
+export const BOSS_PARTS: Record<string, string[]> = { 'old-city-archon': x2('archon-hand'), 'rime-sovereign': x2('rime-pillar') };
 
 /** Spec §5.5: the main road's wardens at depths 8, 13, 18, 23, 28, cycling after. */
 export const MAINLINE_WARDENS: readonly string[] = ['false-moon', 'bell-warden', 'toppled-automaton', 'requiem-conductor', 'lantern-brood'];

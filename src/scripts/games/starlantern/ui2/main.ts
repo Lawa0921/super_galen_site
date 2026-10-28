@@ -29,6 +29,7 @@ import { BuildsScene } from './scenes/builds';
 import { STORY } from '../data/story.zh-TW';
 import { BONDS_WRITTEN } from '../data/story/scenes';
 import { GIFT_LINES, RIN_OATH } from '../data/bond.zh-TW';
+import { ROSTER_ART, ROSTER_LIVE } from '../data/monsters';
 
 function safeStorage(): Storage | null {
   try { return window.localStorage; } catch { return null; }
@@ -108,6 +109,8 @@ export async function mountNext(): Promise<void> {
     settings: settingsStore,
     /** Tests only: the bond's registries, so the review's pictures can stand in a scene that is not written yet (bond plan Task 14). */
     bond: { STORY, BONDS_WRITTEN, GIFT_LINES, RIN_OATH },
+    /** Tests only: the roster's switches, so the e2e can put a foe live for one page (roster plan Task C6); the game never writes them. */
+    roster: { ROSTER_ART, ROSTER_LIVE },
   };
   ui.dataset.ready = 'true';
   await router.go('title');

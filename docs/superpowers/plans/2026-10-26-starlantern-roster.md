@@ -667,6 +667,12 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 - [ ] **Step 1**：`only live foes are listed`、`an unseen foe is a name of question marks and a place`、`the filters split main road, regions and bosses`、`lines open with their gates`、`a prism foe shows its weakness as turning`、`the own-unique line reads the codex`；清單與右欄留在面板內（照 `8db54d901` 的工房清單）。
 - [ ] **Step 2–5**：e2e 必跑；commit：`feat(starlantern): a bestiary page with filters, and nothing shown before it is met`。
 
+**PR C 實作附註（2026-10-27／28）**：
+- C6：**什麼都沒上線時圖鑑頁和今天一樣**（控制者的 PR C 指示：上線前遊戲不變；取代 spec §11.2「圖鑑頁升級可以先出貨」）；篩選與「？？？」在第一隻上線時才出現。e2e 用除錯把手 `__starlanternDebug.roster` 讓一隻上線來量版面（`ui2/main.ts`，只給測試）。詳細見 spec §0 第 20 條。
+- 測試位置：C1、C2 的整場測試在 `engine/game.test.ts`；C3 的整場測試在新檔 `engine/bestiary.test.ts`（照 Create 列）；C4 的畫面測試在新檔 `ui2/scenes/forgeRoster.test.ts`，因為 `ui2/scenes/forge.test.ts` 在 git 裡是 `-text`（二進位）而且換行混用，不動它。
+- C4：製作金幣是 `ownGold`，不是 `setGold`（見裁定 15）；`economy.test.ts` 的新測試在第 49 層抓到 `setGold` 會倒賺。
+- `engine/forge/uses.ts` 不必改：A3 的用途（`inscribe`、`craft`）文字已經指向 C4 的真動作。
+
 **PR C 收尾**：全新脈絡審查（重點：串流、統計測試、存檔修復）。
 
 ---

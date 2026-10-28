@@ -22,6 +22,8 @@ import { buildTalents, buildTree } from '../../src/scripts/games/starlantern/eng
 import { buildOf } from '../../src/scripts/games/starlantern/data/builds';
 import { bondPoints, maxBondRecord } from '../../src/scripts/games/starlantern/engine/story/bond';
 import { GIFT_LINES } from '../../src/scripts/games/starlantern/data/bond.zh-TW';
+import { BESTIARY_UI } from '../../src/scripts/games/starlantern/data/bestiary.zh-TW';
+import { ENEMIES } from '../../src/scripts/games/starlantern/data/enemies';
 import { SWEEP, asDesktop, asPhone, expectedMode, fitTo, go, legibility, longestGear, placeBeside, snap, stageBox, stageScale, startSweepGame, sweep, writeReviewIndex } from './starlantern-legibility';
 
 test.use({ launchOptions: { args: ['--mute-audio'] } });
@@ -2151,6 +2153,65 @@ test.describe('starlantern', () => {
     await expect(page.locator('.slx-hb-detail')).toContainText(STORY.leads.chizuru);
     await shot('04-handbook-leads');
     expect(w.errors).toEqual([]);
+  });
+
+  test('the bestiary page: its filters, a foe not met and one met, inside the panel at every size (roster plan Task C6)', async ({ page }) => {
+    const B = BESTIARY_UI;
+    const H = T.ui2.handbook;
+    const missing: string[] = [];
+    page.on('response', (r) => { if (r.status() === 404) missing.push(r.url()); });
+    for (const [width, height] of [[1280, 720], [844, 390], [390, 844]] as const) {
+      await fitTo(page, width, height);
+      const w = await setup(page, 7);
+      await page.evaluate(() => {
+        const d = (window as unknown as Dbg).__starlanternDebug;
+        // One roster foe live (its art is published), so the page is the bestiary's (with none live it is the old list).
+        const { ROSTER_ART, ROSTER_LIVE } = (d as unknown as { roster: { ROSTER_ART: Set<string>; ROSTER_LIVE: Set<string> } }).roster;
+        ROSTER_ART.add('paper-moth');
+        ROSTER_LIVE.add('paper-moth');
+        const s = d.game.state;
+        s.bestiary = { slime: { seen: 3, felled: 2 }, lanterneater: { seen: 1, felled: 1 } };
+        s.revealed = { slime: ['fire'] };
+      });
+      await page.locator('.slx-town [data-id=handbook]').click();
+      await expect(page.locator('.slx-handbook')).toBeVisible();
+      await page.locator('.slx-tabs .slx-tab').filter({ hasText: H.tabs.codex }).click();
+      const labels = page.locator('.slx-hb-list [role=option] .slx-label');
+      // The old kinds and the one live foe, under two filters.
+      await expect(labels).toHaveText([B.filters.road, B.filters.bosses]);
+      await page.locator('.slx-hb-list [role=option]').filter({ hasText: B.filters.road }).click();
+      await expect(labels).toHaveText([ENEMIES.slime.name, ...Array(8).fill(B.unknown)]);
+      const detail = page.locator('.slx-hb-detail');
+      await expect(detail).toContainText(B.tally(3, 2));
+      await expect(detail).toContainText(H.codex.weak(T.element.fire));
+      // The slime stands on the left at twice its size, a whole multiple of the stage's scale.
+      const img = page.locator('.slx-status-art img.slx-hb-foe');
+      await expect(img).toBeVisible();
+      const mode = await stageScale(page);
+      const size = await img.evaluate((e: HTMLImageElement) => { const r = e.getBoundingClientRect(); return { w: r.width, h: r.height, nw: e.naturalWidth }; });
+      expect((mode.kind === 'sideways' ? size.h : size.w) / mode.s / size.nw, `${width}x${height}`).toBeCloseTo(2, 2);
+      // A kind not met: its question marks and its place, and no picture at all.
+      await w.key('ArrowDown');
+      await expect(detail).toHaveText(`${B.unknown}${B.where(B.haunts.everywhere)}`);
+      await expect(page.locator('.slx-status-art img')).toHaveCount(0);
+      // The list and the detail stay inside the panel, and every word is legible.
+      const spill = await page.evaluate(() => {
+        const panel = document.querySelector('.slx-handbook .slx-status-panel')!.getBoundingClientRect();
+        const out = [...document.querySelectorAll('.slx-hb-list [role=option], .slx-hb-detail')].filter((e) => {
+          const r = e.getBoundingClientRect();
+          return r.left < panel.left - 0.5 || r.right > panel.right + 0.5 || r.top < panel.top - 0.5 || r.bottom > panel.bottom + 0.5;
+        }).map((e) => e.textContent);
+        const d = document.querySelector<HTMLElement>('.slx-hb-detail')!;
+        return d.scrollWidth > d.clientWidth + 0.5 ? [...out, 'detail scrolls across'] : out;
+      });
+      expect(spill, `${width}x${height}`).toEqual([]);
+      expect(await legibility(page, { requireReady: true }), `${width}x${height}`).toEqual([]);
+      // Back to the page's first list.
+      await w.key('Escape');
+      await expect(labels).toHaveText([B.filters.road, B.filters.bosses]);
+      expect(w.errors).toEqual([]);
+    }
+    expect(missing).toEqual([]);
   });
 
   /** The parts of the game state the forge tests read, through the debug handle. */

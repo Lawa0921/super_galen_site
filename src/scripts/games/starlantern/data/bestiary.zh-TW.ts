@@ -20,6 +20,39 @@ export interface BestiaryText { trait: string; lines: BestiaryLine[] }
  */
 export const BESTIARY: Partial<Record<string, BestiaryText>> = {};
 
+/** The bestiary page's own strings (roster plan Task C6): the handbook's 圖鑑 tab, its three filters and a foe's detail. */
+export const BESTIARY_UI = {
+  /** A foe not met yet: its name is not known, only where it is met (ruling 18: no silhouette either). */
+  unknown: '？？？',
+  filters: { road: '魔物・本道', lands: '魔物・各地區', bosses: '魔物・頭目與守關者' },
+  /** A filter row's right column: how many of its kinds were met, of all it lists. */
+  count: (seen: number, total: number) => `${seen}／${total}`,
+  haunts: {
+    main: '本道',
+    /** An old kind: met on every road. */
+    everywhere: '本道與各地區',
+    /** The lantern-eater: a boss wherever no other has come yet. */
+    bossFloors: '各地的頭目層',
+    road: (lo: number, hi?: number) => (hi === undefined ? `本道 ${lo} 層以下` : `本道 ${lo}–${hi} 層`),
+    depth: (place: string, depth: number) => `${place} 第 ${depth} 層`,
+    from: (place: string, depth: number) => `${place} 第 ${depth} 層起`,
+    finale: '本道的最深處',
+    deep: '迷宮深處',
+  },
+  where: (place: string) => `出沒：${place}`,
+  tally: (seen: number, felled: number) => `見過 ${seen} 次・擊倒 ${felled} 次`,
+  /** A list row's right column. */
+  felledRow: (n: number) => `擊倒 ${n}`,
+  seenRow: '見過',
+  /** A weakness that turns (M5): never one element for long. */
+  prism: '弱點：輪替',
+  mats: (names: string) => `素材：${names}`,
+  inscription: (stat: string, held: boolean) => `銘文：${stat}${held ? '（已取得）' : ''}`,
+  own: (name: string, got: boolean) => `專屬裝備：${name}（${got ? '已取得' : '未取得'}）`,
+  /** Seen, not felled yet: the rest of the entry waits. */
+  later: '擊倒之後，會知道更多。',
+};
+
 /**
  * Roster plan ruling 16: an inscribed piece is named 「〇〇・紙蛾銘」, after two characters of its species' name (the
  * spec's example 「紙蛾銘」 takes the two that read as the creature, so each row here is picked, not cut).
