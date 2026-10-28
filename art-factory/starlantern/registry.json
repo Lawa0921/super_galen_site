@@ -42258,21 +42258,23 @@
     },
     "icon-mourning-veil": {
       "final": "art-factory/starlantern/work/sheet-icons-roster-4/icon-mourning-veil.png",
-      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-4\\sheet-icons-roster-4-a4.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-4\\sheet-icons-roster-4-a6.png",
       "qa": {
         "pass": true,
         "reasons": [],
-        "warnings": [],
+        "warnings": [
+          "enclosed holes"
+        ],
         "residue": 0,
         "semi": 0,
         "edge": 0,
-        "holes": 0,
+        "holes": 3,
         "magenta_spill": 0,
         "key_tint_inside": 0,
-        "block": 7,
+        "block": 8,
         "size": [
-          35,
-          31
+          34,
+          27
         ],
         "bright_key": 0,
         "pink_outlier": 0,
@@ -42281,7 +42283,7 @@
       },
       "status": "qa_passed",
       "kind": "roster-icon",
-      "chosen_attempt": "a4",
+      "chosen_attempt": "a6",
       "source_id": "sheet-icons-roster-4",
       "batch": "roster-r3"
     },
@@ -44304,15 +44306,17 @@
         "a1": "picked for every part except two that the R3 review round 1 failed: mirage-sequin (a solid holed disc, like the published market-token) and mourning-veil (a grey cone, the same silhouette as cinder-dust)",
         "a2": "mirage-sequin and mourning-veil improved but not used: the sequin's hole sat near the centre and the veil still had a mottled rocky texture; both taken from a3",
         "a3": "R3 review round 2 FAIL for both parts taken from a3: mirage-sequin read as a steaming bronze bowl (like spent-wick), and mourning-veil as a white speckled block (granite or snow, near marble-shard), not grey lace",
-        "a4": "mourning-veil picked from a4 (grey lace cloth with regular round holes and folds); its sequin had loose rosy twinkle specks, so the sequin was drawn again",
-        "a5": "mirage-sequin picked from a5 (flat sequins at an angle, a rim hole, two sparkles touching the rim); every other part keeps its reviewed pick"
+        "a4": "mourning-veil from a4 failed R3 review round 3: the raw was right, but at block 7 each lace ring kept about 3 px and the lower half became speckle (brick or ore at 16 px). cover_sample at min cover 0.4, 0.5 and 0.6 did not make it read either, so it was redrawn on a cap extension; a4's other parts were never used",
+        "a5": "mirage-sequin picked from a5 (flat sequins at an angle, a rim hole, two sparkles touching the rim); every other part keeps its reviewed pick",
+        "a6": "mourning-veil picked from a6 (flat mid-grey cloth, 2 folds, 4 large ringed holes along a scalloped edge); every other part keeps its reviewed pick"
       },
       "plain_reasons": {
         "a1": "亮片像市集籌碼；面紗像一堆灰石",
         "a2": "亮片的孔仍在中間；面紗紋理像石頭",
         "a3": "亮片像冒煙的碗；面紗像白色花崗岩",
-        "a4": "採用面紗；亮片周圍有零散的粉色光點",
-        "a5": "採用亮片"
+        "a4": "原圖對，但縮圖後蕾絲孔變雜點；換取樣也不行",
+        "a5": "採用亮片",
+        "a6": "採用面紗"
       }
     }
   },
@@ -46369,6 +46373,11 @@
         "extra": 3,
         "by": "controller 2026-10-28",
         "review": "C:/msys64/tmp/claude/C--Users-bag57/50dcf669-8aa8-4bb5-ac8e-fe7a03cde69f/scratchpad/roster-r3/r3-review-round2.md"
+      },
+      {
+        "extra": 3,
+        "by": "controller 2026-10-28",
+        "review": "C:/msys64/tmp/claude/C--Users-bag57/50dcf669-8aa8-4bb5-ac8e-fe7a03cde69f/scratchpad/roster-r3/r3-review-round3.md"
       }
     ]
   }
