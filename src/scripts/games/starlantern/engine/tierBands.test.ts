@@ -11,7 +11,7 @@ import { MAX_LEVEL } from './party';
 import { rollCrowdAffix } from './tiers';
 import { TIERS } from '../data/difficulty';
 import { bandKey, cellKey, withLineup } from './tierBands';
-import { withBondScale } from './testing';
+import { withBondScale, withRosterOnly } from './testing';
 import type { Lineup } from './sim';
 import { CURVE, cellCrowdAffix, BASELINE_DEPTHS, BASELINE_TIERS, FEASIBLE, TIER_BANDS, bandCells, bandMisses, baselineLine, frozenMisses, hasTriggerOrLasting, hellReportCells, measureCell, SHALLOW_HELL_BARE, shallowHellMisses, nightmareTwins, normalTwin, pullsApart, roadCell, tierLineup, TIER_SEEDS, withTrigger, type BandId, type BandRun, type TierCell, type TierRun } from './tierBands';
 import { AFFIX_IDS } from '../data/affixes';
@@ -111,7 +111,17 @@ describe('difficulty band measurements (difficulty plan Task 0)', () => {
     expect(pullsApart(run(0.12, 3.35), run(0.12, 2.82))).toBe(false);
   });
 
-  it('the band cells are as the spec lists', () => {
+  it('the band cells follow the live tables (L1b)', () => {
+    // The first wave replaced the main road's tables at 10 and 15: N1 and N2 measure every group there, as the spec says.
+    const groups = (d: number) => encounterTable('mainline', d).length;
+    expect(groups(10)).toBe(12);
+    expect(bandCells('N1').length).toBe([10, 15, 20, 25].reduce((a, d) => a + groups(d), 0));
+    expect(bandCells('N1').filter((c) => c.depth === 10).map((c) => c.groups[0])).toEqual(encounterTable('mainline', 10));
+    expect(bandCells('N2').length).toBe((groups(10) + groups(20)) * AFFIX_IDS.length);
+  });
+
+  it('the band cells are as the spec lists', () => withRosterOnly([], () => {
+    // L1b: measures the game as it was with nothing live.
     const groups = (d: number) => encounterTable('mainline', d).length;
     const pair = (a: readonly unknown[] | undefined) => a?.length;
     const shape = (cs: TierCell[]) => cs.map((c) => `${c.kind}/${c.difficulty}/${c.lineup.runeTier ?? 'bare'}`);
@@ -211,7 +221,7 @@ describe('difficulty band measurements (difficulty plan Task 0)', () => {
     }
     expect(hr.length).toBe(groups(15) + 56);
     expect(new Set(shape(hr))).toEqual(new Set(['crowd/hell/rare', 'boss/hell/rare', 'boss/hell/bare']));
-  });
+  }));
 
   it('Hell crowd cells meet the crowd affix as the game draws it; twins and other tiers do not', () => {
     // A Hell crowd cell's fight k of group gi draws the crowd affix of spot (gi, k) from seed k x 7919, at Hell's chance;
@@ -269,7 +279,8 @@ describe('difficulty band thresholds (difficulty plan Task 5b, controller ruling
     });
   });
 
-  it('N1 and N3 pool a depth: the rate, and HP lost above the Normal twin\'s', () => {
+  it('N1 and N3 pool a depth: the rate, and HP lost above the Normal twin\'s', () => withRosterOnly([], () => {
+    // L1b: measures the game as it was with nothing live.
     expect(bandMisses('N1', only('N1', fill('N1', () => run(0.9, 0.11))))).toEqual([]);
     // One group of d15 at .5 pulls its depth's pool (three groups) under .90; a twin at the same loss is not harder.
     const n1 = bandMisses('N1', only('N1', fill('N1', (c) => run(c.depth === 15 && c.groups[0].length === 1 && c.groups[0][0] === 'golem' ? 0.5 : 1, c.depth === 25 ? 0.1 : 0.2))));
@@ -277,7 +288,7 @@ describe('difficulty band thresholds (difficulty plan Task 5b, controller ruling
     // N3: d10 is reported only; a weak affix pulls its depth.
     expect(bandMisses('N3', only('N3', fill('N3', (c) => run(c.depth === 10 ? 0 : 0.8, 0.3))))).toEqual([]);
     expect(bandMisses('N3', only('N3', fill('N3', (c) => run(c.depth === 20 && c.affixes![0] === 'swift' ? 0 : 0.9, 0.3))))).toEqual(['N3 d20: rate 0.750 < 0.8']);
-  });
+  }));
 
   it('the curve: a tier\'s loss over the Normal twin never drops by more than .03 as the depth rises', () => {
     expect(CURVE).toEqual({ slack: 0.03, N1: [10, 15, 20, 25], N3: [10, 15, 20, 25], H1: [20, 25] });
@@ -354,7 +365,8 @@ describe('difficulty band thresholds (difficulty plan Task 5b, controller ruling
     expect(bandMisses('HE', only('HE', fill('HE', (c) => run(c.depth === 25 ? 0.7 : 0.9, 0.5))))).toEqual(['HE d25: rate 0.700 < 0.75']);
   });
 
-  it('N2, N5, N6 as before; H4 three rounds; HX no frozen round', () => {
+  it('N2, N5, N6 as before; H4 three rounds; HX no frozen round', () => withRosterOnly([], () => {
+    // L1b: measures the game as it was with nothing live.
     expect(bandMisses('N2', only('N2', fill('N2', () => run(0.9, 0.3))))).toEqual([]);
     expect(bandMisses('N2', only('N2', fill('N2', (c) => run(c.affixes![0] === 'swift' ? 0.8 : 1, 0.3)))))
       .toEqual(['N2 d10 [swift]: rate 0.800 below the mean 0.967 by more than 0.15', 'N2 d20 [swift]: rate 0.800 below the mean 0.967 by more than 0.15']);
@@ -366,7 +378,7 @@ describe('difficulty band thresholds (difficulty plan Task 5b, controller ruling
     expect(bandMisses('H4', only('H4', h4))).toEqual([`H4 ${bandCells('H4')[0].label}: a fight of 2 rounds < 3`]);
     expect(frozenMisses('N1', fill('N1', () => run(1, 0.1)))).toEqual([]);
     expect(frozenMisses('N1', fill('N1', () => run(1, 0.1, 3, 3, 1))).length).toBe(15);
-  });
+  }));
 });
 
 describe('band 21 measures apart from the plain bands (bond plan Task 4)', () => {

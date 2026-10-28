@@ -149,28 +149,35 @@ const UP = 1.12, UPUP = 1.15, DOWN = 0.88, DOWNDOWN = 0.85;
 
 const MAINLINE: [string, Spec][] = [
   // B 4–9: the fog roots, the town's everyday memories
+  // L1b (spec §0 item 21): swarm fodder, as hard as item 8's elite moths allow (紙緣 130/.45 → 170/.50, 撲粉 .25 → .30).
   ['paper-moth', { name: '遺信紙蛾', arch: 'swarm', mul: { spd: UPUP, atk: UPUP }, weak: ['fire'], band: 'B', inscribe: 'sleepRes',
-    skills: [sk('撲粉', 0.25, 'row', sleep(0.25)), sk('紙緣', 0.45, 'enemy', hit(130))] }],
+    skills: [sk('撲粉', 0.3, 'row', sleep(0.25)), sk('紙緣', 0.5, 'enemy', hit(170))] }],
   ['lamp-wight', { name: '提燈幽影', arch: 'support', weak: ['ice'], resist: ['fire'], band: 'B', inscribe: 'heal',
     skills: [sk('借光', 0.4, 'ally', heal(50))] }],
   ['root-hound', { name: '霧根獵犬', arch: 'std', mul: { atk: UP }, weak: ['fire'], band: 'B', inscribe: 'atk',
     skills: [windup(sk('撲咬', 0.2, 'enemy', hit(230)), '伏低')] }],
-  ['tin-soldier', { name: '錫兵殘影', arch: 'heavy', mul: { def: UP, atk: UPUP }, weak: ['thunder'], resist: ['ice'], band: 'B', inscribe: 'armor',
-    skills: [sk('列隊', 0.25, 'ally', guard(2)), sk('刺刀', 0.4, 'enemy', hit(160))] }],
-  ['dust-mimic', { name: '塵封木箱', arch: 'std', weak: ['fire'], band: 'B', inscribe: 'goldFind', opener: 'disguise',
-    skills: [sk('咬合', 0.2, 'enemy', hit(85))] }],
+  // L1b (item 21): hp, def ×0.85 and atk ×1.12 (were def ×1.12, atk ×1.15); 列隊 .25 → .10; 刺刀 160 → 200.
+  ['tin-soldier', { name: '錫兵殘影', arch: 'heavy', mul: { hp: DOWNDOWN, def: DOWNDOWN, atk: UP }, weak: ['thunder'], resist: ['ice'], band: 'B', inscribe: 'armor',
+    skills: [sk('列隊', 0.1, 'ally', guard(2)), sk('刺刀', 0.4, 'enemy', hit(200))] }],
+  // L1b (item 21): hp, atk, def, spd ×0.85; 咬合 85/.20 → 75/.90, a lighter bite in place of most plain ones.
+  ['dust-mimic', { name: '塵封木箱', arch: 'std', mul: { hp: DOWNDOWN, atk: DOWNDOWN, def: DOWNDOWN, spd: DOWNDOWN }, weak: ['fire'], band: 'B', inscribe: 'goldFind', opener: 'disguise',
+    skills: [sk('咬合', 0.9, 'enemy', hit(75))] }],
   ['market-ghost', { name: '市集的吆喝聲', arch: 'support', mul: { spd: UP }, weak: ['thunder'], band: 'B', inscribe: 'matFind',
-    skills: [sk('順手牽羊', 0.35, 'enemy', hit(90), steal(5))] }],
+    // L1b (item 21): 順手牽羊 90/.35 → 140/.50.
+    skills: [sk('順手牽羊', 0.5, 'enemy', hit(140), steal(5))] }],
   // C 10–15: bells, wardens, hollow ones and paired shadows
   ['tongueless-bell', { name: '無舌鐘', arch: 'caster', mul: { spd: DOWN }, weak: ['ice'], resist: ['thunder'], band: 'C', inscribe: 'tpCost',
     skills: [sk('無聲的鐘鳴', 0.35, 'row', hit(60, 'thunder'), forget(0.5)), sk('鐘身撞擊', 0.25, 'enemy', hit(110, 'thunder'))] }],
   ['hollow-hunter', { name: '空殼獵人', arch: 'std', weak: ['thunder'], band: 'C', inscribe: 'critDmg', remnant: true,
     skills: [mirror('借來的招式', 150, 0.35), sk('空殼之刃', 0.25, 'enemy', hit(130))] }],
-  ['mist-twin', { name: '霧雙子', arch: 'swarm', mul: { hp: UPUP, atk: UPUP }, weak: ['fire'], resist: ['ice'], band: 'C', inscribe: 'multi',
+  // L1b (item 21): spd, def ×1.15 and res ×1.1; 雙影 150/.50 → 320/.90 (the most frozen band 7's iron depth 10 allows; its
+  // band 22a cell is a named exception).
+  ['mist-twin', { name: '霧雙子', arch: 'swarm', mul: { hp: UPUP, atk: UPUP, spd: UPUP, def: UPUP, res: 1.1 }, weak: ['fire'], resist: ['ice'], band: 'C', inscribe: 'multi',
     onFall: { name: '雙生之怒', target: 'allies', effects: [buff('atk', 40, 3)] },
-    skills: [sk('雙影', 0.5, 'enemy', hit(150))] }],
+    skills: [sk('雙影', 0.9, 'enemy', hit(320))] }],
+  // L1b (item 21): 鏡羽 140/.40 → 240/.55.
   ['moon-crow', { name: '映月鴉', arch: 'std', mul: { spd: UP }, band: 'C', inscribe: 'crit', prism: 'cycle',
-    skills: [sk('鏡羽', 0.4, 'enemy', hit(140))] }],
+    skills: [sk('鏡羽', 0.55, 'enemy', hit(240))] }],
   ['bell-watcher', { name: '鐘樓巡守', arch: 'std', weak: ['ice'], band: 'C', inscribe: 'evasion', lore: 'rin', remnant: true,
     skills: [sk('宣告', 0.25, 'enemy', hunt), sk('巡守之杖', 0.3, 'enemy', hit(130))] }],
   ['sleepwalker', { name: '夢遊者', arch: 'heavy', mul: { atk: UP }, weak: ['fire'], resist: ['thunder'], band: 'C', inscribe: 'hp', opener: 'asleep',
@@ -322,13 +329,16 @@ const BOSSES: [string, Spec][] = [
   // the main road, every fifth depth (spec §5.6)
   ['fog-warden', { name: '霧門守衛', arch: 'boss', mul: { hp: 0.95 }, weak: ['fire'], resist: ['ice'],
     skills: [windup(sk('霧門落下', 0.25, 'enemies', hit(130)), '霧門升起'), sk('霧壓', 0.3, 'row', buff('def', -25, 2))] }],
-  ['silent-bell', { name: '啞鐘', arch: 'boss', mul: { hp: 1.05, spd: DOWN }, weak: ['ice'], resist: ['thunder'],
-    skills: [sk('無聲的轟鳴', 0.35, 'row', hit(100, 'thunder'), forget(0.4)), sk('鐘擊', 0.3, 'enemy', hit(160))],
-    stages: [{ below: 50, skills: [sk('無聲的轟鳴', 0.45, 'row', hit(105, 'thunder'), forget(0.5)), sk('鐘擊', 0.35, 'enemy', hit(170))] }] }],
+  // L1b (spec §0 item 21, band 22j): hp ×1.15 (was ×1.05); 鐘擊 160/.30 → 220/.40, the stage's 170/.35 → 240/.45, its 轟鳴 105 → 120.
+  ['silent-bell', { name: '啞鐘', arch: 'boss', mul: { hp: UPUP, spd: DOWN }, weak: ['ice'], resist: ['thunder'],
+    skills: [sk('無聲的轟鳴', 0.35, 'row', hit(100, 'thunder'), forget(0.4)), sk('鐘擊', 0.4, 'enemy', hit(220))],
+    stages: [{ below: 50, skills: [sk('無聲的轟鳴', 0.45, 'row', hit(120, 'thunder'), forget(0.5)), sk('鐘擊', 0.45, 'enemy', hit(240))] }] }],
   // Spec §5.6: borrowed blows; at 40% it breaks out a hundred styles of the sword (M6, M8).
-  ['hollow-champion', { name: '空殼勇者', arch: 'boss', mul: { atk: UPUP }, weak: ['thunder'], remnant: true,
-    skills: [mirror('借來的劍招', 160, 0.35), sk('勇者之擊', 0.3, 'enemy', hit(160))],
-    stages: [{ below: 40, skills: [sk('一百種劍法', 0.4, 'enemy', hit(60, 'phys', { hits: 3 })), mirror('借來的劍招', 160, 0.3), sk('勇者之擊', 0.3, 'enemy', hit(160))] }] }],
+  // L1b (item 21, band 22j): hp, def ×1.15; 勇者之擊 160/.30 → 280/.45 (its pressure no longer hangs on the party's own blows);
+  // 一百種劍法 60 → 90 a hit.
+  ['hollow-champion', { name: '空殼勇者', arch: 'boss', mul: { atk: UPUP, hp: UPUP, def: UPUP }, weak: ['thunder'], remnant: true,
+    skills: [mirror('借來的劍招', 160, 0.35), sk('勇者之擊', 0.45, 'enemy', hit(280))],
+    stages: [{ below: 40, skills: [sk('一百種劍法', 0.4, 'enemy', hit(90, 'phys', { hits: 3 })), mirror('借來的劍招', 160, 0.3), sk('勇者之擊', 0.45, 'enemy', hit(280))] }] }],
   ['old-city-archon', { name: '古城執政像', arch: 'boss', hp: 800, weak: ['thunder'], resist: ['fire'], parts: { cutPct: 50 }, skills: pair('審判', 'fire', '王權') }],
   ['gorged-beast', { name: '飽食之獸', arch: 'boss', mul: { hp: DOWN }, weak: ['ice'], resist: ['fire'],
     skills: [call('吐出燭芯', 'wick-shade', 1, 0.15), sk('吞光', 0.35, 'enemies', hit(85, 'fire')), sk('啃食', 0.3, 'enemy', bite(hit(130), 40))] }],

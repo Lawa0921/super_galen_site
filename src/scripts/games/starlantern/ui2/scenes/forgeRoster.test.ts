@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { T } from '../../data/text.zh-TW';
 import { ENEMIES } from '../../data/enemies';
 import { Game } from '../../engine/game';
-import { constRng, memoryStorage, withRosterLive } from '../../engine/testing';
+import { constRng, memoryStorage, withRosterLive, withRosterOnly } from '../../engine/testing';
 import { ownCost } from '../../engine/forge/craft';
 import { inscribeCost } from '../../engine/forge/cost';
 import type { ItemInstance } from '../../engine/types';
@@ -49,9 +49,11 @@ describe('the forge for the roster (roster plan Task C4)', () => {
   };
 
   it('the inscribe row', () => {
-    // With nothing live there is no 銘刻 row, whatever the stores hold.
-    const none = methods((g) => { g.state.inventory['faded-letter'] = 3; });
-    expect(none.ids().some((id) => id?.startsWith('ins:'))).toBe(false);
+    // With nothing live there is no 銘刻 row, whatever the stores hold. L1b: measures the game as it was with nothing live.
+    withRosterOnly([], () => {
+      const none = methods((g) => { g.state.inventory['faded-letter'] = 3; });
+      expect(none.ids().some((id) => id?.startsWith('ins:'))).toBe(false);
+    });
     withRosterLive(['paper-moth', 'root-hound', 'lamp-wight'], () => {
       // Only a live species whose signature the stores hold (none of lamp-wight's); root-hound's key (atk) cannot go on a
       // neck piece, so its row is greyed out and says why.
@@ -103,8 +105,9 @@ describe('the forge for the roster (roster plan Task C4)', () => {
   };
 
   it('the own-unique rows', () => {
-    expect(craft().ids()).toEqual(['item', 'base', 'set']);
-    withRosterLive(['fog-warden', 'false-moon'], () => {
+    withRosterOnly([], () => expect(craft().ids()).toEqual(['item', 'base', 'set']));   // L1b: measures the game as it was with nothing live.
+    // L1b: exactly these two live, the rest as with nothing live.
+    withRosterOnly(['fog-warden', 'false-moon'], () => {
       const t = craft((g) => {
         g.state.inventory = { 'fog-gate-plate': 5, 'star-tear': 1 };
         g.state.bestiary = { 'fog-warden': { seen: 1, felled: 1 } };
@@ -125,6 +128,18 @@ describe('the forge for the roster (roster plan Task C4)', () => {
       expect(t.game.state.gold).toBe(100000 - cost.gold);
       expect(t.sfx.loot).toHaveBeenCalledWith('unique');
     });
+  });
+
+  it("the first live wave's rows: its own uniques and its inscriptions, none of the next wave's (L1b)", () => {
+    // Own uniques: the five of the live wave, wardens first (SPECIALS order); none of R2's (the archon's crown, the
+    // automaton's gauntlet), though their trophies are in the stores.
+    const t = craft((g) => { g.state.inventory = { 'fog-gate-plate': 5, 'archon-gold': 5, 'automaton-core': 5, 'star-tear': 1 }; });
+    expect(t.ids()).toEqual(['item', 'base', 'set', 'own']);
+    t.row('own').click();
+    expect(t.ids()).toEqual(['moonless-mirror', 'unrung-clapper', 'fog-halberd', 'silent-chime', 'borrowed-blade']);
+    // Inscriptions: a live species whose signature the stores hold; an R2 species (the old city's sentinel) not, though held.
+    const m = methods((g) => { g.state.inventory['faded-letter'] = 3; g.state.inventory['marble-shard'] = 3; });
+    expect(m.ids().filter((id) => id?.startsWith('ins:'))).toEqual(['ins:paper-moth']);
   });
 
   it('an unbeaten owner is greyed out with its reason', () => {

@@ -7,7 +7,7 @@ import { enhanceChance, enhanceCost, fuseCost, fuseSlots, inscribeCost, rerollCo
 import { AFFIXES, GEAR_SLOTS, ROLL_FLOOR, SPECIALS, affixRange, generalLegendaries } from '../../data/gear';
 import { FUSE_GOLD, FUSE_SLOT_COST, INSCRIBE_QTY, REGION_AFFIX_GROUP, REROLL, ownGold } from '../../data/forge';
 import { EQUIPMENT } from '../../data/equipment';
-import { withRosterLive } from '../testing';
+import { withRosterLive, withRosterOnly } from '../testing';
 import { BAG_SIZE } from '../loot/bag';
 import { itemSlot, maxValue, rollItem } from '../loot/item';
 import { mulberry32 } from '../rng';
@@ -651,9 +651,12 @@ describe('crafting an own unique (roster plan Task C4)', () => {
       expect(r.state.gold).toBe(100000 - ownGold(craftLevel(s)));
     });
     // An owner not live, or a piece that is no one's own, is no recipe at all.
-    const s = { ...rich(), bestiary: { 'fog-warden': { seen: 1, felled: 1 } } };
-    expect(craftOwnUnique(s, 'fog-halberd')).toEqual({ ok: false, reason: 'invalid' });
-    expect(craftOwnUnique(s, 'blaze-ember-ring')).toEqual({ ok: false, reason: 'invalid' });
+    withRosterOnly([], () => {
+      // L1b: measures the game as it was with nothing live.
+      const s = { ...rich(), bestiary: { 'fog-warden': { seen: 1, felled: 1 } } };
+      expect(craftOwnUnique(s, 'fog-halberd')).toEqual({ ok: false, reason: 'invalid' });
+      expect(craftOwnUnique(s, 'blaze-ember-ring')).toEqual({ ok: false, reason: 'invalid' });
+    });
   });
 
   it('crafting draws once', () => {

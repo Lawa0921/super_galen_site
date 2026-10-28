@@ -7,7 +7,7 @@ import { AFFIXES, GEAR_SLOTS, ROLL_FLOOR, SPECIALS, affixRange } from '../../dat
 import { ENEMIES } from '../../data/enemies';
 import { INSCRIPTION_NAME } from '../../data/bestiary.zh-TW';
 import { newRun } from '../dungeon/run';
-import { constRng, withRosterLive } from '../testing';
+import { constRng, withRosterLive, withRosterOnly } from '../testing';
 import { MATERIALS } from '../../data/materials';
 import { CONDITIONS } from '../../data/conditions';
 import { MAX_ILVL, MAX_REACHED, depthLevel } from '../levels';
@@ -625,7 +625,7 @@ describe('the trophy stream and species inscriptions (roster plan Task C1)', () 
 
 describe("a boss's or a warden's own unique (roster plan Task C2)", () => {
   it("only a live owner's unique drops", () => {
-    expect(ownUniqueOf('fog-warden')).toBeUndefined();
+    withRosterOnly([], () => expect(ownUniqueOf('fog-warden')).toBeUndefined());   // L1b: measures the game as it was with nothing live.
     withRosterLive(['fog-warden'], () => {
       expect(ownUniqueOf('fog-warden')?.id).toBe('fog-halberd');
       expect(ownUniqueOf('slime')).toBeUndefined();

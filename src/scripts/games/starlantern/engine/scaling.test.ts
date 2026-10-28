@@ -10,7 +10,7 @@ import { createBattle, intentLabel, planEnemies, rewards } from './battle';
 import { expToNext, LEGACY_LINEUP } from './party';
 import { mulberry32 } from './rng';
 import { DEEP_ENEMIES, deepPower, enemyLevelAt, homeLevel, BOSS_PARTY_SCALE, DEPTH_CLEAR_SHARE, ENEMY_POWER, FIRST_DEPTH_CAP, GROUP_CAP, PARTY_SCALE, NORMAL_ENEMIES, REGION_DROP_CHANCE, REGION_TRAITS_FROM, depthClearExp, depthLevel, empower, encounterGroup, enemyPower, groupCap, partyScale, scaleEnemy, bossPartyScale } from './scaling';
-import { constRng, fullParty, withRosterLive } from './testing';
+import { constRng, fullParty, withRosterLive, withRosterOnly } from './testing';
 import { TIERS, type DepthFactors, type TierDef } from '../data/difficulty';
 import { AFFIXES } from '../data/affixes';
 import { encounterTable, isRosterTable, legacyEncounterTable, rewardGrowth } from './scaling';
@@ -90,6 +90,8 @@ describe('scaleEnemy', () => {
     expect(REGION_TRAITS_FROM).toBe(2);
     for (const r of ['blaze', 'frost', 'storm', 'mire', 'shade', 'iron'] as RegionId[]) for (const id of NORMAL_ENEMIES) {
       const e = ENEMIES[id], R = REGIONS[r];
+      // Plan L1b, ruling 9: a turning weakness (`prism`, the moon crow) is its own and takes no region's.
+      if (e.prism) continue;
       const d1 = scaleEnemy(e, 1, R, false), d2 = scaleEnemy(e, 2, R, false);
       expect(d1.resist, `${r} ${id} d1`).toEqual(e.resist);
       expect(d1.weak, `${r} ${id} d1`).toEqual(R.weak);
@@ -233,15 +235,18 @@ describe('createBattle with scale', () => {
 });
 
 describe('encounterGroup', () => {
-  it('the mainline draws from the terrain table of the depth', () => {
+  it('the mainline draws from the terrain table of the depth', () => withRosterOnly([], () => {
+    // L1b: measures the game as it was with nothing live.
     const rng = mulberry32(5);
     for (const d of [1, 2, 3, 4, 8]) {
       const table = FLOORS[((d - 1) % 3)].encounters.map((g) => g.join('+'));
       for (let i = 0; i < 30; i++) expect(table).toContain(encounterGroup('mainline', d, rng).join('+'));
     }
-  });
+  }));
 
-  it('random regions draw 1-3 of every ordinary monster, never the boss, the same for the same seed', () => {
+  it('random regions draw 1-3 of every ordinary monster, never the boss, the same for the same seed', () => withRosterOnly([], () => {
+    // L1b: measures the game as it was with nothing live. NORMAL_ENEMIES was read at load, with the first wave in it: the old
+    // eight are the ones the legacy frost table draws.
     const seen = new Set<string>();
     const sizes = new Set<number>();
     const rng = mulberry32(11);
@@ -251,11 +256,13 @@ describe('encounterGroup', () => {
       for (const id of g) { expect(NORMAL_ENEMIES).toContain(id); seen.add(id); }
     }
     expect([...sizes].sort()).toEqual([1, 2, 3]);
-    expect([...seen].sort()).toEqual([...NORMAL_ENEMIES].sort());
-    expect(NORMAL_ENEMIES).toHaveLength(8);   // the spec says nine, counting the boss; the boss is not a random foe
+    expect([...seen].sort()).toEqual(NORMAL_ENEMIES.filter((id) => LEGACY_ENEMY_IDS.includes(id)).sort());
+    // the spec says nine, counting the boss; the boss is not a random foe. Plan L1b: 8 + the first wave's 13 ordinary
+    // species (18 live, less 3 bosses and 2 wardens: ruling 3 counts no boss, warden or part) = 21.
+    expect(NORMAL_ENEMIES).toHaveLength(21);
     const a = mulberry32(3), b = mulberry32(3);
     for (let i = 0; i < 20; i++) expect(encounterGroup('iron', 4, a)).toEqual(encounterGroup('iron', 4, b));
-  });
+  }));
 
   it('a random region does not send third-floor monsters at a depth-1 party', () => {
     const rng = mulberry32(17);
@@ -355,7 +362,7 @@ describe('story enemies', () => {
     const story = Object.values(ENEMIES).filter((e) => e.story).map((e) => e.id);
     expect(story).toContain('scarlet-foe');
     for (const id of story) expect(NORMAL_ENEMIES).not.toContain(id);
-    expect(NORMAL_ENEMIES).toHaveLength(8);
+    expect(NORMAL_ENEMIES).toHaveLength(21);   // plan L1b: 8 + 13 (the first wave less its 3 bosses and 2 wardens, ruling 3)
   });
 });
 
@@ -370,10 +377,10 @@ describe('the deep enemy knobs (plan 6b Task 20c, added at their start values by
       expect(deepPower(d), `depth ${d}`).toBe(1);
     }
     // FNV-1a over level, hp, atk and mag of every ordinary monster and the lanterneater at depths 1-60, taken at
-    // cae0b228 before the knobs existed.
+    // cae0b228 before the knobs existed: the old eight (plan L1b; the roster's species grow by the test below).
     let h = 0x811c9dc5;
     const feed = (n: number) => { h = Math.imul(h ^ n, 0x01000193) >>> 0; };
-    for (const id of [...NORMAL_ENEMIES, 'lanterneater']) for (let d = 1; d <= 60; d++) {
+    for (const id of [...NORMAL_ENEMIES.filter((x) => LEGACY_ENEMY_IDS.includes(x)), 'lanterneater']) for (let d = 1; d <= 60; d++) {
       const e = met(id, d);
       feed(e.level); feed(e.max.hp); feed(e.max.atk); feed(e.max.mag);
     }
@@ -583,24 +590,27 @@ describe('affixes in scaleEnemy (difficulty plan Task 3)', () => {
 });
 
 describe('the legacy encounter table (roster plan Task A1)', () => {
-  it('the legacy table is the table', () => {
+  it('the legacy table is the table', () => withRosterOnly([], () => {
+    // L1b: measures the game as it was with nothing live.
     for (const region of Object.keys(REGIONS) as RegionId[]) for (let d = 1; d <= 60; d++) {
       expect(encounterTable(region, d), `${region} ${d}`).toEqual(legacyEncounterTable(region, d));
     }
-  });
+  }));
 });
 
 describe('the roster waits on its live set (roster plan Task A4)', () => {
-  it('the roster with nothing live changes nothing', () => {
+  it('the roster with nothing live changes nothing', () => withRosterOnly([], () => {
+    // L1b: measures the game as it was with nothing live.
     expect(ROSTER_LIVE.size).toBe(0);
     for (const region of Object.keys(REGIONS) as RegionId[]) for (let d = 1; d <= 60; d++) {
       expect(encounterTable(region, d), `${region} ${d}`).toEqual(legacyEncounterTable(region, d));
       if (d % 5 === 0) expect(bossFor(region, d), `${region} ${d}`).toEqual(['lanterneater']);
       expect(wardenFor(region, d), `${region} ${d}`).toBeNull();
     }
-  });
+  }));
 
-  it('depths one to three stay legacy, and a live table replaces a deeper one', () => {
+  it('depths one to three stay legacy, and a live table replaces a deeper one', () => withRosterOnly([], () => {
+    // L1b: measures the game as it was with nothing live.
     const ids = Object.keys(ENEMIES).filter((id) => !LEGACY_ENEMY_IDS.includes(id));
     withRosterLive(ids, () => {
       for (const region of Object.keys(REGIONS) as RegionId[]) for (const d of [1, 2, 3]) expect(encounterTable(region, d)).toEqual(legacyEncounterTable(region, d));
@@ -615,9 +625,10 @@ describe('the roster waits on its live set (roster plan Task A4)', () => {
       expect(encounterTable('mainline', 10)).toEqual(legacyEncounterTable('mainline', 10));
     });
     expect(ROSTER_LIVE.size).toBe(0);
-  });
+  }));
 
-  it('a region keeps its legacy table until its natives are live (PR A review ruling)', () => {
+  it('a region keeps its legacy table until its natives are live (PR A review ruling)', () => withRosterOnly([], () => {
+    // L1b: measures the game as it was with nothing live.
     const roadB = Object.values(MAINLINE_TABLES.B).flat();
     withRosterLive(roadB, () => {
       expect(encounterTable('frost', 4)).toEqual([...legacyEncounterTable('frost', 4), ...MAINLINE_TABLES.B.slice(0, 6)]);
@@ -631,7 +642,7 @@ describe('the roster waits on its live set (roster plan Task A4)', () => {
     withRosterLive(['hoarder'], () => {
       for (const d of [4, 10, 16]) expect(encounterTable('mainline', d)).toEqual(legacyEncounterTable('mainline', d));
     });
-  });
+  }));
 });
 
 describe('a warden is a named foe (roster plan B1 review, item 12)', () => {
@@ -662,8 +673,8 @@ describe('a boss part grows from the boss home (roster plan B5)', () => {
 describe('deep traits of the old foes (roster plan B11, spec §5.8)', () => {
   const OLD = ['bat', 'beetle', 'golem'];
 
-  it('deep traits only on a roster table', () => {
-    // Nothing live: no table is a roster table, and the three meet as they always have.
+  it('deep traits only on a roster table', () => withRosterOnly([], () => {
+    // Nothing live: no table is a roster table, and the three meet as they always have. L1b: measures the game as it was with nothing live.
     for (const region of Object.keys(REGIONS) as (keyof typeof REGIONS)[]) for (let depth = 1; depth <= 50; depth++) expect(isRosterTable(region, depth), `${region} ${depth}`).toBe(false);
     for (const id of OLD) {
       expect(scaleEnemy(ENEMIES[id], 12, REGIONS.mainline, false, CONDITIONS.plain, null, undefined, false)).toEqual(scaleEnemy(ENEMIES[id], 12, REGIONS.mainline, false));
@@ -677,7 +688,7 @@ describe('deep traits of the old foes (roster plan B11, spec §5.8)', () => {
     expect(scaleEnemy(ENEMIES.golem, 12, REGIONS.mainline, false, CONDITIONS.plain, null, undefined, true).skills.find((k) => k.name === '重踏')).toMatchObject({ target: 'row', windup: '高舉雙臂' });
     // A foe without one is the same either way.
     expect(scaleEnemy(ENEMIES.slime, 12, REGIONS.mainline, false, CONDITIONS.plain, null, undefined, true)).toEqual(scaleEnemy(ENEMIES.slime, 12, REGIONS.mainline, false));
-  });
+  }));
 
   it('once the band is live, the old foes met there bring them', () => {
     withRosterLive(Object.keys(ENEMIES).filter((id) => !LEGACY_ENEMY_IDS.includes(id)), () => {

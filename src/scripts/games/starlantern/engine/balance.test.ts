@@ -119,7 +119,9 @@ describe('balance', () => {
     for (const d of [2, 3]) band(winRate(depthLevel(d), encounterTable('blaze', d), false, 20, { depth: d, region: 'blaze' }, undefined, undefined, 'skill', 0, lineup), `blaze depth ${d}`);
   };
 
-  it('7. same depth level, same odds', () => sameOdds('', {}), 120_000);
+  // Roster plan L1b (controller ruling, spec §0 item 21): the live tables went from 3–4 groups to 12 (about 3× the fights),
+  // so only this test's time limit rose; no threshold changed.
+  it('7. same depth level, same odds', () => sameOdds('', {}), 360_000);
 
   it('7 (記憶期望). same depth level, same odds with the memory expectation', () => sameOdds(' (記憶期望)', { expect: true }), 300_000);
 

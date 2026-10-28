@@ -181,7 +181,7 @@ spec 已核准（2026-10-26，控制者依使用者授權）。下面是 spec �
 | **E1** 美術一 | `feat/starlantern-roster-art1` | R0（風格）＋R1 | E1a–E1c（3） | identical | 18 敵人＋18 圖示＋5 件專屬（10 張）＋1 個異常圖示 = **47 個網址** |
 | **L1** 上線一 | `feat/starlantern-roster-live1` | 本道 B、C 帶 12 種＋拾憶鼠、頭目 3、守關者 2；圖鑑文字；凜、瑟蕾的遺物 | L1a–L1c（3） | **重錄** | 0 |
 | **E2** 美術二 | `feat/starlantern-roster-art2` | R2 | E2a–E2b（2） | identical | 27＋26＋10 件（20 張）= **73** |
-| **L2** 上線二 | `feat/starlantern-roster-live2` | 本道 D、E、F 帶 15 種＋金箔拾憶鼠、頭目 7＋執政像之手、守關者 3、深層特性、燈喰之母；波比的遺物 | L2a–L2d（4） | **重錄** | 0 |
+| **L2** 上線二 | `feat/starlantern-roster-live2` | 本道 D、E、F 帶 15 種＋金箔拾憶鼠、頭目 7＋執政像之手、守關者 3、燈喰之母；波比的遺物（深層特性照 spec §5.8、§0 第 19 條：`isRosterTable` 為真就生效，L1 起；L1b 更正） | L2a–L2d（4） | **重錄** | 0 |
 | **E3** 美術三 | `feat/starlantern-roster-art3` | R3 | E3a–E3b（2） | identical | 28＋27＋12 件（24 張）= **79** |
 | **L3** 上線三 | `feat/starlantern-roster-live3` | 熾焰、霜凍、雷鳴；莎菲拉、千鶴、諾艾兒的遺物 | L3a–L3c（3） | **重錄** | 0 |
 | **E4** 美術四 | `feat/starlantern-roster-art4` | R4 | E4a–E4b（2） | identical | 27＋27＋12 件（24 張）= **78** |
@@ -218,6 +218,8 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 - 每一個任務：`cmp <SDD>/gate-<N>/contribution.json src/scripts/games/starlantern/engine/__fixtures__/sim-gate/contribution.8d-final.160.json` 沒有輸出。
 - `engine/parity.test.ts` 的 `PARITY_TASK` 維持 `between plans`；本計畫不錄新的 `contribution.*.160.json`。
 - 不用 `Math.random`、不讀 `Date`；不為舊內容多抽任何既有串流。
+
+**L2–L4 的平衡處理（使用者 2026-10-28 方向，控制者裁定）**：先把遊戲做完。每一格紅燈最多做**一次**簡單的調整（新物種自己的數字或拿掉一組）；還紅就列成具名例外（理由、下限或仍檢查失敗）加一條待辦，該波照常上線。正確性檢查不放寬：舊戰鬥的雜湊重現、閘門 `cmp` 等於 8d-final、第 1–3 層報告行不變、凍結檔與旋鈕不動（例外表與列出的測試轉換除外）、全套 vitest 綠、tsc 不增加。選擇性的平衡帶每波各跑一次並記錄；紅的寫進 PR 說明，不再多輪調整。
 
 **重錄規則**（只限 L1b、L2b、L2c、L3b、L4b）
 1. 切換之前先跑一次閘門，必須 identical（證明切換前的樹是乾淨的）。
@@ -768,6 +770,7 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 - [ ] **Step 2**：加進 `ROSTER_LIVE`；`data/monsters.test.ts`、`data/bestiary.test.ts`（`every live foe has an entry`）綠。
 - [ ] **Step 3**：照「重錄規則」1–7：閘門 `gate-L1`、`cmp`、`rebaseline-L1.md`、22 帶與 `tierBands.*`（含 22j）全綠、`baseline.normal.txt` 重錄、`economy.test.ts` 綠。紅燈只調新物種的數字。
 - [ ] **Step 4**：控制者派審查者（重錄規則 6）；通過才 commit：`feat(starlantern): the shallow road meets its new foes (live wave 1)`。
+- **L1b 實作紀錄**（spec §0 第 21 條）：凍結檔只改兩處，都是控制者裁定：`buildBands.ts` 的兩張例外表（`hero/mage`、`safira/festival war-dance+lasting`，後續 F5）；`balance.test.ts` 第 7 項的單測時限 120_000 → 360_000（表從 3–4 組變 12 組，門檻不動）。另有 22a 的兩個具名例外（遺信紙蛾、霧雙子）、第 22 項與 22j 的延後格名單、`withRosterOnly` 的測試轉換、parity 的 `BattleScale.legacy`。
 
 ### Task L1c：e2e 冒煙與截圖
 
@@ -795,7 +798,8 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 - [ ] W1–W7：R2 的 27 隻；`keeper-echo` 三句、子嗣第二句 `finale`（I-223）、古城 `act4`、機兵 `mem:bobby:4`；10 件 `lore`；遺物 `automaton-core`（波比）。commit：`feat(starlantern): bestiary for the deep road; Bobby's keepsake`。
 
 ### Task L2b：上線切換與重錄
-- [ ] 照 L1b：加入 R2 除 `lantern-mother` 以外的 26 個 id；`DEEP_TRAITS` 從這一波起在新表生效；22 帶、22j、`tierBands.*`、`baseline.normal.txt`、`economy.test.ts`；`rebaseline-L2.md`；審查。commit：`feat(starlantern): the deep road meets its new foes (live wave 2)`。
+- [ ] **L1b 延後到本波的驗收格**（控制者 2026-10-28；`DEFERRED_22`、`DEFERRED_22J` 照名拿掉並全綠）：22a keeper-echo d25、old-city-sentinel d16、wick-shade d25；16 stopped-clock d45 two；22f gorged-beast d25 noHeal、noTank，old-city-archon d20 noTank；22j gorged-beast d25 nightmare magic；22j 守關者 requiem-conductor 第 23 層。
+- [ ] 照 L1b：加入 R2 除 `lantern-mother` 以外的 26 個 id；`DEEP_TRAITS` 照 spec §5.8 與 §0 第 19 條在 `isRosterTable` 為真的每一張表生效（L1 起就是；L1b 更正，原寫「從這一波起」）；22 帶、22j、`tierBands.*`、`baseline.normal.txt`、`economy.test.ts`；`rebaseline-L2.md`；審查。commit：`feat(starlantern): the deep road meets its new foes (live wave 2)`。
 
 ### Task L2c：燈喰之母（終幕的外型）
 
@@ -828,6 +832,7 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 - [ ] W1–W7：R3 的 28 隻（蜃樓、沙海、冰狛犬、拜殿、裂口、星屑、魔法書、燃燒的那一頁；閘門照 spec §4.2 與裁定 20）；12 件 `lore`；遺物 `copper-anklet`（莎菲拉）、`shrine-rope`（千鶴）、`ash-page`（諾艾兒）。commit：`feat(starlantern): bestiary for three lands; Safira's, Chizuru's and Noel's keepsakes`。
 
 ### Task L3b：上線切換與重錄
+- [ ] **L1b 延後到本波的驗收格**：22a ash-mourner、forge-hound、frozen-pilgrim、sand-scorpion（第 4 層）；22b mirage-city d30、rift-maw d30、rime-sovereign d20、white-silence d25；22f mirage-city d15 allPhys、noHeal，rift-maw d15 allPhys；22j ember-tyrant d20 bare（兩檔）、mirage-city d15（兩檔）、rime-sovereign d20（兩檔）、storm-conductor d25 bare（兩檔）、white-silence d25 bare（兩檔）；22j 守關者 ice-shrine 第 23 層。
 - [ ] 照 L1b；22c、22d 的熾焰、霜凍、雷鳴格；commit：`feat(starlantern): fire, frost and storm meet their own (live wave 3)`。
 
 ### Task L3c：e2e
@@ -844,6 +849,7 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 - [ ] W1–W7：R4 的 27 隻（樹人、老樹、灰枯、寶庫、敲門的影子、騎士殘影、旗手、撞門的巨影、指揮官；莉茲與絲嘉蕾的禁字照裁定 20）；12 件 `lore`；遺物 `ashen-acorn`（希爾薇）、`vault-coin`（莉茲）、`gate-splinter`（絲嘉蕾）。commit：`feat(starlantern): bestiary for the last three lands; Sylvie's, Liz's and Scarlet's keepsakes`。
 
 ### Task L4b：上線切換與重錄
+- [ ] **L1b 延後到本波的驗收格**：22a debt-collector、herald-engine、mirror-thief、siege-crab、spore-moth、veil-stalker（第 4 層）；22b faceless-host d20、fortress-colossus d20、grey-blight d25、shadow-parade d30、vault-dragon d25；22f grey-blight d10 allPhys、shadow-parade d15 allPhys、noHeal；22i gate-breaker d8；22j bog-leviathan d15 bare（兩檔）、faceless-host d20 hell bare、grey-blight d25（兩檔）、last-commander d15 bare（兩檔）、shadow-parade d15（兩檔）、siege-titan d10 bare（兩檔）、vault-dragon d10 hell bare；22j 守關者 gate-breaker、grey-elder、locked-vault 第 23 層。
 - [ ] 照 L1b；commit：`feat(starlantern): mire, shade and iron meet their own (live wave 4)`。
 
 ### Task L4c：收尾量測
@@ -860,6 +866,10 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 ---
 
 # 後續（名冊之後的獨立修正）
+
+### Task F5：「常駐」與星術（待辦：內容做完之後）
+
+L1b 加了兩個 builds.bands 的控制者例外（spec §0 第 21 條）：`hero/mage`（Lv50 的 C 帶人群，勝場 93 對 106）與 `safira/festival war-dance+lasting`（兩三回合的 C 帶戰鬥裡 2.00，上限 1.6）。新物種的調整已用盡。這個任務查「常駐」符文在短戰鬥的價值曲線、星術對集中攻擊的生存力（建議組合的防禦符文或技能、建議的符文），目標是兩個例外都從 `BAND_EXCEPTIONS`、`ONE_RUNE_EXCEPTIONS` 拿掉，而且所有凍結帶全綠。**使用者 2026-10-28 方向**：先把遊戲本身做完，平衡不是現在的優先；F5 降為待辦，排在內容工作之後，不擋 L2。
 
 ### Task F1：舊 5d 敵人 `bat.png` 的洋紅邊
 - [ ] R1 獨立審核（2026-10-26）看到已核准的舊敵人 `public/assets/games/starlantern/enemy/bat.png` 也有洋紅邊。這不在名冊的範圍內，所以本次不改（控制者 2026-10-26 裁定）。名冊收尾之後另開一個修正：先用名冊的 `roster_key_tint_count`（含 `_deep_key`）與 `magenta_spill_count` 量化，再決定重做或重新去背。重做要走「重做 → QA → 審核 → 重新發布」，並且同步改 `allArtUrls` 與 manifest。

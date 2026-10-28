@@ -6,13 +6,13 @@ import { RIN_DAWN, SKY_LANTERN, ULTIMATES, skyForm, HERO_ULTIMATES } from '../da
 import { ENEMIES } from '../data/enemies';
 import { activeIds, powersOf, sheetOf, LEGACY_LINEUP } from './party';
 import { applyEffect } from './skills';
-import { BOSS_PARTY_SCALE, FIRST_DEPTH_CAP, GROUP_CAP, PARTY_SCALE, bossPartyScale, depthLevel, encounterTable, homeLevel, mul, partyScale } from './scaling';
+import { BOSS_PARTY_SCALE, FIRST_DEPTH_CAP, GROUP_CAP, PARTY_SCALE, bossPartyScale, depthLevel, homeLevel, legacyEncounterTable, mul, partyScale } from './scaling';
 import { SECONDARY_KEYS } from './stats';
 import { choose, partyAt } from './sim';
 import { dealDamage, stat, type BattleEvent, type Combatant } from './combatant';
 import { inflictAilment } from './ailments';
 import type { EffectContext } from './skills';
-import { constRng, makeBattle, makeCombatant, plainItem, fullParty } from './testing';
+import { constRng, makeBattle, makeCombatant, plainItem, fullParty, withRosterOnly } from './testing';
 import type { BattleState } from './battle';
 import { KEYSTONE_GATE, KEYSTONE_VALUES as V, MAX_KEYSTONES, MEMORY_KEYSTONE_VALUES, type KeystoneId } from '../data/talents';
 import { chainLength } from '../data/story/chains';
@@ -448,7 +448,8 @@ describe('keystones in battle', () => {
     expect(s.party[0].tp).toBe(V.critTp);
   });
 
-  it('a fight with no keystones replays the pre-change baseline', () => {
+  it('a fight with no keystones replays the pre-change baseline', () => withRosterOnly([], () => {
+    // L1b: measures the game as it was with nothing live (depth 5 of the main road is a roster table once a wave is).
     // Recorded at 625b4e16, before keystones reached the battle code (plan 5b Task 10, Step 0). Lv20 has 8 talent points,
     // under KEYSTONE_GATE, so nobody holds a keystone. Re-recorded 2026-10-17 in 21867eb3, under the ENEMY_POWER shape that
     // plan 5c Task 4 settled on there (a deep step from Lv12 plus a small ramp; the d5 enemies are Lv18): the same no-keystone code path against stronger
@@ -469,7 +470,7 @@ describe('keystones in battle', () => {
     while (s.outcome === 'ongoing' && rounds < 60) { s = resolveRound(s, choose(s, party), counted); rounds++; }
     expect({ outcome: s.outcome, rounds, draws, hp: Object.fromEntries(s.party.map((c) => [c.key, c.hp])) })
       .toEqual({ outcome: 'win', rounds: 4, draws: 99, hp: { scarlet: 81, chizuru: 0, liz: 0, noel: 104, selene: 0 } });
-  });
+  }));
 });
 
 describe('abyss skills', () => {
@@ -598,13 +599,14 @@ describe('a full party fights exactly as before', () => {
     while (s.outcome === 'ongoing' && rounds < 60) { s = resolveRound(s, choose(s, party), r); rounds++; }
     return { outcome: s.outcome, rounds, hash: hash(JSON.stringify(s.log)) };
   };
-  const runs = () => encounterTable('mainline', 4).flatMap((g, gi) => [1, 2, 3].map((seed) => ({ key: `${gi}:${seed}`, ...playOut(g, seed) })));
+  const runs = () => legacyEncounterTable('mainline', 4).flatMap((g, gi) => [1, 2, 3].map((seed) => ({ key: `${gi}:${seed}`, ...playOut(g, seed) })));
 
-  it('matches the baseline captured before party scaling', () => {
+  it('matches the baseline captured before party scaling', () => withRosterOnly([], () => {
+    // L1b: measures the game as it was with nothing live (no roster table, so the old foes bring no deep trait).
     const got = Object.fromEntries(runs().map((r) => [r.key, [r.outcome, r.rounds, r.hash]]));
     if (process.env.CAPTURE) console.log('BASELINE=' + JSON.stringify(got));
     expect(got).toEqual(BASELINE);
-  });
+  }));
 });
 
 describe('enemies scale with the party size', () => {
@@ -1141,10 +1143,10 @@ describe('Normal takes no new path (difficulty plan Task 1)', () => {
     '356:e0f8ce703e830bf5be81b994db0d480c30c94c01efd644ba895ecfee8198e660',
   ];
   it('Normal and no difficulty are the same fight', () => {
-    const main10 = encounterTable('mainline', 10)[0];
+    const main10 = legacyEncounterTable('mainline', 10)[0];
     const cases: { label: string; ids: string[]; boss: boolean; scale: { depth: number; region: 'mainline' | 'mire'; elite?: string } }[] = [
       { label: 'mainline d10 with an elite', ids: main10, boss: false, scale: { depth: 10, region: 'mainline', elite: main10[0] } },
-      { label: 'mire d5', ids: encounterTable('mire', 5)[0], boss: false, scale: { depth: 5, region: 'mire' } },
+      { label: 'mire d5', ids: legacyEncounterTable('mire', 5)[0], boss: false, scale: { depth: 5, region: 'mire' } },
       { label: 'boss d10', ids: ['lanterneater'], boss: true, scale: { depth: 10, region: 'mainline' } },
     ];
     cases.forEach((c, i) => {
@@ -1172,7 +1174,7 @@ describe('region riders in a fight (difficulty plan Task 2)', () => {
   /** Frost's first group at depth 10, played with `choose` from `seed`; each round's state after it. */
   const play = (seed: number, difficulty?: 'nightmare') => {
     const party = partyAt(38, {}, 10);
-    let s = createBattle({ party, enemyIds: encounterTable('frost', 10)[0], inventory: {}, revealed: {}, scale: { depth: 10, region: 'frost', ...(difficulty ? { difficulty } : {}) } });
+    let s = createBattle({ party, enemyIds: legacyEncounterTable('frost', 10)[0], inventory: {}, revealed: {}, scale: { depth: 10, region: 'frost', ...(difficulty ? { difficulty } : {}) } });
     const rng = mulberry32(seed);
     const out = [];
     for (let r = 0; r < 60 && s.outcome === 'ongoing'; r++) { s = resolveRound(s, choose(s, party), rng); out.push(s); }

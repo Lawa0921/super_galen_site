@@ -8,7 +8,7 @@ import { floorOf, newRun } from './dungeon/run';
 import type { Content } from './dungeon/rooms';
 import { ENEMIES } from '../data/enemies';
 import { LEGACY_ENEMY_IDS } from '../data/monsters';
-import { withRosterLive } from './testing';
+import { withRosterLive, withRosterOnly } from './testing';
 
 /**
  * Roster plan Task A0: every floor (seeds 1-3 × the seven regions × depths 1-40) as it was before the roster. Recorded
@@ -46,7 +46,8 @@ function readFloorsBefore(): Record<string, FloorShot> {
 
 describe('roster floors snapshot', () => {
   it('the floors as they were before the roster', () => {
-    const now = allShots();
+    // L1b: measures the game as it was with nothing live. (The live floors are covered by gate-L1 and baseline.normal.txt.)
+    const now = withRosterOnly([], allShots);
     if (process.env.FLOORS_RECORD === '1') {
       mkdirSync(dirname(FIXTURE), { recursive: true });
       writeFileSync(FIXTURE, JSON.stringify(now) + '\n');
