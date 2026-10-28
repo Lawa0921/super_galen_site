@@ -1,0 +1,44 @@
+{
+  "assets": {
+    "enemy-starfire-colossus": {
+      "final": "art-factory/starlantern/work/enemy-starfire-colossus/cand/a2/enemy-starfire-colossus.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-starfire-colossus\\enemy-starfire-colossus-a2.png",
+      "qa": {
+        "pass": false,
+        "reasons": [
+          "interior erased"
+        ],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 9,
+        "magenta_spill": 0,
+        "key_tint_inside": 1,
+        "block": 7,
+        "size": [
+          170,
+          161
+        ],
+        "bright_key": 0,
+        "height": 159,
+        "width": 168,
+        "colours": 12654,
+        "lum": [
+          0.098,
+          0.995,
+          0.734
+        ],
+        "erased": 9,
+        "palette_over": true,
+        "spec": "roster-sprite:2e0d0bc9e5f1"
+      },
+      "status": "qa_failed",
+      "kind": "roster-sprite",
+      "roster_class": "boss",
+      "mainline": false
+    }
+  }
+}

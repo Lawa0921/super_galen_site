@@ -1,0 +1,522 @@
+{
+  "assets": {
+    "gear-roc-feather-boots-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-5/cand/a2/gear-roc-feather-boots-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-5\\sheet-gear-roster-5-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 56,
+          "short": 54,
+          "mass": 0.642,
+          "box": [
+            4,
+            5,
+            60,
+            59
+          ],
+          "centre_off": 0.0
+        },
+        "block": 8.446,
+        "scale": 8.446,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "roster-gear:909b3e0e50cc",
+        "bright_key": 0,
+        "erased": 0
+      },
+      "status": "qa_passed",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-5\\sheet-gear-roster-5-a2.png",
+        "cell": "roc-feather-boots"
+      },
+      "slot": "feet"
+    },
+    "gear-roc-feather-boots": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-5/cand/a2/gear-roc-feather-boots.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-5\\sheet-gear-roster-5-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 22,
+          "short": 21,
+          "mass": 0.636,
+          "box": [
+            2,
+            2,
+            24,
+            23
+          ],
+          "centre_off": 0.5
+        },
+        "block": 21.5,
+        "scale": 21.5,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "roster-gear:909b3e0e50cc",
+        "bright_key": 0,
+        "erased": 0
+      },
+      "status": "qa_passed",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-5\\sheet-gear-roster-5-a2.png",
+        "cell": "roc-feather-boots"
+      },
+      "slot": "feet"
+    },
+    "gear-conductor-ring-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-5/cand/a2/gear-conductor-ring-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-5\\sheet-gear-roster-5-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 56,
+          "short": 50,
+          "mass": 0.622,
+          "box": [
+            7,
+            4,
+            57,
+            60
+          ],
+          "centre_off": 0.0
+        },
+        "block": 7.571,
+        "scale": 7.571,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "roster-gear:909b3e0e50cc",
+        "bright_key": 0,
+        "erased": 0
+      },
+      "status": "qa_passed",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-5\\sheet-gear-roster-5-a2.png",
+        "cell": "conductor-ring"
+      },
+      "slot": "ring"
+    },
+    "gear-conductor-ring": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-5/cand/a2/gear-conductor-ring.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-5\\sheet-gear-roster-5-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 22,
+          "short": 20,
+          "mass": 0.632,
+          "box": [
+            3,
+            2,
+            23,
+            24
+          ],
+          "centre_off": 0.0
+        },
+        "block": 19.273,
+        "scale": 19.273,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "roster-gear:909b3e0e50cc",
+        "bright_key": 0,
+        "erased": 1
+      },
+      "status": "qa_passed",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-5\\sheet-gear-roster-5-a2.png",
+        "cell": "conductor-ring"
+      },
+      "slot": "ring"
+    },
+    "gear-starfire-tiara-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-5/cand/a2/gear-starfire-tiara-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-5\\sheet-gear-roster-5-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 56,
+          "short": 55,
+          "mass": 0.622,
+          "box": [
+            4,
+            4,
+            60,
+            59
+          ],
+          "centre_off": 0.5
+        },
+        "block": 8.286,
+        "scale": 8.286,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "roster-gear:909b3e0e50cc",
+        "bright_key": 0,
+        "erased": 0
+      },
+      "status": "qa_passed",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-5\\sheet-gear-roster-5-a2.png",
+        "cell": "starfire-tiara"
+      },
+      "slot": "head"
+    },
+    "gear-starfire-tiara": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-5/cand/a2/gear-starfire-tiara.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-5\\sheet-gear-roster-5-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 22,
+          "short": 20,
+          "mass": 0.601,
+          "box": [
+            2,
+            3,
+            24,
+            23
+          ],
+          "centre_off": 0.0
+        },
+        "block": 21.091,
+        "scale": 21.091,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "roster-gear:909b3e0e50cc",
+        "bright_key": 0,
+        "erased": 0
+      },
+      "status": "qa_passed",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-5\\sheet-gear-roster-5-a2.png",
+        "cell": "starfire-tiara"
+      },
+      "slot": "head"
+    },
+    "gear-last-dance-veil-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-5/cand/a2/gear-last-dance-veil-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-5\\sheet-gear-roster-5-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 56,
+          "short": 53,
+          "mass": 0.678,
+          "box": [
+            5,
+            4,
+            58,
+            60
+          ],
+          "centre_off": 0.5
+        },
+        "block": 8.804,
+        "scale": 8.804,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "roster-gear:909b3e0e50cc",
+        "bright_key": 0,
+        "erased": 0
+      },
+      "status": "qa_passed",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-5\\sheet-gear-roster-5-a2.png",
+        "cell": "last-dance-veil"
+      },
+      "slot": "body"
+    },
+    "gear-last-dance-veil": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-5/cand/a2/gear-last-dance-veil.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-5\\sheet-gear-roster-5-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 22,
+          "short": 21,
+          "mass": 0.688,
+          "box": [
+            2,
+            2,
+            23,
+            24
+          ],
+          "centre_off": 0.5
+        },
+        "block": 22.409,
+        "scale": 22.409,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "roster-gear:909b3e0e50cc",
+        "bright_key": 0,
+        "erased": 0
+      },
+      "status": "qa_passed",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-5\\sheet-gear-roster-5-a2.png",
+        "cell": "last-dance-veil"
+      },
+      "slot": "body"
+    },
+    "gear-ninety-nine-steps-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-5/cand/a2/gear-ninety-nine-steps-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-5\\sheet-gear-roster-5-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 56,
+          "short": 55,
+          "mass": 0.701,
+          "box": [
+            4,
+            4,
+            60,
+            59
+          ],
+          "centre_off": 0.5
+        },
+        "block": 8.339,
+        "scale": 8.339,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "roster-gear:909b3e0e50cc",
+        "bright_key": 0,
+        "erased": 0
+      },
+      "status": "qa_passed",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-5\\sheet-gear-roster-5-a2.png",
+        "cell": "ninety-nine-steps"
+      },
+      "slot": "feet"
+    },
+    "gear-ninety-nine-steps": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-5/cand/a2/gear-ninety-nine-steps.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-5\\sheet-gear-roster-5-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 22,
+          "short": 22,
+          "mass": 0.715,
+          "box": [
+            2,
+            2,
+            24,
+            24
+          ],
+          "centre_off": 0.0
+        },
+        "block": 21.227,
+        "scale": 21.227,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "roster-gear:909b3e0e50cc",
+        "bright_key": 0,
+        "erased": 0
+      },
+      "status": "qa_passed",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-5\\sheet-gear-roster-5-a2.png",
+        "cell": "ninety-nine-steps"
+      },
+      "slot": "feet"
+    },
+    "gear-starbound-tome-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-5/cand/a2/gear-starbound-tome-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-5\\sheet-gear-roster-5-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 56,
+          "short": 56,
+          "mass": 0.711,
+          "box": [
+            4,
+            4,
+            60,
+            60
+          ],
+          "centre_off": 0.0
+        },
+        "block": 8.5,
+        "scale": 8.5,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "roster-gear:909b3e0e50cc",
+        "bright_key": 0,
+        "erased": 0
+      },
+      "status": "qa_passed",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-5\\sheet-gear-roster-5-a2.png",
+        "cell": "starbound-tome"
+      },
+      "slot": "offhand"
+    },
+    "gear-starbound-tome": {
+      "final": "art-factory/starlantern/work/sheet-gear-roster-5/cand/a2/gear-starbound-tome.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-5\\sheet-gear-roster-5-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 22,
+          "short": 22,
+          "mass": 0.713,
+          "box": [
+            2,
+            2,
+            24,
+            24
+          ],
+          "centre_off": 0.0
+        },
+        "block": 21.636,
+        "scale": 21.636,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "roster-gear:909b3e0e50cc",
+        "bright_key": 0,
+        "erased": 0
+      },
+      "status": "qa_passed",
+      "kind": "roster-gear",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-roster-5\\sheet-gear-roster-5-a2.png",
+        "cell": "starbound-tome"
+      },
+      "slot": "offhand"
+    }
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "assets": {
+    "enemy-ice-komainu": {
+      "final": "art-factory/starlantern/work/enemy-ice-komainu/cand/a1/enemy-ice-komainu.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-ice-komainu\\enemy-ice-komainu-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 11,
+        "size": [
+          77,
+          78
+        ],
+        "bright_key": 0,
+        "height": 76,
+        "width": 75,
+        "colours": 3309,
+        "lum": [
+          0.153,
+          0.973,
+          0.607
+        ],
+        "erased": 0,
+        "palette_over": true,
+        "spec": "roster-sprite:2e0d0bc9e5f1"
+      },
+      "status": "qa_passed",
+      "kind": "roster-sprite",
+      "roster_class": "heavy",
+      "mainline": false
+    }
+  }
+}

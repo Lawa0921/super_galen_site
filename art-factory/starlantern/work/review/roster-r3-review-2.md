@@ -1,0 +1,35 @@
+# R3 獨立視覺審核紀錄（怪物名冊 r3）第 2 輪
+
+審核者：全新脈絡的獨立審核代理（Claude Opus 5.5，未參與生成，也未參與第 1 輪），2026-10-28。
+commit：e4cf01144（e4cf01144bbf5881dda2d23229c52d4c82b0be53，feat/starlantern-roster-e3，worktree C:\Users\bag57\.codex\worktrees\faces\super_galen_site；工作樹乾淨，本輪只讀）。
+方法：
+・清單 r3-round2-assets.txt 共 8 件，sha256 全部自行重算（sha256sum 與 rv/mech.py），8 件都和清單一致，沒有不符。
+・機械掃描（rv/mech.py、rv2/pinkall.py、rv2/violet.py、rv2/bg.py、rv2/islands.py、rv2/holes.py，全部 python -I）：8 件半透明 0、碰邊 0、亮洋紅 0；逐點列出色相 280–345° 的粉紫像素、離洋紅 140 以內的像素、暖色筆畫上 B > G 的 key 混色特徵、亮紫（245–300°）像素、離散小島與封閉透明洞，再一一回圖上看。
+・mirage-lead 的封閉洞（18 個、94 px）用 rv/erased.py 以 tools/sl_art.py 的 cutout／to_art_pixels 對 raw（art-refs\…\enemy-mirage-lead-a3.png，block 12）取樣：erased 3，取樣值 (192,5,179)、(240,12,219)、(227,35,212) 都是 key，其餘洞是手臂、頭、鏡像之間的真縫。也看了 raw 原圖（1254×1254）。
+・兩件修復：以 rv2/rep.py 和 public/assets/games/starlantern 下已發布的 runtime 檔逐像素比對（含 alpha），列出新像素的 8 鄰與 7×7 鄰域數值，並看 contact sheet 的 1× 與放大前後圖。
+・視覺：自組 10–18× 放大（rv2/kite8.png、lead6.png、lead_top.png、lead_feet.png、seq16.png、roc16.png、ash16.png、veil16.png）；1× 與 3× 放在暗、中、亮三種底色（rv2/t_icons.png）；16 px 與 14 px 縮圖（LANCZOS）清單列（rv2/s_plume.png、s_misc2.png），與已發布的 market-token、old-coin、glitter-scrap、gilded-scrap、spent-wick、mirror-feather、storm-stone、bat-wing、dusk-cloth、marble-shard、festival-paper、crane-paper、lantern-ash、ash-ink、hymn-sheet、faded-letter、blue-ember 等，以及同批 kite-plume、cinder-dust、torn-page、copper-anklet 並排；敵人看 contact sheet 第 1 列的 bg-f1／f2／f3 遊戲內 1×。
+・對照 spec §13.3 的描述表（mirage-lead）、§13.2（ash-page 必須空白）、tools/roster_art.py 的 DESC／MAT_DESC（thunder-kite「a small sharp-winged kite bird with slate-grey feathers and bright yellow lightning streaks along its wings」、mirage-sequin「a large bronze sequin shimmering with heat haze」、mourning-veil「a folded grey lace mourning veil」、roc-plume「a huge storm-cloud grey plume with a lightning edge」、ash-page「the burnt corner of a book page」＋UNREADABLE）、第 1 輪 FAIL 的重畫要求，以及 contract.md 的「審核的界線」（宗教符號）與洋紅溢色定義（270° 以下的紫是美術本身）。
+
+放行清單（每行一件）：
+- enemy-thunder-kite 930d8321fd341b7c07bf7200e038519631ab54f1d814a4852c2fa5a7932385e3 通過
+- icon-roc-plume 3fd70e4a62ddad9284a0ac0922d21e2c76a187e7f5f9a328d4de49febe17cc75 通過
+- icon-ash-page 9758ef052a8e38bc38e12a613f7e30ebe6b49b4f51d4cba2670179b9cbbe369e 通過
+- enemy-fog-warden d19b2760191ed738aa2b294f5022368e4327b1ac69dac0177757e69b8b7ea77f 通過
+- icon-fog-gate-plate 8a8530e99186dd7d455df54b2619b2c7ce63a135531702dbb315ad38537b2b15 通過
+
+FAIL（3 件，不列入上面的清單）：
+FAIL enemy-mirage-lead d80e70651771514ebda2ea213ee3a4aaf3a12492cd20cb8e7d6794e31b779e1e：第 1 輪要求的三點沒有一點在成品上做到。(1) 描邊：本體沒有連續的 1px 深色描邊，深紅黑只是一顆顆散點（例如 (44,8)、(26,13)、(31,30)），本體和兩個鏡像之間沒有分界；整張是 1 個連通塊。(2) 銅腳環：raw 原圖的腳踝上有清楚的銅環，但 12 px block 降採樣後腳部是一團火紗，只剩 (43,83)=(204,144,114)、(43,84)=(196,124,68) 幾個褐點，1×、2×、14× 都看不出腳環。(3) 鏡像：鏡像比本體淡，但左右都貼在本體的紗上融成一片，沒有分開。遊戲內 1×（bg-f1、bg-f3）仍是一束橘金火焰，同場的 mirage-dancer 反而比它更像舞者；守關者在 1× 必須一眼讀出「舉手的舞者」。洋紅與臉這兩項沒問題：pink_outlier 0；粉紫掃描只抓到外框上的暗酒紅描邊點（色相 337–345°，V ≤ 0.47）；erased 3 都是 key；頭部是火焰形，沒有臉。問題出在降採樣，不是構圖：raw 構圖正確（一手高舉、無臉、銅臂環與銅腳環、兩個淡鏡像在後），但細線與小配件在約 1/12 的取樣下全部糊掉。重畫 prompt：保留構圖，要求 chunky low-resolution pixel art readable at about 90 px tall；本體加 a thick continuous dark outline (2px in the source) around the dancer's whole body，和鏡像之間有清楚的空隙或深色分界；a large, thick copper anklet band at the bare ankle, clearly separate from the skirt hem, the skirt ending above the ankles；手臂、頭、軀幹用大塊、少分支的形，火焰只做紗的外緣；兩個鏡像 smaller, much paler, set clearly apart behind her shoulders, not overlapping her veils。控制者也可以考慮在這個 id 的取樣設定上找原因（raw 夠好，成品失真），但那不在本審核的範圍。
+
+FAIL icon-mirage-sequin 7f43b617b4f876a5bb3da11d5c190affd49f81af6e12f9c286eaf91c0763a9df：已經和 market-token 分得開（不再是正面圓幣），但現在讀成一碗冒熱氣的東西。主件是有厚壁、有深度的銅碗（碗身下緣約 4 px 的側面），上方是三條垂直的波浪線，這正是「熱食／熱湯」的通用圖示；1×、3× 與 16 px 清單列都是「冒煙的銅碗」，和已發布的 spent-wick（銅碟裡的蠟燭，上方一縷煙）同一個家族的剪影。第 1 輪要的是 thin（薄），這張不薄。熱浪線末端的淺粉點：(11,11)=(248,161,166)、(12,11)=(194,124,124)、(17,11)=(232,155,146)、(18,10)=(252,167,142)，色相 355–10°、B 接近或超過 G，數值和「黃色筆畫的末端混入約 25–35% key」吻合，在 16× 看得到偏粉；(17,2)=(250,70,82) 是紅色焰尖，和第 1 輪已放行的 mirage-brick 熱浪線末端 (255,86,97)、(254,105,126) 同一種。這些在 1× 與 3× 讀成橘紅，本身不構成退回理由，但重畫時一併避開。重畫 prompt：a single large thin bronze sequin seen at a three-quarter angle: a flat disc with only a shallow dimple, a very thin rim, a bright white specular glint and a small star sparkle, a tiny stitching hole near its edge；熱浪用圍在亮片四周的淡色水平波紋或閃爍光點表示，NOT steam lines rising above it, not a bowl, not a dish, not a cup；可加 2–3 片更小的亮片疊在一起，避開 market-token、old-coin、spent-wick 的構圖。
+
+FAIL icon-mourning-veil eade4983cdb37877d27311f46a3e555501d23c809eeda458610b8bb641563fdf：形體仍不明確，生成方自己也標了邊緣。成品是一塊白色、布滿隨機暗藍灰斑點的塊狀物，18× 看斑點沒有蕾絲的規則孔洞或花樣，外緣是鋸齒而不是扇形（scalloped）邊，看不到摺痕或半透明的層次；3× 讀成白色花崗岩、雪塊或棉花團，16 px 清單列是一個灰白小塊，和已發布的 marble-shard（白色石塊加金脈）在 16 px 只差金色。spec 要「grey」，成品幾乎是白色。和 cinder-dust 的剪影已經分開（不再是錐形）。重畫 prompt：a folded length of sheer mid-grey lace fabric, two or three clearly stacked folds like dusk-cloth's folded cloth but thin and see-through, a wide scalloped lace border along the front edge made of regular round open holes in a repeating pattern, a darker grey outline on each fold；不要隨機斑點、不要塊狀或石頭的質感；顏色用中灰與深灰，不用白色。
+
+旗標項目與邊緣判定：
+・兩件修復（enemy-fog-warden、icon-fog-gate-plate）：和 public 下已發布的 runtime 檔（fog-warden.png sha256 e509aced22687f78…、fog-gate-plate.png 26c1a99749f0b890…）逐像素比對，兩件都是剛好 1 個像素不同、alpha 差異 0、尺寸與模式相同（RGBA 152×154、33×36）。fog-warden (34,60)：(188,28,147) → (99,67,53)，是 8 鄰 (62,32,30)、(1,1,3)、(145,87,49)、(93,61,57)、(26,15,12)、(105,73,104)、(118,96,98)、(241,219,190) 的各通道中位數。它位在金色鎧甲的暗褐陰影和霧的米色交界，周圍是 (93,61,57)、(62,32,30) 這一類暗褐，1× 與放大都融進去，沒有新的亮點或色偏。fog-gate-plate (27,21)：(205,6,146) → (162,161,248)，也是 8 鄰中位數。它位在門板深色邊和淡紫霧之間，周圍 (155,151,251)、(173,171,247)、(185,187,249) 同色系，看不出修過。兩個新像素都不在 pink_outlier、_bright_key、_deep_key 的範圍內。修復以外的既有現象（R0 已核准、這次沒動）：fog-warden (24,30)=(83,10,61) 算一個 _deep_key，在內部，2 個的上限內；fog-gate-plate (12,3)=(206,157,253) 是一個離散的淡紫霧點。這兩點都和 R0 發布檔逐位相同，不是修復造成的，不列為理由。
+・enemy-thunder-kite：10× 看是猛禽。側臉、黃色鉤喙、白冠，沒有耳羽簇，也沒有臉盤；雙翼長而尖、往上斜展；尾羽分成兩條長叉。三隻一排在 bg-f1／f2／f3 的 1× 都讀成張翼的鷹隼，不再像貓頭鷹。身體偏淺灰、主翼是靛藍，spec 的「slate-grey」只算部分符合，第 1 輪已判配色可接受，放行。寬 67（群 ≤ 72），1 個連通塊，沒有離散點，描邊完整。
+・icon-roc-plume：讀成一根寬大、蓬鬆的淡灰羽毛，左下有白色羽軸，右緣是黃色閃電加藍白電花。16 px 和 kite-plume（深石板灰、細長）靠明暗與寬度分得開；和 storm-stone 不再相似；和已發布的 mirror-feather（細長、藍白鏡光）靠寬度與黃邊分得開。這是邊緣判定，「storm-cloud grey」畫得偏淺。右下有一個 4 px 的離散電花島：(27,23)、(26,24)、(25,25)、(26,25)。另外有兩個亮紫點：(30,15)=(132,68,254)、(26,24)=(124,69,253)，色相 257–260°。contract.md 定義 270° 以下的紫是美術本身，不算溢色，3× 讀成藍紫電光，放行。封閉洞 3 個（1、7、2 px），都是羽枝缺口與電花之間的真縫，四周是深色描邊。
+・icon-ash-page：主體是灰黑焦紙，右上留一小角米色未燒的紙，焦邊上是藍白星火餘燼。和 torn-page（米黃）一眼分開，沒有字。16 px 和同區的 kite-plume 都是深灰斜條，但靠藍白火光和米色紙角分得開；這是邊緣判定。另有三個紫色點。(29,21)=(187,100,252) 與 (20,30)=(185,105,254) 是淡紫，色相 272–274°，在外緣、離洋紅 121。數值剛好是旁邊青白餘燼混入約 45% key 的結果，但不在 contract 的溢色範圍（280–345°）內。(23,25)=(125,24,204) 在餘燼內部，是深紫。在 1× 與 3× 這三點都讀成冷色火焰的紫尖，不像粉紅，所以放行。若之後重畫，可以順手壓掉。
+・宗教符號：8 件都沒有十字、光環、經文或紋章。
+・臉：mirage-lead 頭部是火焰形，16× 下沒有五官（頭頂一個白點加紅點，是火焰尖），符合無臉；其他 7 件不涉及臉的規則。
+
+給控制者：sheet-icons-roster-4 已經用到 a3，spec §13.4 是「每個 id 最多 3 次生成」；mirage-sequin、mourning-veil 若要再重畫會超過，需要你裁定單件重生或另行處理。enemy-mirage-lead 也已經到 a3，同樣受這條限制；它的 raw 構圖正確，問題出在降採樣，或許值得先從取樣設定找原因，再決定要不要重新生成。

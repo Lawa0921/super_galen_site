@@ -1,0 +1,42 @@
+{
+  "assets": {
+    "enemy-star-ember": {
+      "final": "art-factory/starlantern/work/enemy-star-ember/cand/a1/enemy-star-ember.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-star-ember\\enemy-star-ember-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 3,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 13,
+        "size": [
+          68,
+          68
+        ],
+        "bright_key": 0,
+        "height": 65,
+        "width": 66,
+        "colours": 1632,
+        "lum": [
+          0.094,
+          0.993,
+          0.651
+        ],
+        "erased": 2,
+        "palette_over": true,
+        "spec": "roster-sprite:2e0d0bc9e5f1"
+      },
+      "status": "qa_passed",
+      "kind": "roster-sprite",
+      "roster_class": "normal",
+      "mainline": false
+    }
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "pass": true,
+  "reasons": [],
+  "warnings": [
+    "enclosed holes"
+  ],
+  "residue": 0,
+  "semi": 0,
+  "edge": 0,
+  "holes": 2,
+  "magenta_spill": 0,
+  "key_tint_inside": 0,
+  "block": 15,
+  "size": [
+    49,
+    79
+  ],
+  "bright_key": 0,
+  "pink_outlier": 0,
+  "height": 77,
+  "width": 47,
+  "colours": 1740,
+  "lum": [
+    0.075,
+    0.984,
+    0.563
+  ],
+  "erased": 0,
+  "palette_over": true,
+  "spec": "roster-sprite:929ae0136de6"
+}

@@ -1,0 +1,40 @@
+{
+  "assets": {
+    "enemy-rift-maw": {
+      "final": "art-factory/starlantern/work/enemy-rift-maw/cand/a1/enemy-rift-maw.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-rift-maw\\enemy-rift-maw-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 8,
+        "size": [
+          144,
+          156
+        ],
+        "bright_key": 0,
+        "height": 154,
+        "width": 142,
+        "colours": 8933,
+        "lum": [
+          0.061,
+          0.992,
+          0.452
+        ],
+        "erased": 0,
+        "palette_over": true,
+        "spec": "roster-sprite:2e0d0bc9e5f1"
+      },
+      "status": "qa_passed",
+      "kind": "roster-sprite",
+      "roster_class": "boss",
+      "mainline": false
+    }
+  }
+}
