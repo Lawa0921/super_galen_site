@@ -910,3 +910,4 @@ L3b 的一次調整之後仍紅、列成具名例外的格子（spec §0 第 23 
   - 地磚：`tile-f3-wall`（key-hue 60、outline-blend 62、亮 key 2）、`tile-event-elite`（key-hue 4、outline-blend 4、pink 2）、`tile-event-vault-open`（pink 1）；`tile-f3-door`、`tile-f3-boss`、`bg-f3` 只有溢色（不透明圖，溢色多半是美術）。
   - 裝備大圖：`gear-lg-scarlet-large`、`gear-set-storm-feet-large`，各 1 個亮 key。
   - 角色、NPC、特效（char 123 件、npc 10 件、fx 15 件）多半是粉紅、紫色的美術，名冊閘門不適用；要看時先定它們自己的判準。
+  - F8 審核第 1 輪（2026-10-29）附帶、F8 不動的三點：`icon-trait-shade` 底列的暗紫 (13–15,32) (54,0,90)、(47,0,87)、(34,0,63) 與 (19,32) (58,1,101)（hue 272–276，不在 F8 的偵測集合，接近晶片的藍紫，要逐點判斷是不是殘留）；`enemy-bat` 右腳 (71,59)–(71,61) 的中位數修成淺色，爪尖多一塊沒有描邊的淺色（可改為清掉或深色描邊）；`icon-ether` 的 (8,1)、(8,2) 修成軟木塞的金色，軟木塞左上角多一格金色（可改為清掉或保持深色）。後兩點 1× 看不出來。

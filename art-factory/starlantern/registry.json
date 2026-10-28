@@ -3133,7 +3133,7 @@
       "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
       "repair": {
         "from_sha256": "b9aac344913a8c2d72d504d1e18b1c7c42d9bd60a3fb87f3a37b9e9f8cb3a93d",
-        "to_sha256": "dbc92fa72924d91fd01473e2079597f57a9333ea3c5fd19379ce6fd8d571f369",
+        "to_sha256": "ddccc45459f35e886c6c4b79d1be951b4bc42cc879170eafd2cb650544002162",
         "final": "art-factory/starlantern/work/repair/icon-ether.png",
         "pixels": [
           {
@@ -3257,9 +3257,23 @@
               51
             ],
             "to": [
+              70,
               82,
-              76,
-              112
+              106
+            ]
+          },
+          {
+            "x": 20,
+            "y": 27,
+            "from": [
+              95,
+              25,
+              118
+            ],
+            "to": [
+              48,
+              63,
+              79
             ]
           },
           {
@@ -3286,13 +3300,13 @@
             ],
             "to": [
               68,
-              79,
+              82,
               106
             ]
           }
         ],
         "skipped": [],
-        "changed_pixels": 11,
+        "changed_pixels": 12,
         "rule": "outline-key residue (sl_art.outline_key_pixels: key-hue pixels plus outline_blend_pixels, the key blended into a dark outline under _deep_key's RB floor or hue floor): repaired together as key-hue repairs, the rounded median of opaque 8-neighbours outside the set, in passes; alpha kept (F8: 5d icons, enemy bat)",
         "rules": [
           "outline-key"
@@ -3312,7 +3326,7 @@
             25,
             32
           ],
-          "magenta_spill": 1,
+          "magenta_spill": 0,
           "key_tint_inside": 0,
           "bright_key": 0,
           "pink_outlier": 0,
@@ -3993,9 +4007,39 @@
       "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
       "repair": {
         "from_sha256": "94d62ade0bcdd97cca11f1f622437726c8d1734bbf8ccb126811d0c7a6ad478d",
-        "to_sha256": "34d3b0b157c81ff2440942b28af4451db7114ad4e8873d361305bd6eb621d994",
+        "to_sha256": "654cca066d0901512448ab7aebb5219f5a84ff4b307f93ce1689c37f8eb6f4dc",
         "final": "art-factory/starlantern/work/repair/icon-moss.png",
         "pixels": [
+          {
+            "x": 12,
+            "y": 12,
+            "from": [
+              95,
+              26,
+              125
+            ],
+            "to": [
+              19,
+              59,
+              10
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 15,
+            "y": 12,
+            "from": [
+              93,
+              42,
+              112
+            ],
+            "to": [
+              70,
+              74,
+              9
+            ],
+            "rule": "outline-key"
+          },
           {
             "x": 28,
             "y": 12,
@@ -4008,6 +4052,36 @@
               16,
               26,
               21
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 13,
+            "y": 13,
+            "from": [
+              77,
+              29,
+              77
+            ],
+            "to": [
+              14,
+              49,
+              6
+            ],
+            "rule": "outline-key"
+          },
+          {
+            "x": 6,
+            "y": 16,
+            "from": [
+              80,
+              19,
+              82
+            ],
+            "to": [
+              63,
+              109,
+              10
             ],
             "rule": "outline-key"
           },
@@ -4118,7 +4192,7 @@
           }
         ],
         "skipped": [],
-        "changed_pixels": 10,
+        "changed_pixels": 14,
         "rule": "outline-key residue (sl_art.outline_key_pixels: key-hue pixels plus outline_blend_pixels, the key blended into a dark outline under _deep_key's RB floor or hue floor): repaired together as key-hue repairs, the rounded median of opaque 8-neighbours outside the set, in passes; alpha kept (F8: 5d icons, enemy bat) + key speck (sl_art.key_specks: outline key with at least 5 transparent 8-neighbours and fewer than 3 opaque non-key ones, so nothing to repair from): alpha 0 (F8: moss, enemy bat)",
         "rules": [
           "outline-key",
@@ -4139,7 +4213,7 @@
             40,
             36
           ],
-          "magenta_spill": 10,
+          "magenta_spill": 6,
           "key_tint_inside": 0,
           "bright_key": 0,
           "pink_outlier": 0,
@@ -4182,9 +4256,30 @@
           }
         ],
         "allow_magenta_spill": {
-          "count": 10,
-          "reason": "F8 classification: kept as art: the floating flower petals (9,5) (27,5) (31,8) (6,10) (30,11) (6,13) are pale pink (saturation .30-.61) in multi-pixel flowers; (12,12) (95,26,125), (15,12) (93,42,112), (13,13) (77,29,77), (6,16) (80,19,82) are dark violet like the soil (65,34,54), saturation .62-.79, no narrow rule takes them, kept conservatively"
+          "count": 6,
+          "reason": "F8 classification: kept as art: the floating flower petals (9,5) (27,5) (31,8) (6,10) (30,11) (6,13), pale pink (saturation .30-.61) in the flowers around the moss"
         },
+        "also": [
+          {
+            "x": 15,
+            "y": 12,
+            "rgb": [
+              93,
+              42,
+              112
+            ]
+          },
+          {
+            "x": 6,
+            "y": 16,
+            "rgb": [
+              80,
+              19,
+              82
+            ]
+          }
+        ],
+        "also_reason": "F8 review round 1 (2026-10-29, f8-review.md FAIL section): classified as key residue on the top and left outline (dark green outline mixed with 15-30% key)",
         "status": "pending",
         "date": "2026-10-29"
       }
@@ -4312,9 +4407,23 @@
       "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
       "repair": {
         "from_sha256": "7a0b06ef9e643d02d39c380f943eafb90f511a22f2ad3538549c87adeeb3ad5f",
-        "to_sha256": "354019a2ef7c4533e3da4555de345658e6d04bb670feac6b105c0ad0dbe1fc9d",
+        "to_sha256": "9091fa26c167b5d741fe88c017ba6b8689d25e6cdc03eef9721b0aed93eb151a",
         "final": "art-factory/starlantern/work/repair/icon-thorn-fang.png",
         "pixels": [
+          {
+            "x": 21,
+            "y": 3,
+            "from": [
+              80,
+              17,
+              72
+            ],
+            "to": [
+              153,
+              113,
+              93
+            ]
+          },
           {
             "x": 22,
             "y": 4,
@@ -4325,8 +4434,8 @@
             ],
             "to": [
               112,
-              64,
-              70
+              69,
+              69
             ]
           },
           {
@@ -4485,7 +4594,7 @@
           }
         ],
         "skipped": [],
-        "changed_pixels": 12,
+        "changed_pixels": 13,
         "rule": "outline-key residue (sl_art.outline_key_pixels: key-hue pixels plus outline_blend_pixels, the key blended into a dark outline under _deep_key's RB floor or hue floor): repaired together as key-hue repairs, the rounded median of opaque 8-neighbours outside the set, in passes; alpha kept (F8: 5d icons, enemy bat)",
         "rules": [
           "outline-key"
@@ -4505,7 +4614,7 @@
             29,
             32
           ],
-          "magenta_spill": 1,
+          "magenta_spill": 0,
           "key_tint_inside": 0,
           "bright_key": 0,
           "pink_outlier": 0,
@@ -4787,21 +4896,21 @@
       "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
       "repair": {
         "from_sha256": "30e4c93a238a119922f9036850c59615b8a5332094c09ee4e4aa0ac524a3c489",
-        "to_sha256": "e3a823e87a46d4c60c5ccde4c104eab8fb3231e1eceffc46e29db5f8849e7d26",
+        "to_sha256": "d4504f1f3357fe58de2904307431208740b6a101a7ea07c3d362c21efb0d4189",
         "final": "art-factory/starlantern/work/repair/icon-ice-crystal.png",
         "pixels": [
           {
-            "x": 20,
-            "y": 9,
+            "x": 19,
+            "y": 8,
             "from": [
-              77,
-              8,
-              99
+              70,
+              10,
+              104
             ],
             "to": [
-              70,
-              138,
-              169
+              35,
+              150,
+              200
             ]
           },
           {
@@ -4827,9 +4936,23 @@
               137
             ],
             "to": [
-              76,
-              139,
-              178
+              64,
+              157,
+              190
+            ]
+          },
+          {
+            "x": 20,
+            "y": 12,
+            "from": [
+              89,
+              10,
+              129
+            ],
+            "to": [
+              25,
+              136,
+              190
             ]
           },
           {
@@ -4841,9 +4964,9 @@
               130
             ],
             "to": [
-              32,
-              128,
-              168
+              25,
+              136,
+              169
             ]
           },
           {
@@ -4855,9 +4978,37 @@
               135
             ],
             "to": [
-              79,
-              10,
-              129
+              42,
+              74,
+              110
+            ]
+          },
+          {
+            "x": 10,
+            "y": 30,
+            "from": [
+              43,
+              4,
+              75
+            ],
+            "to": [
+              36,
+              89,
+              128
+            ]
+          },
+          {
+            "x": 16,
+            "y": 30,
+            "from": [
+              53,
+              1,
+              81
+            ],
+            "to": [
+              30,
+              158,
+              226
             ]
           },
           {
@@ -4870,8 +5021,22 @@
             ],
             "to": [
               48,
-              128,
-              216
+              189,
+              237
+            ]
+          },
+          {
+            "x": 18,
+            "y": 30,
+            "from": [
+              43,
+              2,
+              67
+            ],
+            "to": [
+              48,
+              189,
+              237
             ]
           },
           {
@@ -4883,23 +5048,9 @@
               142
             ],
             "to": [
-              29,
-              57,
-              134
-            ]
-          },
-          {
-            "x": 11,
-            "y": 31,
-            "from": [
-              105,
-              12,
-              120
-            ],
-            "to": [
-              43,
-              4,
-              75
+              15,
+              112,
+              200
             ]
           },
           {
@@ -4917,6 +5068,34 @@
             ]
           },
           {
+            "x": 20,
+            "y": 9,
+            "from": [
+              77,
+              8,
+              99
+            ],
+            "to": [
+              55,
+              154,
+              195
+            ]
+          },
+          {
+            "x": 11,
+            "y": 31,
+            "from": [
+              105,
+              12,
+              120
+            ],
+            "to": [
+              70,
+              126,
+              154
+            ]
+          },
+          {
             "x": 15,
             "y": 31,
             "from": [
@@ -4925,14 +5104,14 @@
               147
             ],
             "to": [
-              53,
-              109,
-              170
+              30,
+              145,
+              186
             ]
           }
         ],
         "skipped": [],
-        "changed_pixels": 10,
+        "changed_pixels": 15,
         "rule": "outline-key residue (sl_art.outline_key_pixels: key-hue pixels plus outline_blend_pixels, the key blended into a dark outline under _deep_key's RB floor or hue floor): repaired together as key-hue repairs, the rounded median of opaque 8-neighbours outside the set, in passes; alpha kept (F8: 5d icons, enemy bat)",
         "rules": [
           "outline-key"
@@ -4958,6 +5137,54 @@
           "pink_outlier": 0,
           "spec": "roster-icon:8da249263f71"
         },
+        "also": [
+          {
+            "x": 19,
+            "y": 8,
+            "rgb": [
+              70,
+              10,
+              104
+            ]
+          },
+          {
+            "x": 20,
+            "y": 12,
+            "rgb": [
+              89,
+              10,
+              129
+            ]
+          },
+          {
+            "x": 10,
+            "y": 30,
+            "rgb": [
+              43,
+              4,
+              75
+            ]
+          },
+          {
+            "x": 16,
+            "y": 30,
+            "rgb": [
+              53,
+              1,
+              81
+            ]
+          },
+          {
+            "x": 18,
+            "y": 30,
+            "rgb": [
+              43,
+              2,
+              67
+            ]
+          }
+        ],
+        "also_reason": "F8 review round 1 (2026-10-29, f8-review.md FAIL section): classified as key residue: the violet strip at x=19-20 (hue 278-279.8, under the 280 floor) and the dark violets on the bottom edge; the cyan crystal has no violet art",
         "status": "pending",
         "date": "2026-10-29"
       }
@@ -5541,23 +5768,9 @@
       "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
       "repair": {
         "from_sha256": "0fdcbdae03bd4e2b4e821d3de5e7b4b75339420e09e4442c4c51cd21f741b70f",
-        "to_sha256": "e01588e55bec68b311c71581b33f0d48d05d26ebf6bfeb58a2930a9ac125f758",
+        "to_sha256": "9007f45a2a977a80a658830b1933ab226f0364a4903c201313907d903d0adc82",
         "final": "art-factory/starlantern/work/repair/icon-dusk-cloth.png",
         "pixels": [
-          {
-            "x": 32,
-            "y": 7,
-            "from": [
-              118,
-              4,
-              125
-            ],
-            "to": [
-              26,
-              10,
-              32
-            ]
-          },
           {
             "x": 5,
             "y": 8,
@@ -5567,37 +5780,37 @@
               93
             ],
             "to": [
-              63,
-              41,
-              74
+              64,
+              45,
+              86
             ]
           },
           {
-            "x": 33,
+            "x": 32,
             "y": 8,
             "from": [
-              108,
-              4,
-              108
+              60,
+              18,
+              65
             ],
             "to": [
-              44,
-              18,
-              64
+              32,
+              11,
+              43
             ]
           },
           {
-            "x": 3,
+            "x": 4,
             "y": 9,
             "from": [
-              109,
-              0,
-              103
-            ],
-            "to": [
               63,
               15,
               65
+            ],
+            "to": [
+              70,
+              44,
+              98
             ]
           },
           {
@@ -5699,6 +5912,48 @@
             ]
           },
           {
+            "x": 32,
+            "y": 7,
+            "from": [
+              118,
+              4,
+              125
+            ],
+            "to": [
+              26,
+              10,
+              32
+            ]
+          },
+          {
+            "x": 33,
+            "y": 8,
+            "from": [
+              108,
+              4,
+              108
+            ],
+            "to": [
+              32,
+              11,
+              43
+            ]
+          },
+          {
+            "x": 3,
+            "y": 9,
+            "from": [
+              109,
+              0,
+              103
+            ],
+            "to": [
+              66,
+              38,
+              98
+            ]
+          },
+          {
             "x": 2,
             "y": 10,
             "from": [
@@ -5707,9 +5962,9 @@
               117
             ],
             "to": [
-              48,
-              19,
-              64
+              45,
+              23,
+              63
             ]
           },
           {
@@ -5728,7 +5983,7 @@
           }
         ],
         "skipped": [],
-        "changed_pixels": 13,
+        "changed_pixels": 15,
         "rule": "outline-key residue (sl_art.outline_key_pixels: key-hue pixels plus outline_blend_pixels, the key blended into a dark outline under _deep_key's RB floor or hue floor): repaired together as key-hue repairs, the rounded median of opaque 8-neighbours outside the set, in passes; alpha kept (F8: 5d icons, enemy bat)",
         "rules": [
           "outline-key"
@@ -5748,15 +6003,11 @@
             40,
             36
           ],
-          "magenta_spill": 3,
+          "magenta_spill": 0,
           "key_tint_inside": 0,
           "bright_key": 0,
           "pink_outlier": 0,
           "spec": "roster-icon:8da249263f71"
-        },
-        "allow_magenta_spill": {
-          "count": 3,
-          "reason": "F8 classification: the violet cloth is art in the spill band: (32,8) (60,18,65) and (4,9) (63,15,65) are its own dark violet (saturation .72/.77, never key); (3,9) is repaired to its neighbours' median, the same cloth violet (63,15,65)"
         },
         "status": "pending",
         "date": "2026-10-29"
