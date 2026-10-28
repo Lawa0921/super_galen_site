@@ -24,6 +24,7 @@ import { bondPoints, maxBondRecord } from '../../src/scripts/games/starlantern/e
 import { GIFT_LINES } from '../../src/scripts/games/starlantern/data/bond.zh-TW';
 import { BESTIARY_UI } from '../../src/scripts/games/starlantern/data/bestiary.zh-TW';
 import { ENEMIES } from '../../src/scripts/games/starlantern/data/enemies';
+import { MAINLINE_TABLES } from '../../src/scripts/games/starlantern/data/monsters';
 import { SWEEP, asDesktop, asPhone, expectedMode, fitTo, go, legibility, longestGear, placeBeside, snap, stageBox, stageScale, startSweepGame, sweep, writeReviewIndex } from './starlantern-legibility';
 
 test.use({ launchOptions: { args: ['--mute-audio'] } });
@@ -2167,6 +2168,8 @@ test.describe('starlantern', () => {
         const d = (window as unknown as Dbg).__starlanternDebug;
         // One roster foe live (its art is published), so the page is the bestiary's (with none live it is the old list).
         const { ROSTER_ART, ROSTER_LIVE } = (d as unknown as { roster: { ROSTER_ART: Set<string>; ROSTER_LIVE: Set<string> } }).roster;
+        // Exactly this one live (L1b: the first wave is live in the game; this page is measured as it was with one foe).
+        ROSTER_LIVE.clear();
         ROSTER_ART.add('paper-moth');
         ROSTER_LIVE.add('paper-moth');
         const s = d.game.state;
@@ -2211,6 +2214,109 @@ test.describe('starlantern', () => {
       await expect(labels).toHaveText([B.filters.road, B.filters.bosses]);
       expect(w.errors).toEqual([]);
     }
+    expect(missing).toEqual([]);
+  });
+
+  test('the first live wave: a new foe on depth 4, the fog warden on 5, the false moon in its room on 8, and the bestiary (roster plan L1c)', async ({ page }) => {
+    const missing: string[] = [];
+    page.on('response', (r) => { if (r.status() === 404) missing.push(r.url()); });
+    await fitTo(page, 1280, 720);
+    const w = await setup(page, 7);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const run = <R = unknown>(src: string) => page.evaluate((s) => new Function('g', s)((window as any).__starlanternDebug.game), src) as Promise<R>;
+    const shot = async (name: string) => { if (process.env.SL_SHOTS) await page.screenshot({ path: `${process.env.SL_SHOTS}/l1c-${name}.png` }); };
+    const down = async (depth: number) => {
+      await run(`g.battle = null; g.run = null; g.phase = 'town'; g.state.dungeon.reached.mainline = 9;
+        if (!g.depart({ region: 'mainline', condition: 'plain' }, ${depth}).ok) throw new Error('no departure');`);
+      await go(page, 'dungeon');
+      await expect(page.locator('.slx-dungeon')).toBeVisible(); await w.closeTalk();
+    };
+    /** Every foe down, then 全員攻擊 until the result, and through it back to the map. */
+    const win = async () => {
+      await run('for (const e of g.battle.enemies) { e.hp = 0; e.alive = false; }');
+      for (let i = 0; i < 40 && !(await page.locator('.slx-result').isVisible()); i++) {
+        if (await page.locator('.slx-bcmd [role=option]').count()) { await w.key('ArrowUp'); await w.key('Enter'); }
+        else await page.waitForTimeout(50);
+      }
+      await expect(page.locator('.slx-result')).toContainText('勝利');
+      for (let i = 0; i < 20 && !(await page.locator('.slx-dungeon').isVisible()); i++) { await w.key('z'); await page.waitForTimeout(60); }
+      await expect(page.locator('.slx-dungeon')).toBeVisible(); await w.closeTalk();
+    };
+    /** Step onto the tile at `at` from a floor tile beside it. */
+    const stepOnto = async (at: { x: number; y: number }) => {
+      const k = await run<string>(`const m = g.map();
+        for (const [k, dx, dy] of [['ArrowRight', -1, 0], ['ArrowLeft', 1, 0], ['ArrowDown', 0, -1], ['ArrowUp', 0, 1]]) {
+          const x = ${at.x} + dx, y = ${at.y} + dy;
+          if (m.tiles[y]?.[x] !== 'floor') continue;
+          g.pos = { x, y }; g.encounter = 0; return k;
+        }
+        return '';`);
+      expect(k).not.toBe('');
+      await w.key(k);
+      for (let i = 0; i < 14 && !(await page.locator('.slx-battle').isVisible()); i++) { await w.key('z'); await page.waitForTimeout(60); }
+      await expect(page.locator('.slx-battle')).toBeVisible();
+      await expect(page.locator('.slx-bcmd [role=option]').first()).toBeVisible();
+    };
+
+    // Depth 4: the main road's B table is the roster's now; its first group, three paper moths, fights with its names and intents.
+    await down(4);
+    const moths = MAINLINE_TABLES.B[0];
+    expect(moths).toEqual(['paper-moth', 'paper-moth', 'paper-moth']);
+    await run(`g.startBattle(${JSON.stringify(moths)}, false);`);
+    await go(page, 'battle');
+    await expect(page.locator('.slx-bcmd [role=option]').first()).toBeVisible();
+    await w.choose('.slx-bcmd', '攻擊');
+    const targets = page.locator('.slx-btarget [role=option]');
+    await expect(targets).toHaveCount(3);
+    for (const t of await targets.allTextContents()) expect(t).toContain(ENEMIES['paper-moth'].name);
+    await expect(page.locator('.slx-bnote')).toContainText('◆');                 // the moth's intent
+    await shot('d4-moths');
+    await w.key('Escape');
+    await win();
+    expect(await run('return g.state.bestiary["paper-moth"];')).toEqual({ seen: 1, felled: 3 });
+
+    // Depth 5: the boss is the fog warden, not the lantern-eater.
+    await down(5);
+    const boss = await run<{ x: number; y: number }>(`const m = g.map();
+      const at = [...Array(m.tiles.length).keys()].flatMap((y) => m.tiles[y].map((t, x) => ({ t, x, y }))).find((c) => c.t === 'floor' && m.tiles[c.y][c.x - 1] === 'floor');
+      m.tiles[at.y][at.x] = 'boss'; m.boss = { x: at.x, y: at.y }; return { x: at.x, y: at.y };`);
+    await stepOnto(boss);
+    // Its name as met from depth 4 on: 「深層・霧門守衛」.
+    expect(await run('return [g.battle.boss, g.battle.enemies.map((e) => e.defId), g.battle.enemies[0].name];')).toEqual([true, ['fog-warden'], `深層・${ENEMIES['fog-warden'].name}`]);
+    await shot('d5-fog-warden');
+    await win();
+
+    // Depth 8: a warden's room, drawn as the elite's event tile; inside, the false moon; beaten, the room is floor.
+    await down(8);
+    const room = await run<{ x: number; y: number; tile: string; warden: string }>(`const c = g.run.floors.get(g.floor).contents.find((x) => x.kind === 'warden');
+      return { ...c.at, tile: g.map().tiles[c.at.y][c.at.x], warden: c.warden };`);
+    expect([room.tile, room.warden]).toEqual(['warden', 'false-moon']);
+    await stepOnto(room);
+    expect(await run('return [g.battle.boss, g.battle.enemies.map((e) => e.defId), g.battle.enemies[0].name];')).toEqual([false, ['false-moon'], `深層・${ENEMIES['false-moon'].name}`]);
+    await shot('d8-false-moon');
+    await win();
+    expect(await run(`return [g.map().tiles[${room.y}][${room.x}], g.run.floors.get(g.floor).contents.some((x) => x.kind === 'warden')];`)).toEqual(['floor', false]);
+
+    // The bestiary: the road and the bosses, the met ones by name.
+    await run(`g.battle = null; g.run = null; g.phase = 'town';`);
+    await go(page, 'town');
+    await expect(page.locator('.slx-town')).toBeVisible(); await w.closeTalk();
+    await page.locator('.slx-town [data-id=handbook]').click();
+    await page.locator('.slx-tabs .slx-tab').filter({ hasText: T.ui2.handbook.tabs.codex }).click();
+    const B = BESTIARY_UI;
+    const labels = page.locator('.slx-hb-list [role=option] .slx-label');
+    await expect(labels).toHaveText([B.filters.road, B.filters.bosses]);
+    const right = (f: string) => page.locator('.slx-hb-list [role=option]').filter({ hasText: f }).locator('.slx-right');
+    await expect(right(B.filters.road)).toHaveText(B.count(1, 21));
+    await expect(right(B.filters.bosses)).toHaveText(B.count(2, 6));
+    await page.locator('.slx-hb-list [role=option]').filter({ hasText: B.filters.road }).click();
+    const moth = page.locator('.slx-hb-list [role=option]').filter({ hasText: ENEMIES['paper-moth'].name });
+    await expect(moth).toHaveCount(1);
+    await moth.click();
+    await expect(page.locator('.slx-hb-detail')).toContainText(B.tally(1, 3));
+    await shot('bestiary');
+    expect(await legibility(page, { requireReady: true })).toEqual([]);
+    expect(w.errors).toEqual([]);
     expect(missing).toEqual([]);
   });
 
