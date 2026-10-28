@@ -38,6 +38,14 @@ export const ROSTER_LIVE: ReadonlySet<string> = new Set<string>([
   // L1b, the first wave: the main road's B and C bands, the treasure rat, the bosses at 5, 10, 15 and the wardens at 8, 13
   'paper-moth', 'lamp-wight', 'root-hound', 'tin-soldier', 'dust-mimic', 'market-ghost', 'tongueless-bell', 'hollow-hunter', 'mist-twin',
   'moon-crow', 'bell-watcher', 'sleepwalker', 'hoarder', 'fog-warden', 'silent-bell', 'hollow-champion', 'false-moon', 'bell-warden',
+  // L2b, the second wave: the main road's D, E and F bands, the gilded rat, the bosses at 20 to 50 (and the archon's hands) and
+  // the wardens at 18, 23, 28; the lantern-mother joins with the finale (L2c)
+  'old-city-sentinel', 'requiem-choir', 'lantern-larva', 'epitaph-golem', 'ancestor-automaton', 'ash-archivist', 'wick-shade', 'keeper-echo',
+  'ember-maw', 'sorrow-crystal', 'deep-tendril', 'music-box', 'paper-cranes', 'lost-shadow', 'returning-light', 'gilded-hoarder',
+  'old-city-archon', 'gorged-beast', 'forgotten-festival', 'starless-whale', 'stopped-clock', 'first-lantern', 'archon-hand',
+  'toppled-automaton', 'requiem-conductor', 'lantern-brood',
+  // L2c: the finale's foe in her own shape
+  'lantern-mother',
 ]);
 
 /** An enemy any list may show: a legacy one, or a roster one gone live. */
@@ -87,14 +95,19 @@ export const MAINLINE_TABLES: Record<RosterBand, string[][]> = {
     ['hollow-hunter', 'lamp-wight'], ['tongueless-bell', 'tin-soldier'], ['moon-crow', 'root-hound'], [...x2('mist-twin'), 'paper-moth'],
     ['sleepwalker'], ['bell-watcher', 'market-ghost'], ['hoarder'],
   ],
+  // L2b (spec §0 item 22, the one attempt on band 19a): out of D, the two automatons, the golem with the crow, the larva with
+  // the twins and the sleepwalker with the choir (C-band foes at depth 20 and the automaton wall); in, the choir, the
+  // archivist and the golem each with a lighter partner, so D stays twelve (the hollow hunter, the bell watcher and the
+  // treasure rat keep their groups). Out of E, the maw with the sentinel and the golem with a wick; in, the bearer with a
+  // larva and the archivist with the sentinel (E keeps a D foe, so it shares no more than six in ten with F).
   D: [
     ['old-city-sentinel', 'requiem-choir'], x2('lantern-larva'), ['epitaph-golem'], ['ancestor-automaton', 'lantern-larva'],
-    ['ash-archivist', 'old-city-sentinel'], ['requiem-choir', 'hollow-hunter'], x2('ancestor-automaton'), ['epitaph-golem', 'moon-crow'],
-    ['ash-archivist', 'bell-watcher'], ['lantern-larva', ...x2('mist-twin')], ['sleepwalker', 'requiem-choir'], ['hoarder'],
+    ['ash-archivist', 'old-city-sentinel'], ['requiem-choir', 'hollow-hunter'], ['requiem-choir', 'lantern-larva'], ['ash-archivist', 'lantern-larva'],
+    ['ash-archivist', 'bell-watcher'], ['epitaph-golem', 'ash-archivist'], ['ancestor-automaton', 'requiem-choir'], ['hoarder'],
   ],
   E: [
     x3('wick-shade'), ['keeper-echo'], ['ember-maw'], x2('sorrow-crystal'), ['deep-tendril', ...x2('wick-shade')], ['keeper-echo', 'requiem-choir'],
-    ['ember-maw', 'old-city-sentinel'], ['sorrow-crystal', 'lantern-larva'], x2('deep-tendril'), ['epitaph-golem', 'wick-shade'],
+    ['keeper-echo', 'lantern-larva'], ['sorrow-crystal', 'lantern-larva'], x2('deep-tendril'), ['ash-archivist', 'old-city-sentinel'],
     ['ash-archivist', 'keeper-echo'], ['gilded-hoarder'],
   ],
   F: [

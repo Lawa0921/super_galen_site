@@ -17,6 +17,11 @@ import { floorOf, type Portal } from './dungeon/run';
 import { capacity, carried, weightOf } from '../data/weights';
 import type { CharacterId, EnemyDef, ItemInstance, Pos } from './types';
 import { ENEMIES } from '../data/enemies';
+import { bossFor } from '../data/monsters';
+import { REGIONS } from '../data/regions';
+import { ownUniqueOf } from './loot/drops';
+import { ownerFelled } from './forge/craft';
+import { scaleEnemy } from './scaling';
 import { CHARACTERS } from '../data/characters';
 import { handbook } from './story/handbook';
 import { SETS } from '../data/gear';
@@ -3501,7 +3506,8 @@ describe('the finale', () => {
     g.state.dungeon.reached.blaze = FINALE_DEPTH;
     expect(g.depart({ region: 'blaze', condition: 'plain' }, FINALE_DEPTH)).toEqual({ ok: true });
     stepOnto(g, g.map().boss!);
-    expect(g.battle!.enemies[0].name).toContain(ENEMIES[FINALE_BOSS.base].name);   // the grown beast, not her
+    // Plan L2c: the finale wears the mother's shape now, so the beast is named by the fight's own boss (bossFor).
+    expect(g.battle!.enemies[0].name).toContain(ENEMIES[bossFor('blaze', FINALE_DEPTH).at(-1)!].name);   // the grown beast, not her
     expect(g.battle!.enemies[0].name).not.toBe(STORY.finaleBossName);
   });
 
@@ -3546,10 +3552,59 @@ describe('the finale', () => {
   it('after the finale the depth-30 boss is an ordinary boss', () => {
     const g = run(FINALE_DEPTH, (x) => { x.state.story.finaleCleared = true; x.state.story.act1Cleared = true; });
     stepOnto(g, g.map().boss!);
-    expect(g.battle!.enemies[0].name).toContain(ENEMIES[FINALE_BOSS.base].name);   // the grown beast, not her
+    // Plan L2c: the finale wears the mother's shape now, so the beast is named by the fight's own boss (bossFor, ruling 11).
+    expect(g.battle!.enemies[0].name).toContain(ENEMIES[bossFor('mainline', FINALE_DEPTH).at(-1)!].name);   // the grown beast, not her
     expect(g.battle!.enemies[0].name).not.toBe(STORY.finaleBossName);
     killAll(g);
     expect([g.phase, g.cleared, g.finale]).toEqual(['map', null, null]);
+  });
+
+  it("the finale is fought against the mother's own shape, with the lantern-eater's numbers", () => {
+    // Roster plan L2c (ruling 11, spec §0 item 12): FINALE_BOSS.base is the lantern-mother; her numbers, skills and
+    // weaknesses are the lantern-eater's field by field, only the id (and so the picture) differs; the name is the finale's.
+    const g = run(FINALE_DEPTH);
+    stepOnto(g, g.map().boss!);
+    const [her] = g.battle!.enemies;
+    expect([g.battle!.enemies.length, her.defId, her.name]).toEqual([1, 'lantern-mother', STORY.finaleBossName]);
+    const shape = (id: string) => {
+      const { id: _id, name: _name, drops: _drops, ...rest } = scaleEnemy(ENEMIES[id], FINALE_DEPTH, REGIONS.mainline, true);
+      return rest;
+    };
+    expect(shape('lantern-mother')).toEqual(shape('lanterneater'));
+    // The fighter itself: the same as the old finale's, met the same way (FINALE_BOSS.base set back to the beast for one fight).
+    const was = FINALE_BOSS.base;
+    try {
+      (FINALE_BOSS as { base: string }).base = 'lanterneater';
+      const old = run(FINALE_DEPTH);
+      stepOnto(old, old.map().boss!);
+      const [beast] = old.battle!.enemies;
+      expect([beast.defId, beast.name]).toEqual(['lanterneater', STORY.finaleBossName]);
+      expect([her.level, her.max, her.hp, her.x]).toEqual([beast.level, beast.max, beast.hp, beast.x]);
+    } finally {
+      (FINALE_BOSS as { base: string }).base = was;
+    }
+  });
+
+  it('after the finale depth thirty is still the grown beast, not her', () => {
+    const g = run(FINALE_DEPTH, (x) => { x.state.story.finaleCleared = true; x.state.story.act1Cleared = true; });
+    stepOnto(g, g.map().boss!);
+    expect(g.battle!.enemies.map((e) => e.defId)).toEqual(['lanterneater']);
+    expect(g.battle!.enemies[0].name).not.toBe(STORY.finaleBossName);
+  });
+
+  it("the mother's trophy and own unique drop at the finale", () => {
+    // Plan L2c: she is live with the finale; her trophy is a sure drop, her own unique is hers, and beating her is what the
+    // forge's 先擊倒過 reads.
+    expect(ENEMIES['lantern-mother'].drops).toContainEqual({ mat: 'mother-light', chance: 1 });
+    expect(ownUniqueOf('lantern-mother')?.id).toBe('cradled-light');
+    const g = run(FINALE_DEPTH);
+    stepOnto(g, g.map().boss!);
+    expect(ownerFelled(g.state, 'cradled-light')).toBe(false);
+    const end = killAll(g);
+    expect(end.outcome).toBe('win');
+    expect(end.drops['mother-light']).toBe(1);
+    expect(g.state.bestiary?.['lantern-mother']).toEqual({ seen: 1, felled: 1 });
+    expect(ownerFelled(g.state, 'cradled-light')).toBe(true);
   });
 
   it('memories still untold from depth 25 play before the finale (story L)', () => {
@@ -6495,8 +6550,8 @@ describe('wardens on the map and bosses by depth (roster plan B5)', () => {
       expect(end.outcome).toBe('win');
       expect(end.gear).toHaveLength(2);
     });
-    // Without its hands live, the archon is not met at all.
-    withRosterLive(['old-city-archon'], () => expect(bossIds(deep('mainline', 20))).toEqual(['lanterneater']));
+    // Without its hands live, the archon is not met at all (L2b: exactly the archon live, the rest as with nothing live).
+    withRosterOnly(['old-city-archon'], () => expect(bossIds(deep('mainline', 20))).toEqual(['lanterneater']));
   });
 
   it('a warden waits in its room on depth 8 and fights as an elite', () => {

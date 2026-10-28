@@ -258,8 +258,9 @@ describe('encounterGroup', () => {
     expect([...sizes].sort()).toEqual([1, 2, 3]);
     expect([...seen].sort()).toEqual(NORMAL_ENEMIES.filter((id) => LEGACY_ENEMY_IDS.includes(id)).sort());
     // the spec says nine, counting the boss; the boss is not a random foe. Plan L1b: 8 + the first wave's 13 ordinary
-    // species (18 live, less 3 bosses and 2 wardens: ruling 3 counts no boss, warden or part) = 21.
-    expect(NORMAL_ENEMIES).toHaveLength(21);
+    // species (18 live, less 3 bosses and 2 wardens: ruling 3 counts no boss, warden or part) = 21; plan L2b: + the second
+    // wave's 16 (26 live, less 6 bosses, 3 wardens and the archon's hand) = 37.
+    expect(NORMAL_ENEMIES).toHaveLength(37);
     const a = mulberry32(3), b = mulberry32(3);
     for (let i = 0; i < 20; i++) expect(encounterGroup('iron', 4, a)).toEqual(encounterGroup('iron', 4, b));
   }));
@@ -362,7 +363,7 @@ describe('story enemies', () => {
     const story = Object.values(ENEMIES).filter((e) => e.story).map((e) => e.id);
     expect(story).toContain('scarlet-foe');
     for (const id of story) expect(NORMAL_ENEMIES).not.toContain(id);
-    expect(NORMAL_ENEMIES).toHaveLength(21);   // plan L1b: 8 + 13 (the first wave less its 3 bosses and 2 wardens, ruling 3)
+    expect(NORMAL_ENEMIES).toHaveLength(37);   // plan L1b: 8 + 13 (the first wave less its 3 bosses and 2 wardens, ruling 3); L2b: + 16
   });
 });
 
@@ -397,7 +398,10 @@ describe('the deep enemy knobs (plan 6b Task 20c, added at their start values by
       let last = met(id, from);
       for (let d = from + 1; d <= 250; d++) {
         const e = met(id, d);
-        for (const k of ['hp', 'atk', 'mag'] as const) expect(e.max[k], `${id} ${k} at depth ${d}`).toBeGreaterThan(last.max[k]);
+        // M18 (spec §0 item 19): a mimic takes its atk and mag from the party's strongest member, not from the depth; its hp
+        // still grows (plan L1b: an exclusion only where the assertion meets a ruling).
+        const keys = ENEMIES[id].mimic ? (['hp'] as const) : (['hp', 'atk', 'mag'] as const);
+        for (const k of keys) expect(e.max[k], `${id} ${k} at depth ${d}`).toBeGreaterThan(last.max[k]);
         last = e;
       }
     }

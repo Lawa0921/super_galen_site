@@ -53,7 +53,6 @@ const DEFERRED_22J: Record<string, { wave: 'L2' | 'L3' | 'L4'; id: string }> = {
   'ember-tyrant blaze d20 hell rare bare': { wave: 'L3', id: 'ember-tyrant' },
   'ember-tyrant blaze d20 nightmare magic bare': { wave: 'L3', id: 'ember-tyrant' },
   'faceless-host shade d20 hell rare bare': { wave: 'L4', id: 'faceless-host' },
-  'gorged-beast mainline d25 nightmare magic': { wave: 'L2', id: 'gorged-beast' },
   'grey-blight mire d25 hell rare': { wave: 'L4', id: 'grey-blight' },
   'grey-blight mire d25 nightmare magic': { wave: 'L4', id: 'grey-blight' },
   'last-commander iron d15 hell rare bare': { wave: 'L4', id: 'last-commander' },
@@ -75,13 +74,34 @@ const DEFERRED_22J: Record<string, { wave: 'L2' | 'L3' | 'L4'; id: string }> = {
   'grey-elder mire': { wave: 'L4', id: 'grey-elder' },
   'ice-shrine frost': { wave: 'L3', id: 'ice-shrine' },
   'locked-vault shade': { wave: 'L4', id: 'locked-vault' },
-  'requiem-conductor mainline': { wave: 'L2', id: 'requiem-conductor' },
+};
+/**
+ * Spec §0 item 22 (plan L2b; the user's direction 2026-10-28, balance is not the priority): 22j's cells of a live boss or
+ * warden still red after its wave's one simple tuning attempt. Each is still measured and printed (`exception`) and held to
+ * its own floor instead, the measured rate less .01. Pinned below; backlog F6.
+ */
+const EXCEPTION_22J: Record<string, { min: number; why: string }> = {
+  'requiem-conductor mainline': { min: 0.397, why: 'its attempt (召集歌隊 two calls → one) moved nothing (.421); back at two; the choir it calls mends every foe (item 22)' },
+};
+const excepted = (label: string, rate: number): boolean => {
+  const e = EXCEPTION_22J[label];
+  if (!e) return false;
+  say(`exception ${label}: ${e.why}; floor >= ${e.min.toFixed(3)}`);
+  ex(rate, `${label} (exception floor)`).toBeGreaterThanOrEqual(e.min);
+  return true;
 };
 const deferred = (label: string): boolean => {
   const d = DEFERRED_22J[label];
   if (d) say(`deferred to ${d.wave}: ${label}`);
   return !!d;
 };
+
+describe('band 22j names its exceptions (spec §0 item 22, plan L2b)', () => {
+  it('exactly the requiem conductor in Hell at depth 23, with its floor', () => {
+    expect(Object.fromEntries(Object.entries(EXCEPTION_22J).map(([k, e]) => [k, e.min]))).toEqual({ 'requiem-conductor mainline': 0.397 });
+    for (const e of Object.values(EXCEPTION_22J)) expect(e.why, e.why).toMatch(/item 22/);
+  });
+});
 
 describe('band 22j defers only what is not live yet (controller ruling 2026-10-28)', () => {
   const liveDeferred = () => [...new Set(Object.values(DEFERRED_22J).map((d) => d.id))].filter((id) => ROSTER_LIVE.has(id));
@@ -137,7 +157,7 @@ describe.skipIf(!on)('band 22j: the roster on Nightmare and Hell (roster plan B1
       }));
       const r = pooled(runs);
       say(line(`warden ${id} ${region} d23 hell rare`, r));
-      if (!deferred(`${id} ${region}`)) ex(r.rate, `${id} ${region}`).toBeGreaterThanOrEqual(0.75);
+      if (!deferred(`${id} ${region}`) && !excepted(`${id} ${region}`, r.rate)) ex(r.rate, `${id} ${region}`).toBeGreaterThanOrEqual(0.75);
     });
   }, 3_000_000);
 });

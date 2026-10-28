@@ -111,16 +111,59 @@ const ORDINARY = ROSTER.filter((id) => !ENEMIES[id].boss && !ENEMIES[id].rank &&
  *   region's elements (iron: they resist phys); above 雙影 320 the unequipped party of frozen band 7 falls under .85 at
  *   iron depth 10, and below 380 the expected party's loss falls under the bats' less .08.
  */
-const EXCEPTION_22A: Record<string, { floor: number; why: string }> = {
+const EXCEPTION_22A: Record<string, { floor?: number; ceiling?: number; why: string }> = {
   'paper-moth': { floor: 0.099, why: 'swarm fodder; conflicts with frozen band 8 (ruling 21)' },
   'mist-twin': { floor: 0.171, why: 'the region element override; conflicts with frozen band 7 at iron depth 10 (ruling 21)' },
+  // Spec §0 item 22 (plan L2b): its one attempt (燭火 90 → 80) did not bring the loss under .45 (.477), so it is back at 90
+  // and held to its measured .457 plus .01. Three fuses that burn the whole party as they fall: the trait says to fell them
+  // one by one. Backlog F6.
+  'wick-shade': { ceiling: 0.467, why: 'three fuses that each burn the whole party as they fall; one attempt spent (item 22)' },
+};
+
+/**
+ * Spec §0 item 22 (plan L2b; the user's direction 2026-10-28, balance is not the priority): band 22's cells of a live
+ * species still red after its wave's one simple tuning attempt. Each is still measured and printed (`exception`) and held
+ * to its own bound instead of the band's, its measured value after the attempt less .01 (a rate's floor) or plus .01 (a
+ * 22b distance's ceiling), so it cannot get worse unseen. Pinned below; each has its backlog entry (plan F6).
+ */
+const EXCEPTION_22: Record<string, { min?: number; max?: number; why: string }> = {
+  '22b gorged-beast mainline d25': { max: 0.135, why: 'the attempt that greened its 22f and 22j cells (吞光 85 → 75, 啃食 130 → 100) left it .125 off the lantern-eater (item 22)' },
+  '22d noHeal mainline d20': { min: 0.764, why: 'the D table after its one attempt (four groups swapped for band 19a), .563 → .774 (item 22)' },
+  '22d allPhys mainline d20': { min: 0.757, why: 'the D table after its one attempt (four groups swapped for band 19a), .587 → .767 (item 22)' },
+  '22f old-city-archon mainline d20 noTank': { min: 0.59, why: 'its attempt (王權 160 → 130) moved nothing (.6) and cost allPhys; back at 160 (item 22)' },
+};
+/** A cell of EXCEPTION_22: asserts its own bound on `value`, says so, and returns true; false for every other cell. */
+const exceptedCell = (label: string, value: number): boolean => {
+  const e = EXCEPTION_22[label];
+  if (!e) return false;
+  say(`exception ${label}: ${e.why}; ${e.min !== undefined ? `floor >= ${f3(e.min)}` : `ceiling <= ${f3(e.max!)}`}`);
+  if (e.min !== undefined) ex(value, `${label} (exception floor)`).toBeGreaterThanOrEqual(e.min);
+  if (e.max !== undefined) ex(value, `${label} (exception ceiling)`).toBeLessThanOrEqual(e.max);
+  return true;
 };
 
 describe('band 22a names its exceptions (ruling 21)', () => {
-  it('exactly the paper moth and the mist twins, each with its floor', () => {
-    expect(Object.keys(EXCEPTION_22A).sort()).toEqual(['mist-twin', 'paper-moth']);
+  it('exactly the paper moth and the mist twins, each with its floor, and the wick shade with its ceiling (item 22)', () => {
+    expect(Object.keys(EXCEPTION_22A).sort()).toEqual(['mist-twin', 'paper-moth', 'wick-shade']);
     expect(EXCEPTION_22A['paper-moth'].floor).toBe(0.099);
     expect(EXCEPTION_22A['mist-twin']?.floor).toBe(0.171);
+    expect(EXCEPTION_22A['wick-shade']).toMatchObject({ ceiling: 0.467 });
+    expect(EXCEPTION_22A['wick-shade']?.floor).toBeUndefined();
+  });
+});
+
+describe('band 22 names its other exceptions (spec §0 item 22, plan L2b)', () => {
+  it('exactly these cells, each with its own bound', () => {
+    expect(Object.fromEntries(Object.entries(EXCEPTION_22).map(([k, e]) => [k, e.min ?? e.max]))).toEqual({
+      '22b gorged-beast mainline d25': 0.135,
+      '22d noHeal mainline d20': 0.764,
+      '22d allPhys mainline d20': 0.757,
+      '22f old-city-archon mainline d20 noTank': 0.59,
+    });
+    // A 22b cell bounds its distance from the lantern-eater from above; every other one its rate from below.
+    expect(EXCEPTION_22['22b gorged-beast mainline d25'].max).toBe(0.135);
+    for (const [k, e] of Object.entries(EXCEPTION_22)) if (!k.startsWith('22b')) expect(e.max, k).toBeUndefined();
+    for (const e of Object.values(EXCEPTION_22)) expect(e.why, e.why).toMatch(/item 22/);
   });
 });
 
@@ -136,14 +179,11 @@ const DEFERRED_22: Record<string, { wave: 'L2' | 'L3' | 'L4'; id: string }> = {
   '22a forge-hound (std) blaze d4': { wave: 'L3', id: 'forge-hound' },
   '22a frozen-pilgrim (std) frost d4': { wave: 'L3', id: 'frozen-pilgrim' },
   '22a herald-engine (support) iron d4': { wave: 'L4', id: 'herald-engine' },
-  '22a keeper-echo (caster) mainline d25': { wave: 'L2', id: 'keeper-echo' },
   '22a mirror-thief (std) shade d4': { wave: 'L4', id: 'mirror-thief' },
-  '22a old-city-sentinel (heavy) mainline d16': { wave: 'L2', id: 'old-city-sentinel' },
   '22a sand-scorpion (std) blaze d4': { wave: 'L3', id: 'sand-scorpion' },
   '22a siege-crab (heavy) iron d4': { wave: 'L4', id: 'siege-crab' },
   '22a spore-moth (swarm) mire d4': { wave: 'L4', id: 'spore-moth' },
   '22a veil-stalker (std) shade d4': { wave: 'L4', id: 'veil-stalker' },
-  '22a wick-shade (swarm) mainline d25': { wave: 'L2', id: 'wick-shade' },
   '22b faceless-host shade d20': { wave: 'L4', id: 'faceless-host' },
   '22b fortress-colossus iron d20': { wave: 'L4', id: 'fortress-colossus' },
   '22b grey-blight mire d25': { wave: 'L4', id: 'grey-blight' },
@@ -153,13 +193,9 @@ const DEFERRED_22: Record<string, { wave: 'L2' | 'L3' | 'L4'; id: string }> = {
   '22b shadow-parade shade d30': { wave: 'L4', id: 'shadow-parade' },
   '22b vault-dragon shade d25': { wave: 'L4', id: 'vault-dragon' },
   '22b white-silence frost d25': { wave: 'L3', id: 'white-silence' },
-  '16 22b stopped-clock mainline d45 two': { wave: 'L2', id: 'stopped-clock' },
-  '22f gorged-beast mainline d25 noHeal': { wave: 'L2', id: 'gorged-beast' },
-  '22f gorged-beast mainline d25 noTank': { wave: 'L2', id: 'gorged-beast' },
   '22f grey-blight mire d10 allPhys': { wave: 'L4', id: 'grey-blight' },
   '22f mirage-city blaze d15 allPhys': { wave: 'L3', id: 'mirage-city' },
   '22f mirage-city blaze d15 noHeal': { wave: 'L3', id: 'mirage-city' },
-  '22f old-city-archon mainline d20 noTank': { wave: 'L2', id: 'old-city-archon' },
   '22f rift-maw frost d15 allPhys': { wave: 'L3', id: 'rift-maw' },
   '22f shadow-parade shade d15 allPhys': { wave: 'L4', id: 'shadow-parade' },
   '22f shadow-parade shade d15 noHeal': { wave: 'L4', id: 'shadow-parade' },
@@ -225,10 +261,11 @@ describe.skipIf(!on)('band 22: the roster against the lantern-eater and its own 
       if (deferredCell(label)) continue;
       const exception = EXCEPTION_22A[id];
       if (exception) {
-        say(`exception ${label}: ${exception.why}; floor hpLoss >= ${f3(exception.floor)}`);
+        const bound = exception.floor !== undefined ? `floor hpLoss >= ${f3(exception.floor)}` : `ceiling hpLoss <= ${f3(exception.ceiling!)}`;
+        say(`exception ${label}: ${exception.why}; ${bound}`);
         ex(r.rate, `${label} (exception)`).toBeGreaterThanOrEqual(0.85);
-        ex(r.hpLoss, `${label} (exception floor)`).toBeGreaterThanOrEqual(exception.floor);
-        ex(r.hpLoss, `${label} (exception)`).toBeLessThanOrEqual(0.45);
+        ex(r.hpLoss, `${label} (exception floor)`).toBeGreaterThanOrEqual(exception.floor ?? 0.1);
+        ex(r.hpLoss, `${label} (exception ceiling)`).toBeLessThanOrEqual(exception.ceiling ?? 0.45);
         continue;
       }
       // Where the reference itself misses the band, the species is judged against it (the ruling above); elsewhere as
@@ -277,7 +314,7 @@ describe.skipIf(!on)('band 22: the roster against the lantern-eater and its own 
       const label = `22b ${bossOf(c.group)} ${c.region} d${c.depth}`;
       sayRun(label, boss);
       sayRun(`${label} lanterneater`, eater);
-      if (!deferredCell(label)) ex(Math.abs(boss.rate - eater.rate), label).toBeLessThanOrEqual(0.1);
+      if (!deferredCell(label) && !exceptedCell(label, Math.abs(boss.rate - eater.rate))) ex(Math.abs(boss.rate - eater.rate), label).toBeLessThanOrEqual(0.1);
     }
   };
   it('22b boss parity: the main road', () => bossParity(['mainline']), 600_000);
@@ -350,7 +387,11 @@ describe.skipIf(!on)('band 22: the roster against the lantern-eater and its own 
       const same = sameTables(encounterTable(region, d), legacyEncounterTable(region, d));
       // L1b: the legacy table as it was met with nothing live (no deep trait), as recorded.
       const legacy = same ? r : withRosterOnly([], () => expected(d, region, legacyEncounterTable(region, d), 8, odd(name)));
-      if (inBand(legacy)) judgeAbsolute(label, r);
+      if (exceptedCell(label, r.rate)) {
+        // Item 22: the rate held to its floor; the loss stays in the band.
+        ex(r.hpLoss, label).toBeGreaterThanOrEqual(0.1);
+        ex(r.hpLoss, label).toBeLessThanOrEqual(0.45);
+      } else if (inBand(legacy)) judgeAbsolute(label, r);
       else {
         relative22d.push(`${name} ${region} d${d}`);
         if (same) say(`${label} relative cell: report only while the table is the legacy one`); else judgeRelative(label, r, legacy);
@@ -371,7 +412,7 @@ describe.skipIf(!on)('band 22: the roster against the lantern-eater and its own 
       const label = `22f ${bossOf(c.group)} ${c.region} d${c.depth} ${name}`;
       sayRun(label, boss);
       sayRun(`${label} lanterneater`, eater);
-      if (!deferredCell(label)) ex(boss.rate, label).toBeGreaterThanOrEqual(eater.rate - 0.1);
+      if (!deferredCell(label) && !exceptedCell(label, boss.rate)) ex(boss.rate, label).toBeGreaterThanOrEqual(eater.rate - 0.1);
     }
   }, 900_000);
 
@@ -445,7 +486,10 @@ describe.skipIf(!on)('band 22: the roster against the lantern-eater and its own 
         ex(loss / n, `22h table d${d} against the kit without uniques`).toBeGreaterThanOrEqual(plain / n - TOL.hpLoss);
       }
     });
-    expect(relative22h).toEqual([10]);
+    // L2b (spec §0 item 22): 22h runs with everything live, so going live moved nothing; the D table's group swap did. The
+    // rare +ENHANCE_MAX kit without uniques lost .247 at depth 20 before it and .076 after, so depth 20 is now judged
+    // against that kit as depth 10 is (the B2 ruling).
+    expect(relative22h).toEqual([10, 20]);
   }, 600_000);
 
   it('22i wardens: each at its first two depths wins >= .6, and a rare kit never fells one in under two rounds', () => {
