@@ -491,6 +491,45 @@ def repair_pink_outliers(img, min_neighbours=REPAIR_MIN_NEIGHBOURS):
     return Image.fromarray(out, 'RGBA'), fixed, skipped
 
 
+def key_hue_pixels(img):
+    """[(x, y)] of opaque pixels that are the key itself: _bright_key anywhere, or _deep_key on the outline (touching
+    transparency or the image edge in its 8-neighbourhood). A deep violet inside the art (tin-soldier's (126,1,153), hue
+    289) is not touched. Controller ruling 2026-10-28 (R4 review: the published 5d lizard-scale's key row)."""
+    arr = np.asarray(img.convert('RGBA')); rgb = arr[..., :3]; op = arr[..., 3] == 255; h, w = op.shape
+    pad = np.pad(~op, 1, constant_values=True); edge = np.zeros_like(op)
+    for dy in (0, 1, 2):
+        for dx in (0, 1, 2):
+            if dy == 1 and dx == 1: continue
+            edge |= pad[dy:dy + h, dx:dx + w]
+    hit = op & (_bright_key(rgb) | (_deep_key(rgb) & edge))
+    return [(int(x), int(y)) for y, x in zip(*np.nonzero(hit))]
+
+
+def repair_key_hue(img, min_neighbours=REPAIR_MIN_NEIGHBOURS):
+    """Deterministic key-residue repair for key_hue_pixels: each takes the rounded per-channel median of its opaque
+    8-neighbours that are not key hue themselves (a key row never repairs itself from itself); alpha kept, nothing else
+    changes; fewer than `min_neighbours` such neighbours: reported, not repaired. Returns (image, repaired, skipped) as
+    repair_pink_outliers. Running it again repairs nothing."""
+    src = np.asarray(img.convert('RGBA')); out = src.copy(); h, w = src.shape[:2]; fixed = []
+    keys = set(key_hue_pixels(img))
+    while keys:   # passes: a key pixel walled in by other key pixels is repaired once its neighbours have been
+        done = {}
+        for x, y in sorted(keys, key=lambda t: (t[1], t[0])):
+            nb = [out[yy, xx, :3] for yy in range(max(0, y - 1), min(h, y + 2)) for xx in range(max(0, x - 1), min(w, x + 2))
+                  if (yy, xx) != (y, x) and out[yy, xx, 3] == 255 and (xx, yy) not in keys]
+            if len(nb) >= min_neighbours: done[(x, y)] = tuple(int(v) for v in np.round(np.median(np.array(nb, np.float64), axis=0)))
+        if not done: break
+        for (x, y), new in done.items():
+            fixed.append((x, y, tuple(int(v) for v in src[y, x, :3]), new)); out[y, x, :3] = new
+        keys -= set(done)
+    skipped = []
+    for x, y in sorted(keys, key=lambda t: (t[1], t[0])):
+        n = sum(1 for yy in range(max(0, y - 1), min(h, y + 2)) for xx in range(max(0, x - 1), min(w, x + 2))
+                if (yy, xx) != (y, x) and out[yy, xx, 3] == 255 and (xx, yy) not in keys)
+        skipped.append((x, y, tuple(int(v) for v in src[y, x, :3]), n))
+    return Image.fromarray(out, 'RGBA'), fixed, skipped
+
+
 def roster_key_tint_gate(qa, final):
     """The roster's key tint gate: key_tint_inside counted with _deep_key (over KEY_TINT_INSIDE_MAX), bright key anywhere
     (over BRIGHT_KEY_MAX) and a lone pink key outlier anywhere (over PINK_OUTLIER_MAX): any is magenta residue."""

@@ -48,7 +48,7 @@ const SIGNATURES: Row[] = [
   // the regions (spec §5.4)
   ['cinder-dust', '灰燼塵', 'cinder-imp', BAND.B],
   ['forge-slag', '爐渣', 'forge-hound', BAND.B],
-  ['mourning-veil', '弔者面紗', 'ash-mourner', BAND.B],
+  ['ash-chrysanthemum', '弔菊', 'ash-mourner', BAND.B],
   ['mirage-sequin', '蜃樓亮片', 'mirage-dancer', BAND.B],
   ['scorpion-stinger', '蠍尾針', 'sand-scorpion', BAND.B],
   ['porcelain-chip', '瓷片', 'frost-doll', BAND.B],

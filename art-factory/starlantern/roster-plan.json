@@ -290,7 +290,7 @@
     "sheet-icons-roster-4": [
       "cinder-dust",
       "forge-slag",
-      "mourning-veil",
+      null,
       "mirage-sequin",
       "scorpion-stinger",
       "porcelain-chip",
@@ -374,6 +374,9 @@
       null,
       null,
       null
+    ],
+    "single-icon-ash-chrysanthemum": [
+      "ash-chrysanthemum"
     ],
     "sheet-gear-roster-1": [
       "moonless-mirror",
@@ -543,6 +546,7 @@
     "sheet-icons-roster-5": "r3",
     "sheet-icons-roster-6": "r4",
     "sheet-icons-roster-7": "r4",
+    "single-icon-ash-chrysanthemum": "r3",
     "sheet-gear-roster-1": "r0",
     "sheet-gear-roster-2": "r2",
     "sheet-gear-roster-3": "r2",
@@ -584,7 +588,7 @@
     "gilded-scrap": "gilded-hoarder",
     "cinder-dust": "cinder-imp",
     "forge-slag": "forge-hound",
-    "mourning-veil": "ash-mourner",
+    "ash-chrysanthemum": "ash-mourner",
     "mirage-sequin": "mirage-dancer",
     "scorpion-stinger": "sand-scorpion",
     "porcelain-chip": "frost-doll",

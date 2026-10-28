@@ -122,6 +122,7 @@
       - 見過的敵人圖站在左邊立繪的位置，整數倍放大（頭目 ×1，其他 ×2，CSS `zoom`，像素不糊）；沒見過的不畫任何圖（裁定 18）。
       - e2e 用除錯把手 `__starlanternDebug.roster`（只給測試）把一隻上線，量 1280×720、844×390 與手機直向三種尺寸：清單與說明不超出面板、圖是整數倍、字體只用 12／24px。
     - **圖鑑的記錄（C3）**：開戰時記一次 `seen`（每種一次），回合中被召喚進來的種類在加入的那一回合記一次；`felled` 只在勝利時記（逃跑、全滅不記），倒下的召喚物算、幻影與離場的不算；劇情戰的敵人也照記（圖鑑只列 `listedEnemy` 且非劇情的）。銘文裝備進了冒險背包（`pack`）就記 `inscribed`。
+21. **設計變更：灰衣弔者的素材從「弔者面紗」改成「弔菊」（控制者 2026-10-28 裁定，E3c）**：`mourning-veil` 弔者面紗的圖示經 6 次獨立審核仍不通過（半透明的薄紗在 16 px 讀不出來，而且 R4 已有 `black-veil` 黑紗，會有兩件紗），改成 `ash-chrysanthemum` 弔菊：一朵灰白、花瓣下垂的葬儀菊，短莖，花瓣上有幾點餘燼或灰。葬儀用花不算宗教標誌。資料（`data/materials.roster.ts`）、登錄表與 §5.4 一併改名；舊的 `icon-mourning-veil` 在登錄表標成 `superseded`（嘗試與淘汰紀錄留作歷史，從未發布），R3 核准紀錄裡的延後改由 `icon-ash-chrysanthemum` 接手（`roster_art.py supersede`）；弔菊用它自己的單張圖示工作 `single-icon-ash-chrysanthemum` 畫（自己的上限），`sheet-icons-roster-4` 的那一格留空、版面不動。圖鑑與遺物文字都沒有提到面紗。
 
 ---
 
@@ -361,7 +362,7 @@
 |---|---|---|---|---|---|---|---|
 | 熾焰 | `cinder-imp` | 灰燼小鬼 | 群 | 倒下時 row 火 35（M10） | `cinder-dust` 灰燼塵 | — | `fireDmg` |
 | | `forge-hound` | 熔爐犬 | 標準 | 蓄力「熔吼」row 火 150（M1） | `forge-slag` 爐渣 | — | `atk` |
-| | `ash-mourner` | 灰衣弔者 | 輔 | 同伴 mag +30%；補血（D） | `mourning-veil` 弔者面紗 | — | `heal` |
+| | `ash-mourner` | 灰衣弔者 | 輔 | 同伴 mag +30%；補血（D） | `ash-chrysanthemum` 弔菊（§0 第 21 條） | — | `heal` |
 | | `mirage-dancer` | 蜃樓舞者（故事） | 標準 | 開戰召出 1 個 1 HP 的幻影（無報酬）；幻影在時本體閃避 +20%（M19） | `mirage-sequin` 蜃樓亮片 | `king-scale` 1% | `evasion` |
 | | `sand-scorpion` | 沙海蠍（故事） | 標準 | 毒針；對已中毒的目標傷害 ×1.5（`wounded` 的變體 `vsPoisoned`）（M25） | `scorpion-stinger` 蠍尾針 | — | `poisonRes` |
 | 霜凍 | `frost-doll` | 霜人偶 | 重 | 守護（M2） | `porcelain-chip` 瓷片 | — | `iceRes` |

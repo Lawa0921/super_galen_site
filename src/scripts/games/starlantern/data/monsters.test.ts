@@ -60,7 +60,7 @@ describe('roster switches (roster plan Task A1, spec §11.1)', () => {
     expect(artEnemy('lamp-wight')).toBe(true);           // R1: published in E1 (independent review 2026-10-27)
     expect(artEnemy('old-city-sentinel')).toBe(true);    // R2: published in E2 (independent review 2026-10-27, round 2)
     expect(artEnemy('cinder-imp')).toBe(true);           // R3: published in E3 (independent review 2026-10-28, rounds 1-5)
-    expect(artEnemy('ash-mourner')).toBe(false);         // R3's ash-mourner waits for its deferred veil (an L3 prerequisite)
+    expect(artEnemy('ash-mourner')).toBe(false);         // R3's ash-mourner waits for its deferred material (an L3 prerequisite)
     expect(artEnemy('bog-mother')).toBe(false);          // R4: not drawn yet
     expect(listedEnemy('no-such-foe')).toBe(false);
   });
@@ -395,6 +395,12 @@ describe('roster materials and own uniques (roster plan Task A3, spec §7)', () 
     }
   });
 
+  it("ash-mourner's material is the funeral chrysanthemum (the veil concept dropped after six failed reviews, E3c)", () => {
+    expect(MATERIALS['ash-chrysanthemum']).toMatchObject({ id: 'ash-chrysanthemum', name: '弔菊', owner: 'ash-mourner' });
+    expect(MATERIALS['mourning-veil']).toBeUndefined();
+    expect(Object.values(MATERIALS).filter((m) => m.owner === 'ash-mourner').map((m) => m.id)).toEqual(['ash-chrysanthemum']);
+  });
+
   it('art waits on the owner (ruling 3)', () => {
     // A roster material or unique is loaded exactly when the registry has its icon (both gear images) published.
     for (const m of Object.values(MATERIALS)) expect(artMaterial(m.id), m.id).toBe(!m.owner || publishedArt(`icon-${m.id}`));
@@ -405,7 +411,7 @@ describe('roster materials and own uniques (roster plan Task A3, spec §7)', () 
     expect(artMaterial('wight-wick') && artSpecial('silent-chime')).toBe(true);      // R1's, published in E1
     expect(artMaterial('marble-shard') && artSpecial('archon-crown')).toBe(true);    // R2's, published in E2
     expect(artMaterial('cinder-dust') && artSpecial('burning-crown-ring')).toBe(true);    // R3's, published in E3
-    expect(artMaterial('mourning-veil')).toBe(false);                                     // R3's deferred veil, waiting
+    expect(artMaterial('ash-chrysanthemum')).toBe(false);                                 // R3's deferred material, waiting
     expect(artMaterial('bog-peat') || artSpecial('hydra-fang')).toBe(false);              // R4's, waiting
   });
 });

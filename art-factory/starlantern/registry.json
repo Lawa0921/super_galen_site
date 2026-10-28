@@ -2407,7 +2407,180 @@
           37
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "repair": {
+        "from_sha256": "72cfc7afd2f35040b7cc1e9ac5b246b6ca0116eb7da4208f90ccc9d9b70624cd",
+        "to_sha256": "622dbf5055d29fa04be9324e7382e467dec15a7993ea8e009c4767a9b8d92671",
+        "final": "art-factory/starlantern/work/repair/icon-lizard-scale.png",
+        "pixels": [
+          {
+            "x": 12,
+            "y": 6,
+            "from": [
+              101,
+              8,
+              97
+            ],
+            "to": [
+              21,
+              16,
+              42
+            ]
+          },
+          {
+            "x": 11,
+            "y": 7,
+            "from": [
+              115,
+              18,
+              126
+            ],
+            "to": [
+              6,
+              56,
+              80
+            ]
+          },
+          {
+            "x": 21,
+            "y": 29,
+            "from": [
+              114,
+              8,
+              143
+            ],
+            "to": [
+              5,
+              13,
+              39
+            ]
+          },
+          {
+            "x": 8,
+            "y": 35,
+            "from": [
+              130,
+              3,
+              134
+            ],
+            "to": [
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "x": 9,
+            "y": 35,
+            "from": [
+              132,
+              4,
+              133
+            ],
+            "to": [
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "x": 10,
+            "y": 35,
+            "from": [
+              138,
+              6,
+              136
+            ],
+            "to": [
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "x": 11,
+            "y": 35,
+            "from": [
+              144,
+              5,
+              155
+            ],
+            "to": [
+              2,
+              0,
+              7
+            ]
+          },
+          {
+            "x": 10,
+            "y": 7,
+            "from": [
+              135,
+              11,
+              118
+            ],
+            "to": [
+              6,
+              56,
+              80
+            ]
+          },
+          {
+            "x": 7,
+            "y": 35,
+            "from": [
+              132,
+              10,
+              134
+            ],
+            "to": [
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "x": 12,
+            "y": 35,
+            "from": [
+              128,
+              11,
+              143
+            ],
+            "to": [
+              2,
+              0,
+              7
+            ]
+          }
+        ],
+        "skipped": [],
+        "changed_pixels": 10,
+        "rule": "key-hue residue only (sl_art.key_hue_pixels: _bright_key anywhere, _deep_key on the outline): each such pixel takes the rounded per-channel median of its opaque 8-neighbours that are not key hue, in passes; alpha kept; no other pixel changes (R4 review: the published 5d lizard-scale)",
+        "postprocess_only": true,
+        "publish_with": "r4",
+        "qa": {
+          "pass": true,
+          "reasons": [],
+          "warnings": [],
+          "residue": 0,
+          "semi": 0,
+          "edge": 0,
+          "holes": 0,
+          "block": 6,
+          "size": [
+            30,
+            37
+          ],
+          "magenta_spill": 1,
+          "key_tint_inside": 0,
+          "bright_key": 0,
+          "pink_outlier": 0,
+          "spec": "roster-icon:8da249263f71"
+        },
+        "status": "pending",
+        "date": "2026-10-28"
+      }
     },
     "icon-star-stone": {
       "kind": "sprite",
@@ -42403,7 +42576,7 @@
         "erased": 0,
         "spec": "roster-icon:8da249263f71"
       },
-      "status": "qa_passed",
+      "status": "superseded",
       "kind": "roster-icon",
       "chosen_attempt": "a10",
       "source_id": "sheet-icons-roster-4",
@@ -42412,7 +42585,10 @@
         "batch": "roster-r3",
         "reason": "art-factory/starlantern/work/review/roster-r3-defer-icon-mourning-veil.md",
         "date": "2026-10-28"
-      }
+      },
+      "superseded_by": "icon-ash-chrysanthemum",
+      "superseded_on": "2026-10-28",
+      "superseded_record": "art-factory/starlantern/work/review/roster-r3-veil-review-6.md"
     },
     "icon-mirage-sequin": {
       "final": "art-factory/starlantern/work/sheet-icons-roster-4/icon-mirage-sequin.png",
@@ -47632,6 +47808,41 @@
         "a1": "盾畫成木桶",
         "a2": "只採用盾"
       }
+    },
+    "icon-ash-chrysanthemum": {
+      "final": "art-factory/starlantern/work/single-icon-ash-chrysanthemum/icon-ash-chrysanthemum.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\single-icon-ash-chrysanthemum\\single-icon-ash-chrysanthemum-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 25,
+        "size": [
+          32,
+          34
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "roster-icon:8da249263f71"
+      },
+      "status": "qa_passed",
+      "kind": "roster-icon",
+      "chosen_attempt": "a1",
+      "source_id": "single-icon-ash-chrysanthemum",
+      "batch": "roster-r3",
+      "deferred": {
+        "batch": "roster-r3",
+        "reason": "art-factory/starlantern/work/review/roster-r3-defer-icon-mourning-veil.md",
+        "date": "2026-10-28",
+        "supersedes": "icon-mourning-veil"
+      }
     }
   },
   "requa_log": [
@@ -49736,10 +49947,14 @@
         "icon-fog-gate-plate": "8a8530e99186dd7d455df54b2619b2c7ce63a135531702dbb315ad38537b2b15"
       },
       "deferred": {
-        "icon-mourning-veil": {
+        "icon-ash-chrysanthemum": {
           "reason": "art-factory/starlantern/work/review/roster-r3-defer-icon-mourning-veil.md",
           "sha256": "230048e5953d099c880173f89172fc65ef4cac6a327840f25aedaef70a71f72f",
-          "owner": "ash-mourner"
+          "owner": "ash-mourner",
+          "supersedes": "icon-mourning-veil",
+          "superseded_on": "2026-10-28",
+          "superseded_by_record": "art-factory/starlantern/work/review/roster-r3-veil-review-6.md",
+          "superseded_by": "controller 2026-10-28: concept changed after six failed reviews of the veil"
         }
       }
     }
@@ -49828,6 +50043,27 @@
         "extra": 3,
         "by": "controller 2026-10-28",
         "review": "art-factory/starlantern/work/review/roster-r3-review-5.md"
+      }
+    ],
+    "sheet-icons-roster-6": [
+      {
+        "extra": 3,
+        "by": "controller 2026-10-28",
+        "review": "C:/msys64/tmp/claude/C--Users-bag57/50dcf669-8aa8-4bb5-ac8e-fe7a03cde69f/scratchpad/roster-r4/r4-review.md"
+      }
+    ],
+    "sheet-icons-roster-7": [
+      {
+        "extra": 3,
+        "by": "controller 2026-10-28",
+        "review": "C:/msys64/tmp/claude/C--Users-bag57/50dcf669-8aa8-4bb5-ac8e-fe7a03cde69f/scratchpad/roster-r4/r4-review.md"
+      }
+    ],
+    "sheet-gear-roster-6": [
+      {
+        "extra": 3,
+        "by": "controller 2026-10-28",
+        "review": "C:/msys64/tmp/claude/C--Users-bag57/50dcf669-8aa8-4bb5-ac8e-fe7a03cde69f/scratchpad/roster-r4/r4-review.md"
       }
     ]
   }

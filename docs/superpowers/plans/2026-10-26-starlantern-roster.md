@@ -817,7 +817,8 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 - [ ] 照 E2：28 隻、`sheet-icons-roster-4`、`-5`（27）、`sheet-gear-roster-4`、`-5`（12）；故事物種的閘門清單隨審核頁一起給使用者參考，不等他回覆（裁定 21）；發布 ＋79。commit：`feat(art): roster R3, the fire, frost and storm lands`。
 - 實際（2026-10-28）：獨立審核 5 輪（第 1 輪 73／79 通過；第 2–5 輪只審重畫與 R0 修復），`approve --batch r3` 一次引用 5 份紀錄。`icon-mourning-veil` 第 5 輪仍不通過，照控制者裁定延後（`--defer icon-mourning-veil --reason <第 5 輪紀錄>`）：發布 ＋77（28 隻減 `ash-mourner`、26 個圖示、12 件專屬獨特 ×2），`allArtUrls` 842 → 919；`ash-mourner` 的立繪已核准但跟面紗一起等，不進 `ROSTER_ART`。同一次發布把 R0 的 `enemy-fog-warden`、`icon-fog-gate-plate` 換成 `repair-outliers` 修過的版本（網址不變）。
 
-### Task E3c：延後的面紗（L3 的硬性前提）
+### Task E3c：延後的素材（L3 的硬性前提）
+- 實際（2026-10-28）：工具（`approve --batch r3 --deferred`）已在 E4 分支完成。面紗再畫兩次（a9、a10）仍不通過，控制者裁定改概念：灰衣弔者的素材改成 `ash-chrysanthemum` 弔菊（spec §0 第 21 條），用單張圖示工作 `single-icon-ash-chrysanthemum` 畫，`supersede` 把延後移給它；它通過審核後以 `approve --batch r3 --deferred` 核准，和 `ash-mourner` 的立繪一起在 E4 的 PR 發布。下面原本針對面紗的重畫方向保留作紀錄。
 - [ ] **工具（測試先行）**：`approve --batch r3` 目前只能核准整輪，已發布的素材會讓它拒絕。先寫失敗的測試，再讓延後的素材可以單獨核准：只審這一件（審核紀錄的 `- icon-mourning-veil <sha256> 通過`），已發布的其他件不重審、不動；`publish --batch r3` 只發布它與它主人`ash-mourner` 的立繪，把 `ash-mourner` 加進 `ROSTER_ART`，網址總數 ＋2，核准紀錄的 `deferred` 改成已完成並記下審核紀錄。
 - [ ] **重畫**：以第 5 輪紀錄 `extend-cap` 一次（新的審核紀錄），重畫 `sheet-icons-roster-4`，只挑面紗。第 5 輪審核者的方向：上緣是寬的弧線，最上面一列至少有最寬一列的 60%；寬高比 ≥ 1.4、斜放；兩道橫向、階梯狀的摺；每個孔的核心至少 3×3；正面是平的中灰；外框中性深灰（不帶紫或洋紅）。驗收：蓋住孔，16 px 的剪影仍讀得出是一塊布（不是錐形堆、磚或長條）。
 - [ ] 獨立審核通過後照上面的工具核准、發布，收尾 G；commit：`feat(art): the mourning veil and ash-mourner published`。**L3b 的上線切換要等這一項完成**（`ash-mourner` 不在 `ROSTER_ART` 就不能進 `ROSTER_LIVE`）。
