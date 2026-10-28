@@ -219,7 +219,7 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 - `engine/parity.test.ts` 的 `PARITY_TASK` 維持 `between plans`；本計畫不錄新的 `contribution.*.160.json`。
 - 不用 `Math.random`、不讀 `Date`；不為舊內容多抽任何既有串流。
 
-**L2–L4 的平衡處理（使用者 2026-10-28 方向，控制者裁定）**：先把遊戲做完。每一格紅燈最多做**一次**簡單的調整（新物種自己的數字或拿掉一組）；還紅就列成具名例外（理由、下限或仍檢查失敗）加一條待辦，該波照常上線。正確性檢查不放寬：舊戰鬥的雜湊重現、閘門 `cmp` 等於 8d-final、第 1–3 層報告行不變、凍結檔與旋鈕不動（例外表與列出的測試轉換除外）、全套 vitest 綠、tsc 不增加。選擇性的平衡帶每波各跑一次並記錄；紅的寫進 PR 說明，不再多輪調整。
+**L2–L4 的平衡處理（使用者 2026-10-28 方向，控制者裁定）**：先把遊戲做完。每一格紅燈最多做**一次**簡單的調整（新物種自己的數字或拿掉一組）；還紅就列成具名例外（理由、下限或仍檢查失敗）加一條待辦，該波照常上線。正確性檢查不放寬：舊戰鬥的雜湊重現、閘門 `cmp` 等於 8d-final、第 1–3 層報告行不變、凍結檔與旋鈕不動（例外表與列出的測試轉換除外）、全套 vitest 綠、tsc 不增加。選擇性的平衡帶每波各跑一次並記錄；紅的寫進 PR 說明，不再多輪調整。L2b 起（控制者審查追認，spec §0 第 22 條）：凍結的 `tierBands.nightmare.test.ts`、`tierBands.hell.test.ts` 的帶可以照 L2b 的做法，在呼叫 `bandMisses` 的那一行以 `excusedMiss` 放過 `tierBands.ts` 的 `TIER_EXCEPTIONS` 具名格（各帶下限、照印、以 `tierBands.test.ts` 釘住），L3、L4 照同樣的方式加；其他凍結檔仍然一個字都不改。還沒裁定的事寫成「控制者裁定」之前先用一句話問控制者。
 
 **重錄規則**（只限 L1b、L2b、L2c、L3b、L4b）
 1. 切換之前先跑一次閘門，必須 identical（證明切換前的樹是乾淨的）。
@@ -801,6 +801,8 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 - [ ] **L1b 延後到本波的驗收格**（控制者 2026-10-28；`DEFERRED_22`、`DEFERRED_22J` 照名拿掉並全綠）：22a keeper-echo d25、old-city-sentinel d16、wick-shade d25；16 stopped-clock d45 two；22f gorged-beast d25 noHeal、noTank，old-city-archon d20 noTank；22j gorged-beast d25 nightmare magic；22j 守關者 requiem-conductor 第 23 層。
 - [ ] 照 L1b：加入 R2 除 `lantern-mother` 以外的 26 個 id；`DEEP_TRAITS` 照 spec §5.8 與 §0 第 19 條在 `isRosterTable` 為真的每一張表生效（L1 起就是；L1b 更正，原寫「從這一波起」）；22 帶、22j、`tierBands.*`、`baseline.normal.txt`、`economy.test.ts`；`rebaseline-L2.md`；審查。commit：`feat(starlantern): the deep road meets its new foes (live wave 2)`。
 
+- **L2b 實作紀錄**（spec §0 第 22 條）：每一格紅燈一次調整，沒好就退回原值、列具名例外並留 F6。保留的調整：古城衛像、無名的提燈人、飽食之獸、停擺的鐘心；D、E 表各換組（19a 第 20、25 層由紅轉綠）。具名例外：22a 燭芯之影（上限）、`EXCEPTION_22` 四格、`EXCEPTION_22J` 一格、凍結的 `tierBands.ts` 的 `TIER_EXCEPTIONS` 四格（凍結的 nightmare／hell 測試只在 N1、H1、HE 呼叫 `excusedMiss`）。22h 的改判釘子 `[10]` → `[10, 20]`。
+
 ### Task L2c：燈喰之母（終幕的外型）
 
 **Files:** `data/story/scenes.ts:16`（`FINALE_BOSS.base` → `lantern-mother`；`power` 不動）、`data/monsters.ts`（`ROSTER_LIVE` 加 `lantern-mother`）、`engine/game.test.ts:3500-3505`（地區第 30 層）與 `:3545-3551`（終幕之後本道第 30 層）。
@@ -870,6 +872,10 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 ### Task F5：「常駐」與星術（待辦：內容做完之後）
 
 L1b 加了兩個 builds.bands 的控制者例外（spec §0 第 21 條）：`hero/mage`（Lv50 的 C 帶人群，勝場 93 對 106）與 `safira/festival war-dance+lasting`（兩三回合的 C 帶戰鬥裡 2.00，上限 1.6）。新物種的調整已用盡。這個任務查「常駐」符文在短戰鬥的價值曲線、星術對集中攻擊的生存力（建議組合的防禦符文或技能、建議的符文），目標是兩個例外都從 `BAND_EXCEPTIONS`、`ONE_RUNE_EXCEPTIONS` 拿掉，而且所有凍結帶全綠。**使用者 2026-10-28 方向**：先把遊戲本身做完，平衡不是現在的優先；F5 降為待辦，排在內容工作之後，不擋 L2。
+
+### Task F6：第二波的具名例外（待辦：內容做完之後）
+
+L2b 的一次調整之後仍紅、列成具名例外的格子（spec §0 第 22 條）：22a 燭芯之影（hpLoss .457 > .45）；22b 飽食之獸第 25 層（與燈喰之獸差 .125）；22d 無補師、全物理第 20 層（.774、.767 < .85）；22f 古城執政像第 20 層無坦（.6 對 .9）；22j 鎮魂指揮者地獄第 23 層（.407 < .75）；凍結的 H1 第 20 層（損血 .155 未高於噩夢 .156）、H1 第 25 層（.765 < .85）、HE 第 25 層（.509 < .75）、N1 第 25 層（.817 < .9）。目標是每一格都從 `EXCEPTION_22A`／`EXCEPTION_22`／`EXCEPTION_22J`／`TIER_EXCEPTIONS` 拿掉。方向：E 表在噩夢、地獄的悲傷結晶、燈底之鬚、無名的提燈人組；鎮魂歌隊的全體回復對守關者戰的影響；執政像之手在無坦隊伍面前的「壓制」。**使用者 2026-10-28 方向**：平衡不是現在的優先，排在內容工作之後，不擋 L3。
 
 ### Task F1：舊 5d 敵人 `bat.png` 的洋紅邊
 - [ ] R1 獨立審核（2026-10-26）看到已核准的舊敵人 `public/assets/games/starlantern/enemy/bat.png` 也有洋紅邊。這不在名冊的範圍內，所以本次不改（控制者 2026-10-26 裁定）。名冊收尾之後另開一個修正：先用名冊的 `roster_key_tint_count`（含 `_deep_key`）與 `magenta_spill_count` 量化，再決定重做或重新去背。重做要走「重做 → QA → 審核 → 重新發布」，並且同步改 `allArtUrls` 與 manifest。

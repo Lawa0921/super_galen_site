@@ -6495,8 +6495,8 @@ describe('wardens on the map and bosses by depth (roster plan B5)', () => {
       expect(end.outcome).toBe('win');
       expect(end.gear).toHaveLength(2);
     });
-    // Without its hands live, the archon is not met at all.
-    withRosterLive(['old-city-archon'], () => expect(bossIds(deep('mainline', 20))).toEqual(['lanterneater']));
+    // Without its hands live, the archon is not met at all (L2b: exactly the archon live, the rest as with nothing live).
+    withRosterOnly(['old-city-archon'], () => expect(bossIds(deep('mainline', 20))).toEqual(['lanterneater']));
   });
 
   it('a warden waits in its room on depth 8 and fights as an elite', () => {

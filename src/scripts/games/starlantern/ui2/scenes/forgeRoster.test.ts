@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import { T } from '../../data/text.zh-TW';
 import { ENEMIES } from '../../data/enemies';
+import { ROSTER_LIVE } from '../../data/monsters';
 import { Game } from '../../engine/game';
-import { constRng, memoryStorage, withRosterLive, withRosterOnly } from '../../engine/testing';
+import { WAVE_1_LIVE, constRng, memoryStorage, withRosterLive, withRosterOnly } from '../../engine/testing';
 import { ownCost } from '../../engine/forge/craft';
 import { inscribeCost } from '../../engine/forge/cost';
 import type { ItemInstance } from '../../engine/types';
@@ -130,7 +131,8 @@ describe('the forge for the roster (roster plan Task C4)', () => {
     });
   });
 
-  it("the first live wave's rows: its own uniques and its inscriptions, none of the next wave's (L1b)", () => {
+  it("the first live wave's rows: its own uniques and its inscriptions, none of the next wave's (L1b)", () => withRosterOnly([...WAVE_1_LIVE], () => {
+    // L2b: measures the game as it was with only the first wave live.
     // Own uniques: the five of the live wave, wardens first (SPECIALS order); none of R2's (the archon's crown, the
     // automaton's gauntlet), though their trophies are in the stores.
     const t = craft((g) => { g.state.inventory = { 'fog-gate-plate': 5, 'archon-gold': 5, 'automaton-core': 5, 'star-tear': 1 }; });
@@ -140,6 +142,27 @@ describe('the forge for the roster (roster plan Task C4)', () => {
     // Inscriptions: a live species whose signature the stores hold; an R2 species (the old city's sentinel) not, though held.
     const m = methods((g) => { g.state.inventory['faded-letter'] = 3; g.state.inventory['marble-shard'] = 3; });
     expect(m.ids().filter((id) => id?.startsWith('ins:'))).toEqual(['ins:paper-moth']);
+  }));
+
+  it("the second live wave's rows: its own uniques and its inscriptions, none of the third wave's (L2b)", () => {
+    // Own uniques: every live owner of the two waves, the lantern-mother not yet (the finale's, L2c), wardens first (SPECIALS
+    // order); none of R3's (the mirage lead's veil), though its keepsake is in the stores.
+    // Every live owner felled, so no row is greyed out and the cursor walks the whole list.
+    const t = craft((g) => {
+      g.state.inventory = { 'fog-gate-plate': 5, 'archon-gold': 5, 'copper-anklet': 5, 'star-tear': 1 };
+      g.state.bestiary = Object.fromEntries([...ROSTER_LIVE].map((id) => [id, { seen: 1, felled: 1 }]));
+    });
+    expect(t.ids()).toEqual(['item', 'base', 'set', 'own']);
+    t.row('own').click();
+    const own = ['moonless-mirror', 'unrung-clapper', 'ancestor-gauntlet', 'requiem-staff', 'brood-lantern', 'fog-halberd',
+      'silent-chime', 'borrowed-blade', 'archon-crown', 'glutton-gauntlet', 'festival-mask', 'whale-song-ring', 'still-hand-boots', 'first-lantern-staff'];
+    // The list shows a window of eight rows: the first eight, then, with the cursor at the end, the last eight.
+    expect(t.ids()).toEqual(own.slice(0, 8));
+    for (let i = 1; i < own.length; i++) t.go('down');
+    expect(t.ids()).toEqual(own.slice(-8));
+    // Inscriptions: the old city's sentinel is live now; an R3 native (the cinder imp) not, though its signature is held.
+    const m = methods((g) => { g.state.inventory['faded-letter'] = 3; g.state.inventory['marble-shard'] = 3; g.state.inventory['cinder-dust'] = 3; });
+    expect(m.ids().filter((id) => id?.startsWith('ins:'))).toEqual(['ins:paper-moth', 'ins:old-city-sentinel']);
   });
 
   it('an unbeaten owner is greyed out with its reason', () => {

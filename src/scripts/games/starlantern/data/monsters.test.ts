@@ -47,13 +47,15 @@ describe('roster switches (roster plan Task A1, spec §11.1)', () => {
     }
   });
 
-  it('only the live waves are listed (L1b: the first wave)', () => {
-    // Roster plan L1b: the first wave went live; nothing else is listed until its own go-live task.
-    expect([...ROSTER_LIVE]).toEqual(WAVE_1);
-    expect(liveRosterIds()).toEqual(WAVE_1);
+  it('only the live waves are listed (L2b: the first two waves)', () => {
+    // Roster plan L1b, L2b: the first two waves went live (the lantern-mother with the finale, L2c); nothing else is listed
+    // until its own go-live task.
+    const live = WAVE_2.filter((id) => id !== 'lantern-mother');
+    expect([...ROSTER_LIVE]).toEqual(live);
+    expect(liveRosterIds()).toEqual(live);
     const fresh = Object.keys(ENEMIES).filter((id) => !LEGACY_ENEMY_IDS.includes(id));
     for (const id of fresh) {
-      expect(listedEnemy(id), id).toBe(WAVE_1.includes(id));
+      expect(listedEnemy(id), id).toBe(live.includes(id));
     }
     // Drawn exactly when the registry has its sprite published (R0 since PR D); listed only once live.
     expect(fresh.filter(artEnemy).sort()).toEqual(fresh.filter((id) => publishedArt(`enemy-${id}`)).sort());
@@ -575,7 +577,8 @@ describe('roster tables, bosses and wardens (roster plan Task A4, spec §3.4, §
     });
   });
 
-  it('the first live wave meets its bosses and wardens where the spec puts them (L1b)', () => {
+  it('the first live wave meets its bosses and wardens where the spec puts them (L1b)', () => withRosterOnly(WAVE_1, () => {
+    // L2b: measures the game as it was with only the first wave live.
     // Spec §5.5, §5.6 on the real live set: the main road's bosses at 5, 10, 15, cycling at 55, 60, 65; the lantern-eater
     // wherever the boss is not live yet (20, 25, 30 and on, and every region); the wardens at 8 and 13, cycling at 33 and 38.
     const boss = (r: RegionId, d: number) => bossFor(r, d).at(-1);
@@ -589,6 +592,25 @@ describe('roster tables, bosses and wardens (roster plan Task A4, spec §3.4, §
     // The bell warden's escort is live, so it comes along; the false moon fights alone (WARDEN_GROUPS).
     expect(wardenGroup('bell-warden')).toEqual(['bell-warden', 'bell-watcher']);
     expect(wardenGroup('false-moon')).toEqual(['false-moon']);
+  }));
+
+  it('the second live wave meets its bosses and wardens where the spec puts them (L2b)', () => {
+    // Spec §5.5, §5.6 on the real live set: the main road's bosses at 5 to 50, the lantern-eater at 30 (ruling 11: the
+    // mother is the finale's alone), cycling at 55; every region still the lantern-eater; the wardens at 8 to 28, cycling at 33.
+    const boss = (r: RegionId, d: number) => bossFor(r, d).at(-1);
+    expect([5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70].map((d) => boss('mainline', d))).toEqual([
+      'fog-warden', 'silent-bell', 'hollow-champion', 'old-city-archon', 'gorged-beast', 'lanterneater', 'forgotten-festival', 'starless-whale',
+      'stopped-clock', 'first-lantern', 'fog-warden', 'silent-bell', 'hollow-champion', 'old-city-archon',
+    ]);
+    expect(bossFor('mainline', 20)).toEqual(['archon-hand', 'archon-hand', 'old-city-archon']);
+    for (const r of NATIVE_REGIONS) for (const d of [5, 10, 15, 20, 25]) expect(bossFor(r, d), `${r} ${d}`).toEqual(['lanterneater']);
+    expect([8, 13, 18, 23, 28, 33, 38, 43, 48, 53].map((d) => wardenFor('mainline', d))).toEqual(['false-moon', 'bell-warden', 'toppled-automaton',
+      'requiem-conductor', 'lantern-brood', 'false-moon', 'bell-warden', 'toppled-automaton', 'requiem-conductor', 'lantern-brood']);
+    for (const r of NATIVE_REGIONS) expect(wardenFor(r, 18), r).toBeNull();
+    // Each of the three new wardens comes with its live escort (WARDEN_GROUPS).
+    expect(wardenGroup('toppled-automaton')).toEqual(['toppled-automaton', 'ancestor-automaton']);
+    expect(wardenGroup('requiem-conductor')).toEqual(['requiem-conductor', 'requiem-choir']);
+    expect(wardenGroup('lantern-brood')).toEqual(['lantern-brood', 'lantern-larva']);
   });
 
   it('salts are distinct', () => {
@@ -747,6 +769,41 @@ describe('the first wave as tuned (roster plan L1b, spec §0 item 21)', () => {
     // silent-bell: hp ×1.15 (was ×1.05); 鐘擊 160/.30 → 220/.40, its second stage 170/.35 → 240/.45; that stage's 轟鳴 105 → 120.
     expect(E['silent-bell'].stats.hp).toBe(1380);
     expect([sk('silent-bell', 1), st('silent-bell', 1), st('silent-bell', 0).power]).toEqual([{ chance: 0.4, power: 220 }, { chance: 0.45, power: 240 }, 120]);
+  });
+});
+
+describe('the second wave as tuned (roster plan L2b, spec §0 item 22)', () => {
+  const g = (t: string[][]) => t.map((x) => x.join('+'));
+  it('the D and E tables after the one attempt on band 19a', () => {
+    // Out of D: the automaton wall and the C-band foes met at depth 20; out of E: the maw with the sentinel and the golem
+    // with a wick. In: lighter pairs of the wave's own, so each table stays twelve (and E keeps a D foe for freshness).
+    for (const gone of ['ancestor-automaton+ancestor-automaton', 'epitaph-golem+moon-crow', 'lantern-larva+mist-twin+mist-twin', 'sleepwalker+requiem-choir']) {
+      expect(g(MAINLINE_TABLES.D), gone).not.toContain(gone);
+    }
+    for (const added of ['requiem-choir+lantern-larva', 'ash-archivist+lantern-larva', 'epitaph-golem+ash-archivist', 'ancestor-automaton+requiem-choir']) {
+      expect(g(MAINLINE_TABLES.D), added).toContain(added);
+    }
+    for (const gone of ['ember-maw+old-city-sentinel', 'epitaph-golem+wick-shade']) expect(g(MAINLINE_TABLES.E), gone).not.toContain(gone);
+    for (const added of ['keeper-echo+lantern-larva', 'ash-archivist+old-city-sentinel']) expect(g(MAINLINE_TABLES.E), added).toContain(added);
+    for (const b of ['D', 'E', 'F'] as const) expect(MAINLINE_TABLES[b], b).toHaveLength(12);
+  });
+
+  it('the tuned numbers, and the attempts that moved nothing back at their spec values', () => {
+    const E = ENEMIES;
+    const sk = (id: string, name: string) => {
+      const k = [...E[id].skills, ...(E[id].stages ?? []).flatMap((x) => x.skills)].find((x) => x.name === name)!;
+      const e = k.effects[0] as { power?: number; max?: number };
+      return { chance: k.chance, power: e.power ?? e.max };
+    };
+    expect(sk('old-city-sentinel', '審判之光')).toEqual({ chance: 0.3, power: 170 });   // 140 → 170 (22a)
+    expect(sk('keeper-echo', '燈火之誓')).toEqual({ chance: 0.3, power: 150 });          // 120/.20 → 150/.30 (22a)
+    expect(sk('gorged-beast', '吞光')).toEqual({ chance: 0.35, power: 75 });              // 85 → 75 (22f, 22j)
+    expect(sk('gorged-beast', '啃食')).toEqual({ chance: 0.3, power: 100 });              // 130 → 100; its 40% bite stays
+    expect(sk('stopped-clock', '指針')).toEqual({ chance: 0.3, power: 200 });             // 160 → 200 (22b's 16)
+    // Tried once, moved nothing, so back at the spec's numbers (item 22's named exceptions instead).
+    expect(sk('wick-shade', '燭火')).toEqual({ chance: 0.3, power: 90 });
+    expect(sk('old-city-archon', '王權')).toEqual({ chance: 0.3, power: 160 });
+    expect(sk('requiem-conductor', '召集歌隊')).toEqual({ chance: 0.25, power: 2 });
   });
 });
 

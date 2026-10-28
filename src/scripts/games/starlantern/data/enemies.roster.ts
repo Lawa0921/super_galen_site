@@ -183,8 +183,9 @@ const MAINLINE: [string, Spec][] = [
   ['sleepwalker', { name: '夢遊者', arch: 'heavy', mul: { atk: UP }, weak: ['fire'], resist: ['thunder'], band: 'C', inscribe: 'hp', opener: 'asleep',
     skills: [sk('夢中揮拳', 0.3, 'enemy', hit(160))] }],
   // D 16–24: the old city's statues, its requiem, the lantern-eater's young, the ancestors' machines
+  // L2b (spec §0 item 22, band 22a): 審判之光 140 → 170.
   ['old-city-sentinel', { name: '古城衛像', arch: 'heavy', weak: ['thunder'], resist: ['phys'], band: 'D', inscribe: 'def',
-    skills: [sk('守護', 0.2, 'ally', guard(2)), windup(sk('審判之光', 0.3, 'column', hit(140, 'fire')), '舉起天秤')] }],
+    skills: [sk('守護', 0.2, 'ally', guard(2)), windup(sk('審判之光', 0.3, 'column', hit(170, 'fire')), '舉起天秤')] }],
   ['requiem-choir', { name: '鎮魂歌隊', arch: 'support', weak: ['phys'], resist: ['ice'], band: 'D', inscribe: 'tpRegen',
     skills: [call('召來幽影', 'lamp-wight', 1), sk('鎮魂合唱', 0.35, 'allies', heal(40))] }],
   ['lantern-larva', { name: '燈喰幼體', arch: 'std', weak: ['ice'], resist: ['fire'], band: 'D', inscribe: 'vuln',
@@ -200,8 +201,9 @@ const MAINLINE: [string, Spec][] = [
   ['wick-shade', { name: '燭芯之影', arch: 'swarm', weak: ['ice'], resist: ['fire'], band: 'E', inscribe: 'fireRes',
     onFall: { name: '燭爆', target: 'enemies', effects: [hit(40, 'fire')] },
     skills: [sk('燭火', 0.3, 'enemy', hit(90, 'fire'))] }],
+  // L2b (item 22, band 22a): 燈火之誓 120/.20 → 150/.30.
   ['keeper-echo', { name: '無名的提燈人', arch: 'caster', weak: ['phys'], band: 'E', inscribe: 'gauge', lore: 'hero', remnant: true,
-    skills: [windup(sk('燈火之誓', 0.2, 'enemies', hit(120, 'fire')), '舉燈'), mirror('照回的燈影', 120)] }],
+    skills: [windup(sk('燈火之誓', 0.3, 'enemies', hit(150, 'fire')), '舉燈'), mirror('照回的燈影', 120)] }],
   ['ember-maw', { name: '餘燼之口', arch: 'heavy', weak: ['thunder'], resist: ['ice'], band: 'E', inscribe: 'fireDmg',
     skills: [call('點燃燭芯', 'wick-shade', 2), sk('吞吐', 0.3, 'row', hit(90, 'fire'))] }],
   ['sorrow-crystal', { name: '悲傷結晶', arch: 'std', weak: ['phys'], band: 'E', inscribe: 'iceRes', adapt: 3,
@@ -340,17 +342,20 @@ const BOSSES: [string, Spec][] = [
     skills: [mirror('借來的劍招', 160, 0.35), sk('勇者之擊', 0.45, 'enemy', hit(280))],
     stages: [{ below: 40, skills: [sk('一百種劍法', 0.4, 'enemy', hit(90, 'phys', { hits: 3 })), mirror('借來的劍招', 160, 0.3), sk('勇者之擊', 0.45, 'enemy', hit(280))] }] }],
   ['old-city-archon', { name: '古城執政像', arch: 'boss', hp: 800, weak: ['thunder'], resist: ['fire'], parts: { cutPct: 50 }, skills: pair('審判', 'fire', '王權') }],
+  // L2b (item 22, bands 22f and 22j): 吞光 85 → 75, 啃食 130 → 100 (its 40% bite is design, B2 review).
   ['gorged-beast', { name: '飽食之獸', arch: 'boss', mul: { hp: DOWN }, weak: ['ice'], resist: ['fire'],
-    skills: [call('吐出燭芯', 'wick-shade', 1, 0.15), sk('吞光', 0.35, 'enemies', hit(85, 'fire')), sk('啃食', 0.3, 'enemy', bite(hit(130), 40))] }],
+    skills: [call('吐出燭芯', 'wick-shade', 1, 0.15), sk('吞光', 0.35, 'enemies', hit(75, 'fire')), sk('啃食', 0.3, 'enemy', bite(hit(100), 40))] }],
   // M4, M8: a lantern lit each turn while there is room (the boss cap keeps it to three); with all three lit, the fire comes.
   ['forgotten-festival', { name: '被遺忘的祭典', arch: 'boss', weak: ['ice'],
     skills: [{ ...sk('祭典之火', 0.6, 'enemies', hit(110, 'fire')), needs: { id: 'lamp-wight', n: 3 } }, call('點燈', 'lamp-wight', undefined, 0.5), sk('狐火', 0.3, 'enemy', hit(150))] }],
   ['starless-whale', { name: '無星之鯨', arch: 'boss', mul: { hp: UPUP, spd: DOWNDOWN }, weak: ['thunder'], resist: ['ice'],
     // M1, M11: every third round it dives, and the round after the sea comes down on everyone.
     skills: [every(windup(sk('吞沒', 1, 'enemies', hit(130, 'ice')), '深潛'), 3), sk('鯨歌', 0.3, 'enemy', bite(hit(160), 30))] }],
+  // L2b (item 22, band 22b's 16): 指針 160 → 200.
   // M27 (ruling 9): 遲滯 sends a member to the end of the next round and slows her; never the same one twice in a row.
   ['stopped-clock', { name: '停擺的鐘心', arch: 'boss', weak: ['phys'], resist: ['thunder'],
-    skills: [sk('遲滯', 0.35, 'enemy', hit(80, 'thunder'), { kind: 'delay' }, buff('spd', -30, 2)), ...pair('齒輪風暴', 'thunder', '指針')] }],
+    skills: [sk('遲滯', 0.35, 'enemy', hit(80, 'thunder'), { kind: 'delay' }, buff('spd', -30, 2)), sk('齒輪風暴', 0.35, 'enemies', hit(110, 'thunder')),
+      sk('指針', 0.3, 'enemy', hit(200))] }],
   // M8, M5: three stages, each with its own weakness and its own element for the party-wide flame.
   ['first-lantern', { name: '最初的燈', arch: 'boss', mul: { hp: 1.1 }, prism: 'stage', weak: ['ice'], skills: pair('初火', 'fire', '燈芯之擊'),
     stages: [{ below: 66, weak: ['fire'], skills: pair('初冰', 'ice', '燈芯之擊') }, { below: 33, weak: ['phys'], skills: pair('初雷', 'thunder', '燈芯之擊') }] }],

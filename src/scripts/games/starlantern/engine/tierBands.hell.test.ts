@@ -6,7 +6,7 @@
  * one `[hell]` line a cell, the pooled lines of each band, then the crowd gap of each depth (rare and magic against bare).
  */
 import { describe, expect, it } from 'vitest';
-import { HELL_BANDS, bandCells, bandLine, bandMisses, frozenMisses, gapLine, measureBand, measureHellReport, poolOf, pooled, pooledLines, shallowHellMisses } from './tierBands';
+import { HELL_BANDS, bandCells, bandLine, bandMisses, excusedMiss, frozenMisses, gapLine, measureBand, measureHellReport, poolOf, pooled, pooledLines, shallowHellMisses } from './tierBands';
 
 const on = process.env.BANDS === '1';
 const report = !!process.env.BALANCE_REPORT && process.env.BALANCE_REPORT !== '0';
@@ -52,7 +52,7 @@ describe.skipIf(!on)('the Hell bands (difficulty plan Tasks 5a-5b)', () => {
   }, 3_000_000);
 
   it('H1 Hell crowds are won with rare runes, harder than Nightmare', () => {
-    expect(bandMisses('H1', measureBand)).toEqual([]);
+    expect(bandMisses('H1', measureBand).filter((m) => !excusedMiss(m, say))).toEqual([]);   // spec §0 item 22: TIER_EXCEPTIONS
   }, 3_000_000);
 
   it('H2 the Hell boss falls to rare runes with a trigger or lasting combo, harder than Nightmare', () => {
@@ -68,7 +68,7 @@ describe.skipIf(!on)('the Hell bands (difficulty plan Tasks 5a-5b)', () => {
   }, 3_000_000);
 
   it('HE no Hell elite is a wall', () => {
-    expect(bandMisses('HE', measureBand)).toEqual([]);
+    expect(bandMisses('HE', measureBand).filter((m) => !excusedMiss(m, say))).toEqual([]);   // spec §0 item 22: TIER_EXCEPTIONS
   }, 3_000_000);
 
   it('HX the party is never frozen', () => {

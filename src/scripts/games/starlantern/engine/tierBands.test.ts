@@ -10,7 +10,7 @@ import { depthLevel, encounterTable } from './scaling';
 import { MAX_LEVEL } from './party';
 import { rollCrowdAffix } from './tiers';
 import { TIERS } from '../data/difficulty';
-import { bandKey, cellKey, withLineup } from './tierBands';
+import { TIER_EXCEPTIONS, bandKey, cellKey, excusedMiss, withLineup } from './tierBands';
 import { withBondScale, withRosterOnly } from './testing';
 import type { Lineup } from './sim';
 import { CURVE, cellCrowdAffix, BASELINE_DEPTHS, BASELINE_TIERS, FEASIBLE, TIER_BANDS, bandCells, bandMisses, baselineLine, frozenMisses, hasTriggerOrLasting, hellReportCells, measureCell, SHALLOW_HELL_BARE, shallowHellMisses, nightmareTwins, normalTwin, pullsApart, roadCell, tierLineup, TIER_SEEDS, withTrigger, type BandId, type BandRun, type TierCell, type TierRun } from './tierBands';
@@ -403,5 +403,32 @@ describe('band 21 measures apart from the plain bands (bond plan Task 4)', () =>
       expect({ ...c, lineup: cells[i].lineup }).toEqual(cells[i]);
     });
     expect(cells.every((c) => c.lineup.bond === undefined)).toBe(true);   // the band's own cells are untouched
+  });
+});
+
+describe('the tier bands name their exceptions (spec §0 item 22, roster plan L2b)', () => {
+  it('exactly these misses, each held to its own floor', () => {
+    expect(Object.fromEntries(Object.entries(TIER_EXCEPTIONS).map(([k, e]) => [k, e.floor]))).toEqual({
+      'H1 d20: loss': -0.011, 'H1 d25: rate': 0.755, 'HE d25: rate': 0.499, 'N1 d25: rate': 0.807,
+    });
+    for (const e of Object.values(TIER_EXCEPTIONS)) expect([e.decider, e.reason]).toEqual(['controller', expect.stringMatching(/item 22/)]);
+  });
+  it('a named miss is excused only on its floor; any other miss stays', () => {
+    expect(excusedMiss('H1 d25: rate 0.765 < 0.85')).toBe(true);
+    expect(excusedMiss('H1 d25: rate 0.754 < 0.85')).toBe(false);   // under its floor: a miss again
+    expect(excusedMiss("H1 d20: loss 0.155 not above the nightmare twin's 0.156")).toBe(true);
+    expect(excusedMiss("H1 d20: loss 0.140 not above the nightmare twin's 0.156")).toBe(false);
+    expect(excusedMiss('HE d25: rate 0.509 < 0.75')).toBe(true);
+    expect(excusedMiss('HE d25 [scorch+swift]: rate 0.375 < 0.4')).toBe(false);   // a pair is not the pooled depth
+    expect(excusedMiss('N1 d25: rate 0.817 < 0.9')).toBe(true);
+    expect(excusedMiss('N1 d20: rate 0.817 < 0.9')).toBe(false);
+    expect(excusedMiss('N2 d20 [scorch]: rate 0.681 < 0.8')).toBe(false);
+  });
+  it('an excused miss is said, with its floor; a miss that stays is not', () => {
+    const said: string[] = [];
+    expect(excusedMiss('H1 d25: rate 0.765 < 0.85', (l) => said.push(l))).toBe(true);
+    expect(excusedMiss('H1 d25: rate 0.754 < 0.85', (l) => said.push(l))).toBe(false);
+    expect(excusedMiss('N2 d20 [scorch]: rate 0.681 < 0.8', (l) => said.push(l))).toBe(false);
+    expect(said).toEqual([`exception H1 d25: rate 0.765 < 0.85; ${TIER_EXCEPTIONS['H1 d25: rate'].reason}; floor >= 0.755`]);
   });
 });

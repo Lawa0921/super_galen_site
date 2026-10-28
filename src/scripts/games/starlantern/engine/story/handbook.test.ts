@@ -14,7 +14,7 @@ import { meet } from '../party';
 import { newGame, type GameState } from '../state';
 import type { CharacterId } from '../types';
 import { handbook } from './handbook';
-import { withRosterLive, withRosterOnly, withTold } from '../testing';
+import { WAVE_1_LIVE, withRosterLive, withRosterOnly, withTold } from '../testing';
 import { arrivalScenes, onReturn, sceneDone } from './events';
 /**
  * Bond plan Task 17: the registries hold what is written now, so a test that registers its own puts back what was there
@@ -545,7 +545,8 @@ describe('the bestiary page (roster plan Task C6)', () => {
     });
   }));
 
-  it('the first live wave is listed, each a name of question marks until met (L1b)', () => {
+  it('the first live wave is listed, each a name of question marks until met (L1b)', () => withRosterOnly([...WAVE_1_LIVE], () => {
+    // L2b: measures the game as it was with only the first wave live.
     const s = fresh();
     const by = (f: string) => handbook(s).codex.monsters.filter((m) => m.filter === f).map((m) => m.id);
     expect(by('road')).toEqual(['slime', 'bat', 'wolf', 'beetle', 'wisp', 'lizard', 'golem', 'shade', 'paper-moth', 'lamp-wight', 'root-hound',
@@ -556,6 +557,24 @@ describe('the bestiary page (roster plan Task C6)', () => {
     expect(page(s, 'paper-moth')).toMatchObject({ name: B.unknown, seen: 0, trait: null, lines: [] });
     s.bestiary = { 'paper-moth': { seen: 1, felled: 1 } };
     expect(page(s, 'paper-moth')).toMatchObject({ name: ENEMIES['paper-moth'].name, trait: BESTIARY['paper-moth']!.trait });
+  }));
+
+  it('the second live wave is listed too, each a name of question marks until met (L2b)', () => {
+    const s = fresh();
+    const by = (f: string) => handbook(s).codex.monsters.filter((m) => m.filter === f).map((m) => m.id);
+    expect(by('road')).toEqual(['slime', 'bat', 'wolf', 'beetle', 'wisp', 'lizard', 'golem', 'shade', 'paper-moth', 'lamp-wight', 'root-hound',
+      'tin-soldier', 'dust-mimic', 'market-ghost', 'tongueless-bell', 'hollow-hunter', 'mist-twin', 'moon-crow', 'bell-watcher', 'sleepwalker',
+      'old-city-sentinel', 'requiem-choir', 'lantern-larva', 'epitaph-golem', 'ancestor-automaton', 'ash-archivist', 'wick-shade', 'keeper-echo',
+      'ember-maw', 'sorrow-crystal', 'deep-tendril', 'music-box', 'paper-cranes', 'lost-shadow', 'returning-light', 'hoarder', 'gilded-hoarder']);
+    expect(by('lands')).toEqual([]);
+    expect(by('bosses')).toEqual(['lanterneater', 'false-moon', 'bell-warden', 'toppled-automaton', 'requiem-conductor', 'lantern-brood',
+      'fog-warden', 'silent-bell', 'hollow-champion', 'old-city-archon', 'gorged-beast', 'forgotten-festival', 'starless-whale', 'stopped-clock',
+      'first-lantern', 'archon-hand']);
+    expect(page(s, 'lantern-mother')).toBeUndefined();   // the finale's, L2c
+    expect(page(s, 'cinder-imp')).toBeUndefined();   // R3, not live yet
+    expect(page(s, 'keeper-echo')).toMatchObject({ name: B.unknown, seen: 0, trait: null, lines: [] });
+    s.bestiary = { 'keeper-echo': { seen: 1, felled: 1 } };
+    expect(page(s, 'keeper-echo')).toMatchObject({ name: ENEMIES['keeper-echo'].name, trait: BESTIARY['keeper-echo']!.trait });
   });
 
   it('an unseen foe is a name of question marks and a place', () => {
