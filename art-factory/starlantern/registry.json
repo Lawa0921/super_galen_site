@@ -1109,7 +1109,7 @@
       "kind": "sprite",
       "status": "published",
       "runtime": "/assets/games/starlantern/enemy/bat.png",
-      "final": "art-factory/starlantern/work/enemy-bat/enemy-bat.png",
+      "final": "art-factory/starlantern/work/repair/enemy-bat.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-bat\\enemy-bat-a1.png",
       "qa": {
         "pass": true,
@@ -1120,12 +1120,24 @@
         "residue": 0,
         "semi": 0,
         "edge": 0,
-        "holes": 1,
+        "holes": 12,
         "block": 10,
         "size": [
           119,
           65
-        ]
+        ],
+        "magenta_spill": 0,
+        "colours": 2851,
+        "lum": [
+          0.079,
+          0.789,
+          0.389
+        ],
+        "palette_over": true,
+        "key_tint_inside": 0,
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "spec": "roster-sprite:929ae0136de6"
       },
       "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
       "repair": {
@@ -1986,9 +1998,34 @@
             "rule": "speck-clear"
           }
         ],
-        "status": "pending",
-        "date": "2026-10-29"
-      }
+        "status": "published",
+        "date": "2026-10-29",
+        "published_on": "2026-10-29"
+      },
+      "history": [
+        {
+          "final": "art-factory/starlantern/work/enemy-bat/enemy-bat.png",
+          "final_sha256": "6de3d0c120a580d232ed23f253c8316f72057085161463a5f3c24df99eb58068",
+          "qa": {
+            "pass": true,
+            "reasons": [],
+            "warnings": [
+              "enclosed holes"
+            ],
+            "residue": 0,
+            "semi": 0,
+            "edge": 0,
+            "holes": 1,
+            "block": 10,
+            "size": [
+              119,
+              65
+            ]
+          },
+          "replaced_on": "2026-10-29",
+          "by": "repair-outliers, published with roster-f8"
+        }
+      ]
     },
     "enemy-wolf": {
       "kind": "sprite",
@@ -3028,7 +3065,7 @@
       "kind": "sprite",
       "status": "published",
       "runtime": "/assets/games/starlantern/icon/potion.png",
-      "final": "art-factory/starlantern/work/sheet-icons-2/icon-potion.png",
+      "final": "art-factory/starlantern/work/repair/icon-potion.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
       "qa": {
         "pass": true,
@@ -3042,7 +3079,12 @@
         "size": [
           24,
           32
-        ]
+        ],
+        "magenta_spill": 1,
+        "key_tint_inside": 0,
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "spec": "roster-icon:8da249263f71"
       },
       "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
       "repair": {
@@ -3106,15 +3148,38 @@
           "pink_outlier": 0,
           "spec": "roster-icon:8da249263f71"
         },
-        "status": "pending",
-        "date": "2026-10-29"
-      }
+        "status": "published",
+        "date": "2026-10-29",
+        "published_on": "2026-10-29"
+      },
+      "history": [
+        {
+          "final": "art-factory/starlantern/work/sheet-icons-2/icon-potion.png",
+          "final_sha256": "33ee83a8ea8e194eedd5ac3dd35c9d4d98c56d7df4b7097fdaf839e161592e3c",
+          "qa": {
+            "pass": true,
+            "reasons": [],
+            "warnings": [],
+            "residue": 0,
+            "semi": 0,
+            "edge": 0,
+            "holes": 0,
+            "block": 7,
+            "size": [
+              24,
+              32
+            ]
+          },
+          "replaced_on": "2026-10-29",
+          "by": "repair-outliers, published with roster-f8"
+        }
+      ]
     },
     "icon-ether": {
       "kind": "sprite",
       "status": "published",
       "runtime": "/assets/games/starlantern/icon/ether.png",
-      "final": "art-factory/starlantern/work/sheet-icons-2/icon-ether.png",
+      "final": "art-factory/starlantern/work/repair/icon-ether.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
       "qa": {
         "pass": true,
@@ -3128,7 +3193,12 @@
         "size": [
           25,
           32
-        ]
+        ],
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "spec": "roster-icon:8da249263f71"
       },
       "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
       "repair": {
@@ -3332,15 +3402,38 @@
           "pink_outlier": 0,
           "spec": "roster-icon:8da249263f71"
         },
-        "status": "pending",
-        "date": "2026-10-29"
-      }
+        "status": "published",
+        "date": "2026-10-29",
+        "published_on": "2026-10-29"
+      },
+      "history": [
+        {
+          "final": "art-factory/starlantern/work/sheet-icons-2/icon-ether.png",
+          "final_sha256": "b9aac344913a8c2d72d504d1e18b1c7c42d9bd60a3fb87f3a37b9e9f8cb3a93d",
+          "qa": {
+            "pass": true,
+            "reasons": [],
+            "warnings": [],
+            "residue": 0,
+            "semi": 0,
+            "edge": 0,
+            "holes": 0,
+            "block": 7,
+            "size": [
+              25,
+              32
+            ]
+          },
+          "replaced_on": "2026-10-29",
+          "by": "repair-outliers, published with roster-f8"
+        }
+      ]
     },
     "icon-antidote": {
       "kind": "sprite",
       "status": "published",
       "runtime": "/assets/games/starlantern/icon/antidote.png",
-      "final": "art-factory/starlantern/work/sheet-icons-2/icon-antidote.png",
+      "final": "art-factory/starlantern/work/repair/icon-antidote.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
       "qa": {
         "pass": true,
@@ -3354,7 +3447,12 @@
         "size": [
           26,
           32
-        ]
+        ],
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "spec": "roster-icon:8da249263f71"
       },
       "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
       "repair": {
@@ -3642,15 +3740,38 @@
           "pink_outlier": 0,
           "spec": "roster-icon:8da249263f71"
         },
-        "status": "pending",
-        "date": "2026-10-29"
-      }
+        "status": "published",
+        "date": "2026-10-29",
+        "published_on": "2026-10-29"
+      },
+      "history": [
+        {
+          "final": "art-factory/starlantern/work/sheet-icons-2/icon-antidote.png",
+          "final_sha256": "66d574880f6d3e268c9bb334e0841369d10988244e94faeb06ae304652253575",
+          "qa": {
+            "pass": true,
+            "reasons": [],
+            "warnings": [],
+            "residue": 0,
+            "semi": 0,
+            "edge": 0,
+            "holes": 0,
+            "block": 7,
+            "size": [
+              26,
+              32
+            ]
+          },
+          "replaced_on": "2026-10-29",
+          "by": "repair-outliers, published with roster-f8"
+        }
+      ]
     },
     "icon-phoenix": {
       "kind": "sprite",
       "status": "published",
       "runtime": "/assets/games/starlantern/icon/phoenix.png",
-      "final": "art-factory/starlantern/work/sheet-icons-2/icon-phoenix.png",
+      "final": "art-factory/starlantern/work/repair/icon-phoenix.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
       "qa": {
         "pass": true,
@@ -3666,7 +3787,12 @@
         "size": [
           29,
           32
-        ]
+        ],
+        "magenta_spill": 6,
+        "key_tint_inside": 0,
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "spec": "roster-icon:8da249263f71"
       },
       "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
       "repair": {
@@ -3876,15 +4002,42 @@
           "count": 6,
           "reason": "F8 classification: kept as art: the maroon outline (17,6) (90,1,38), (14,9) (97,2,35), (8,15) (85,0,41), (13,26) (85,0,38), hue 331-339 like the feather's dark red outline; the pink embers (25,20) (252,124,157) and (20,26) (250,162,205) float with the other sparkles"
         },
-        "status": "pending",
-        "date": "2026-10-29"
-      }
+        "status": "published",
+        "date": "2026-10-29",
+        "published_on": "2026-10-29"
+      },
+      "history": [
+        {
+          "final": "art-factory/starlantern/work/sheet-icons-2/icon-phoenix.png",
+          "final_sha256": "22d972b9d40bc9c6465e90fa13aae9b34ed4eedcb33bc1c7ded790d6f6f609bf",
+          "qa": {
+            "pass": true,
+            "reasons": [],
+            "warnings": [
+              "enclosed holes"
+            ],
+            "residue": 0,
+            "semi": 0,
+            "edge": 0,
+            "holes": 1,
+            "block": 7,
+            "size": [
+              29,
+              32
+            ]
+          },
+          "replaced_on": "2026-10-29",
+          "by": "repair-outliers, published with roster-f8"
+        }
+      ],
+      "allow_magenta_spill": 6,
+      "allow_magenta_spill_reason": "F8 classification: kept as art: the maroon outline (17,6) (90,1,38), (14,9) (97,2,35), (8,15) (85,0,41), (13,26) (85,0,38), hue 331-339 like the feather's dark red outline; the pink embers (25,20) (252,124,157) and (20,26) (250,162,205) float with the other sparkles"
     },
     "icon-return-lamp": {
       "kind": "sprite",
       "status": "published",
       "runtime": "/assets/games/starlantern/icon/return-lamp.png",
-      "final": "art-factory/starlantern/work/sheet-icons-2/icon-return-lamp.png",
+      "final": "art-factory/starlantern/work/repair/icon-return-lamp.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
       "qa": {
         "pass": true,
@@ -3900,7 +4053,12 @@
         "size": [
           21,
           35
-        ]
+        ],
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "spec": "roster-icon:8da249263f71"
       },
       "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
       "repair": {
@@ -3980,15 +4138,40 @@
           "pink_outlier": 0,
           "spec": "roster-icon:8da249263f71"
         },
-        "status": "pending",
-        "date": "2026-10-29"
-      }
+        "status": "published",
+        "date": "2026-10-29",
+        "published_on": "2026-10-29"
+      },
+      "history": [
+        {
+          "final": "art-factory/starlantern/work/sheet-icons-2/icon-return-lamp.png",
+          "final_sha256": "587a54759dfbae7d192348fd5900d636bb60fbe4ef5e197ed16ec851668a6520",
+          "qa": {
+            "pass": true,
+            "reasons": [],
+            "warnings": [
+              "enclosed holes"
+            ],
+            "residue": 0,
+            "semi": 0,
+            "edge": 0,
+            "holes": 1,
+            "block": 7,
+            "size": [
+              21,
+              35
+            ]
+          },
+          "replaced_on": "2026-10-29",
+          "by": "repair-outliers, published with roster-f8"
+        }
+      ]
     },
     "icon-moss": {
       "kind": "sprite",
       "status": "published",
       "runtime": "/assets/games/starlantern/icon/moss.png",
-      "final": "art-factory/starlantern/work/sheet-icons-2/icon-moss.png",
+      "final": "art-factory/starlantern/work/repair/icon-moss.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
       "qa": {
         "pass": true,
@@ -4002,7 +4185,12 @@
         "size": [
           40,
           36
-        ]
+        ],
+        "magenta_spill": 6,
+        "key_tint_inside": 0,
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "spec": "roster-icon:8da249263f71"
       },
       "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
       "repair": {
@@ -4280,15 +4468,40 @@
           }
         ],
         "also_reason": "F8 review round 1 (2026-10-29, f8-review.md FAIL section): classified as key residue on the top and left outline (dark green outline mixed with 15-30% key)",
-        "status": "pending",
-        "date": "2026-10-29"
-      }
+        "status": "published",
+        "date": "2026-10-29",
+        "published_on": "2026-10-29"
+      },
+      "history": [
+        {
+          "final": "art-factory/starlantern/work/sheet-icons-2/icon-moss.png",
+          "final_sha256": "94d62ade0bcdd97cca11f1f622437726c8d1734bbf8ccb126811d0c7a6ad478d",
+          "qa": {
+            "pass": true,
+            "reasons": [],
+            "warnings": [],
+            "residue": 0,
+            "semi": 0,
+            "edge": 0,
+            "holes": 0,
+            "block": 6,
+            "size": [
+              40,
+              36
+            ]
+          },
+          "replaced_on": "2026-10-29",
+          "by": "repair-outliers, published with roster-f8"
+        }
+      ],
+      "allow_magenta_spill": 6,
+      "allow_magenta_spill_reason": "F8 classification: kept as art: the floating flower petals (9,5) (27,5) (31,8) (6,10) (30,11) (6,13), pale pink (saturation .30-.61) in the flowers around the moss"
     },
     "icon-bat-wing": {
       "kind": "sprite",
       "status": "published",
       "runtime": "/assets/games/starlantern/icon/bat-wing.png",
-      "final": "art-factory/starlantern/work/sheet-icons-2/icon-bat-wing.png",
+      "final": "art-factory/starlantern/work/repair/icon-bat-wing.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
       "qa": {
         "pass": true,
@@ -4302,7 +4515,12 @@
         "size": [
           31,
           33
-        ]
+        ],
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "spec": "roster-icon:8da249263f71"
       },
       "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
       "repair": {
@@ -4380,15 +4598,38 @@
           "pink_outlier": 0,
           "spec": "roster-icon:8da249263f71"
         },
-        "status": "pending",
-        "date": "2026-10-29"
-      }
+        "status": "published",
+        "date": "2026-10-29",
+        "published_on": "2026-10-29"
+      },
+      "history": [
+        {
+          "final": "art-factory/starlantern/work/sheet-icons-2/icon-bat-wing.png",
+          "final_sha256": "9ccb28a1ad898addc011de9cf69e5c699c985d12a799492bd1ebc951904b0111",
+          "qa": {
+            "pass": true,
+            "reasons": [],
+            "warnings": [],
+            "residue": 0,
+            "semi": 0,
+            "edge": 0,
+            "holes": 0,
+            "block": 7,
+            "size": [
+              31,
+              33
+            ]
+          },
+          "replaced_on": "2026-10-29",
+          "by": "repair-outliers, published with roster-f8"
+        }
+      ]
     },
     "icon-thorn-fang": {
       "kind": "sprite",
       "status": "published",
       "runtime": "/assets/games/starlantern/icon/thorn-fang.png",
-      "final": "art-factory/starlantern/work/sheet-icons-2/icon-thorn-fang.png",
+      "final": "art-factory/starlantern/work/repair/icon-thorn-fang.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
       "qa": {
         "pass": true,
@@ -4402,7 +4643,12 @@
         "size": [
           29,
           32
-        ]
+        ],
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "spec": "roster-icon:8da249263f71"
       },
       "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
       "repair": {
@@ -4620,15 +4866,38 @@
           "pink_outlier": 0,
           "spec": "roster-icon:8da249263f71"
         },
-        "status": "pending",
-        "date": "2026-10-29"
-      }
+        "status": "published",
+        "date": "2026-10-29",
+        "published_on": "2026-10-29"
+      },
+      "history": [
+        {
+          "final": "art-factory/starlantern/work/sheet-icons-2/icon-thorn-fang.png",
+          "final_sha256": "7a0b06ef9e643d02d39c380f943eafb90f511a22f2ad3538549c87adeeb3ad5f",
+          "qa": {
+            "pass": true,
+            "reasons": [],
+            "warnings": [],
+            "residue": 0,
+            "semi": 0,
+            "edge": 0,
+            "holes": 0,
+            "block": 7,
+            "size": [
+              29,
+              32
+            ]
+          },
+          "replaced_on": "2026-10-29",
+          "by": "repair-outliers, published with roster-f8"
+        }
+      ]
     },
     "icon-crystal-shell": {
       "kind": "sprite",
       "status": "published",
       "runtime": "/assets/games/starlantern/icon/crystal-shell.png",
-      "final": "art-factory/starlantern/work/sheet-icons-2/icon-crystal-shell.png",
+      "final": "art-factory/starlantern/work/repair/icon-crystal-shell.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
       "qa": {
         "pass": true,
@@ -4642,7 +4911,12 @@
         "size": [
           33,
           37
-        ]
+        ],
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "spec": "roster-icon:8da249263f71"
       },
       "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
       "repair": {
@@ -4869,15 +5143,38 @@
             "rule": "gutter-clear"
           }
         ],
-        "status": "pending",
-        "date": "2026-10-29"
-      }
+        "status": "published",
+        "date": "2026-10-29",
+        "published_on": "2026-10-29"
+      },
+      "history": [
+        {
+          "final": "art-factory/starlantern/work/sheet-icons-2/icon-crystal-shell.png",
+          "final_sha256": "45abc6f09340e2064c37291a40dbf70238392509035be86d88cfad5e5841aa79",
+          "qa": {
+            "pass": true,
+            "reasons": [],
+            "warnings": [],
+            "residue": 0,
+            "semi": 0,
+            "edge": 0,
+            "holes": 0,
+            "block": 6,
+            "size": [
+              33,
+              37
+            ]
+          },
+          "replaced_on": "2026-10-29",
+          "by": "repair-outliers, published with roster-f8"
+        }
+      ]
     },
     "icon-ice-crystal": {
       "kind": "sprite",
       "status": "published",
       "runtime": "/assets/games/starlantern/icon/ice-crystal.png",
-      "final": "art-factory/starlantern/work/sheet-icons-2/icon-ice-crystal.png",
+      "final": "art-factory/starlantern/work/repair/icon-ice-crystal.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
       "qa": {
         "pass": true,
@@ -4891,7 +5188,12 @@
         "size": [
           27,
           33
-        ]
+        ],
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "spec": "roster-icon:8da249263f71"
       },
       "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
       "repair": {
@@ -5185,15 +5487,38 @@
           }
         ],
         "also_reason": "F8 review round 1 (2026-10-29, f8-review.md FAIL section): classified as key residue: the violet strip at x=19-20 (hue 278-279.8, under the 280 floor) and the dark violets on the bottom edge; the cyan crystal has no violet art",
-        "status": "pending",
-        "date": "2026-10-29"
-      }
+        "status": "published",
+        "date": "2026-10-29",
+        "published_on": "2026-10-29"
+      },
+      "history": [
+        {
+          "final": "art-factory/starlantern/work/sheet-icons-2/icon-ice-crystal.png",
+          "final_sha256": "30e4c93a238a119922f9036850c59615b8a5332094c09ee4e4aa0ac524a3c489",
+          "qa": {
+            "pass": true,
+            "reasons": [],
+            "warnings": [],
+            "residue": 0,
+            "semi": 0,
+            "edge": 0,
+            "holes": 0,
+            "block": 7,
+            "size": [
+              27,
+              33
+            ]
+          },
+          "replaced_on": "2026-10-29",
+          "by": "repair-outliers, published with roster-f8"
+        }
+      ]
     },
     "icon-lizard-scale": {
       "kind": "sprite",
       "status": "published",
       "runtime": "/assets/games/starlantern/icon/lizard-scale.png",
-      "final": "art-factory/starlantern/work/repair/icon-lizard-scale.png",
+      "final": "art-factory/starlantern/work/repair/icon-lizard-scale.f8.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
       "qa": {
         "pass": true,
@@ -5208,7 +5533,7 @@
           30,
           37
         ],
-        "magenta_spill": 1,
+        "magenta_spill": 0,
         "key_tint_inside": 0,
         "bright_key": 0,
         "pink_outlier": 0,
@@ -5368,8 +5693,9 @@
             "rule": "gutter-clear"
           }
         ],
-        "status": "pending",
-        "date": "2026-10-29"
+        "status": "published",
+        "date": "2026-10-29",
+        "published_on": "2026-10-29"
       },
       "history": [
         {
@@ -5391,6 +5717,31 @@
           },
           "replaced_on": "2026-10-29",
           "by": "repair-outliers, published with roster-r4"
+        },
+        {
+          "final": "art-factory/starlantern/work/repair/icon-lizard-scale.png",
+          "final_sha256": "622dbf5055d29fa04be9324e7382e467dec15a7993ea8e009c4767a9b8d92671",
+          "qa": {
+            "pass": true,
+            "reasons": [],
+            "warnings": [],
+            "residue": 0,
+            "semi": 0,
+            "edge": 0,
+            "holes": 0,
+            "block": 6,
+            "size": [
+              30,
+              37
+            ],
+            "magenta_spill": 1,
+            "key_tint_inside": 0,
+            "bright_key": 0,
+            "pink_outlier": 0,
+            "spec": "roster-icon:8da249263f71"
+          },
+          "replaced_on": "2026-10-29",
+          "by": "repair-outliers, published with roster-f8"
         }
       ],
       "repair_history": [
@@ -5574,7 +5925,7 @@
       "kind": "sprite",
       "status": "published",
       "runtime": "/assets/games/starlantern/icon/star-stone.png",
-      "final": "art-factory/starlantern/work/sheet-icons-2/icon-star-stone.png",
+      "final": "art-factory/starlantern/work/repair/icon-star-stone.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
       "qa": {
         "pass": true,
@@ -5590,7 +5941,12 @@
         "size": [
           29,
           33
-        ]
+        ],
+        "magenta_spill": 24,
+        "key_tint_inside": 0,
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "spec": "roster-icon:8da249263f71"
       },
       "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
       "repair": {
@@ -5741,15 +6097,42 @@
           "count": 24,
           "reason": "F8 classification: kept as art: the stone's lavender highlights (23 pixels, saturation .33-.63, green 54-141) on its upper left rim and (6,8) (44,9,56), dark violet like the stone's own shading (50,20,83)"
         },
-        "status": "pending",
-        "date": "2026-10-29"
-      }
+        "status": "published",
+        "date": "2026-10-29",
+        "published_on": "2026-10-29"
+      },
+      "history": [
+        {
+          "final": "art-factory/starlantern/work/sheet-icons-2/icon-star-stone.png",
+          "final_sha256": "3efa3b75d1329f4087470b91f12acb53d26979b5256469dd0bb460dcd55e8cfb",
+          "qa": {
+            "pass": true,
+            "reasons": [],
+            "warnings": [
+              "enclosed holes"
+            ],
+            "residue": 0,
+            "semi": 0,
+            "edge": 0,
+            "holes": 3,
+            "block": 7,
+            "size": [
+              29,
+              33
+            ]
+          },
+          "replaced_on": "2026-10-29",
+          "by": "repair-outliers, published with roster-f8"
+        }
+      ],
+      "allow_magenta_spill": 24,
+      "allow_magenta_spill_reason": "F8 classification: kept as art: the stone's lavender highlights (23 pixels, saturation .33-.63, green 54-141) on its upper left rim and (6,8) (44,9,56), dark violet like the stone's own shading (50,20,83)"
     },
     "icon-dusk-cloth": {
       "kind": "sprite",
       "status": "published",
       "runtime": "/assets/games/starlantern/icon/dusk-cloth.png",
-      "final": "art-factory/starlantern/work/sheet-icons-2/icon-dusk-cloth.png",
+      "final": "art-factory/starlantern/work/repair/icon-dusk-cloth.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
       "qa": {
         "pass": true,
@@ -5763,7 +6146,12 @@
         "size": [
           40,
           36
-        ]
+        ],
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "spec": "roster-icon:8da249263f71"
       },
       "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
       "repair": {
@@ -6009,15 +6397,38 @@
           "pink_outlier": 0,
           "spec": "roster-icon:8da249263f71"
         },
-        "status": "pending",
-        "date": "2026-10-29"
-      }
+        "status": "published",
+        "date": "2026-10-29",
+        "published_on": "2026-10-29"
+      },
+      "history": [
+        {
+          "final": "art-factory/starlantern/work/sheet-icons-2/icon-dusk-cloth.png",
+          "final_sha256": "0fdcbdae03bd4e2b4e821d3de5e7b4b75339420e09e4442c4c51cd21f741b70f",
+          "qa": {
+            "pass": true,
+            "reasons": [],
+            "warnings": [],
+            "residue": 0,
+            "semi": 0,
+            "edge": 0,
+            "holes": 0,
+            "block": 6,
+            "size": [
+              40,
+              36
+            ]
+          },
+          "replaced_on": "2026-10-29",
+          "by": "repair-outliers, published with roster-f8"
+        }
+      ]
     },
     "icon-old-coin": {
       "kind": "sprite",
       "status": "published",
       "runtime": "/assets/games/starlantern/icon/old-coin.png",
-      "final": "art-factory/starlantern/work/sheet-icons-3/icon-old-coin.png",
+      "final": "art-factory/starlantern/work/repair/icon-old-coin.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
       "qa": {
         "pass": true,
@@ -6031,7 +6442,12 @@
         "size": [
           34,
           35
-        ]
+        ],
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "spec": "roster-icon:8da249263f71"
       },
       "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
       "repair": {
@@ -6409,15 +6825,38 @@
             "rule": "gutter-clear"
           }
         ],
-        "status": "pending",
-        "date": "2026-10-29"
-      }
+        "status": "published",
+        "date": "2026-10-29",
+        "published_on": "2026-10-29"
+      },
+      "history": [
+        {
+          "final": "art-factory/starlantern/work/sheet-icons-3/icon-old-coin.png",
+          "final_sha256": "7dc034b797943e7701841dd845863c4c19b3f5963db0dbef2502f6a67fb5f5d4",
+          "qa": {
+            "pass": true,
+            "reasons": [],
+            "warnings": [],
+            "residue": 0,
+            "semi": 0,
+            "edge": 0,
+            "holes": 0,
+            "block": 5,
+            "size": [
+              34,
+              35
+            ]
+          },
+          "replaced_on": "2026-10-29",
+          "by": "repair-outliers, published with roster-f8"
+        }
+      ]
     },
     "icon-ancient-gear": {
       "kind": "sprite",
       "status": "published",
       "runtime": "/assets/games/starlantern/icon/ancient-gear.png",
-      "final": "art-factory/starlantern/work/sheet-icons-3/icon-ancient-gear.png",
+      "final": "art-factory/starlantern/work/repair/icon-ancient-gear.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
       "qa": {
         "pass": true,
@@ -6431,7 +6870,12 @@
         "size": [
           32,
           32
-        ]
+        ],
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "spec": "roster-icon:8da249263f71"
       },
       "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
       "repair": {
@@ -6789,9 +7233,32 @@
           "pink_outlier": 0,
           "spec": "roster-icon:8da249263f71"
         },
-        "status": "pending",
-        "date": "2026-10-29"
-      }
+        "status": "published",
+        "date": "2026-10-29",
+        "published_on": "2026-10-29"
+      },
+      "history": [
+        {
+          "final": "art-factory/starlantern/work/sheet-icons-3/icon-ancient-gear.png",
+          "final_sha256": "92f765c94364f3c8847a968da9fa3cfc9fa271d46eec37827b0125d3de3948d0",
+          "qa": {
+            "pass": true,
+            "reasons": [],
+            "warnings": [],
+            "residue": 0,
+            "semi": 0,
+            "edge": 0,
+            "holes": 0,
+            "block": 6,
+            "size": [
+              32,
+              32
+            ]
+          },
+          "replaced_on": "2026-10-29",
+          "by": "repair-outliers, published with roster-f8"
+        }
+      ]
     },
     "icon-wooden-staff": {
       "kind": "sprite",
@@ -9992,7 +10459,7 @@
       "runtime": "/assets/games/starlantern/icon/trait-thunder.png"
     },
     "icon-trait-shade": {
-      "final": "art-factory/starlantern/work/icon-trait-shade/icon-trait-shade.png",
+      "final": "art-factory/starlantern/work/repair/icon-trait-shade.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-trait-icons\\sheet-trait-icons-a4.png",
       "qa": {
         "pass": true,
@@ -10006,7 +10473,12 @@
         "size": [
           31,
           34
-        ]
+        ],
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "spec": "roster-icon:8da249263f71"
       },
       "status": "published",
       "chosen_attempt": "a4",
@@ -10116,12 +10588,35 @@
           "pink_outlier": 0,
           "spec": "roster-icon:8da249263f71"
         },
-        "status": "pending",
-        "date": "2026-10-29"
-      }
+        "status": "published",
+        "date": "2026-10-29",
+        "published_on": "2026-10-29"
+      },
+      "history": [
+        {
+          "final": "art-factory/starlantern/work/icon-trait-shade/icon-trait-shade.png",
+          "final_sha256": "44434eec0707afad9b768c8224f448f279f23572d0af7bd0c4a097c9e2e6bef1",
+          "qa": {
+            "pass": true,
+            "reasons": [],
+            "warnings": [],
+            "residue": 0,
+            "semi": 0,
+            "edge": 0,
+            "holes": 0,
+            "block": 11,
+            "size": [
+              31,
+              34
+            ]
+          },
+          "replaced_on": "2026-10-29",
+          "by": "repair-outliers, published with roster-f8"
+        }
+      ]
     },
     "icon-trait-poison": {
-      "final": "art-factory/starlantern/work/icon-trait-poison/icon-trait-poison.png",
+      "final": "art-factory/starlantern/work/repair/icon-trait-poison.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-trait-icons\\sheet-trait-icons-a2.png",
       "qa": {
         "pass": true,
@@ -10135,7 +10630,12 @@
         "size": [
           28,
           35
-        ]
+        ],
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "spec": "roster-icon:8da249263f71"
       },
       "status": "published",
       "chosen_attempt": "a2",
@@ -10245,9 +10745,32 @@
           "pink_outlier": 0,
           "spec": "roster-icon:8da249263f71"
         },
-        "status": "pending",
-        "date": "2026-10-29"
-      }
+        "status": "published",
+        "date": "2026-10-29",
+        "published_on": "2026-10-29"
+      },
+      "history": [
+        {
+          "final": "art-factory/starlantern/work/icon-trait-poison/icon-trait-poison.png",
+          "final_sha256": "13aa63c24aaf3503451124d3a33c0434f78480ebb1a7418d7e1aa2e0050cc3f6",
+          "qa": {
+            "pass": true,
+            "reasons": [],
+            "warnings": [],
+            "residue": 0,
+            "semi": 0,
+            "edge": 0,
+            "holes": 0,
+            "block": 12,
+            "size": [
+              28,
+              35
+            ]
+          },
+          "replaced_on": "2026-10-29",
+          "by": "repair-outliers, published with roster-f8"
+        }
+      ]
     },
     "char-hero-standee": {
       "kind": "sprite",
@@ -50578,7 +51101,7 @@
       "runtime": "/assets/games/starlantern/icon/rivet.png"
     },
     "icon-crab-plate": {
-      "final": "art-factory/starlantern/work/sheet-icons-roster-6/icon-crab-plate.png",
+      "final": "art-factory/starlantern/work/repair/icon-crab-plate.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-6\\sheet-icons-roster-6-a4.png",
       "qa": {
         "pass": true,
@@ -50655,9 +51178,38 @@
           "erased": 0,
           "spec": "roster-icon:8da249263f71"
         },
-        "status": "pending",
-        "date": "2026-10-29"
-      }
+        "status": "published",
+        "date": "2026-10-29",
+        "published_on": "2026-10-29"
+      },
+      "history": [
+        {
+          "final": "art-factory/starlantern/work/sheet-icons-roster-6/icon-crab-plate.png",
+          "final_sha256": "96973e7cc50460108af8a20f187f92c9f2c6d77361bdc11b19193fb0552b1086",
+          "qa": {
+            "pass": true,
+            "reasons": [],
+            "warnings": [],
+            "residue": 0,
+            "semi": 0,
+            "edge": 0,
+            "holes": 0,
+            "magenta_spill": 0,
+            "key_tint_inside": 0,
+            "block": 9,
+            "size": [
+              36,
+              24
+            ],
+            "bright_key": 0,
+            "pink_outlier": 0,
+            "erased": 0,
+            "spec": "roster-icon:8da249263f71"
+          },
+          "replaced_on": "2026-10-29",
+          "by": "repair-outliers, published with roster-f8"
+        }
+      ]
     },
     "icon-herald-horn": {
       "final": "art-factory/starlantern/work/sheet-icons-roster-6/icon-herald-horn.png",
@@ -54561,7 +55113,7 @@
         "icon-vault-lock": "1bd4238d72023fcba4f695ddc8d31b597ed91e3e5326634328249922a8ab8600",
         "icon-iou-slip": "c4e0f554599b847d50c55f8d2cecb4214b2f061ed124d440e41ddde324664b18",
         "icon-rivet": "5352e371476b2b45fbddeaf5811adb13e9a34a64e44bfb50bac41f696398c936",
-        "icon-crab-plate": "96973e7cc50460108af8a20f187f92c9f2c6d77361bdc11b19193fb0552b1086",
+        "icon-crab-plate": "977462b6c54d1fc1ff9d3bfe7e0a7a0f7fc3cada182a00f9946e2107706d8971",
         "icon-herald-horn": "fc74fced959f8a4077996248c6005e71faf26dbe04ffbd8c27559cfbc20c9eec",
         "icon-knight-crest": "61621194ae5cacb09011e04ac1215f60783617a37356e0a66240e4cdc971a5fb",
         "icon-red-pennant": "1b7f3d8ce160e47e006a41be4c61cd4042ca2d0895312804944bd87e9cb897dd",
@@ -54616,6 +55168,50 @@
       ],
       "repairs": {
         "icon-lizard-scale": "622dbf5055d29fa04be9324e7382e467dec15a7993ea8e009c4767a9b8d92671"
+      },
+      "repaired": {
+        "icon-crab-plate": {
+          "from": "96973e7cc50460108af8a20f187f92c9f2c6d77361bdc11b19193fb0552b1086",
+          "to": "977462b6c54d1fc1ff9d3bfe7e0a7a0f7fc3cada182a00f9946e2107706d8971",
+          "with": "roster-f8"
+        }
+      }
+    },
+    "roster-f8": {
+      "date": "2026-10-29",
+      "shown": {},
+      "review": "art-factory/starlantern/work/review/roster-f8-review.md",
+      "review_sha256": "ada4453ac471dd0aa9332fbfacabc931b00e4f2d031d769bdb652a9c0b56031c",
+      "reviews": [
+        {
+          "record": "art-factory/starlantern/work/review/roster-f8-review.md",
+          "sha256": "ada4453ac471dd0aa9332fbfacabc931b00e4f2d031d769bdb652a9c0b56031c"
+        },
+        {
+          "record": "art-factory/starlantern/work/review/roster-f8-review-2.md",
+          "sha256": "7f583bbd56759cad0e0c50f462381c93ebb15ea4cbecc5067dc4e82024657790"
+        }
+      ],
+      "repairs": {
+        "enemy-bat": "40846f62b558489d3311bcbf73283654aff7b768f098a074bdece2a9d7cf87a0",
+        "icon-potion": "c0b02336fcda1a6601a96bde64bb578cf0d87582c414056b033fa61c5fa1606a",
+        "icon-ether": "ddccc45459f35e886c6c4b79d1be951b4bc42cc879170eafd2cb650544002162",
+        "icon-antidote": "8e0b4533f8e8ab36b3d2521f5f5e535f57665816e6ec9c0be6aee96f750444c8",
+        "icon-phoenix": "9555e8c88a9c21b945472473a93ab7179bf82b2e7a32500494e8f993fc0b3a1a",
+        "icon-return-lamp": "de2fa6df8ad3d8244d01e2b6e26a1ba56d2b5417ab615dd525ec2589f7af743c",
+        "icon-moss": "654cca066d0901512448ab7aebb5219f5a84ff4b307f93ce1689c37f8eb6f4dc",
+        "icon-bat-wing": "61c0ea07412e3c34eccc110bc474b2f0182235136fe650cb7d9326895813704a",
+        "icon-thorn-fang": "9091fa26c167b5d741fe88c017ba6b8689d25e6cdc03eef9721b0aed93eb151a",
+        "icon-crystal-shell": "bded8e04b5f77b7f436f3f5289da4adf6fe1252333ce16090a5040bcc8c383e9",
+        "icon-ice-crystal": "d4504f1f3357fe58de2904307431208740b6a101a7ea07c3d362c21efb0d4189",
+        "icon-lizard-scale": "2175b9f6bfd011993232757759b29b751300bf2cbbce3ed78fdc2083820b1dcd",
+        "icon-star-stone": "c1d2cf87d6418590b0ed3560519a787f6418b0b5c4b4d5397b58fa8689932685",
+        "icon-dusk-cloth": "9007f45a2a977a80a658830b1933ab226f0364a4903c201313907d903d0adc82",
+        "icon-old-coin": "30b84170302ed92d5cf3040f898c086b3af68b52731c8b3093244576e2858989",
+        "icon-ancient-gear": "7efdcccca6066bdc25d10f86bde265487007929786eb34f743a5e928dbc4ff7e",
+        "icon-trait-shade": "d2ea3982e4e9dc804a236ee9bf8562868cb7bcbccebf0027a37f89ca1132e7d5",
+        "icon-trait-poison": "54b993d51c32be3a41df9fc6ba6cbfd317a463012d2565963ed03013efc9139b",
+        "icon-crab-plate": "977462b6c54d1fc1ff9d3bfe7e0a7a0f7fc3cada182a00f9946e2107706d8971"
       }
     }
   },
