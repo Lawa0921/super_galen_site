@@ -47,10 +47,10 @@ describe('roster switches (roster plan Task A1, spec §11.1)', () => {
     }
   });
 
-  it('only the live waves are listed (L2b, L2c: the first two waves)', () => {
-    // Roster plan L1b, L2b: the first two waves went live, the lantern-mother last with the finale (L2c); nothing else is
-    // listed until its own go-live task.
-    const live = [...WAVE_2.filter((id) => id !== 'lantern-mother'), 'lantern-mother'];
+  it('only the live waves are listed (L2b, L2c, L3b: the first three waves)', () => {
+    // Roster plan L1b, L2b, L3b: the first three waves went live, the lantern-mother with the finale (L2c) before the third;
+    // nothing else is listed until its own go-live task.
+    const live = [...WAVE_2.filter((id) => id !== 'lantern-mother'), 'lantern-mother', ...WAVE_3.filter((id) => !WAVE_2.includes(id))];
     expect([...ROSTER_LIVE]).toEqual(live);
     expect(liveRosterIds()).toEqual(live);
     const fresh = Object.keys(ENEMIES).filter((id) => !LEGACY_ENEMY_IDS.includes(id));
@@ -600,7 +600,8 @@ describe('roster tables, bosses and wardens (roster plan Task A4, spec §3.4, §
     expect(wardenGroup('false-moon')).toEqual(['false-moon']);
   }));
 
-  it('the second live wave meets its bosses and wardens where the spec puts them (L2b)', () => {
+  it('the second live wave meets its bosses and wardens where the spec puts them (L2b)', () => withRosterOnly(WAVE_2, () => {
+    // L3b: measures the game as it was before the third wave.
     // Spec §5.5, §5.6 on the real live set: the main road's bosses at 5 to 50, the lantern-eater at 30 (ruling 11: the
     // mother is the finale's alone), cycling at 55; every region still the lantern-eater; the wardens at 8 to 28, cycling at 33.
     const boss = (r: RegionId, d: number) => bossFor(r, d).at(-1);
@@ -617,6 +618,28 @@ describe('roster tables, bosses and wardens (roster plan Task A4, spec §3.4, §
     expect(wardenGroup('toppled-automaton')).toEqual(['toppled-automaton', 'ancestor-automaton']);
     expect(wardenGroup('requiem-conductor')).toEqual(['requiem-conductor', 'requiem-choir']);
     expect(wardenGroup('lantern-brood')).toEqual(['lantern-brood', 'lantern-larva']);
+  }));
+
+  it('the third live wave meets its bosses and wardens where the spec puts them (L3b)', () => {
+    // Spec §5.5, §5.6 on the real live set: the fire, frost and storm lands' three bosses at 5, 10, 15, cycling at 20 and on
+    // (the permafrost's warden with its two pillars first); the other three lands still the lantern-eater. Each of the three
+    // lands' wardens from depth 8 on its 3s and 8s; the main road as before.
+    const boss = (r: RegionId, d: number) => bossFor(r, d).at(-1);
+    const at = [5, 10, 15, 20, 25, 30];
+    expect(at.map((d) => boss('blaze', d))).toEqual(['ember-tyrant', 'sandstorm-maw', 'mirage-city', 'ember-tyrant', 'sandstorm-maw', 'mirage-city']);
+    expect(at.map((d) => boss('frost', d))).toEqual(['rime-sovereign', 'white-silence', 'rift-maw', 'rime-sovereign', 'white-silence', 'rift-maw']);
+    expect(at.map((d) => boss('storm', d))).toEqual(['thunder-roc', 'storm-conductor', 'starfire-colossus', 'thunder-roc', 'storm-conductor', 'starfire-colossus']);
+    expect(bossFor('frost', 5)).toEqual(['rime-pillar', 'rime-pillar', 'rime-sovereign']);
+    for (const r of ['mire', 'shade', 'iron'] as const) for (const d of at) expect(bossFor(r, d), `${r} ${d}`).toEqual(['lanterneater']);
+    expect([20, 30].map((d) => boss('mainline', d))).toEqual(['old-city-archon', 'lanterneater']);
+    for (const [r, w] of [['blaze', 'mirage-lead'], ['frost', 'ice-shrine'], ['storm', 'burning-page']] as const) {
+      expect([3, 8, 13, 18, 23].map((d) => wardenFor(r, d)), r).toEqual([null, w, w, w, w]);
+    }
+    for (const r of ['mire', 'shade', 'iron'] as const) expect(wardenFor(r, 8), r).toBeNull();
+    // The book's page comes with its live escort; the lead dancer and the shrine fight alone (WARDEN_GROUPS).
+    expect(wardenGroup('burning-page')).toEqual(['burning-page', 'stolen-tome']);
+    expect(wardenGroup('mirage-lead')).toEqual(['mirage-lead']);
+    expect(wardenGroup('ice-shrine')).toEqual(['ice-shrine']);
   });
 
   it('salts are distinct', () => {
@@ -810,6 +833,30 @@ describe('the second wave as tuned (roster plan L2b, spec §0 item 22)', () => {
     expect(sk('wick-shade', '燭火')).toEqual({ chance: 0.3, power: 90 });
     expect(sk('old-city-archon', '王權')).toEqual({ chance: 0.3, power: 160 });
     expect(sk('requiem-conductor', '召集歌隊')).toEqual({ chance: 0.25, power: 2 });
+  });
+});
+
+describe('the third wave as tuned (roster plan L3b, spec §0 item 23)', () => {
+  it('the attempts kept, and the ones that moved nothing back at their spec values', () => {
+    const E = ENEMIES;
+    const sk = (id: string, name: string) => [...E[id].skills, ...(E[id].stages ?? []).flatMap((x) => x.skills)].filter((x) => x.name === name)
+      .map((k) => { const e = k.effects[0] as { power?: number; max?: number; kind: string }; return { chance: k.chance, power: e.power ?? e.max }; });
+    // Kept: each moved its cells toward the band and turned no other red (controller ruling 2026-10-28).
+    expect(sk('mirage-city', '幻之火')).toEqual([{ chance: 0.35, power: 90 }]);        // 110 → 90 (22f noHeal .7 → .9, 22j)
+    expect(sk('mirage-city', '城門崩落')).toEqual([{ chance: 0.3, power: 130 }]);       // 160 → 130
+    expect(sk('ember-tyrant', '烈焰之拳')).toEqual([{ chance: 0.3, power: 195 }, { chance: 0.3, power: 200 }]);   // 160, 165 → 195, 200 (22j bare)
+    expect(sk('white-silence', '冰柱落下')).toEqual([{ chance: 0.45, power: 205 }]);    // 175/.35 → 205/.45 (22b, 22j bare)
+    expect(sk('storm-conductor', '雷杖')).toEqual([{ chance: 0.4, power: 225 }]);       // 190 → 225 (22j bare)
+    expect(sk('ice-shrine', '喚醒狛犬')).toEqual([{ chance: 0.25, power: 1 }]);          // two calls → one (22j warden)
+    // Tried once, moved nothing or made it worse, so back at the spec's numbers (item 23's named exceptions instead).
+    expect(sk('forge-hound', '熔吼')).toEqual([{ chance: 0.25, power: 150 }]);
+    expect(sk('forge-hound', '熔牙')).toEqual([{ chance: 0.45, power: 145 }]);
+    expect(sk('ash-mourner', '灰燼')).toEqual([{ chance: 0.5, power: 130 }]);
+    expect(sk('frozen-pilgrim', '冰之祈')).toEqual([{ chance: 0.4, power: 140 }]);
+    expect(sk('sand-scorpion', '毒針')).toEqual([{ chance: 0.5, power: 135 }]);
+    expect(sk('rift-maw', '裂口之息')).toEqual([{ chance: 0.35, power: 110 }, { chance: 0.5, power: 115 }]);
+    expect(sk('rime-pillar', '冰之加護')).toEqual([{ chance: 0.25, power: 25 }]);
+    expect(E['ice-komainu'].stats.hp).toBe(310);   // its hp ×0.85 for 22c frost d25 moved nothing and turned 22a red
   });
 });
 

@@ -3,7 +3,7 @@ import { T } from '../../data/text.zh-TW';
 import { ENEMIES } from '../../data/enemies';
 import { ROSTER_LIVE } from '../../data/monsters';
 import { Game } from '../../engine/game';
-import { WAVE_1_LIVE, constRng, memoryStorage, withRosterLive, withRosterOnly } from '../../engine/testing';
+import { WAVE_1_LIVE, WAVE_2_LIVE, constRng, memoryStorage, withRosterLive, withRosterOnly } from '../../engine/testing';
 import { ownCost } from '../../engine/forge/craft';
 import { inscribeCost } from '../../engine/forge/cost';
 import type { ItemInstance } from '../../engine/types';
@@ -144,7 +144,8 @@ describe('the forge for the roster (roster plan Task C4)', () => {
     expect(m.ids().filter((id) => id?.startsWith('ins:'))).toEqual(['ins:paper-moth']);
   }));
 
-  it("the second live wave's rows: its own uniques and its inscriptions, none of the third wave's (L2b)", () => {
+  it("the second live wave's rows: its own uniques and its inscriptions, none of the third wave's (L2b)", () => withRosterOnly([...WAVE_2_LIVE], () => {
+    // L3b: measures the game as it was before the third wave.
     // Own uniques: every live owner of the two waves, the lantern-mother's too since L2c, wardens first (SPECIALS order);
     // none of R3's (the mirage lead's veil), though its keepsake is in the stores.
     // Every live owner felled, so no row is greyed out and the cursor walks the whole list.
@@ -164,10 +165,33 @@ describe('the forge for the roster (roster plan Task C4)', () => {
     // Inscriptions: the old city's sentinel is live now; an R3 native (the cinder imp) not, though its signature is held.
     const m = methods((g) => { g.state.inventory['faded-letter'] = 3; g.state.inventory['marble-shard'] = 3; g.state.inventory['cinder-dust'] = 3; });
     expect(m.ids().filter((id) => id?.startsWith('ins:'))).toEqual(['ins:paper-moth', 'ins:old-city-sentinel']);
+  }));
+
+  it("the third live wave's rows: its own uniques and its inscriptions, none of the fourth wave's (L3b)", () => {
+    // Own uniques: every live owner of the three waves, wardens first (SPECIALS order); none of R4's (the grey elder's bow),
+    // though its keepsake is in the stores. Every live owner felled, so no row is greyed out and the cursor walks the list.
+    const t = craft((g) => {
+      g.state.inventory = { 'fog-gate-plate': 5, 'archon-gold': 5, 'copper-anklet': 5, 'ashen-acorn': 5, 'star-tear': 1 };
+      g.state.bestiary = Object.fromEntries([...ROSTER_LIVE].map((id) => [id, { seen: 1, felled: 1 }]));
+    });
+    t.row('own').click();
+    const own = ['moonless-mirror', 'unrung-clapper', 'ancestor-gauntlet', 'requiem-staff', 'brood-lantern', 'last-dance-veil', 'ninety-nine-steps',
+      'starbound-tome', 'fog-halberd', 'silent-chime', 'borrowed-blade', 'archon-crown', 'glutton-gauntlet', 'cradled-light', 'festival-mask',
+      'whale-song-ring', 'still-hand-boots', 'first-lantern-staff', 'burning-crown-ring', 'sand-veil-boots', 'troupe-drum', 'everwinter-veil',
+      'snowmute-ring', 'sealing-spear', 'roc-feather-boots', 'conductor-ring', 'starfire-tiara'];
+    expect(t.ids()).toEqual(own.slice(0, 8));
+    for (let i = 1; i < own.length; i++) t.go('down');
+    expect(t.ids()).toEqual(own.slice(-8));
+    // Inscriptions: the cinder imp is live now; an R4 native (the bog mother) not, though its signature is held.
+    const m = methods((g) => {
+      g.state.inventory['faded-letter'] = 3; g.state.inventory['marble-shard'] = 3; g.state.inventory['cinder-dust'] = 3; g.state.inventory['bog-peat'] = 3;
+    });
+    expect(m.ids().filter((id) => id?.startsWith('ins:'))).toEqual(['ins:paper-moth', 'ins:old-city-sentinel', 'ins:cinder-imp']);
   });
 
   it('an unbeaten owner is greyed out with its reason', () => {
-    withRosterLive(['fog-warden'], () => {
+    // L3b: exactly the fog warden live (the third wave's wardens would push its row out of the eight in view).
+    withRosterOnly(['fog-warden'], () => {
       const t = craft((g) => { g.state.inventory = { 'fog-gate-plate': 5, 'star-tear': 1 }; });
       t.row('own').click();
       const why = F.unbeaten(ENEMIES['fog-warden'].name);

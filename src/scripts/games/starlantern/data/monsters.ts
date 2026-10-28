@@ -50,6 +50,12 @@ export const ROSTER_LIVE: ReadonlySet<string> = new Set<string>([
   'toppled-automaton', 'requiem-conductor', 'lantern-brood',
   // L2c: the finale's foe in her own shape
   'lantern-mother',
+  // L3b, the third wave: the fire, frost and storm lands' natives, their bosses at 5, 10, 15 (the permafrost with its pillars)
+  // and their wardens from depth 8
+  'cinder-imp', 'forge-hound', 'ash-mourner', 'mirage-dancer', 'sand-scorpion', 'frost-doll', 'glacier-tortoise', 'snow-caller',
+  'ice-komainu', 'frozen-pilgrim', 'thunder-kite', 'storm-totem', 'charge-jelly', 'star-ember', 'stolen-tome', 'ember-tyrant',
+  'sandstorm-maw', 'mirage-city', 'rime-sovereign', 'white-silence', 'rift-maw', 'thunder-roc', 'storm-conductor', 'starfire-colossus',
+  'mirage-lead', 'ice-shrine', 'burning-page', 'rime-pillar',
 ]);
 
 /** An enemy any list may show: a legacy one, or a roster one gone live. */
