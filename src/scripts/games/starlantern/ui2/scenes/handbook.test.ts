@@ -508,9 +508,9 @@ describe('the bestiary page (roster plan Task C6)', () => {
     t.goTab(H.tabs.codex);
     expect(t.labels()).toEqual([B.filters.road, B.filters.bosses]);   // no region's natives live yet
     // The road: the old eight, the first wave's 13 and the second's 16; the bosses: the lantern-eater, five wardens, nine
-    // bosses and the archon's hand (the lantern-mother joins with the finale, L2c).
+    // bosses, the archon's hand and the lantern-mother (L2c).
     expect(t.row(B.filters.road).querySelector('.slx-right')!.textContent).toBe(B.count(0, 37));
-    expect(t.row(B.filters.bosses).querySelector('.slx-right')!.textContent).toBe(B.count(0, 16));
+    expect(t.row(B.filters.bosses).querySelector('.slx-right')!.textContent).toBe(B.count(0, 17));
     t.pick(B.filters.bosses);
     expect(t.labels().length).toBeGreaterThan(0);
     expect(new Set(t.labels())).toEqual(new Set([B.unknown]));

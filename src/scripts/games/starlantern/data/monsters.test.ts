@@ -47,10 +47,10 @@ describe('roster switches (roster plan Task A1, spec §11.1)', () => {
     }
   });
 
-  it('only the live waves are listed (L2b: the first two waves)', () => {
-    // Roster plan L1b, L2b: the first two waves went live (the lantern-mother with the finale, L2c); nothing else is listed
-    // until its own go-live task.
-    const live = WAVE_2.filter((id) => id !== 'lantern-mother');
+  it('only the live waves are listed (L2b, L2c: the first two waves)', () => {
+    // Roster plan L1b, L2b: the first two waves went live, the lantern-mother last with the finale (L2c); nothing else is
+    // listed until its own go-live task.
+    const live = [...WAVE_2.filter((id) => id !== 'lantern-mother'), 'lantern-mother'];
     expect([...ROSTER_LIVE]).toEqual(live);
     expect(liveRosterIds()).toEqual(live);
     const fresh = Object.keys(ENEMIES).filter((id) => !LEGACY_ENEMY_IDS.includes(id));

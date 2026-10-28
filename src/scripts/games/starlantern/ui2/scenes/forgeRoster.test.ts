@@ -145,8 +145,8 @@ describe('the forge for the roster (roster plan Task C4)', () => {
   }));
 
   it("the second live wave's rows: its own uniques and its inscriptions, none of the third wave's (L2b)", () => {
-    // Own uniques: every live owner of the two waves, the lantern-mother not yet (the finale's, L2c), wardens first (SPECIALS
-    // order); none of R3's (the mirage lead's veil), though its keepsake is in the stores.
+    // Own uniques: every live owner of the two waves, the lantern-mother's too since L2c, wardens first (SPECIALS order);
+    // none of R3's (the mirage lead's veil), though its keepsake is in the stores.
     // Every live owner felled, so no row is greyed out and the cursor walks the whole list.
     const t = craft((g) => {
       g.state.inventory = { 'fog-gate-plate': 5, 'archon-gold': 5, 'copper-anklet': 5, 'star-tear': 1 };
@@ -155,7 +155,8 @@ describe('the forge for the roster (roster plan Task C4)', () => {
     expect(t.ids()).toEqual(['item', 'base', 'set', 'own']);
     t.row('own').click();
     const own = ['moonless-mirror', 'unrung-clapper', 'ancestor-gauntlet', 'requiem-staff', 'brood-lantern', 'fog-halberd',
-      'silent-chime', 'borrowed-blade', 'archon-crown', 'glutton-gauntlet', 'festival-mask', 'whale-song-ring', 'still-hand-boots', 'first-lantern-staff'];
+      'silent-chime', 'borrowed-blade', 'archon-crown', 'glutton-gauntlet', 'cradled-light', 'festival-mask', 'whale-song-ring', 'still-hand-boots',
+      'first-lantern-staff'];
     // The list shows a window of eight rows: the first eight, then, with the cursor at the end, the last eight.
     expect(t.ids()).toEqual(own.slice(0, 8));
     for (let i = 1; i < own.length; i++) t.go('down');

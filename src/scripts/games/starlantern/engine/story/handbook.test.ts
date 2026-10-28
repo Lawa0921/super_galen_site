@@ -568,9 +568,10 @@ describe('the bestiary page (roster plan Task C6)', () => {
       'ember-maw', 'sorrow-crystal', 'deep-tendril', 'music-box', 'paper-cranes', 'lost-shadow', 'returning-light', 'hoarder', 'gilded-hoarder']);
     expect(by('lands')).toEqual([]);
     expect(by('bosses')).toEqual(['lanterneater', 'false-moon', 'bell-warden', 'toppled-automaton', 'requiem-conductor', 'lantern-brood',
-      'fog-warden', 'silent-bell', 'hollow-champion', 'old-city-archon', 'gorged-beast', 'forgotten-festival', 'starless-whale', 'stopped-clock',
-      'first-lantern', 'archon-hand']);
-    expect(page(s, 'lantern-mother')).toBeUndefined();   // the finale's, L2c
+      'fog-warden', 'silent-bell', 'hollow-champion', 'old-city-archon', 'gorged-beast', 'lantern-mother', 'forgotten-festival', 'starless-whale',
+      'stopped-clock', 'first-lantern', 'archon-hand']);
+    // L2c: the finale's foe is listed too, met only at the bottom (ruling 11).
+    expect(page(s, 'lantern-mother')).toMatchObject({ name: B.unknown, haunts: B.haunts.finale });
     expect(page(s, 'cinder-imp')).toBeUndefined();   // R3, not live yet
     expect(page(s, 'keeper-echo')).toMatchObject({ name: B.unknown, seen: 0, trait: null, lines: [] });
     s.bestiary = { 'keeper-echo': { seen: 1, felled: 1 } };

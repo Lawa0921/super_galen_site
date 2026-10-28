@@ -44,6 +44,8 @@ export const ROSTER_LIVE: ReadonlySet<string> = new Set<string>([
   'ember-maw', 'sorrow-crystal', 'deep-tendril', 'music-box', 'paper-cranes', 'lost-shadow', 'returning-light', 'gilded-hoarder',
   'old-city-archon', 'gorged-beast', 'forgotten-festival', 'starless-whale', 'stopped-clock', 'first-lantern', 'archon-hand',
   'toppled-automaton', 'requiem-conductor', 'lantern-brood',
+  // L2c: the finale's foe in her own shape
+  'lantern-mother',
 ]);
 
 /** An enemy any list may show: a legacy one, or a roster one gone live. */
