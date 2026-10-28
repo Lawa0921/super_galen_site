@@ -16,7 +16,7 @@ import { TREES } from '../../src/scripts/games/starlantern/data/trees';
 import { STAT_CATEGORIES } from '../../src/scripts/games/starlantern/engine/stats';
 import { maxValue } from '../../src/scripts/games/starlantern/engine/loot/item';
 import { mkdirSync, readFileSync } from 'node:fs';
-import { WAVE_1_LIVE, version8Save } from '../../src/scripts/games/starlantern/engine/testing';
+import { WAVE_1_LIVE, WAVE_2_LIVE, version8Save } from '../../src/scripts/games/starlantern/engine/testing';
 import { defaultTalents, defaultTree } from '../../src/scripts/games/starlantern/engine/progression';
 import { buildTalents, buildTree } from '../../src/scripts/games/starlantern/engine/builds';
 import { buildOf } from '../../src/scripts/games/starlantern/data/builds';
@@ -2331,6 +2331,12 @@ test.describe('starlantern', () => {
     page.on('response', (r) => { if (r.status() === 404) missing.push(r.url()); });
     await fitTo(page, 1280, 720);
     const w = await setup(page, 7);
+    // L3b: exactly the first two waves live, as this smoke was written (the third wave is live in the game now).
+    await page.evaluate((ids) => {
+      const { ROSTER_LIVE } = (window as unknown as { __starlanternDebug: { roster: { ROSTER_LIVE: Set<string> } } }).__starlanternDebug.roster;
+      ROSTER_LIVE.clear();
+      for (const id of ids) ROSTER_LIVE.add(id);
+    }, [...WAVE_2_LIVE]);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const run = <R = unknown>(src: string) => page.evaluate((s) => new Function('g', s)((window as any).__starlanternDebug.game), src) as Promise<R>;
     const shot = async (name: string) => { if (process.env.SL_SHOTS) await page.screenshot({ path: `${process.env.SL_SHOTS}/l2d-${name}.png` }); };
@@ -2414,6 +2420,103 @@ test.describe('starlantern', () => {
     await archon.click();
     await expect(page.locator('.slx-hb-detail')).toContainText(B.tally(1, 1));
     await shot('bestiary-bosses');
+    expect(await legibility(page, { requireReady: true })).toEqual([]);
+    expect(w.errors).toEqual([]);
+    expect(missing).toEqual([]);
+  });
+
+  test('the third live wave: the permafrost with its two pillars on frost depth 5, the burning page on storm depth 8, and the lands filter (roster plan L3c)', async ({ page }) => {
+    const missing: string[] = [];
+    page.on('response', (r) => { if (r.status() === 404) missing.push(r.url()); });
+    await fitTo(page, 1280, 720);
+    const w = await setup(page, 7);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const run = <R = unknown>(src: string) => page.evaluate((s) => new Function('g', s)((window as any).__starlanternDebug.game), src) as Promise<R>;
+    const shot = async (name: string) => { if (process.env.SL_SHOTS) await page.screenshot({ path: `${process.env.SL_SHOTS}/l3c-${name}.png` }); };
+    const down = async (region: string, depth: number) => {
+      await run(`g.battle = null; g.run = null; g.phase = 'town'; g.state.dungeon.reached['${region}'] = 10;
+        const r = g.depart({ region: '${region}', condition: 'plain' }, ${Math.floor(depth / 5) * 5 || 1}); if (!r.ok) throw new Error('no departure: ' + r.reason);
+        if (g.floor !== ${depth}) g.changeFloor(${depth});   // a land departs from 1, 5, 10…; walk down to the depth meant`);
+      await go(page, 'dungeon');
+      await expect(page.locator('.slx-dungeon')).toBeVisible(); await w.closeTalk();
+    };
+    /** Every foe down, then 全員攻擊 until the result, and through it back to the map. */
+    const win = async () => {
+      await run('for (const e of g.battle.enemies) { e.hp = 0; e.alive = false; }');
+      for (let i = 0; i < 40 && !(await page.locator('.slx-result').isVisible()); i++) {
+        if (await page.locator('.slx-bcmd [role=option]').count()) { await w.key('ArrowUp'); await w.key('Enter'); }
+        else await page.waitForTimeout(50);
+      }
+      await expect(page.locator('.slx-result')).toContainText('勝利');
+      for (let i = 0; i < 20 && !(await page.locator('.slx-dungeon').isVisible()); i++) { await w.key('z'); await page.waitForTimeout(60); }
+      await expect(page.locator('.slx-dungeon')).toBeVisible(); await w.closeTalk();
+    };
+    /** Step onto the tile at `at` from a floor tile beside it. */
+    const stepOnto = async (at: { x: number; y: number }) => {
+      const k = await run<string>(`const m = g.map();
+        for (const [k, dx, dy] of [['ArrowRight', -1, 0], ['ArrowLeft', 1, 0], ['ArrowDown', 0, -1], ['ArrowUp', 0, 1]]) {
+          const x = ${at.x} + dx, y = ${at.y} + dy;
+          if (m.tiles[y]?.[x] !== 'floor') continue;
+          g.pos = { x, y }; g.encounter = 0; return k;
+        }
+        return '';`);
+      expect(k).not.toBe('');
+      await w.key(k);
+      for (let i = 0; i < 14 && !(await page.locator('.slx-battle').isVisible()); i++) { await w.key('z'); await page.waitForTimeout(60); }
+      await expect(page.locator('.slx-battle')).toBeVisible();
+      // A 'z' that lands as the fight opens picks 攻擊 and opens the target list (a land's boss floor plays a memory caption first).
+      for (let i = 0; i < 3 && await page.locator('.slx-btarget').isVisible(); i++) { await w.key('Escape'); await page.waitForTimeout(60); }
+      await expect(page.locator('.slx-bcmd [role=option]').first()).toBeVisible();
+    };
+
+    // Frost depth 5: the boss is the permafrost's warden, its two pillars in front; while a pillar stands it takes half.
+    await down('frost', 5);
+    const boss = await run<{ x: number; y: number }>(`const m = g.map();
+      const at = [...Array(m.tiles.length).keys()].flatMap((y) => m.tiles[y].map((t, x) => ({ t, x, y }))).find((c) => c.t === 'floor' && m.tiles[c.y][c.x - 1] === 'floor');
+      m.tiles[at.y][at.x] = 'boss'; m.boss = { x: at.x, y: at.y }; return { x: at.x, y: at.y };`);
+    await stepOnto(boss);
+    expect(await run('return [g.battle.boss, g.battle.enemies.map((e) => e.defId)];')).toEqual([true, ['rime-pillar', 'rime-pillar', 'rime-sovereign']]);
+    await w.choose('.slx-bcmd', '攻擊');
+    await expect(page.locator('.slx-btarget [role=option]')).toHaveCount(3);
+    for (let i = 0; i < 3 && !(await page.locator('.slx-bnote').textContent())?.includes(T.ui2.battle.foe.cut(50)); i++) await w.key('ArrowDown');
+    await expect(page.locator('.slx-bnote')).toContainText(T.ui2.battle.foe.cut(50));
+    await shot('frost-d5-rime-sovereign');
+    await w.key('Escape');
+    await win();
+
+    // Storm depth 8: a warden's room; inside, the burning page with its live escort, the stolen tome.
+    await down('storm', 8);
+    const room = await run<{ x: number; y: number; tile: string; warden: string }>(`const c = g.run.floors.get(g.floor).contents.find((x) => x.kind === 'warden');
+      return { ...c.at, tile: g.map().tiles[c.at.y][c.at.x], warden: c.warden };`);
+    expect([room.tile, room.warden]).toEqual(['warden', 'burning-page']);
+    await stepOnto(room);
+    expect(await run('return [g.battle.boss, g.battle.enemies.map((e) => e.defId)];')).toEqual([false, ['burning-page', 'stolen-tome']]);
+    expect(await run<string>('return g.battle.enemies[0].name;')).toContain(ENEMIES['burning-page'].name);
+    await shot('storm-d8-burning-page');
+    await win();
+    expect(await run(`return [g.map().tiles[${room.y}][${room.x}], g.run.floors.get(g.floor).contents.some((x) => x.kind === 'warden')];`)).toEqual(['floor', false]);
+
+    // The bestiary: the lands filter now stands between the road and the bosses; the tome met there, the page and the
+    // permafrost with its pillar among the bosses.
+    await run(`g.battle = null; g.run = null; g.phase = 'town';`);
+    await go(page, 'town');
+    await expect(page.locator('.slx-town')).toBeVisible(); await w.closeTalk();
+    await page.locator('.slx-town [data-id=handbook]').click();
+    await page.locator('.slx-tabs .slx-tab').filter({ hasText: T.ui2.handbook.tabs.codex }).click();
+    const B = BESTIARY_UI;
+    const labels = page.locator('.slx-hb-list [role=option] .slx-label');
+    await expect(labels).toHaveText([B.filters.road, B.filters.lands, B.filters.bosses]);
+    const right = (f: string) => page.locator('.slx-hb-list [role=option]').filter({ hasText: f }).locator('.slx-right');
+    await expect(right(B.filters.lands)).toHaveText(B.count(1, 15));     // the stolen tome
+    await expect(right(B.filters.bosses)).toHaveText(B.count(3, 30));    // the permafrost, its pillar, the burning page
+    await page.locator('.slx-hb-list [role=option]').filter({ hasText: B.filters.lands }).click();
+    const tome = page.locator('.slx-hb-list [role=option]').filter({ hasText: ENEMIES['stolen-tome'].name });
+    // The tome is the fifteenth of the lands' list: the cursor walks the eight rows in view down to it.
+    for (let i = 0; i < 20 && !(await tome.count()); i++) await w.key('ArrowDown');
+    await expect(tome).toHaveCount(1);
+    await tome.click();
+    await expect(page.locator('.slx-hb-detail')).toContainText(B.tally(1, 1));
+    await shot('bestiary-lands');
     expect(await legibility(page, { requireReady: true })).toEqual([]);
     expect(w.errors).toEqual([]);
     expect(missing).toEqual([]);
