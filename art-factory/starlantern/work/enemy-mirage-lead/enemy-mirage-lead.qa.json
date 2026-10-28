@@ -7,24 +7,25 @@
   "residue": 0,
   "semi": 0,
   "edge": 0,
-  "holes": 11,
+  "holes": 9,
   "magenta_spill": 0,
   "key_tint_inside": 0,
-  "block": 11,
+  "block": 12,
   "size": [
-    93,
+    91,
     98
   ],
   "bright_key": 0,
+  "pink_outlier": 0,
   "height": 96,
-  "width": 91,
-  "colours": 5766,
+  "width": 89,
+  "colours": 5035,
   "lum": [
-    0.216,
-    0.924,
-    0.62
+    0.127,
+    0.916,
+    0.615
   ],
-  "erased": 7,
+  "erased": 3,
   "palette_over": true,
-  "spec": "roster-sprite:2e0d0bc9e5f1"
+  "spec": "roster-sprite:929ae0136de6"
 }

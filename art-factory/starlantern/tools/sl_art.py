@@ -441,12 +441,42 @@ def bright_key_count(img):
     return int(((arr[..., 3] == 255) & _bright_key(arr[..., :3])).sum())
 
 
+PINK_OUTLIER_HUE = (300, 345)  # roster pink outlier (R3 review round 1, controller 2026-10-28): a pink key pixel ...
+PINK_OUTLIER_SAT_MIN = 0.65    # ... fairly saturated ...
+PINK_OUTLIER_G_MAX = 60        # ... little green (mirage-lead a1: (192,42,145), G 42, outside _bright_key's 20) ...
+PINK_OUTLIER_R_MIN = 150       # ... bright red ...
+PINK_OUTLIER_SIMILAR = 48      # ... and no opaque 8-neighbour within this max channel difference: alone, so not pink art
+PINK_OUTLIER_MAX = 0           # ... none anywhere on the sprite, outline band included
+
+
+def pink_outlier_count(img):
+    """Opaque pixels anywhere on the sprite in the pink key band (hue PINK_OUTLIER_HUE, saturation >= PINK_OUTLIER_SAT_MIN,
+    G <= PINK_OUTLIER_G_MAX, R >= PINK_OUTLIER_R_MIN) that no opaque 8-neighbour resembles (max channel difference >
+    PINK_OUTLIER_SIMILAR for all of them): a lone key speck the cutout and _bright_key miss. A pink ribbon or flower of
+    two pixels or more is art and never counts."""
+    arr = np.asarray(img.convert('RGBA')); rgb = arr[..., :3].astype(np.int16); op = arr[..., 3] == 255
+    c = rgb.astype(np.float32); r, g, b = c[..., 0], c[..., 1], c[..., 2]
+    mx = np.maximum(np.maximum(r, b), g); mn = np.minimum(np.minimum(r, b), g); sat = (mx - mn) / np.maximum(mx, 1)
+    d = np.maximum(np.maximum(r, b) - g, 1e-6); hue = np.where(r >= b, (60 * (g - b) / d) % 360, 240 + 60 * (r - g) / d)
+    pink = (op & (hue >= PINK_OUTLIER_HUE[0]) & (hue <= PINK_OUTLIER_HUE[1]) & (sat >= PINK_OUTLIER_SAT_MIN)
+            & (g <= PINK_OUTLIER_G_MAX) & (r >= PINK_OUTLIER_R_MIN))
+    h, w = op.shape; n = 0
+    for y, x in zip(*np.nonzero(pink)):
+        alike = False
+        for yy in range(max(0, y - 1), min(h, y + 2)):
+            for xx in range(max(0, x - 1), min(w, x + 2)):
+                if (yy, xx) != (y, x) and op[yy, xx] and np.abs(rgb[yy, xx] - rgb[y, x]).max() <= PINK_OUTLIER_SIMILAR: alike = True
+        n += not alike
+    return int(n)
+
+
 def roster_key_tint_gate(qa, final):
-    """The roster's key tint gate: key_tint_inside counted with _deep_key (over KEY_TINT_INSIDE_MAX), and bright key
-    anywhere (over BRIGHT_KEY_MAX): either is magenta residue."""
+    """The roster's key tint gate: key_tint_inside counted with _deep_key (over KEY_TINT_INSIDE_MAX), bright key anywhere
+    (over BRIGHT_KEY_MAX) and a lone pink key outlier anywhere (over PINK_OUTLIER_MAX): any is magenta residue."""
     qa['key_tint_inside'] = roster_key_tint_count(final)
     qa['bright_key'] = bright_key_count(final)
-    if qa['key_tint_inside'] > KEY_TINT_INSIDE_MAX or qa['bright_key'] > BRIGHT_KEY_MAX:
+    qa['pink_outlier'] = pink_outlier_count(final)
+    if qa['key_tint_inside'] > KEY_TINT_INSIDE_MAX or qa['bright_key'] > BRIGHT_KEY_MAX or qa['pink_outlier'] > PINK_OUTLIER_MAX:
         if 'magenta residue' not in qa['reasons']: qa['reasons'].append('magenta residue')
         qa['pass'] = False
 
@@ -1359,24 +1389,26 @@ CUTOUT_MARGIN, CUTOUT_FRINGE = 70, 90   # cutout()'s reach, mirrored so the rost
 ICON_HEIGHT = 32         # roster ruling 23: the material icons follow 5d's actual output (icon-blaze-core 33 x 35) ...
 ICON_BOX = 36            # ... so the final canvas fits a 36 x 36 box
 ROSTER_SPRITE_RULES = ('block downscale to the class height; alpha QA (residue, semi alpha, raw-canvas cut, spill, key tint '
-                       'with the key darkened in a crack, _deep_key; bright key anywhere, _bright_key); '
+                       'with the key darkened in a crack, _deep_key; bright key anywhere, _bright_key; a lone pink key pixel anywhere, '
+                       'pink_outlier_count); '
                        'speckless subject height inside the class band, swarm width cap; opaque colours over PALETTE_MAX recorded, never failed; '
                        'luminance p5-p95 spread >= LUM_RANGE_MIN, main-road mean >= LUM_MEAN_MIN; enclosed pockets of any size '
                        'whose sampled raw is not the key count as erased, a dark key blend exempt only within KEY_BLEND_REACH 4-connected '
                        'sampled px of pure key in the same pocket')
 ROSTER_ICON_RULES = ('block downscale to ICON_HEIGHT, or to fit a wide subject inside ICON_BOX with its pad; alpha QA with spill '
-                     'and key tint (with _deep_key and _bright_key); final canvas inside ICON_BOX; erased interior as the roster sprites')
+                     'and key tint (with _deep_key, _bright_key and pink_outlier_count); final canvas inside ICON_BOX; erased interior as the roster sprites')
 SPEC_INPUTS['roster-sprite'] = ('ROSTER_HEIGHT', 'ROSTER_HEIGHT_BAND', 'ROSTER_SWARM_MAX_W', 'PALETTE_MAX', 'LUM_RANGE_MIN',
                                 'LUM_MEAN_MIN', 'LUM_PCT', 'ROSTER_ERASED_MAX', 'KEY_BLEND_G_MAX', 'KEY_BLEND_STEP', 'KEY_NEAR', 'KEY_BLEND_REACH',
                                 'CUTOUT_MARGIN', 'CUTOUT_FRINGE', 'SPECK_MAX', 'MAGENTA', 'MAGENTA_SPILL_MAX',
                                 'KEY_TINT_INSIDE_MAX', 'SPILL_HUE', 'SPILL_STEP', 'SPILL_BAND', 'STRONG_DEFRINGE', '_SHIFTS',
                                 'DEEP_KEY_G_MAX', 'DEEP_KEY_RB_MIN', 'DEEP_KEY_SAT_MIN', 'DEEP_KEY_HUE',
                                 'BRIGHT_KEY_G_MAX', 'BRIGHT_KEY_SAT_MIN', 'BRIGHT_KEY_RB_MIN', 'BRIGHT_KEY_HUE', 'BRIGHT_KEY_MAX',
-                                'ROSTER_SPRITE_RULES')
+                                'PINK_OUTLIER_HUE', 'PINK_OUTLIER_SAT_MIN', 'PINK_OUTLIER_G_MAX', 'PINK_OUTLIER_R_MIN', 'PINK_OUTLIER_SIMILAR', 'PINK_OUTLIER_MAX', 'ROSTER_SPRITE_RULES')
 SPEC_INPUTS['roster-icon'] = ('ICON_HEIGHT', 'ICON_BOX', 'ROSTER_ERASED_MAX', 'KEY_BLEND_G_MAX', 'KEY_BLEND_STEP', 'KEY_NEAR', 'KEY_BLEND_REACH',
                               'CUTOUT_MARGIN', 'CUTOUT_FRINGE', 'SPECK_MAX', 'MAGENTA', 'MAGENTA_SPILL_MAX', 'KEY_TINT_INSIDE_MAX', 'SPILL_HUE',
                               'SPILL_STEP', 'SPILL_BAND', 'STRONG_DEFRINGE', '_SHIFTS', 'DEEP_KEY_G_MAX', 'DEEP_KEY_RB_MIN', 'DEEP_KEY_SAT_MIN', 'DEEP_KEY_HUE',
-                                'BRIGHT_KEY_G_MAX', 'BRIGHT_KEY_SAT_MIN', 'BRIGHT_KEY_RB_MIN', 'BRIGHT_KEY_HUE', 'BRIGHT_KEY_MAX', 'ROSTER_ICON_RULES')
+                                'BRIGHT_KEY_G_MAX', 'BRIGHT_KEY_SAT_MIN', 'BRIGHT_KEY_RB_MIN', 'BRIGHT_KEY_HUE', 'BRIGHT_KEY_MAX',
+                                'PINK_OUTLIER_HUE', 'PINK_OUTLIER_SAT_MIN', 'PINK_OUTLIER_G_MAX', 'PINK_OUTLIER_R_MIN', 'PINK_OUTLIER_SIMILAR', 'PINK_OUTLIER_MAX', 'ROSTER_ICON_RULES')
 
 
 def _opaque(final):
@@ -1509,10 +1541,11 @@ def process_roster_icon(reg, aid, cell, workdir, raw):
 
 
 ROSTER_GEAR_RULES = ('gear-cell (5d sizes, mass and spill) plus the erased interior of the roster sprites and the key tint '
-                     'with _deep_key and _bright_key, on each final')
+                     'with _deep_key, _bright_key and pink_outlier_count, on each final')
 SPEC_INPUTS['roster-gear'] = SPEC_INPUTS['gear-cell'] + ('ROSTER_ERASED_MAX', 'KEY_BLEND_G_MAX', 'KEY_BLEND_STEP', 'KEY_NEAR', 'KEY_BLEND_REACH',
                                                        'CUTOUT_MARGIN', 'CUTOUT_FRINGE', 'DEEP_KEY_G_MAX', 'DEEP_KEY_RB_MIN', 'DEEP_KEY_SAT_MIN', 'DEEP_KEY_HUE',
-                                'BRIGHT_KEY_G_MAX', 'BRIGHT_KEY_SAT_MIN', 'BRIGHT_KEY_RB_MIN', 'BRIGHT_KEY_HUE', 'BRIGHT_KEY_MAX', 'ROSTER_GEAR_RULES')
+                                'BRIGHT_KEY_G_MAX', 'BRIGHT_KEY_SAT_MIN', 'BRIGHT_KEY_RB_MIN', 'BRIGHT_KEY_HUE', 'BRIGHT_KEY_MAX',
+                                'PINK_OUTLIER_HUE', 'PINK_OUTLIER_SAT_MIN', 'PINK_OUTLIER_G_MAX', 'PINK_OUTLIER_R_MIN', 'PINK_OUTLIER_SIMILAR', 'PINK_OUTLIER_MAX', 'ROSTER_GEAR_RULES')
 
 
 def process_roster_gear_cell(reg, gid, cell, workdir, raw, slot=None, kind=None, large=GEAR_LARGE, icon=GEAR_ICON):

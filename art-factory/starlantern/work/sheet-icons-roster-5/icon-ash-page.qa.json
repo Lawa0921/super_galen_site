@@ -10,10 +10,11 @@
   "key_tint_inside": 0,
   "block": 7,
   "size": [
-    31,
-    32
+    35,
+    34
   ],
   "bright_key": 0,
+  "pink_outlier": 0,
   "erased": 0,
-  "spec": "roster-icon:ed1986056114"
+  "spec": "roster-icon:8da249263f71"
 }

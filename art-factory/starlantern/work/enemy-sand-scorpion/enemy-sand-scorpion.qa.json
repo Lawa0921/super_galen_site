@@ -16,6 +16,7 @@
     67
   ],
   "bright_key": 0,
+  "pink_outlier": 0,
   "height": 65,
   "width": 69,
   "colours": 2296,
@@ -26,5 +27,5 @@
   ],
   "erased": 1,
   "palette_over": true,
-  "spec": "roster-sprite:2e0d0bc9e5f1"
+  "spec": "roster-sprite:929ae0136de6"
 }

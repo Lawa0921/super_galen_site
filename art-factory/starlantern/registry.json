@@ -41066,6 +41066,7 @@
           148
         ],
         "bright_key": 0,
+        "pink_outlier": 0,
         "height": 145,
         "width": 144,
         "colours": 13600,
@@ -41076,7 +41077,7 @@
         ],
         "erased": 8,
         "palette_over": true,
-        "spec": "roster-sprite:2e0d0bc9e5f1"
+        "spec": "roster-sprite:929ae0136de6"
       },
       "status": "qa_passed",
       "kind": "roster-sprite",
@@ -41107,6 +41108,7 @@
           162
         ],
         "bright_key": 0,
+        "pink_outlier": 0,
         "height": 160,
         "width": 169,
         "colours": 17370,
@@ -41117,7 +41119,7 @@
         ],
         "erased": 1,
         "palette_over": true,
-        "spec": "roster-sprite:2e0d0bc9e5f1"
+        "spec": "roster-sprite:929ae0136de6"
       },
       "status": "qa_passed",
       "kind": "roster-sprite",
@@ -41148,6 +41150,7 @@
           146
         ],
         "bright_key": 0,
+        "pink_outlier": 0,
         "height": 144,
         "width": 148,
         "colours": 11441,
@@ -41158,7 +41161,7 @@
         ],
         "erased": 2,
         "palette_over": true,
-        "spec": "roster-sprite:2e0d0bc9e5f1"
+        "spec": "roster-sprite:929ae0136de6"
       },
       "status": "qa_passed",
       "kind": "roster-sprite",
@@ -41187,6 +41190,7 @@
           154
         ],
         "bright_key": 0,
+        "pink_outlier": 0,
         "height": 152,
         "width": 144,
         "colours": 10334,
@@ -41197,7 +41201,7 @@
         ],
         "erased": 0,
         "palette_over": true,
-        "spec": "roster-sprite:2e0d0bc9e5f1"
+        "spec": "roster-sprite:929ae0136de6"
       },
       "status": "qa_passed",
       "kind": "roster-sprite",
@@ -41228,6 +41232,7 @@
           152
         ],
         "bright_key": 0,
+        "pink_outlier": 0,
         "height": 150,
         "width": 172,
         "colours": 5092,
@@ -41238,7 +41243,7 @@
         ],
         "erased": 0,
         "palette_over": true,
-        "spec": "roster-sprite:2e0d0bc9e5f1"
+        "spec": "roster-sprite:929ae0136de6"
       },
       "status": "qa_passed",
       "kind": "roster-sprite",
@@ -41267,6 +41272,7 @@
           156
         ],
         "bright_key": 0,
+        "pink_outlier": 0,
         "height": 154,
         "width": 142,
         "colours": 8933,
@@ -41277,7 +41283,7 @@
         ],
         "erased": 0,
         "palette_over": true,
-        "spec": "roster-sprite:2e0d0bc9e5f1"
+        "spec": "roster-sprite:929ae0136de6"
       },
       "status": "qa_passed",
       "kind": "roster-sprite",
@@ -41308,6 +41314,7 @@
           150
         ],
         "bright_key": 0,
+        "pink_outlier": 0,
         "height": 148,
         "width": 149,
         "colours": 14278,
@@ -41318,7 +41325,7 @@
         ],
         "erased": 6,
         "palette_over": true,
-        "spec": "roster-sprite:2e0d0bc9e5f1"
+        "spec": "roster-sprite:929ae0136de6"
       },
       "status": "qa_passed",
       "kind": "roster-sprite",
@@ -41349,6 +41356,7 @@
           153
         ],
         "bright_key": 0,
+        "pink_outlier": 0,
         "height": 151,
         "width": 142,
         "colours": 12511,
@@ -41359,7 +41367,7 @@
         ],
         "erased": 2,
         "palette_over": true,
-        "spec": "roster-sprite:2e0d0bc9e5f1"
+        "spec": "roster-sprite:929ae0136de6"
       },
       "status": "qa_passed",
       "kind": "roster-sprite",
@@ -41371,7 +41379,7 @@
     },
     "enemy-mirage-lead": {
       "final": "art-factory/starlantern/work/enemy-mirage-lead/enemy-mirage-lead.png",
-      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-mirage-lead\\enemy-mirage-lead-a1.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-mirage-lead\\enemy-mirage-lead-a3.png",
       "qa": {
         "pass": true,
         "reasons": [],
@@ -41381,34 +41389,43 @@
         "residue": 0,
         "semi": 0,
         "edge": 0,
-        "holes": 11,
+        "holes": 9,
         "magenta_spill": 0,
         "key_tint_inside": 0,
-        "block": 11,
+        "block": 12,
         "size": [
-          93,
+          91,
           98
         ],
         "bright_key": 0,
+        "pink_outlier": 0,
         "height": 96,
-        "width": 91,
-        "colours": 5766,
+        "width": 89,
+        "colours": 5035,
         "lum": [
-          0.216,
-          0.924,
-          0.62
+          0.127,
+          0.916,
+          0.615
         ],
-        "erased": 7,
+        "erased": 3,
         "palette_over": true,
-        "spec": "roster-sprite:2e0d0bc9e5f1"
+        "spec": "roster-sprite:929ae0136de6"
       },
       "status": "qa_passed",
       "kind": "roster-sprite",
       "roster_class": "warden",
       "mainline": false,
-      "chosen_attempt": "a1",
+      "chosen_attempt": "a3",
       "source_id": "enemy-mirage-lead",
-      "batch": "roster-r3"
+      "batch": "roster-r3",
+      "rejected_attempts": {
+        "a1": "R3 review round 1 FAIL: a lone pink key pixel (192,42,145) at (35,33) that the gates then missed (now pink_outlier 1); almost no dark outline, a blur of orange flame at 1x; no visible copper anklet",
+        "a2": "failed QA: interior erased 35 in thin slits between arms, veils and copies; key tint 3 and pink outlier 2 on the pinkish mirror copies"
+      },
+      "plain_reasons": {
+        "a1": "胸口一個粉紅洋紅點；幾乎沒有描邊、糊成一團火；看不到銅腳環",
+        "a2": "手臂與紗之間的細縫被挖掉；鏡像偏粉紅留下洋紅點"
+      }
     },
     "enemy-ice-shrine": {
       "final": "art-factory/starlantern/work/enemy-ice-shrine/enemy-ice-shrine.png",
@@ -41429,6 +41446,7 @@
           98
         ],
         "bright_key": 0,
+        "pink_outlier": 0,
         "height": 95,
         "width": 98,
         "colours": 6096,
@@ -41439,7 +41457,7 @@
         ],
         "erased": 0,
         "palette_over": true,
-        "spec": "roster-sprite:2e0d0bc9e5f1"
+        "spec": "roster-sprite:929ae0136de6"
       },
       "status": "qa_passed",
       "kind": "roster-sprite",
@@ -41470,6 +41488,7 @@
           101
         ],
         "bright_key": 0,
+        "pink_outlier": 0,
         "height": 98,
         "width": 98,
         "colours": 3124,
@@ -41480,7 +41499,7 @@
         ],
         "erased": 2,
         "palette_over": true,
-        "spec": "roster-sprite:2e0d0bc9e5f1"
+        "spec": "roster-sprite:929ae0136de6"
       },
       "status": "qa_passed",
       "kind": "roster-sprite",
@@ -41509,6 +41528,7 @@
           101
         ],
         "bright_key": 0,
+        "pink_outlier": 0,
         "height": 99,
         "width": 69,
         "colours": 3993,
@@ -41519,7 +41539,7 @@
         ],
         "erased": 0,
         "palette_over": true,
-        "spec": "roster-sprite:2e0d0bc9e5f1"
+        "spec": "roster-sprite:929ae0136de6"
       },
       "status": "qa_passed",
       "kind": "roster-sprite",
@@ -41548,6 +41568,7 @@
           56
         ],
         "bright_key": 0,
+        "pink_outlier": 0,
         "height": 54,
         "width": 57,
         "colours": 1921,
@@ -41558,7 +41579,7 @@
         ],
         "erased": 0,
         "palette_over": true,
-        "spec": "roster-sprite:2e0d0bc9e5f1"
+        "spec": "roster-sprite:929ae0136de6"
       },
       "status": "qa_passed",
       "kind": "roster-sprite",
@@ -41589,6 +41610,7 @@
           64
         ],
         "bright_key": 0,
+        "pink_outlier": 0,
         "height": 62,
         "width": 61,
         "colours": 1951,
@@ -41599,7 +41621,7 @@
         ],
         "erased": 0,
         "palette_over": true,
-        "spec": "roster-sprite:2e0d0bc9e5f1"
+        "spec": "roster-sprite:929ae0136de6"
       },
       "status": "qa_passed",
       "kind": "roster-sprite",
@@ -41630,6 +41652,7 @@
           68
         ],
         "bright_key": 0,
+        "pink_outlier": 0,
         "height": 66,
         "width": 36,
         "colours": 1227,
@@ -41640,7 +41663,7 @@
         ],
         "erased": 0,
         "palette_over": true,
-        "spec": "roster-sprite:2e0d0bc9e5f1"
+        "spec": "roster-sprite:929ae0136de6"
       },
       "status": "qa_passed",
       "kind": "roster-sprite",
@@ -41671,6 +41694,7 @@
           67
         ],
         "bright_key": 0,
+        "pink_outlier": 0,
         "height": 65,
         "width": 50,
         "colours": 1555,
@@ -41681,7 +41705,7 @@
         ],
         "erased": 0,
         "palette_over": true,
-        "spec": "roster-sprite:2e0d0bc9e5f1"
+        "spec": "roster-sprite:929ae0136de6"
       },
       "status": "qa_passed",
       "kind": "roster-sprite",
@@ -41712,6 +41736,7 @@
           67
         ],
         "bright_key": 0,
+        "pink_outlier": 0,
         "height": 65,
         "width": 69,
         "colours": 2296,
@@ -41722,7 +41747,7 @@
         ],
         "erased": 1,
         "palette_over": true,
-        "spec": "roster-sprite:2e0d0bc9e5f1"
+        "spec": "roster-sprite:929ae0136de6"
       },
       "status": "qa_passed",
       "kind": "roster-sprite",
@@ -41751,6 +41776,7 @@
           75
         ],
         "bright_key": 0,
+        "pink_outlier": 0,
         "height": 73,
         "width": 94,
         "colours": 3740,
@@ -41761,7 +41787,7 @@
         ],
         "erased": 0,
         "palette_over": true,
-        "spec": "roster-sprite:2e0d0bc9e5f1"
+        "spec": "roster-sprite:929ae0136de6"
       },
       "status": "qa_passed",
       "kind": "roster-sprite",
@@ -41790,6 +41816,7 @@
           68
         ],
         "bright_key": 0,
+        "pink_outlier": 0,
         "height": 66,
         "width": 52,
         "colours": 1156,
@@ -41800,7 +41827,7 @@
         ],
         "erased": 0,
         "palette_over": true,
-        "spec": "roster-sprite:2e0d0bc9e5f1"
+        "spec": "roster-sprite:929ae0136de6"
       },
       "status": "qa_passed",
       "kind": "roster-sprite",
@@ -41829,6 +41856,7 @@
           78
         ],
         "bright_key": 0,
+        "pink_outlier": 0,
         "height": 76,
         "width": 75,
         "colours": 3309,
@@ -41839,7 +41867,7 @@
         ],
         "erased": 0,
         "palette_over": true,
-        "spec": "roster-sprite:2e0d0bc9e5f1"
+        "spec": "roster-sprite:929ae0136de6"
       },
       "status": "qa_passed",
       "kind": "roster-sprite",
@@ -41868,6 +41896,7 @@
           65
         ],
         "bright_key": 0,
+        "pink_outlier": 0,
         "height": 63,
         "width": 42,
         "colours": 1220,
@@ -41878,7 +41907,7 @@
         ],
         "erased": 0,
         "palette_over": true,
-        "spec": "roster-sprite:2e0d0bc9e5f1"
+        "spec": "roster-sprite:929ae0136de6"
       },
       "status": "qa_passed",
       "kind": "roster-sprite",
@@ -41890,7 +41919,7 @@
     },
     "enemy-thunder-kite": {
       "final": "art-factory/starlantern/work/enemy-thunder-kite/enemy-thunder-kite.png",
-      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-thunder-kite\\enemy-thunder-kite-a1.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-thunder-kite\\enemy-thunder-kite-a2.png",
       "qa": {
         "pass": true,
         "reasons": [],
@@ -41901,31 +41930,38 @@
         "holes": 0,
         "magenta_spill": 0,
         "key_tint_inside": 0,
-        "block": 13,
+        "block": 14,
         "size": [
-          63,
-          55
+          69,
+          54
         ],
         "bright_key": 0,
-        "height": 53,
-        "width": 61,
-        "colours": 1604,
+        "pink_outlier": 0,
+        "height": 52,
+        "width": 67,
+        "colours": 1303,
         "lum": [
-          0.027,
-          0.846,
-          0.338
+          0.065,
+          0.875,
+          0.392
         ],
         "erased": 0,
         "palette_over": true,
-        "spec": "roster-sprite:2e0d0bc9e5f1"
+        "spec": "roster-sprite:929ae0136de6"
       },
       "status": "qa_passed",
       "kind": "roster-sprite",
       "roster_class": "swarm",
       "mainline": false,
-      "chosen_attempt": "a1",
+      "chosen_attempt": "a2",
       "source_id": "enemy-thunder-kite",
-      "batch": "roster-r3"
+      "batch": "roster-r3",
+      "rejected_attempts": {
+        "a1": "R3 review round 1 FAIL: drawn as an owl (ear tufts, round facial disc, big front-facing eyes, short round wings), not a sharp-winged kite"
+      },
+      "plain_reasons": {
+        "a1": "畫成貓頭鷹，不是雷鳶"
+      }
     },
     "enemy-charge-jelly": {
       "final": "art-factory/starlantern/work/enemy-charge-jelly/enemy-charge-jelly.png",
@@ -41946,6 +41982,7 @@
           67
         ],
         "bright_key": 0,
+        "pink_outlier": 0,
         "height": 65,
         "width": 53,
         "colours": 1844,
@@ -41956,7 +41993,7 @@
         ],
         "erased": 0,
         "palette_over": true,
-        "spec": "roster-sprite:2e0d0bc9e5f1"
+        "spec": "roster-sprite:929ae0136de6"
       },
       "status": "qa_passed",
       "kind": "roster-sprite",
@@ -41987,6 +42024,7 @@
           68
         ],
         "bright_key": 0,
+        "pink_outlier": 0,
         "height": 65,
         "width": 66,
         "colours": 1632,
@@ -41997,7 +42035,7 @@
         ],
         "erased": 2,
         "palette_over": true,
-        "spec": "roster-sprite:2e0d0bc9e5f1"
+        "spec": "roster-sprite:929ae0136de6"
       },
       "status": "qa_passed",
       "kind": "roster-sprite",
@@ -42026,6 +42064,7 @@
           67
         ],
         "bright_key": 0,
+        "pink_outlier": 0,
         "height": 65,
         "width": 98,
         "colours": 2349,
@@ -42036,7 +42075,7 @@
         ],
         "erased": 0,
         "palette_over": true,
-        "spec": "roster-sprite:2e0d0bc9e5f1"
+        "spec": "roster-sprite:929ae0136de6"
       },
       "status": "qa_passed",
       "kind": "roster-sprite",
@@ -42067,8 +42106,9 @@
           25
         ],
         "bright_key": 0,
+        "pink_outlier": 0,
         "erased": 1,
-        "spec": "roster-icon:ed1986056114"
+        "spec": "roster-icon:8da249263f71"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -42095,8 +42135,9 @@
           29
         ],
         "bright_key": 0,
+        "pink_outlier": 0,
         "erased": 0,
-        "spec": "roster-icon:ed1986056114"
+        "spec": "roster-icon:8da249263f71"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -42106,7 +42147,7 @@
     },
     "icon-mourning-veil": {
       "final": "art-factory/starlantern/work/sheet-icons-roster-4/icon-mourning-veil.png",
-      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-4\\sheet-icons-roster-4-a1.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-4\\sheet-icons-roster-4-a3.png",
       "qa": {
         "pass": true,
         "reasons": [],
@@ -42119,44 +42160,48 @@
         "key_tint_inside": 0,
         "block": 8,
         "size": [
-          32,
-          31
+          34,
+          26
         ],
         "bright_key": 0,
+        "pink_outlier": 0,
         "erased": 0,
-        "spec": "roster-icon:ed1986056114"
+        "spec": "roster-icon:8da249263f71"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
-      "chosen_attempt": "a1",
+      "chosen_attempt": "a3",
       "source_id": "sheet-icons-roster-4",
       "batch": "roster-r3"
     },
     "icon-mirage-sequin": {
       "final": "art-factory/starlantern/work/sheet-icons-roster-4/icon-mirage-sequin.png",
-      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-4\\sheet-icons-roster-4-a1.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-4\\sheet-icons-roster-4-a3.png",
       "qa": {
         "pass": true,
         "reasons": [],
-        "warnings": [],
+        "warnings": [
+          "enclosed holes"
+        ],
         "residue": 0,
         "semi": 0,
         "edge": 0,
-        "holes": 0,
+        "holes": 1,
         "magenta_spill": 0,
         "key_tint_inside": 0,
-        "block": 6,
+        "block": 7,
         "size": [
-          34,
-          34
+          35,
+          33
         ],
         "bright_key": 0,
+        "pink_outlier": 0,
         "erased": 0,
-        "spec": "roster-icon:ed1986056114"
+        "spec": "roster-icon:8da249263f71"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
-      "chosen_attempt": "a1",
+      "chosen_attempt": "a3",
       "source_id": "sheet-icons-roster-4",
       "batch": "roster-r3"
     },
@@ -42179,8 +42224,9 @@
           35
         ],
         "bright_key": 0,
+        "pink_outlier": 0,
         "erased": 0,
-        "spec": "roster-icon:ed1986056114"
+        "spec": "roster-icon:8da249263f71"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -42207,8 +42253,9 @@
           33
         ],
         "bright_key": 0,
+        "pink_outlier": 0,
         "erased": 0,
-        "spec": "roster-icon:ed1986056114"
+        "spec": "roster-icon:8da249263f71"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -42235,8 +42282,9 @@
           35
         ],
         "bright_key": 0,
+        "pink_outlier": 0,
         "erased": 0,
-        "spec": "roster-icon:ed1986056114"
+        "spec": "roster-icon:8da249263f71"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -42263,8 +42311,9 @@
           28
         ],
         "bright_key": 0,
+        "pink_outlier": 0,
         "erased": 0,
-        "spec": "roster-icon:ed1986056114"
+        "spec": "roster-icon:8da249263f71"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -42291,8 +42340,9 @@
           32
         ],
         "bright_key": 0,
+        "pink_outlier": 0,
         "erased": 0,
-        "spec": "roster-icon:ed1986056114"
+        "spec": "roster-icon:8da249263f71"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -42319,8 +42369,9 @@
           34
         ],
         "bright_key": 0,
+        "pink_outlier": 0,
         "erased": 0,
-        "spec": "roster-icon:ed1986056114"
+        "spec": "roster-icon:8da249263f71"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -42347,8 +42398,9 @@
           35
         ],
         "bright_key": 0,
+        "pink_outlier": 0,
         "erased": 0,
-        "spec": "roster-icon:ed1986056114"
+        "spec": "roster-icon:8da249263f71"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -42375,8 +42427,9 @@
           32
         ],
         "bright_key": 0,
+        "pink_outlier": 0,
         "erased": 0,
-        "spec": "roster-icon:ed1986056114"
+        "spec": "roster-icon:8da249263f71"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -42403,8 +42456,9 @@
           34
         ],
         "bright_key": 0,
+        "pink_outlier": 0,
         "erased": 0,
-        "spec": "roster-icon:ed1986056114"
+        "spec": "roster-icon:8da249263f71"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -42431,8 +42485,9 @@
           35
         ],
         "bright_key": 0,
+        "pink_outlier": 0,
         "erased": 0,
-        "spec": "roster-icon:ed1986056114"
+        "spec": "roster-icon:8da249263f71"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -42473,8 +42528,9 @@
           64,
           64
         ],
-        "spec": "roster-gear:909b3e0e50cc",
+        "spec": "roster-gear:91c76b116bcd",
         "bright_key": 0,
+        "pink_outlier": 0,
         "erased": 1
       },
       "status": "qa_passed",
@@ -42519,8 +42575,9 @@
           26,
           26
         ],
-        "spec": "roster-gear:909b3e0e50cc",
+        "spec": "roster-gear:91c76b116bcd",
         "bright_key": 0,
+        "pink_outlier": 0,
         "erased": 0
       },
       "status": "qa_passed",
@@ -42565,8 +42622,9 @@
           64,
           64
         ],
-        "spec": "roster-gear:909b3e0e50cc",
+        "spec": "roster-gear:91c76b116bcd",
         "bright_key": 0,
+        "pink_outlier": 0,
         "erased": 0
       },
       "status": "qa_passed",
@@ -42611,8 +42669,9 @@
           26,
           26
         ],
-        "spec": "roster-gear:909b3e0e50cc",
+        "spec": "roster-gear:91c76b116bcd",
         "bright_key": 0,
+        "pink_outlier": 0,
         "erased": 0
       },
       "status": "qa_passed",
@@ -42657,8 +42716,9 @@
           64,
           64
         ],
-        "spec": "roster-gear:909b3e0e50cc",
+        "spec": "roster-gear:91c76b116bcd",
         "bright_key": 0,
+        "pink_outlier": 0,
         "erased": 0
       },
       "status": "qa_passed",
@@ -42705,8 +42765,9 @@
           26,
           26
         ],
-        "spec": "roster-gear:909b3e0e50cc",
+        "spec": "roster-gear:91c76b116bcd",
         "bright_key": 0,
+        "pink_outlier": 0,
         "erased": 0
       },
       "status": "qa_passed",
@@ -42751,8 +42812,9 @@
           64,
           64
         ],
-        "spec": "roster-gear:909b3e0e50cc",
+        "spec": "roster-gear:91c76b116bcd",
         "bright_key": 0,
+        "pink_outlier": 0,
         "erased": 0
       },
       "status": "qa_passed",
@@ -42797,8 +42859,9 @@
           26,
           26
         ],
-        "spec": "roster-gear:909b3e0e50cc",
+        "spec": "roster-gear:91c76b116bcd",
         "bright_key": 0,
+        "pink_outlier": 0,
         "erased": 0
       },
       "status": "qa_passed",
@@ -42843,8 +42906,9 @@
           64,
           64
         ],
-        "spec": "roster-gear:909b3e0e50cc",
+        "spec": "roster-gear:91c76b116bcd",
         "bright_key": 0,
+        "pink_outlier": 0,
         "erased": 0
       },
       "status": "qa_passed",
@@ -42889,8 +42953,9 @@
           26,
           26
         ],
-        "spec": "roster-gear:909b3e0e50cc",
+        "spec": "roster-gear:91c76b116bcd",
         "bright_key": 0,
+        "pink_outlier": 0,
         "erased": 0
       },
       "status": "qa_passed",
@@ -42935,8 +43000,9 @@
           64,
           64
         ],
-        "spec": "roster-gear:909b3e0e50cc",
+        "spec": "roster-gear:91c76b116bcd",
         "bright_key": 0,
+        "pink_outlier": 0,
         "erased": 0
       },
       "status": "qa_passed",
@@ -42982,8 +43048,9 @@
           26,
           26
         ],
-        "spec": "roster-gear:909b3e0e50cc",
+        "spec": "roster-gear:91c76b116bcd",
         "bright_key": 0,
+        "pink_outlier": 0,
         "erased": 0
       },
       "status": "qa_passed",
@@ -43029,8 +43096,9 @@
           64,
           64
         ],
-        "spec": "roster-gear:909b3e0e50cc",
+        "spec": "roster-gear:91c76b116bcd",
         "bright_key": 0,
+        "pink_outlier": 0,
         "erased": 0
       },
       "status": "qa_passed",
@@ -43075,8 +43143,9 @@
           26,
           26
         ],
-        "spec": "roster-gear:909b3e0e50cc",
+        "spec": "roster-gear:91c76b116bcd",
         "bright_key": 0,
+        "pink_outlier": 0,
         "erased": 0
       },
       "status": "qa_passed",
@@ -43121,8 +43190,9 @@
           64,
           64
         ],
-        "spec": "roster-gear:909b3e0e50cc",
+        "spec": "roster-gear:91c76b116bcd",
         "bright_key": 0,
+        "pink_outlier": 0,
         "erased": 0
       },
       "status": "qa_passed",
@@ -43169,8 +43239,9 @@
           26,
           26
         ],
-        "spec": "roster-gear:909b3e0e50cc",
+        "spec": "roster-gear:91c76b116bcd",
         "bright_key": 0,
+        "pink_outlier": 0,
         "erased": 1
       },
       "status": "qa_passed",
@@ -43215,8 +43286,9 @@
           64,
           64
         ],
-        "spec": "roster-gear:909b3e0e50cc",
+        "spec": "roster-gear:91c76b116bcd",
         "bright_key": 0,
+        "pink_outlier": 0,
         "erased": 0
       },
       "status": "qa_passed",
@@ -43261,8 +43333,9 @@
           26,
           26
         ],
-        "spec": "roster-gear:909b3e0e50cc",
+        "spec": "roster-gear:91c76b116bcd",
         "bright_key": 0,
+        "pink_outlier": 0,
         "erased": 0
       },
       "status": "qa_passed",
@@ -43307,8 +43380,9 @@
           64,
           64
         ],
-        "spec": "roster-gear:909b3e0e50cc",
+        "spec": "roster-gear:91c76b116bcd",
         "bright_key": 0,
+        "pink_outlier": 0,
         "erased": 0
       },
       "status": "qa_passed",
@@ -43353,8 +43427,9 @@
           26,
           26
         ],
-        "spec": "roster-gear:909b3e0e50cc",
+        "spec": "roster-gear:91c76b116bcd",
         "bright_key": 0,
+        "pink_outlier": 0,
         "erased": 0
       },
       "status": "qa_passed",
@@ -43399,8 +43474,9 @@
           64,
           64
         ],
-        "spec": "roster-gear:909b3e0e50cc",
+        "spec": "roster-gear:91c76b116bcd",
         "bright_key": 0,
+        "pink_outlier": 0,
         "erased": 0
       },
       "status": "qa_passed",
@@ -43445,8 +43521,9 @@
           26,
           26
         ],
-        "spec": "roster-gear:909b3e0e50cc",
+        "spec": "roster-gear:91c76b116bcd",
         "bright_key": 0,
+        "pink_outlier": 0,
         "erased": 0
       },
       "status": "qa_passed",
@@ -43491,8 +43568,9 @@
           64,
           64
         ],
-        "spec": "roster-gear:909b3e0e50cc",
+        "spec": "roster-gear:91c76b116bcd",
         "bright_key": 0,
+        "pink_outlier": 0,
         "erased": 0
       },
       "status": "qa_passed",
@@ -43537,8 +43615,9 @@
           26,
           26
         ],
-        "spec": "roster-gear:909b3e0e50cc",
+        "spec": "roster-gear:91c76b116bcd",
         "bright_key": 0,
+        "pink_outlier": 0,
         "erased": 0
       },
       "status": "qa_passed",
@@ -43573,6 +43652,7 @@
           79
         ],
         "bright_key": 0,
+        "pink_outlier": 0,
         "height": 77,
         "width": 47,
         "colours": 1740,
@@ -43583,7 +43663,7 @@
         ],
         "erased": 0,
         "palette_over": true,
-        "spec": "roster-sprite:2e0d0bc9e5f1"
+        "spec": "roster-sprite:929ae0136de6"
       },
       "status": "qa_passed",
       "kind": "roster-sprite",
@@ -43618,6 +43698,7 @@
           66
         ],
         "bright_key": 0,
+        "pink_outlier": 0,
         "height": 64,
         "width": 37,
         "colours": 1171,
@@ -43628,7 +43709,7 @@
         ],
         "erased": 0,
         "palette_over": true,
-        "spec": "roster-sprite:2e0d0bc9e5f1"
+        "spec": "roster-sprite:929ae0136de6"
       },
       "status": "qa_passed",
       "kind": "roster-sprite",
@@ -43681,6 +43762,7 @@
           154
         ],
         "bright_key": 0,
+        "pink_outlier": 0,
         "height": 152,
         "width": 133,
         "colours": 8613,
@@ -43691,7 +43773,7 @@
         ],
         "erased": 5,
         "palette_over": true,
-        "spec": "roster-sprite:2e0d0bc9e5f1"
+        "spec": "roster-sprite:929ae0136de6"
       },
       "status": "qa_passed",
       "kind": "roster-sprite",
@@ -43728,8 +43810,9 @@
           34
         ],
         "bright_key": 0,
+        "pink_outlier": 0,
         "erased": 0,
-        "spec": "roster-icon:ed1986056114"
+        "spec": "roster-icon:8da249263f71"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -43756,8 +43839,9 @@
           32
         ],
         "bright_key": 0,
+        "pink_outlier": 0,
         "erased": 0,
-        "spec": "roster-icon:ed1986056114"
+        "spec": "roster-icon:8da249263f71"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -43784,8 +43868,9 @@
           33
         ],
         "bright_key": 0,
+        "pink_outlier": 0,
         "erased": 0,
-        "spec": "roster-icon:ed1986056114"
+        "spec": "roster-icon:8da249263f71"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -43814,8 +43899,9 @@
           32
         ],
         "bright_key": 0,
+        "pink_outlier": 0,
         "erased": 1,
-        "spec": "roster-icon:ed1986056114"
+        "spec": "roster-icon:8da249263f71"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -43842,8 +43928,9 @@
           35
         ],
         "bright_key": 0,
+        "pink_outlier": 0,
         "erased": 0,
-        "spec": "roster-icon:ed1986056114"
+        "spec": "roster-icon:8da249263f71"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -43870,8 +43957,9 @@
           34
         ],
         "bright_key": 0,
+        "pink_outlier": 0,
         "erased": 0,
-        "spec": "roster-icon:ed1986056114"
+        "spec": "roster-icon:8da249263f71"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -43898,8 +43986,9 @@
           33
         ],
         "bright_key": 0,
+        "pink_outlier": 0,
         "erased": 0,
-        "spec": "roster-icon:ed1986056114"
+        "spec": "roster-icon:8da249263f71"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -43909,29 +43998,32 @@
     },
     "icon-roc-plume": {
       "final": "art-factory/starlantern/work/sheet-icons-roster-5/icon-roc-plume.png",
-      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-5\\sheet-icons-roster-5-a3.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-5\\sheet-icons-roster-5-a5.png",
       "qa": {
         "pass": true,
         "reasons": [],
-        "warnings": [],
+        "warnings": [
+          "enclosed holes"
+        ],
         "residue": 0,
         "semi": 0,
         "edge": 0,
-        "holes": 0,
+        "holes": 7,
         "magenta_spill": 0,
         "key_tint_inside": 0,
         "block": 8,
         "size": [
-          29,
+          35,
           33
         ],
         "bright_key": 0,
-        "erased": 0,
-        "spec": "roster-icon:ed1986056114"
+        "pink_outlier": 0,
+        "erased": 4,
+        "spec": "roster-icon:8da249263f71"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
-      "chosen_attempt": "a3",
+      "chosen_attempt": "a5",
       "source_id": "sheet-icons-roster-5",
       "batch": "roster-r3"
     },
@@ -43956,8 +44048,9 @@
           35
         ],
         "bright_key": 0,
+        "pink_outlier": 0,
         "erased": 0,
-        "spec": "roster-icon:ed1986056114"
+        "spec": "roster-icon:8da249263f71"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -43984,8 +44077,9 @@
           32
         ],
         "bright_key": 0,
+        "pink_outlier": 0,
         "erased": 0,
-        "spec": "roster-icon:ed1986056114"
+        "spec": "roster-icon:8da249263f71"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -44012,8 +44106,9 @@
           25
         ],
         "bright_key": 0,
+        "pink_outlier": 0,
         "erased": 0,
-        "spec": "roster-icon:ed1986056114"
+        "spec": "roster-icon:8da249263f71"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -44040,8 +44135,9 @@
           32
         ],
         "bright_key": 0,
+        "pink_outlier": 0,
         "erased": 0,
-        "spec": "roster-icon:ed1986056114"
+        "spec": "roster-icon:8da249263f71"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
@@ -44051,7 +44147,7 @@
     },
     "icon-ash-page": {
       "final": "art-factory/starlantern/work/sheet-icons-roster-5/icon-ash-page.png",
-      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-5\\sheet-icons-roster-5-a3.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-roster-5\\sheet-icons-roster-5-a4.png",
       "qa": {
         "pass": true,
         "reasons": [],
@@ -44064,27 +44160,46 @@
         "key_tint_inside": 0,
         "block": 7,
         "size": [
-          31,
-          32
+          35,
+          34
         ],
         "bright_key": 0,
+        "pink_outlier": 0,
         "erased": 0,
-        "spec": "roster-icon:ed1986056114"
+        "spec": "roster-icon:8da249263f71"
       },
       "status": "qa_passed",
       "kind": "roster-icon",
-      "chosen_attempt": "a3",
+      "chosen_attempt": "a4",
       "source_id": "sheet-icons-roster-5",
       "batch": "roster-r3"
     },
     "sheet-icons-roster-5": {
       "rejected_attempts": {
         "a1": "passed QA, but rift-ice had violet streaks off the frost palette and the conductor rod was thin and small next to the other icons",
-        "a2": "would not slice 5x4 (found 4 columns): the conductor rod's sparks bridged a gutter"
+        "a2": "would not slice 5x4 (found 4 columns): the conductor rod's sparks bridged a gutter",
+        "a3": "picked for every part except two that the R3 review round 1 failed: roc-plume (a grey cloud with a bolt, like the published storm-stone) and ash-page (nearly the same as torn-page)",
+        "a4": "ash-page picked from a4 (charred grey-black with blue-white star-fire embers); its roc-plume was still a slim grey feather close to kite-plume",
+        "a5": "roc-plume picked from a5 (a broad, fluffy pale storm-cloud plume, clearly unlike kite-plume); every other part stays on a3, or on a4 for ash-page"
       },
       "plain_reasons": {
         "a1": "裂口之冰有紫色、導雷桿太小",
-        "a2": "火花跨過格線，切不出 5x4"
+        "a2": "火花跨過格線，切不出 5x4",
+        "a3": "巨鵬羽畫成雲加閃電；燒剩的書角和撕下的書頁幾乎一樣",
+        "a4": "採用書角；巨鵬羽仍像雷鳶羽",
+        "a5": "採用巨鵬羽"
+      }
+    },
+    "sheet-icons-roster-4": {
+      "rejected_attempts": {
+        "a1": "picked for every part except two that the R3 review round 1 failed: mirage-sequin (a solid holed disc, like the published market-token) and mourning-veil (a grey cone, the same silhouette as cinder-dust)",
+        "a2": "mirage-sequin and mourning-veil improved but not used: the sequin's hole sat near the centre and the veil still had a mottled rocky texture; both taken from a3",
+        "a3": "mirage-sequin (a cup sequin with a rim hole and heat lines) and mourning-veil (a soft folded lace cloth with a scalloped dotted edge) picked from a3; every other part stays on a1"
+      },
+      "plain_reasons": {
+        "a1": "亮片像市集籌碼；面紗像一堆灰石",
+        "a2": "亮片的孔仍在中間；面紗紋理像石頭",
+        "a3": "採用亮片與面紗"
       }
     }
   },
@@ -46120,6 +46235,13 @@
         "extra": 3,
         "by": "controller cap extension 2026-10-27",
         "review": "art-factory/starlantern/work/review/roster-r1-review-round2.md"
+      }
+    ],
+    "sheet-icons-roster-5": [
+      {
+        "extra": 3,
+        "by": "controller 2026-10-28",
+        "review": "C:/msys64/tmp/claude/C--Users-bag57/50dcf669-8aa8-4bb5-ac8e-fe7a03cde69f/scratchpad/roster-r3/r3-review.md"
       }
     ]
   }

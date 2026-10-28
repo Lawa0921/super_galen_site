@@ -4,8 +4,10 @@
       "final": "art-factory/starlantern/work/enemy-mirage-lead/cand/a1/enemy-mirage-lead.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-mirage-lead\\enemy-mirage-lead-a1.png",
       "qa": {
-        "pass": true,
-        "reasons": [],
+        "pass": false,
+        "reasons": [
+          "magenta residue"
+        ],
         "warnings": [
           "enclosed holes"
         ],
@@ -21,6 +23,7 @@
           98
         ],
         "bright_key": 0,
+        "pink_outlier": 1,
         "height": 96,
         "width": 91,
         "colours": 5766,
@@ -31,9 +34,9 @@
         ],
         "erased": 7,
         "palette_over": true,
-        "spec": "roster-sprite:2e0d0bc9e5f1"
+        "spec": "roster-sprite:929ae0136de6"
       },
-      "status": "qa_passed",
+      "status": "qa_failed",
       "kind": "roster-sprite",
       "roster_class": "warden",
       "mainline": false

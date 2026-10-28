@@ -8,21 +8,22 @@
   "holes": 0,
   "magenta_spill": 0,
   "key_tint_inside": 0,
-  "block": 13,
+  "block": 14,
   "size": [
-    63,
-    55
+    69,
+    54
   ],
   "bright_key": 0,
-  "height": 53,
-  "width": 61,
-  "colours": 1604,
+  "pink_outlier": 0,
+  "height": 52,
+  "width": 67,
+  "colours": 1303,
   "lum": [
-    0.027,
-    0.846,
-    0.338
+    0.065,
+    0.875,
+    0.392
   ],
   "erased": 0,
   "palette_over": true,
-  "spec": "roster-sprite:2e0d0bc9e5f1"
+  "spec": "roster-sprite:929ae0136de6"
 }
