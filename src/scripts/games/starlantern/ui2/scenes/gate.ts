@@ -28,7 +28,7 @@ import { MenuView, confirmBox, win } from '../widgets';
 import { FacilityScene } from './facility';
 
 export type TraitIcon = 'fire' | 'ice' | 'thunder' | 'poison' | 'shade' | 'iron';
-const TRAIT_ICON: Partial<Record<RegionId, TraitIcon>> = { blaze: 'fire', frost: 'ice', storm: 'thunder', mire: 'poison', shade: 'shade', iron: 'iron' };
+export const TRAIT_ICON: Partial<Record<RegionId, TraitIcon>> = { blaze: 'fire', frost: 'ice', storm: 'thunder', mire: 'poison', shade: 'shade', iron: 'iron' };
 
 /**
  * Runtime paths of the portal art (art-factory contract, plan 4 Task 10). The art is generated but not approved: until a

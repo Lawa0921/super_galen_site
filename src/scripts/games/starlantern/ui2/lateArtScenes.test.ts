@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import { Game } from '../engine/game';
 import { LEGACY_LINEUP } from '../engine/party';
-import { constRng } from '../engine/testing';
+import { dayOf } from '../engine/calendar';
+import { constRng, withGuildLive } from '../engine/testing';
 import { allArtUrls } from '../render/artPaths';
 import type { ArtIndex } from '../render/textures';
 import { drawLanded } from './lateArt';
@@ -43,10 +44,32 @@ const inBattle = (): Game => {
   return g;
 };
 
+/**
+ * The guild with its board open (guild quests plan Task B2): a hunt under the cursor (its foe and its giver's face in the
+ * detail), a delivery (its material's icon) and a scout (its land's). The switch is on only while the board opens; what it
+ * draws later (the art landing) reads the board as it is.
+ */
+const atBoard = (): Game => {
+  const g = town();
+  g.state.story.act1Cleared = true;
+  const day = dayOf(g.state);
+  g.state.guild = { day, active: [], merit: 0, paid: 0, intro: true, offers: [
+    { id: `${day}:0`, kind: 'hunt', giver: 'marta', variant: 0, target: 'slime', n: 6, depth: 2, reward: { gold: 78 }, merit: 2 },
+    { id: `${day}:1`, kind: 'deliver', giver: 'orik', variant: 0, target: 'moss', n: 8, depth: 0, reward: { gold: 77 }, merit: 2 },
+    { id: `${day}:2`, kind: 'scout', giver: 'glen', variant: 0, target: 'frost', n: 9, depth: 9, reward: { gold: 140 }, merit: 3 },
+  ] };
+  return g;
+};
+const board: Make = (c) => {
+  const s = new GuildScene(c, Infinity);
+  return { enter: (root) => { s.enter(root); withGuildLive(() => (s as unknown as { board(): void }).board()); }, exit: () => s.exit(), onAction: (a) => s.onAction(a) };
+};
+
 const SCREENS: [string, () => Game, Make][] = [
   ['title', town, (c) => new TitleScene(c)],
   ['town', town, (c) => new TownScene(c, Infinity)],
   ['guild', town, (c) => new GuildScene(c, Infinity)],
+  ['guild board', atBoard, board],
   ['shop', town, (c) => new ShopScene(c, Infinity)],
   ['inn', town, (c) => new InnScene(c, Infinity)],
   ['gate', town, (c) => new GateScene(c, Infinity)],
