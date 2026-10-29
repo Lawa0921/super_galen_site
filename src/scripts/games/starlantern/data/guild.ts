@@ -73,8 +73,12 @@ export const GUILD_MAX = 1e9;
 export const BOARD_MAX = 5;
 export const ACTIVE_MAX = 4;
 
-/** Spec §5.6 【起始提案】: each kind's weight on a slot not fixed to a bounty (0 below its rank, or with no candidate). */
-export const WEIGHTS: Record<QuestKind, number> = { hunt: 3, sweep: 2, bounty: 2, scout: 2, deliver: 3 };
+/**
+ * Spec §5.6 【起始提案】: each kind's weight on a slot not fixed to a bounty (0 below its rank, or with no candidate). A
+ * bounty is 0: 【控制者裁定 2026-10-29】 a bounty comes only in the fixed slots (today's bounty; the second at four lamps),
+ * never by weight, so a board holds at most one (two at four lamps).
+ */
+export const WEIGHTS: Record<QuestKind, number> = { hunt: 3, sweep: 2, bounty: 0, scout: 2, deliver: 3 };
 
 /** Spec §5.1: how many of one kind a hunt asks for: the old eight 6, the main road's bands, a region's natives 4. */
 export const HUNT_N = { old: 6, B: 5, C: 5, D: 4, E: 4, F: 3, native: 4 } as const;

@@ -63,8 +63,8 @@ describe('guild board data (guild quests plan Task A1)', () => {
     ]);
     expect([GUILD_MAX, BOARD_MAX, ACTIVE_MAX, SWEEP_N, SCOUT_K, DELIVER_MUL]).toEqual([1e9, 5, 4, 8, [3, 5], 1.6]);
     expect(GUILD_SALT).toBe(0xb5c0fbcf);
-    // spec §5.6
-    expect(WEIGHTS).toEqual({ hunt: 3, sweep: 2, bounty: 2, scout: 2, deliver: 3 });
+    // spec §5.6, with the controller's ruling of 2026-10-29: a bounty never by weight, only in its fixed slots
+    expect(WEIGHTS).toEqual({ hunt: 3, sweep: 2, bounty: 0, scout: 2, deliver: 3 });
   });
 
   it('gifts pay only reward goods', () => {

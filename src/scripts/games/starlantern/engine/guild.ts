@@ -223,7 +223,8 @@ const PICK_TRIES = 8;
 /**
  * The notes for `day` (plan ruling 5). Slot by slot, in order:
  *   1. the kind: slot 0 is a bounty from the first lamp on while there is any bounty to post, and slot 1 too at four
- *      lamps; any other slot draws its kind by WEIGHTS among the kinds the rank posts that have a candidate (none: empty);
+ *      lamps; any other slot draws its kind by WEIGHTS among the kinds the rank posts that have a candidate (none: empty),
+ *      never a bounty (controller ruling 2026-10-29: a bounty only in the fixed slots);
  *   2. the target: a pick of that kind's pool, picked again while it repeats a note of the same kind and target already
  *      on the board, PICK_TRIES picks at most; none left, the slot stays empty (the board is shorter, nothing fills it);
  *   3. a scout draws k (SCOUT_K) for its depth, min(reached + k, cap);
@@ -245,7 +246,7 @@ function drawBoard(s: GameState, day: number): QuestOffer[] {
     let kind: QuestKind;
     if (pools.bounty.length && (slot === 0 || (slot === 1 && R.doubleBounty))) kind = 'bounty';
     else {
-      const weights = QUEST_KINDS.map((k) => (R.kinds.includes(k) && pools[k].length ? WEIGHTS[k] : 0));
+      const weights = QUEST_KINDS.map((k) => (k !== 'bounty' && R.kinds.includes(k) && pools[k].length ? WEIGHTS[k] : 0));
       if (!weights.some((w) => w > 0)) continue;
       kind = QUEST_KINDS[pickWeighted(rng, weights)];
     }
