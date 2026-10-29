@@ -307,7 +307,7 @@ describe('moving', () => {
   it('fills the gauge on floor tiles and starts a battle at the cap', () => {
     const g = inMap(1);
     expect(g.move('right')).toEqual({ kind: 'moved' });
-    expect(g.encounter).toBe(12);
+    expect(g.encounter).toBe(8);   // a draw of 12 at the 0.7 encounter pace (2026-10-29): round(8.4)
     g.encounter = 99;
     const open = DIRS.find((d) => tileAt(g.map(), { x: g.pos.x + DELTA[d].x, y: g.pos.y + DELTA[d].y }) === 'floor')!;
     expect(g.move(open)).toEqual({ kind: 'battle' });
@@ -369,7 +369,7 @@ describe('moving', () => {
     const g = inMap(1);
     g.state.party.roster.liz.tree = { 'twin-slash': 1, stealth: 1 };
     g.move('right');
-    expect(g.encounter).toBe(6);
+    expect(g.encounter).toBe(4);   // the same draw of 12, halved, at the 0.7 pace: round(4.2)
   });
 });
 
