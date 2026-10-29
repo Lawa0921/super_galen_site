@@ -901,3 +901,15 @@ L3b 的一次調整之後仍紅、列成具名例外的格子（spec §0 第 23 
 ### Task F8：已發布 5d 圖示的 key 殘留（E4 之後的小 PR，與 F1 一起）
 - [ ] R4 審核（2026-10-28）在已發布的 5d `icon-lizard-scale` 外緣找到一排 key 像素，E4 以 `repair-outliers --rule key-hue` 修好並隨 R4 發布。同一次唯讀掃描（`sl_art.key_hue_pixels`、`pink_outliers`，529 件已發布的名冊與圖示）另有 16 件 5d 圖示也命中：ancient-gear、antidote、bat-wing、crystal-shell、dusk-cloth、ether、ice-crystal、moss、old-coin、phoenix、potion、return-lamp、star-stone、thorn-fang、trait-poison、trait-shade；名冊的圖一件都沒有。這些是使用者核准過的舊圖，有些命中可能是真的紫色美術（phoenix、trait 晶片）。做法：全新脈絡的審核者逐件放大，標出真正的 key 殘留與刻意的美術；只有真的殘留才用同一個確定性修復（`repair-outliers --rule key-hue`，只動那些像素、alpha 不變、登錄表記前後），再一輪獨立審核後發布。F1（`enemy/bat.png` 的洋紅邊）一起做（控制者 2026-10-28 裁定）。
 - [ ] R4 第 2 輪審核（2026-10-29）附帶的三點，同一個後續一起看（都不擋 E4，遊戲大小看不出來）：(1) `icon-lizard-scale` 的修復後外緣留下一塊 6×2 的近黑墊（原本格線旁的像素），要清掉得改 alpha，是另一條規則；(2) `icon-crab-plate` 有一個偏玫瑰色的刺尖 (25,4)=(131,71,85)；(3) `gear-faceless-mask` 的 26 px 小圖是最弱的一張，之後若重畫：綁帶顏色淡一點、鼻梁凸起大一點。
+
+### Task F9：F8 範圍外的已發布圖 key 殘留（後續，控制者 2026-10-29）
+- [ ] F8 的唯讀重掃（2026-10-29，999 張已發布 png）在 F8 範圍（名冊與圖示）之外，還有這些觸發名冊的顏色閘門或 F8 的偵測（`key_hue_pixels`、`outline_blend_pixels`、`bright_key`、`pink_outliers`、外緣溢色）；F8 不動，之後另開一個修正，做法比照 F8（全新脈絡逐件分類殘留與美術 → 只用確定性規則修真的殘留，`--keep` 保留美術 → 獨立審核 → 同網址發布）：
+  - `ui-logo`（key-hue 105、outline-blend 107、pink 1、外緣溢色 179）與 `ui-window`（outline-blend 1、pink 1、外緣溢色 11）：UI 外框，殘留在這裡最顯眼，優先看。
+  - 5d 敵人：`enemy-lanterneater`（key-hue 88、outline-blend 139、亮 key 35、pink 3）、`enemy-golem`（key-hue 18、outline-blend 28、亮 key 6）、`enemy-shade`（key-hue 8、outline-blend 13、亮 key 2、pink 1）、`enemy-wolf`（key-hue 4、outline-blend 6、亮 key 1）、`enemy-beetle`（key-hue 6、outline-blend 9）、`enemy-lizard`（key-hue 2、outline-blend 6）、`enemy-wisp`（outline-blend 5）、`enemy-slime`（outline-blend 1、外緣溢色 32）。shade、wisp、lanterneater 可能有真的紫色美術，要逐點分。
+  - 地圖隊伍圖：`map-party-left`（outline-blend 3）、`map-party-right`、`map-party-up`（各 1）。
+  - 地磚：`tile-f3-wall`（key-hue 60、outline-blend 62、亮 key 2）、`tile-event-elite`（key-hue 4、outline-blend 4、pink 2）、`tile-event-vault-open`（pink 1）；`tile-f3-door`、`tile-f3-boss`、`bg-f3` 只有溢色（不透明圖，溢色多半是美術）。
+  - 裝備大圖：`gear-lg-scarlet-large`、`gear-set-storm-feet-large`，各 1 個亮 key。
+  - 角色、NPC、特效（char 123 件、npc 10 件、fx 15 件）多半是粉紅、紫色的美術，名冊閘門不適用；要看時先定它們自己的判準。
+  - F8 審核第 1 輪（2026-10-29）附帶、F8 不動的三點：`icon-trait-shade` 底列的暗紫 (13–15,32) (54,0,90)、(47,0,87)、(34,0,63) 與 (19,32) (58,1,101)（hue 272–276，不在 F8 的偵測集合，接近晶片的藍紫，要逐點判斷是不是殘留）；`enemy-bat` 右腳 (71,59)–(71,61) 的中位數修成淺色，爪尖多一塊沒有描邊的淺色（可改為清掉或深色描邊）；`icon-ether` 的 (8,1)、(8,2) 修成軟木塞的金色，軟木塞左上角多一格金色（可改為清掉或保持深色）。後兩點 1× 看不出來。
+  - F8 審核第 2 輪（2026-10-29）附帶的兩點：`icon-ice-crystal` 修過的位置少了一圈深色描邊（中央晶柱右緣 (19–20, 8–12)、底緣 (15–19,30) 與 (15,31)：中位數只能取內側的青藍），亮底 12× 以上才看得出來；要補回得另寫規則或重畫。`icon-moss` (16,11) (65,34,54) 與 `icon-thorn-fang` (12,11) (60,38,55)：緊鄰原本的 key 點，可能是很淡的 key 痕跡（飽和度 0.48／0.37），讀起來是暗褐描邊。
+  - 工具：`review_passes`（`roster_art.py approve`）目前把所有不是 `- <id> <sha256> 通過` 的「- 」行都當成格式錯誤，整輪拒絕；F8 兩份獨立審核紀錄用「- 」寫中繼資料與附註，只好以格式轉換的副本核准（原檔與 sha256 存在 `work/review/roster-f8-review*-original.md`，控制者 2026-10-29 接受）。改成：不帶 id+sha256 的「- 」行忽略；帶 64 位 sha256、但不是「通過」的行（未通過、否定、第二個判定）仍然拒絕整輪。先寫失敗的測試（用 F8 原始紀錄的行）再改。

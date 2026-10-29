@@ -2027,3 +2027,135 @@ def test_repair_key_hue_leaves_violet_art_and_uses_only_non_key_neighbours():
     new, fixed, skipped = A.repair_key_hue(Image.fromarray(arr, 'RGBA'))
     assert sorted((f[0], f[1]) for f in fixed) == [(3, 3), (4, 3)] and all(f[3] == (60, 80, 100) for f in fixed)
     assert tuple(np.asarray(new)[6, 6, :3]) == (126, 1, 153)
+
+
+# --- plan Task F8 (controller 2026-10-29): key residue on the older published icons, repaired by narrow deterministic rules ----
+F8_WORK = Path(__file__).resolve().parents[1] / 'work'
+ANCIENT_GEAR = F8_WORK / 'sheet-icons-3/icon-ancient-gear.png'
+ICE_CRYSTAL = F8_WORK / 'sheet-icons-2/icon-ice-crystal.png'
+PHOENIX = F8_WORK / 'sheet-icons-2/icon-phoenix.png'
+DUSK_CLOTH = F8_WORK / 'sheet-icons-2/icon-dusk-cloth.png'
+STAR_STONE = F8_WORK / 'sheet-icons-2/icon-star-stone.png'
+CRYSTAL_SHELL = F8_WORK / 'sheet-icons-2/icon-crystal-shell.png'
+MOSS = F8_WORK / 'sheet-icons-2/icon-moss.png'
+LIZARD_R4 = F8_WORK / 'repair/icon-lizard-scale.png'          # the R4 key-hue repair, published 2026-10-29
+CRAB_PLATE = F8_WORK / 'sheet-icons-roster-6/icon-crab-plate.png'
+BAT = F8_WORK / 'enemy-bat/enemy-bat.png'
+
+
+def _rgba(path):
+    return Image.open(path).convert('RGBA')
+
+
+def test_outline_blend_takes_the_key_mixed_into_a_dark_outline_that_deep_key_misses():
+    """ancient-gear (32,1,31) at (4,11) and (73,4,70) at (28,20): green near zero, red and blue well above it, on the outline,
+    but darker than _deep_key's RB floor (75); ice-crystal's violet strip (94,13,127) at (20,10) has hue 283, under _deep_key's
+    285. Never: phoenix's maroon outline (90,1,38) hue 335, dusk-cloth's violet cloth (60,18,65) saturation 0.72, star-stone's
+    lavender highlight (215,133,220), or a key-tinted pixel away from the outline."""
+    gear = A.outline_blend_pixels(_rgba(ANCIENT_GEAR))
+    assert (4, 11) in gear and (28, 20) in gear and (4, 11) not in A.key_hue_pixels(_rgba(ANCIENT_GEAR))
+    assert (20, 10) in A.outline_blend_pixels(_rgba(ICE_CRYSTAL))
+    assert (17, 6) not in A.outline_blend_pixels(_rgba(PHOENIX))
+    assert (32, 8) not in A.outline_blend_pixels(_rgba(DUSK_CLOTH))
+    assert (16, 4) not in A.outline_blend_pixels(_rgba(STAR_STONE))
+    arr = np.zeros((7, 7, 4), np.uint8); arr[:, :] = (60, 80, 100, 255); arr[3, 3] = (50, 1, 49, 255)   # inside: not the outline
+    assert A.outline_blend_pixels(Image.fromarray(arr, 'RGBA')) == []
+    assert set(A.outline_key_pixels(_rgba(ANCIENT_GEAR))) == set(gear) | set(A.key_hue_pixels(_rgba(ANCIENT_GEAR)))
+
+
+def test_repair_outline_key_repairs_every_outline_key_pixel_once_and_keeps_what_it_is_told_to_keep():
+    img = _rgba(ANCIENT_GEAR); arr = np.asarray(img); keys = A.outline_key_pixels(img)
+    new, fixed, skipped = A.repair_outline_key(img)
+    out = np.asarray(new)
+    assert skipped == [] and sorted((f[0], f[1]) for f in fixed) == sorted(keys) and len(keys) == 23
+    assert (out[..., 3] == arr[..., 3]).all() and int((out != arr).any(axis=-1).sum()) == len(fixed)
+    assert A.outline_key_pixels(new) == [] and A.magenta_spill_count(new) == 0
+    again, fixed2, _ = A.repair_outline_key(new)
+    assert fixed2 == [] and np.array_equal(np.asarray(again), out)
+    star = _rgba(STAR_STONE); kept = np.asarray(star)[8, 6].copy()
+    new, fixed, _ = A.repair_outline_key(star, keep=[(6, 8)])                  # star-stone's dark violet (44,9,56): kept as art
+    assert (6, 8) not in [(f[0], f[1]) for f in fixed] and (np.asarray(new)[8, 6] == kept).all() and len(fixed) == 7
+
+
+def test_gutter_key_lines_find_a_bbox_edge_row_that_is_all_key():
+    """crystal-shell: the bottom row (5-8,35) is key and nothing else (a sheet gutter under the subject); ancient-gear's
+    key column at x=28 is on the outline of a tooth, not a bbox edge line, and is never a gutter."""
+    shell = _rgba(CRYSTAL_SHELL)
+    assert A.gutter_key_lines(shell, A.outline_key_pixels(shell)) == [(5, 35), (6, 35), (7, 35), (8, 35)]
+    gear = _rgba(ANCIENT_GEAR)
+    assert A.gutter_key_lines(gear, A.outline_key_pixels(gear)) == []
+    arr = np.zeros((8, 8, 4), np.uint8); arr[1:5, 1:7] = (60, 80, 100, 255); arr[5, 2:4] = (130, 3, 134, 255)
+    assert A.gutter_key_lines(Image.fromarray(arr, 'RGBA'), [(2, 5), (3, 5)]) == []          # under GUTTER_MIN_RUN
+
+
+def test_gutter_key_lines_take_the_lizard_scales_repaired_key_row_from_its_recorded_pixels():
+    """R4 round 2 review: lizard-scale's R4 repair turned its key row (7-12,35) into a near-black pad. The row is no longer
+    key hue, so the R4 record's pixels (from key hue) are passed as the keys; clear_pixels takes it off (alpha 0)."""
+    img = _rgba(LIZARD_R4); arr = np.asarray(img)
+    row = [(x, 35) for x in range(7, 13)]
+    assert A.gutter_key_lines(img, A.outline_key_pixels(img)) == []
+    assert A.gutter_key_lines(img, set(A.outline_key_pixels(img)) | set(row)) == row
+    new, cleared = A.clear_pixels(img, row); out = np.asarray(new)
+    assert [c[:2] for c in cleared] == row and cleared[0][2] == tuple(int(v) for v in arr[35, 7])
+    assert (out[35, 7:13] == 0).all() and int((out != arr).any(axis=-1).sum()) == 6
+    assert (out[34, 7:13, 3] == 255).all()                                    # the outline row above stays
+
+
+def test_key_specks_clear_a_key_pixel_hanging_off_the_outline_that_has_no_neighbours_to_repair_from():
+    """moss (11,11) (94,18,87) and (32,15) (68,15,92): key on the outline with fewer than 3 opaque non-key neighbours
+    (repair_outline_key reports them) and at least SPECK_MIN_CLEAR transparent ones."""
+    img = _rgba(MOSS); _, _, skipped = A.repair_outline_key(img)
+    assert sorted((s[0], s[1]) for s in skipped) == [(11, 11), (32, 15)]
+    assert A.key_specks(img, A.outline_key_pixels(img)) == [(11, 11), (32, 15)]
+    arr = np.zeros((7, 7, 4), np.uint8); arr[:, :4] = (60, 80, 100, 255); arr[3, 4] = (130, 3, 134, 255)   # 3 opaque neighbours
+    assert A.key_specks(Image.fromarray(arr, 'RGBA'), [(4, 3)]) == []
+
+
+def test_lone_tint_takes_the_crab_plates_rose_tip_and_the_bats_pink_claw_but_not_rose_art():
+    """R4 round 2: crab-plate's spike tip (25,4) = (131,71,85), hue 344, the key's anti-aliasing sampled at the tip (the raw
+    has no rose there). The bat's claw outline (104,36,78) at (49,57). A rose pixel next to another rose pixel is art."""
+    crab = _rgba(CRAB_PLATE); arr = np.asarray(crab)
+    assert A.lone_tint_pixels(crab) == [(25, 4)]
+    new, fixed, skipped = A.repair_lone_tint(crab)
+    assert skipped == [] and fixed == [(25, 4, (131, 71, 85), _median8(arr, 25, 4))]
+    assert int((np.asarray(new) != arr).any(axis=-1).sum()) == 1 and A.lone_tint_pixels(new) == []
+    assert (49, 57) in A.lone_tint_pixels(_rgba(BAT))
+    two = np.zeros((6, 6, 4), np.uint8); two[1:5, 1:5] = (60, 80, 100, 255); two[1, 2] = (131, 71, 85, 255); two[1, 3] = (140, 75, 95, 255)
+    assert A.lone_tint_pixels(Image.fromarray(two, 'RGBA')) == []
+    _, fixed, _ = A.repair_lone_tint(crab, keep=[(25, 4)])
+    assert fixed == []
+
+
+# --- F8 review round 1 (2026-10-29): residue the outline-key floors missed ------------------------------------------------------
+ETHER = F8_WORK / 'sheet-icons-2/icon-ether.png'
+THORN_FANG = F8_WORK / 'sheet-icons-2/icon-thorn-fang.png'
+ANTIDOTE = F8_WORK / 'sheet-icons-2/icon-antidote.png'
+
+
+def test_outline_key_takes_a_key_blend_under_the_saturation_floor_that_touches_key():
+    """F8 review: (4,9) (63,15,65) and (32,8) (60,18,65) on dusk-cloth sit between key pixels at its top corners; ether's
+    (20,27) (95,25,118) between two key pixels; thorn-fang's (21,3) (80,17,72) next to key (22,4); moss (12,12) (95,26,125)
+    next to the key speck (11,11), and (13,13) (77,29,77) next to (12,12). Saturation .62-.79, under outline_blend's .8:
+    taken when connected on the outline to outline key. Never: violet art at hue 278 next to key (crystal-shell (10,6)
+    (126,14,193), antidote's glass (10,2) (41,0,65)), or star-stone's lavender."""
+    for path, xys in ((DUSK_CLOTH, [(4, 9), (32, 8)]), (ETHER, [(20, 27)]), (THORN_FANG, [(21, 3)]), (MOSS, [(12, 12), (13, 13)])):
+        img = _rgba(path); got = A.outline_key_pixels(img)
+        for xy in xys: assert xy in got and xy not in A.outline_blend_pixels(img), (path.name, xy)
+        assert set(A.key_adjacent_blend_pixels(img)) == set(xys), path.name
+    assert (10, 6) not in A.outline_key_pixels(_rgba(CRYSTAL_SHELL)) and (10, 2) not in A.outline_key_pixels(_rgba(ANTIDOTE))
+    assert A.key_adjacent_blend_pixels(_rgba(STAR_STONE)) == [] and A.key_adjacent_blend_pixels(_rgba(ICE_CRYSTAL)) == []
+
+
+def test_repair_outline_key_takes_review_classified_residue_with_also():
+    """moss (15,12) (93,42,112) and (6,16) (80,19,82) touch no key, and ice-crystal's (19,8), (20,12) have hue 278-279.8,
+    where violet art also stands next to key (antidote, crystal-shell): no detector can take them, the review classifies
+    them, and `also` adds them to the repaired set. The values are the review's own trial of the median rule."""
+    img = _rgba(MOSS); new, fixed, skipped = A.repair_outline_key(img, also=[(15, 12), (6, 16)])
+    got = {(f[0], f[1]): f[3] for f in fixed}
+    assert {k: got[k] for k in [(12, 12), (15, 12), (13, 13), (6, 16)]} == {
+        (12, 12): (19, 59, 10), (15, 12): (70, 74, 9), (13, 13): (14, 49, 6), (6, 16): (63, 109, 10)}
+    ice = _rgba(ICE_CRYSTAL); new, fixed, _ = A.repair_outline_key(ice, also=[(19, 8), (20, 12)])
+    got = {(f[0], f[1]): f[3] for f in fixed}
+    assert got[(19, 8)] == (35, 150, 200) and got[(20, 12)] == (25, 136, 190) and got[(21, 13)] == (42, 74, 110)
+    with pytest.raises(ValueError):
+        A.repair_outline_key(img, also=[(0, 0)])                              # a transparent pixel is never residue
