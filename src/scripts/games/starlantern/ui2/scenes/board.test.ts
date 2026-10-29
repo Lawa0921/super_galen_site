@@ -1,9 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ENEMIES } from '../../data/enemies';
+import { GUILD_SWITCH } from '../../data/guild';
 import { GUILD_TEXT } from '../../data/guild.zh-TW';
 import { MATERIALS } from '../../data/materials';
 import { REGIONS } from '../../data/regions';
 import { ITEMS } from '../../data/items';
+import { RUNE_SELL } from '../../data/runeEconomy';
+import { RUNE_STACK } from '../../data/runes';
 import { SHARD_IDS, SHARD_NAMES } from '../../data/story/fragments';
 import { T } from '../../data/text.zh-TW';
 import { dayOf } from '../../engine/calendar';
@@ -11,6 +14,7 @@ import { Game } from '../../engine/game';
 import { LEGACY_LINEUP } from '../../engine/party';
 import type { ActiveQuest, GuildState, QuestOffer } from '../../engine/state';
 import { hauntsOf } from '../../engine/story/handbook';
+import { SAVE_KEY } from '../../engine/save';
 import { memoryStorage, withGuildLive } from '../../engine/testing';
 import { textWidth } from '../../render/ailmentStyle';
 import { art, enemyArt } from '../../render/artPaths';
@@ -248,4 +252,224 @@ describe('the guild board: tabs, rows and the detail (guild quests plan Task B2)
     const detail = 276 - 2 * (2 + 8);
     for (const line of [B.target(B.count(foe, 6)), B.target(B.count(mat, 8)), B.target(B.natives(land, 8)), B.target(B.depthAt(land, 250))]) expect(textWidth(line, 12), line).toBeLessThanOrEqual(detail);
   });
+});
+
+/** `withGuildLive` for a test that awaits: the switch stays on until the test is over, not only until its first await. */
+const liveAsync = (f: () => Promise<void>) => async () => {
+  const was = GUILD_SWITCH.live;
+  GUILD_SWITCH.live = true;
+  try { await f(); } finally { GUILD_SWITCH.live = was; }
+};
+
+/** Plays the dialogue to its end, confirming every line; each line's nameplate and text, in order. */
+async function drain(o: Opened): Promise<{ who: string; text: string }[]> {
+  const out: { who: string; text: string }[] = [];
+  for (let i = 0; i < 40; i++) {
+    await new Promise((r) => setTimeout(r, 0));
+    if (talk(o.root).hidden) break;
+    out.push({ who: o.root.querySelector('.slx-talk .slx-name')!.textContent ?? '', text: said(o.root) ?? '' });
+    o.s.onAction('confirm');
+  }
+  return out;
+}
+const top = (root: HTMLElement) => root.querySelector('.slx-layer:last-child')!;
+const topOptions = (root: HTMLElement) => [...top(root).querySelectorAll('[role=option]')].map((x) => x.querySelector('.slx-label')!.textContent);
+const saved = (g: Game) => (g as unknown as { storage: Storage }).storage.getItem(SAVE_KEY) ?? '';
+
+describe('the guild board: take, drop, turn in, the rank tab (guild quests plan Task B3)', () => {
+  it('taking a note: asked with 是 first, taken once, moved to the held tab and saved', liveAsync(async () => {
+    const o = open();
+    const accept = vi.spyOn(o.game, 'acceptQuest');
+    const id = o.game.state.guild!.offers[1].id;
+    const label = B.row(B.kinds.hunt, B.count(ENEMIES.slime.name, 6));
+    o.s.onAction('down');
+    o.s.onAction('confirm');
+    expect(top(o.root).classList.contains('slx-confirm')).toBe(true);
+    expect(top(o.root).textContent).toContain(B.acceptAsk(label));
+    expect(top(o.root).querySelector('[aria-selected=true]')!.textContent).toBe('是');
+    o.s.onAction('confirm');
+    expect(accept).toHaveBeenCalledTimes(1);
+    expect(accept).toHaveBeenCalledWith(id);
+    expect(o.game.state.guild!.active.map((q) => q.id)).toEqual([id]);
+    expect(labels(o.root)).not.toContain(label);
+    expect(saved(o.game)).toContain(`"active":[{"id":"${id}"`);
+    expect(await drain(o)).toEqual([{ who: '安娜', text: B.accepted(label) }]);
+    o.s.onAction('right');
+    expect(labels(o.root)).toEqual([label]);
+  }));
+
+  it("taking a note, Anna's own words once they are written", liveAsync(async () => {
+    GUILD_TEXT.anna.accepted = 'TAKEN';
+    const o = open();
+    o.s.onAction('confirm');
+    o.s.onAction('confirm');
+    expect(await drain(o)).toEqual([{ who: '安娜', text: 'TAKEN' }]);
+  }));
+
+  it('declining the question takes nothing', () => withGuildLive(() => {
+    const o = open();
+    o.s.onAction('confirm');
+    o.s.onAction('down');   // 否
+    o.s.onAction('confirm');
+    expect(o.game.state.guild!.active).toEqual([]);
+    expect(labels(o.root)).toHaveLength(5);
+  }));
+
+  it('a full hand says so and stays put', liveAsync(async () => {
+    const o = open({ prep: (g) => { const n = notes(g.state.guild!.day); g.state.guild!.offers = n.slice(0, 2); g.state.guild!.active = n.slice(2).map((x) => held(x)); } });
+    const before = structuredClone(o.game.state.guild);
+    o.s.onAction('confirm');
+    expect(o.sfx.error).toHaveBeenCalledTimes(1);
+    expect(top(o.root).classList.contains('slx-board')).toBe(true);   // no question
+    expect(o.game.state.guild).toEqual(before);
+    expect(talk(o.root).hidden).toBe(true);   // nothing of hers written yet: nothing said
+    GUILD_TEXT.anna.full = 'FULL';
+    o.s.onAction('confirm');
+    expect(await drain(o)).toEqual([{ who: '安娜', text: 'FULL' }]);
+    expect(o.game.state.guild).toEqual(before);
+  }));
+
+  it('dropping asks twice, 否 first', () => withGuildLive(() => {
+    const o = open({ prep: (g) => { g.state.guild!.active = [held(notes(g.state.guild!.day)[1])]; g.state.guild!.offers = []; } });
+    o.s.onAction('right');
+    o.s.onAction('confirm');
+    expect(topOptions(o.root)).toEqual([B.abandon, B.back]);   // not done: nothing to turn in
+    o.s.onAction('confirm');   // 放棄
+    expect(top(o.root).textContent).toContain(B.abandonAsk(B.row(B.kinds.hunt, B.count(ENEMIES.slime.name, 6))));
+    expect(top(o.root).querySelector('[aria-selected=true]')!.textContent).toBe('否');
+    o.s.onAction('confirm');
+    expect(o.game.state.guild!.active).toHaveLength(1);
+    o.s.onAction('confirm');   // 放棄 again
+    o.s.onAction('up');
+    o.s.onAction('confirm');   // 是
+    expect(o.game.state.guild!.active).toEqual([]);
+    expect(top(o.root).classList.contains('slx-board')).toBe(true);
+    expect(labels(o.root)).toEqual([B.emptyActive]);
+    expect(saved(o.game)).toContain('"active":[]');
+  }));
+
+  it('返回 leaves the quest as it was', () => withGuildLive(() => {
+    const o = open({ prep: (g) => { g.state.guild!.active = [held(notes(g.state.guild!.day)[1])]; } });
+    o.s.onAction('right');
+    o.s.onAction('confirm');
+    o.s.onAction('down');
+    o.s.onAction('confirm');   // 返回
+    expect(top(o.root).classList.contains('slx-board')).toBe(true);
+    expect(o.game.state.guild!.active).toHaveLength(1);
+  }));
+
+  /** A sweep of the frost done (eight slimes since it was taken), at ten merit: turning it in reaches the first lamp. */
+  const doneSweep = (g: Game) => {
+    g.state.guild!.active = [held(notes(g.state.guild!.day)[4])];
+    g.state.guild!.merit = 10;
+    g.state.bestiary = { ...g.state.bestiary, slime: { seen: 8, felled: 8 } };
+  };
+
+  it('turning in: the reward, then the new lamp and its gift; the list and the gold after it', liveAsync(async () => {
+    const o = open({ prep: doneSweep });
+    const gold = o.game.state.gold;
+    o.s.onAction('right');
+    expect(rights(o.root)).toEqual([B.ready]);
+    o.s.onAction('confirm');
+    expect(topOptions(o.root)).toEqual([B.turnIn, B.abandon, B.back]);
+    o.s.onAction('confirm');
+    expect(await drain(o)).toEqual([
+      { who: '安娜', text: T.ui2.exchange.reward(`130 G、${nm('essence-rare')} ×1`) },
+      { who: '安娜', text: B.rankUp('一燈') },
+      { who: '安娜', text: B.gift(`300 G、${nm('return-lamp')} ×2`) },
+    ]);
+    expect(o.game.state.gold).toBe(gold + 130 + 300);
+    expect(o.root.querySelector('.slx-gold')!.textContent).toBe(`${gold + 430} G`);
+    expect(labels(o.root)).toEqual([B.emptyActive]);
+    expect(o.root.querySelector('.slx-board-head')!.textContent).toBe(B.head('一燈', 13, 40));
+    expect(saved(o.game)).toContain('"merit":13');
+  }));
+
+  it("turning in, every line once written: the giver's thanks, her word, the reward, the stamp and the gift", liveAsync(async () => {
+    GUILD_TEXT.thanks.glen = ['THANKS0', 'THANKS1'];
+    GUILD_TEXT.remarks.chizuru = 'REMARK';
+    GUILD_TEXT.anna.stamp = { 1: 'STAMP1' };
+    const o = open({ prep: doneSweep });
+    o.s.onAction('right');
+    o.s.onAction('confirm');
+    o.s.onAction('confirm');
+    const said = await drain(o);
+    expect(said.map((l) => l.text)).toEqual([
+      `${B.note('葛倫')}THANKS0`, 'REMARK', T.ui2.exchange.reward(`130 G、${nm('essence-rare')} ×1`), 'STAMP1', B.rankUp('一燈'), B.gift(`300 G、${nm('return-lamp')} ×2`),
+    ]);
+    expect(said[0].who).toBe('安娜');   // passed on by Anna
+    expect(said[1].who).toContain('千鶴');   // the companion says it in her own name
+    expect(said[2].who).toBe('安娜');
+  }));
+
+  it('a rune that does not fit says the gold it became', liveAsync(async () => {
+    const o = open({ prep: (g) => {
+      g.state.guild!.active = [held(notes(g.state.guild!.day)[0])];
+      g.state.bestiary = { ...g.state.bestiary, 'fog-warden': { seen: 1, felled: 1 } };
+      g.state.runesOpen = true;
+      g.state.runes = { ...g.state.runes, 'focus@magic': RUNE_STACK };
+    } });
+    const gold = o.game.state.gold;
+    o.s.onAction('right');
+    o.s.onAction('confirm');
+    o.s.onAction('confirm');
+    const said = (await drain(o)).map((l) => l.text);
+    expect(said[1]).toBe(T.rune.overStack(T.rune.label('focus', 'magic'), RUNE_STACK, RUNE_SELL.magic));
+    expect(o.game.state.gold).toBe(gold + 300 + RUNE_SELL.magic);
+  }));
+
+  it('not enough goods: no 回報 on a delivery short of them', () => withGuildLive(() => {
+    const o = open({ prep: (g) => { g.state.guild!.active = [held(notes(g.state.guild!.day)[3])]; g.state.inventory.moss = 7; } });
+    o.s.onAction('right');
+    expect(rights(o.root)).toEqual([B.held(7, 8)]);
+    o.s.onAction('confirm');
+    expect(topOptions(o.root)).toEqual([B.abandon, B.back]);
+  }));
+
+  it('a delivery with its goods in stock hands them over', liveAsync(async () => {
+    const o = open({ prep: (g) => { g.state.guild!.active = [held(notes(g.state.guild!.day)[3])]; g.state.inventory.moss = 9; } });
+    o.s.onAction('right');
+    o.s.onAction('confirm');
+    o.s.onAction('confirm');   // 回報
+    expect(o.game.state.inventory.moss).toBe(1);
+    expect((await drain(o)).map((l) => l.text)).toEqual([T.ui2.exchange.reward('77 G')]);
+  }));
+
+  it('the rank tab: the lamp now, the merit, the next threshold and what each lamp brings', () => withGuildLive(() => {
+    const o = open({ guild: { merit: 18, paid: 1 } });
+    o.s.onAction('left');
+    expect(selTab(o.root)).toBe(B.tabs.rank);
+    expect(labels(o.root)).toEqual(B.rankNames);
+    expect(rights(o.root)).toEqual([B.rankFrom(0), B.current, B.rankFrom(40), B.rankFrom(100), B.rankFrom(200)]);
+    expect(o.root.querySelector('.slx-board [aria-selected=true] .slx-label')!.textContent).toBe('一燈');
+    const text = () => info(o.root).textContent!;
+    expect(lines(o.root).slice(0, 3)).toEqual([B.rankNow('一燈'), B.merit(18), B.rankNext('二燈', 40)]);
+    expect(text()).toContain(B.perks(['討伐', '掃蕩', '懸賞', '探路', '收購'].join('、')));
+    expect(text()).toContain(B.offers(4));
+    expect(text()).toContain(B.gift(`300 G、${nm('return-lamp')} ×2`));
+    o.s.onAction('down');
+    expect(text()).toContain(B.runeBounty);
+    o.s.onAction('down'); o.s.onAction('down');
+    expect(text()).toContain(B.doubleBounty);
+    expect(text()).toContain(B.cap(4));
+    o.s.onAction('confirm');   // a lamp is only read
+    expect(top(o.root).classList.contains('slx-board')).toBe(true);
+    const top4 = open({ guild: { merit: 250, paid: 4 } });
+    top4.s.onAction('left');
+    expect(lines(top4.root).slice(0, 3)).toEqual([B.rankNow('四燈'), B.merit(250), B.rankTop]);
+  }));
+
+  it('nothing draws: opening, taking, dropping and turning in leave the game rng alone', liveAsync(async () => {
+    let n = 0;
+    const o = open({ prep: (g) => { Object.assign(g, { rng: () => { n++; return 0.5; } }); doneSweep(g); } });
+    const before = n;
+    o.s.onAction('confirm'); o.s.onAction('confirm');   // take the bounty
+    await drain(o);
+    o.s.onAction('right');
+    o.s.onAction('down'); o.s.onAction('confirm'); o.s.onAction('confirm'); o.s.onAction('up'); o.s.onAction('confirm');   // drop it
+    o.s.onAction('confirm'); o.s.onAction('confirm');   // turn the sweep in
+    await drain(o);
+    expect(o.game.state.guild!.active).toEqual([]);
+    expect(n).toBe(before);
+  }));
 });

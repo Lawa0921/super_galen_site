@@ -4,7 +4,7 @@ import { GUILD_TEXT, type NoteKey } from '../../data/guild.zh-TW';
 import { MATERIALS } from '../../data/materials';
 import { numeral } from '../../data/numeral';
 import { REGIONS, type RegionId } from '../../data/regions';
-import { parseRuneKey } from '../../data/runes';
+import { RUNE_STACK, parseRuneKey } from '../../data/runes';
 import { T } from '../../data/text.zh-TW';
 import { bountyLine, progressOf, rankOf, type Progress } from '../../engine/guild';
 import type { ActiveQuest, GuildState, QuestOffer, QuestReward } from '../../engine/state';
@@ -17,7 +17,7 @@ import { awaitArt, lateArt, type LateArt } from '../lateArt';
 import { Menu, type MenuItem } from '../menu';
 import type { SceneCtx } from '../scene';
 import { NPC_FACILITY } from '../story';
-import { MenuView, win } from '../widgets';
+import { MenuView, confirmBox, win } from '../widgets';
 import type { Layer } from './facility';
 import { TRAIT_ICON, portalArt } from './gate';
 
@@ -91,6 +91,12 @@ function noteOf(q: QuestOffer): string | undefined {
 export function rewardParts(r: QuestReward): string[] {
   const rune = r.rune ? parseRuneKey(r.rune) : null;
   return [T.gold(r.gold), ...Object.entries(r.items ?? {}).map(([id, n]) => `${itemName(id)} ×${n}`), ...(rune ? [T.rune.label(rune.id, rune.tier)] : [])];
+}
+
+/** A lamp's gift (spec §6.3): its gold, then each item. */
+function giftParts(rank: number): string[] {
+  const g = RANKS[rank].gift;
+  return [...(g.gold ? [T.gold(g.gold)] : []), ...Object.entries(g.items ?? {}).map(([id, n]) => `${itemName(id)} ×${n}`)];
 }
 
 /** A held quest's progress in its row (spec §8.2): 3／6, 最深 5／9, 持有 3／8. */
@@ -190,8 +196,102 @@ export class BoardLayer implements Layer {
     return k ? lateArt(this.host.ctx.art, portalArt.trait(k)) : undefined;
   }
 
-  // Task B3 takes, drops and turns quests in from here.
-  protected pick(_tab: Tab, _id: string): void {}
+  /** A note asks to be taken; a held quest opens its small menu; a lamp on the rank tab is only read. */
+  private pick(tab: Tab, id: string): void {
+    if (tab === 'board') this.take(id);
+    else if (tab === 'active') this.heldMenu(id);
+  }
+
+  /**
+   * Spec §8.4: a note is taken on a 是 (the question's first answer). A full hand takes nothing: the error cue, and Anna's
+   * line once PR C has written it. Taken, it moves to the held tab, saved at once (Game.acceptQuest), and the guild's box
+   * says so (her words once written, the interface's until then). Nothing draws.
+   */
+  private take(id: string): void {
+    const g = this.guild;
+    const o = g.offers.find((x) => x.id === id);
+    if (!o) return;
+    const { ctx } = this.host;
+    if (g.active.length >= RANKS[rankOf(g.merit)].cap) { this.refuse('full'); return; }
+    ctx.sfx.confirm();
+    const label = questLabel(o);
+    const box = confirmBox(B.acceptAsk(label), (yes) => {
+      this.host.pop();
+      if (!yes) return;
+      const r = this.game.acceptQuest(id);
+      this.render();
+      if (!r.ok) { this.refuse(r.reason); return; }
+      void this.host.say(GUILD_TEXT.anna.accepted ?? B.accepted(label));
+    });
+    this.host.push({ el: box.el, onAction: (a) => box.view.onAction(a) });
+  }
+
+  /** A refusal: the error cue, then Anna's own line for a full hand once written, else the general reason. */
+  private refuse(reason: string): void {
+    this.host.ctx.sfx.error();
+    const line = reason === 'full' ? GUILD_TEXT.anna.full : T.reasons[reason] ?? T.reasons.invalid;
+    if (line) void this.host.say(line);
+  }
+
+  /** Spec §8.4: a held quest's small menu: 回報 when it is done (a delivery with its goods in stock), 放棄, 返回. */
+  private heldMenu(id: string): void {
+    const q = this.guild.active.find((x) => x.id === id);
+    if (!q) return;
+    this.host.ctx.sfx.confirm();
+    const done = progressOf(this.game.state, q).done;
+    const v = new MenuView(new Menu([...(done ? [{ id: 'turnIn', label: B.turnIn }] : []), { id: 'abandon', label: B.abandon }, { id: 'back', label: B.back }]), {
+      pick: (it) => {
+        if (it.id === 'back') { this.host.pop(); return; }
+        this.host.ctx.sfx.confirm();
+        if (it.id === 'turnIn') { this.host.pop(true); void this.turnIn(q); } else this.askAbandon(q);
+      },
+      moved: () => this.host.ctx.sfx.cursor(),
+      cancel: () => this.host.pop(),
+    });
+    this.host.push({ el: win('slx-list slx-board-menu', [v.el]), onAction: (a) => v.onAction(a) });
+  }
+
+  /** Dropping asks again, 否 first; on 是 the quest goes (free, saved at once) and the small menu with it. */
+  private askAbandon(q: ActiveQuest): void {
+    const box = confirmBox(B.abandonAsk(questLabel(q)), (yes) => {
+      this.host.pop();
+      if (!yes) return;
+      this.host.pop(true);
+      const r = this.game.abandonQuest(q.id);
+      this.render();
+      if (!r.ok) this.refuse(r.reason);
+    });
+    box.view.menu.setCursor(1);
+    box.view.render();
+    this.host.push({ el: box.el, onAction: (a) => box.view.onAction(a) });
+  }
+
+  /**
+   * Spec §8.4: turned in (saved at once, Game.turnInQuest), the list and the gold first, then in the guild's box: the
+   * giver's thanks behind 「〇〇留了話：」 and the companion's word in her own name (each once PR C writes it), the reward,
+   * a rune past its stack as the gold it became, and for each lamp reached its stamp (once written), the new rank and its
+   * gift. Nothing draws.
+   */
+  private async turnIn(q: ActiveQuest): Promise<void> {
+    const r = this.game.turnInQuest(q.id);
+    this.render();
+    if (!r.ok) { this.refuse(r.reason); return; }
+    this.host.refresh();
+    const thanks = GUILD_TEXT.thanks[q.giver]?.[q.variant];
+    if (thanks) await this.host.say(`${B.note(giverName(q))}${thanks}`, 'happy');
+    const remark = r.remark ? GUILD_TEXT.remarks[r.remark] : undefined;
+    if (r.remark && remark) await this.host.speakAs(r.remark, remark);
+    await this.host.say(T.ui2.exchange.reward(rewardParts(r.reward).join('、')), 'happy');
+    const rune = r.reward.rune ? parseRuneKey(r.reward.rune) : null;
+    if (rune && r.runeGold) await this.host.say(T.rune.overStack(T.rune.label(rune.id, rune.tier), RUNE_STACK, r.runeGold));
+    for (const k of r.rankUps) {
+      const stamp = GUILD_TEXT.anna.stamp[k as 1 | 2 | 3 | 4];
+      if (stamp) await this.host.say(stamp, 'happy');
+      await this.host.say(B.rankUp(B.rankNames[k]));
+      const parts = giftParts(k);
+      if (parts.length) await this.host.say(B.gift(parts.join('、')), 'happy');
+    }
+  }
 
   /** The quest under the cursor on the board or held tab (none on an empty list). */
   private current(): { q: QuestOffer | ActiveQuest; held: boolean } | null {
@@ -248,7 +348,7 @@ export class BoardLayer implements Layer {
     const now = rankOf(g.merit);
     const i = Number(this.view.menu.current()?.id ?? now);
     const r = RANKS[i];
-    const gift = [...(r.gift.gold ? [T.gold(r.gift.gold)] : []), ...Object.entries(r.gift.items ?? {}).map(([id, n]) => `${itemName(id)} ×${n}`)];
+    const gift = giftParts(i);
     const p = (text: string, cls?: string) => el('p', { text, ...(cls ? { class: cls } : {}) });
     this.info.replaceChildren(
       p(B.rankNow(B.rankNames[now])), p(B.merit(g.merit)),
