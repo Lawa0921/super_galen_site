@@ -473,3 +473,62 @@ describe('the guild board: take, drop, turn in, the rank tab (guild quests plan 
     expect(n).toBe(before);
   }));
 });
+
+describe('the guild board end to end, switch still off in the game (guild quests plan Task B5)', () => {
+  it('locked, then open: the first look posts the board, a hunt is taken, felled, turned in, and the first lamp is stamped', liveAsync(async () => {
+    const game = new Game(() => 0.5, memoryStorage(), undefined, 0, [...LEGACY_LINEUP] as never);
+    game.state.bestiary = { ...game.state.bestiary, slime: { seen: 1, felled: 0 } };
+    const root = document.createElement('div');
+    const sfx = { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() };
+    const s = new GuildScene({ game, art: NO_ART, sfx, go: vi.fn(), hasSave: () => false, newGame: vi.fn() }, Infinity);
+    s.enter(root);
+    for (let i = 0; i < 3 && !talk(root).hidden; i++) s.onAction('confirm');
+    const o: Opened = { game, root, s, sfx };
+    const board = () => [...root.querySelectorAll<HTMLElement>('.slx-cmd [role=option]')].find((x) => x.textContent === B.title)!.click();
+
+    // Before the first act is over: the error cue, no window, nothing written.
+    board();
+    expect(sfx.error).toHaveBeenCalledTimes(1);
+    expect(root.querySelector('.slx-board')).toBeNull();
+    expect(game.state.guild).toBeUndefined();
+
+    // The first act over: the first look posts today's board (its own stream only) and marks it read.
+    game.state.story.act1Cleared = true;
+    board();
+    const g = game.state.guild!;
+    expect(g.day).toBe(dayOf(game.state));
+    expect([g.viewed, g.intro]).toEqual([g.day, true]);
+    expect(g.offers.length).toBeGreaterThan(0);
+    expect(labels(root)).toEqual(g.offers.map((x) => B.row(B.kinds[x.kind], x.kind === 'hunt' ? B.count(ENEMIES[x.target].name, x.n) : B.depthAt(B.main, x.n))));
+    const hunt = g.offers.findIndex((x) => x.kind === 'hunt');
+    expect(hunt, 'the slime seen: a hunt of it is on the board').toBeGreaterThanOrEqual(0);
+    const { id, n, reward } = structuredClone(g.offers[hunt]);
+
+    // Take it.
+    for (let i = 0; i < hunt; i++) s.onAction('down');
+    s.onAction('confirm');
+    s.onAction('confirm');   // 是
+    await drain(o);
+    expect(game.state.guild!.active.map((q) => q.id)).toEqual([id]);
+
+    // The slimes felled (the bestiary, as a fight would leave it), two merit short of the first lamp.
+    game.state.guild!.merit = 10;
+    game.state.bestiary.slime = { seen: n, felled: n };
+    s.onAction('right');
+    expect(rights(root)).toEqual([B.ready]);
+
+    // Turn it in: the reward, the first lamp, its gift; saved.
+    const gold = game.state.gold;
+    s.onAction('confirm');
+    s.onAction('confirm');   // 回報
+    const said = (await drain(o)).map((l) => l.text);
+    expect(said).toEqual([T.ui2.exchange.reward(`${reward.gold} G、${nm('essence-magic')} ×1`), B.rankUp('一燈'), B.gift(`300 G、${nm('return-lamp')} ×2`)]);
+    expect(game.state.gold).toBe(gold + reward.gold + 300);
+    expect(game.state.guild!.active).toEqual([]);
+    expect(game.state.guild!.merit).toBe(12);
+    expect(game.state.guild!.paid).toBe(1);
+    expect(root.querySelector('.slx-board-head')!.textContent).toBe(B.head('一燈', 12, 40));
+    expect(selTab(root)).toBe(B.tabs.active(0, 3));
+    expect(saved(game)).toContain('"merit":12');
+  }));
+});

@@ -565,6 +565,11 @@ describe('GuildScene: the guild board on the list (guild quests plan Task B1)', 
     expect(vi.mocked(s['ctx'].sfx.error)).toHaveBeenCalledTimes(1);
   }, { open: false }));
 
+  it("listed, the board makes the window's rows 16px tall (slx-cmd-board) so its eleven stand above Anna's box; off, today's window", () => {
+    expect(setup().root.querySelector('.slx-cmd')!.classList.contains('slx-cmd-board')).toBe(false);
+    withGuildLive(() => expect(setup().root.querySelector('.slx-cmd')!.classList.contains('slx-cmd-board')).toBe(true));
+  });
+
   it('opening the board draws no greeting', () => withGuildLive(() => {
     const rng = vi.fn(() => 0.5);
     const { game, root, pick } = setup(undefined, LEGACY_LINEUP, (g) => { open(g); Object.assign(g, { rng }); });

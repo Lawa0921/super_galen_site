@@ -56,6 +56,15 @@ export class GuildScene extends FacilityScene {
       ...(GUILD_SWITCH.live ? [{ id: 'board', label: T.ui2.board.title }] : [])];
   }
 
+  /**
+   * Controller ruling 2026-10-30 (guild quests spec §0 item 23): with 委託 on the list the window holds eleven rows, so its
+   * rows are 16px tall (slx-cmd-board) and it stands whole above Anna's box; without it, the window is today's.
+   */
+  protected refresh(): void {
+    super.refresh();
+    this.root.querySelector('.slx-cmd')?.classList.toggle('slx-cmd-board', GUILD_SWITCH.live);
+  }
+
   protected onCommand(id: string): void {
     if (id === 'recall') this.recallList();
     else if (id === 'exchange') this.exchangeMenu();

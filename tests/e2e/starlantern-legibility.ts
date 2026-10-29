@@ -381,6 +381,17 @@ export const SWEEP: { name: string; visit(page: Page, w: SpecHelpers): Promise<v
     },
   },
   {
+    // Guild quests PR B (controller ruling, spec §0 item 23): the guild's window with 委託 listed, its eleven 16px rows. The
+    // switch (off until PR D) is on only while the guild draws its list, so no other screen of the sweep changes.
+    name: 'guild-board-listed', visit: async (page, w) => {
+      const live = (on: boolean) => page.evaluate((v) => { (window as unknown as { __starlanternDebug: { guild: { GUILD_SWITCH: { live: boolean } } } }).__starlanternDebug.guild.GUILD_SWITCH.live = v; }, on);
+      await live(true);
+      await facility(page, w, 'guild', '.slx-guild');
+      await live(false);
+      await expect(page.locator('.slx-guild .slx-cmd.slx-cmd-board [role=option]')).toHaveCount(11);
+    },
+  },
+  {
     name: 'shop-buy', visit: async (page, w) => {
       await facility(page, w, 'shop', '.slx-shop');
       await page.locator('.slx-shop .slx-cmd [data-id=buy]').click();
