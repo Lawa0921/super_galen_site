@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { Game } from '../../engine/game';
-import { constRng, memoryStorage, plainItem } from '../../engine/testing';
+import { constRng, memoryStorage, plainItem, withGuildLive } from '../../engine/testing';
+import { GUILD_TEXT } from '../../data/guild.zh-TW';
 import { NO_ART, type ArtIndex } from '../../render/textures';
 import { GuildScene } from './guild';
 import { LEGACY_LINEUP, START_LINEUP, meet } from '../../engine/party';
@@ -519,4 +520,58 @@ describe('GuildScene: the lead once per arrival, after the greeting (final revie
     act2.r.next = 0;
     expect(act2.visit()).toEqual([STORY.greet.guild.act2[0], STORY.leads.chizuru]);
   });
+});
+
+describe('GuildScene: the guild board on the list (guild quests plan Task B1)', () => {
+  const LIST = ['編隊', T.ui2.guild.recall, '裝備', '狀態', '技能樹', T.ui2.guild.workshop, '天賦', T.ui2.exchange.title, T.ui2.handbook.title, '離開'];
+  const commands = (root: HTMLElement) => [...root.querySelectorAll('.slx-cmd [role=option]')].map((o) => o.textContent);
+  const open = (g: Game) => { g.state.story.act1Cleared = true; };
+  /** Anna's locked line, for one test: the registry is empty until PR C writes it. */
+  const withLocked = <R,>(line: string, f: () => R): R => {
+    const was = GUILD_TEXT.anna.locked;
+    GUILD_TEXT.anna.locked = line;
+    try { return f(); } finally { if (was === undefined) delete GUILD_TEXT.anna.locked; else GUILD_TEXT.anna.locked = was; }
+  };
+
+  it("the board is not on the guild's list while the switch is off", () => {
+    expect(commands(setup(undefined, LEGACY_LINEUP, open).root)).toEqual(LIST);
+  });
+
+  it('with the switch on, the board comes last before leaving', () => withGuildLive(() => {
+    expect(commands(setup().root)).toEqual([...LIST.slice(0, -1), T.ui2.board.title, '離開']);   // locked, it is still there
+    expect(commands(setup(undefined, LEGACY_LINEUP, open).root)).toEqual([...LIST.slice(0, -1), T.ui2.board.title, '離開']);
+  }));
+
+  it('locked before the first act: one line, nothing written', () => withGuildLive(() => {
+    const { game, root, pick, s } = setup();
+    const error = vi.mocked(s['ctx'].sfx.error);
+    pick(T.ui2.board.title);
+    expect(game.state.guild).toBeUndefined();
+    expect(root.querySelector('.slx-layer')).toBeNull();
+    expect(error).toHaveBeenCalledTimes(1);
+    expect(root.querySelector<HTMLElement>('.slx-talk')!.hidden).toBe(true);   // nothing written for Anna yet: nothing said
+    withLocked('LOCKED', () => {
+      pick(T.ui2.board.title);
+      expect(root.querySelector('.slx-talk .slx-text')!.textContent).toBe('LOCKED');
+    });
+    expect(game.state.guild).toBeUndefined();
+  }));
+
+  it('locked reads guildOpen: shut, the first act over is still locked', () => withGuildLive(() => {
+    const { game, root, pick, s } = setup(undefined, LEGACY_LINEUP, open);
+    pick(T.ui2.board.title);
+    expect(game.state.guild).toBeUndefined();
+    expect(root.querySelector('.slx-layer')).toBeNull();
+    expect(vi.mocked(s['ctx'].sfx.error)).toHaveBeenCalledTimes(1);
+  }, { open: false }));
+
+  it('opening the board draws no greeting', () => withGuildLive(() => {
+    const rng = vi.fn(() => 0.5);
+    const { game, root, pick } = setup(undefined, LEGACY_LINEUP, (g) => { open(g); Object.assign(g, { rng }); });
+    const before = rng.mock.calls.length;
+    pick(T.ui2.board.title);
+    expect(rng.mock.calls.length).toBe(before);
+    expect(root.querySelector('.slx-layer')).not.toBeNull();
+    expect(game.state.guild?.viewed).toBe(game.state.guild?.day);
+  }));
 });
