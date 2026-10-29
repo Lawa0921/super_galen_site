@@ -858,6 +858,8 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 - [ ] **L1b 延後到本波的驗收格**：22a debt-collector、herald-engine、mirror-thief、siege-crab、spore-moth、veil-stalker（第 4 層）；22b faceless-host d20、fortress-colossus d20、grey-blight d25、shadow-parade d30、vault-dragon d25；22f grey-blight d10 allPhys、shadow-parade d15 allPhys、noHeal；22i gate-breaker d8；22j bog-leviathan d15 bare（兩檔）、faceless-host d20 hell bare、grey-blight d25（兩檔）、last-commander d15 bare（兩檔）、shadow-parade d15（兩檔）、siege-titan d10 bare（兩檔）、vault-dragon d10 hell bare；22j 守關者 gate-breaker、grey-elder、locked-vault 第 23 層。
 - [ ] 照 L1b；commit：`feat(starlantern): mire, shade and iron meet their own (live wave 4)`。
 
+- **L4b 實作紀錄**（spec §0 第 24 條，控制者 2026-10-28／29 裁定）：每一格紅燈一次調整，照第 23 條保留或退回。凍結的第 7、18b 項以綠收尾：槓桿的一次調整（泥沼母體、枯灰樹人、攻城蟹）讓腐毒格轉綠；鋼鐵的第 18b 項用控制者核准的探針 X（騎士殘影、鉚釘機兵、號令機、紅旗旗手 hp ×0.85，守護退回 .25，鋼鐵原生組換組），第 4 層 .813、第 8 層 .750（餘裕 0）。保留的調整：灰枯、影之行列、要塞巨像、沼底巨口、撞門的巨影、灰化的老樹、鎖著的金庫、餓肚子的寶庫；退回：孢子蛾、鏡之盜、帷幕潛行者、敲門的影子、無面之主、金庫之龍、攻城巨獸、最後的指揮官。具名例外：`EXCEPTION_22A` 七格（含 X 讓它變紅的兩個增益者，控制者裁定）、`EXCEPTION_22` 十六格（含第 22i 項第 25 層之後的六個本道守關者，現在照量）、`EXCEPTION_22J` 十五格（延後名單的 15 格全部仍紅）；凍結的難度帶與 builds.bands 不需要新的例外。`DEFERRED_22`、`DEFERRED_22J` 清空。待辦 F10。
+
 ### Task L4c：收尾量測
 - [ ] **Step 1**：`ROSTER_LIVE` 等於全部 100 個；`ROSTER_ART` 等於 `ROSTER_LIVE`；圖鑑每一隻都有文字。
 - [ ] **Step 2**：一次跑完：全套、閘門（對 `gate-L4`）、`cmp`、`ROSTER_BANDS=1` 全部、`BANDS=1` 的 `tierBands.*` 全部、`builds.bands.*`（`npm run test:starlantern:bands`）、`BOND_BANDS=1` 的第 21 項、`economy.test.ts`、22g 寶物怪擊殺率（目標 50–70%，只報告）。結果存 SDD `closeout.md`。
@@ -884,6 +886,10 @@ L2b 的一次調整之後仍紅、列成具名例外的格子（spec §0 第 22 
 ### Task F7：第三波的具名例外（待辦：內容做完之後）
 
 L3b 的一次調整之後仍紅、列成具名例外的格子（spec §0 第 23 條）：22a 灰衣弔者、熔爐犬、凍結的參拜者、沙海蠍（第 4 層，期望隊伍幾乎不損血或離參考太遠）；22b 蜃樓之城、迷宮的裂口第 30 層（兩邊都 0 對燈喰之獸 .125）、永凍之守第 20 層（1.0 對 .875）、白色寂靜第 25 層（.563 對 .375）；22c 霜凍第 25 層（.715／.521，冰狛犬兩組在第 25 層是牆）；22f 蜃樓之城、迷宮的裂口第 15 層全物理（.8 對 1.0）；22j 蜃樓之城第 15 層、永凍之守第 20 層（配點的隊伍太難）、焚城之焰第 20 層、白色寂靜與雷霆指揮者第 25 層（不配點的隊伍太容易）、守關者冰中的拜殿地獄第 23 層（.707）。目標是每一格都從 `EXCEPTION_22A`／`EXCEPTION_22`／`EXCEPTION_22J` 拿掉。方向：冰狛犬平分傷害在深層的總耐久；冰柱與舞者的減傷在高難度的分量；地區頭目的單體技在不配點隊伍面前的壓力；第 4 層的原生對期望隊伍的傷害。**使用者 2026-10-28 方向**：平衡不是現在的優先，排在內容工作之後，不擋 L4。
+
+### Task F10：第四波的具名例外（待辦：內容做完之後）
+
+L4b 的一次調整之後仍紅、列成具名例外的格子（spec §0 第 24 條）：22a 枯灰樹人、孢子蛾、鏡之盜、帷幕潛行者、敲門的影子（第 4 層，期望隊伍損血離參考太遠），以及控制者裁定保留探針 X 而變紅的號令機、紅旗旗手；22b 無面之主第 20 層、灰枯第 25 層、影之行列第 30 層、金庫之龍第 25 層；22c 腐毒第 25 層（.552／.601，舊表 .765／.458）、暗影第 25 層（.844／.453）；22f 灰枯第 10 層全物理、影之行列第 15 層無補師（.8 對 1.0）；22i 本道第 28–53 層的六個守關者（第 25 層之後沒有調過的期望隊伍）；22j 沼底巨口、最後的指揮官、攻城巨獸、金庫之龍、無面之主的不配點格（不配點的隊伍太容易），灰枯第 25 層、影之行列第 15 層（配點的隊伍太難），守關者灰化的老樹、鎖著的金庫、撞門的巨影地獄第 23 層。另外凍結的 18b 鋼鐵第 8 層 .750 剛好在下限上，餘裕 0。目標是每一格都從 `EXCEPTION_22A`／`EXCEPTION_22`／`EXCEPTION_22J` 拿掉，並讓 18b 鋼鐵有餘裕。方向：鋼鐵重裝原生的守護與全物理隊伍的對局；腐毒第 25 層的兩個重裝；地區頭目的單體技在不配點隊伍面前的壓力；深層守關者需要自己的期望隊伍（帶 19a、19b 只調到第 25 層）。**使用者 2026-10-28 方向**：平衡不是現在的優先，排在內容工作之後。
 
 ### Task F1：舊 5d 敵人 `bat.png` 的洋紅邊
 - [ ] R1 獨立審核（2026-10-26）看到已核准的舊敵人 `public/assets/games/starlantern/enemy/bat.png` 也有洋紅邊。這不在名冊的範圍內，所以本次不改（控制者 2026-10-26 裁定）。名冊收尾之後另開一個修正：先用名冊的 `roster_key_tint_count`（含 `_deep_key`）與 `magenta_spill_count` 量化，再決定重做或重新去背。重做要走「重做 → QA → 審核 → 重新發布」，並且同步改 `allArtUrls` 與 manifest。

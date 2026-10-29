@@ -1,9 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import { T } from '../../data/text.zh-TW';
 import { ENEMIES } from '../../data/enemies';
+import { SPECIALS } from '../../data/gear';
 import { ROSTER_LIVE } from '../../data/monsters';
 import { Game } from '../../engine/game';
-import { WAVE_1_LIVE, WAVE_2_LIVE, constRng, memoryStorage, withRosterLive, withRosterOnly } from '../../engine/testing';
+import { WAVE_1_LIVE, WAVE_2_LIVE, WAVE_3_LIVE, constRng, memoryStorage, withRosterLive, withRosterOnly } from '../../engine/testing';
 import { ownCost } from '../../engine/forge/craft';
 import { inscribeCost } from '../../engine/forge/cost';
 import type { ItemInstance } from '../../engine/types';
@@ -167,7 +168,8 @@ describe('the forge for the roster (roster plan Task C4)', () => {
     expect(m.ids().filter((id) => id?.startsWith('ins:'))).toEqual(['ins:paper-moth', 'ins:old-city-sentinel']);
   }));
 
-  it("the third live wave's rows: its own uniques and its inscriptions, none of the fourth wave's (L3b)", () => {
+  it("the third live wave's rows: its own uniques and its inscriptions, none of the fourth wave's (L3b)", () => withRosterOnly([...WAVE_3_LIVE], () => {
+    // L4b: measures the game as it was before the fourth wave.
     // Own uniques: every live owner of the three waves, wardens first (SPECIALS order); none of R4's (the grey elder's bow),
     // though its keepsake is in the stores. Every live owner felled, so no row is greyed out and the cursor walks the list.
     const t = craft((g) => {
@@ -187,6 +189,29 @@ describe('the forge for the roster (roster plan Task C4)', () => {
       g.state.inventory['faded-letter'] = 3; g.state.inventory['marble-shard'] = 3; g.state.inventory['cinder-dust'] = 3; g.state.inventory['bog-peat'] = 3;
     });
     expect(m.ids().filter((id) => id?.startsWith('ins:'))).toEqual(['ins:paper-moth', 'ins:old-city-sentinel', 'ins:cinder-imp']);
+  }));
+
+  it("the fourth live wave's rows: every own unique and the last lands' inscriptions (L4b)", () => {
+    // Own uniques: all thirty-nine owners live, wardens first (SPECIALS order). Every live owner felled, so no row is greyed out
+    // and the cursor walks the whole list.
+    const t = craft((g) => {
+      g.state.inventory = { 'fog-gate-plate': 5, 'ashen-acorn': 5, 'gate-splinter': 5, 'star-tear': 1 };
+      g.state.bestiary = Object.fromEntries([...ROSTER_LIVE].map((id) => [id, { seen: 1, felled: 1 }]));
+    });
+    t.row('own').click();
+    const own = Object.values(SPECIALS).filter((sp) => sp.owner).map((sp) => sp.id);
+    expect(own).toHaveLength(39);
+    expect(own.slice(0, 11)).toEqual(['moonless-mirror', 'unrung-clapper', 'ancestor-gauntlet', 'requiem-staff', 'brood-lantern', 'last-dance-veil',
+      'ninety-nine-steps', 'starbound-tome', 'arrowmark-bow', 'hungry-purse', 'gatewarden-shield']);
+    expect(t.ids()).toEqual(own.slice(0, 8));
+    for (let i = 1; i < own.length; i++) t.go('down');
+    expect(t.ids()).toEqual(own.slice(-8));
+    expect(own.slice(-1)).toEqual(['red-horn']);
+    // Inscriptions: the bog mother is live now, beside the earlier waves' natives.
+    const m = methods((g) => {
+      g.state.inventory['faded-letter'] = 3; g.state.inventory['marble-shard'] = 3; g.state.inventory['cinder-dust'] = 3; g.state.inventory['bog-peat'] = 3;
+    });
+    expect(m.ids().filter((id) => id?.startsWith('ins:'))).toEqual(['ins:paper-moth', 'ins:old-city-sentinel', 'ins:cinder-imp', 'ins:bog-mother']);
   });
 
   it('an unbeaten owner is greyed out with its reason', () => {

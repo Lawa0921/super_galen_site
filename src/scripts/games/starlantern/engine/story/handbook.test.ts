@@ -14,7 +14,7 @@ import { meet } from '../party';
 import { newGame, type GameState } from '../state';
 import type { CharacterId } from '../types';
 import { handbook } from './handbook';
-import { WAVE_1_LIVE, WAVE_2_LIVE, withRosterLive, withRosterOnly, withTold } from '../testing';
+import { WAVE_1_LIVE, WAVE_2_LIVE, WAVE_3_LIVE, withRosterLive, withRosterOnly, withTold } from '../testing';
 import { arrivalScenes, onReturn, sceneDone } from './events';
 /**
  * Bond plan Task 17: the registries hold what is written now, so a test that registers its own puts back what was there
@@ -579,7 +579,8 @@ describe('the bestiary page (roster plan Task C6)', () => {
     expect(page(s, 'keeper-echo')).toMatchObject({ name: ENEMIES['keeper-echo'].name, trait: BESTIARY['keeper-echo']!.trait });
   }));
 
-  it('the third live wave is listed too: the fire, frost and storm lands (L3b)', () => {
+  it('the third live wave is listed too: the fire, frost and storm lands (L3b)', () => withRosterOnly([...WAVE_3_LIVE], () => {
+    // L4b: measures the game as it was before the fourth wave.
     const s = fresh();
     const by = (f: string) => handbook(s).codex.monsters.filter((m) => m.filter === f).map((m) => m.id);
     expect(by('road')).toHaveLength(37);
@@ -595,6 +596,27 @@ describe('the bestiary page (roster plan Task C6)', () => {
     s.bestiary = { 'mirage-dancer': { seen: 1, felled: 1 } };
     expect(page(s, 'mirage-dancer')).toMatchObject({ name: ENEMIES['mirage-dancer'].name, trait: BESTIARY['mirage-dancer']!.trait });
     expect(page(s, 'mirage-dancer')!.lines).toEqual([BESTIARY['mirage-dancer']!.lines[0].text]);   // Safira's 1st piece not seen
+  }));
+
+  it('the fourth live wave is listed too: the mire, shade and iron lands, the whole roster (L4b)', () => {
+    const s = fresh();
+    const by = (f: string) => handbook(s).codex.monsters.filter((m) => m.filter === f).map((m) => m.id);
+    expect(by('road')).toHaveLength(37);
+    expect(by('lands')).toEqual(['cinder-imp', 'forge-hound', 'ash-mourner', 'mirage-dancer', 'sand-scorpion', 'frost-doll', 'glacier-tortoise',
+      'snow-caller', 'ice-komainu', 'frozen-pilgrim', 'thunder-kite', 'storm-totem', 'charge-jelly', 'star-ember', 'stolen-tome',
+      ...['bog-mother', 'rot-lily', 'leech-knight', 'ashen-treant', 'spore-moth', 'mirror-thief', 'veil-stalker',
+      'hush-acolyte', 'vault-mimic', 'debt-collector', 'rivet-golem', 'siege-crab', 'herald-engine', 'fallen-knight', 'banner-bearer']]);
+    expect(by('bosses')).toEqual(['lanterneater', 'false-moon', 'bell-warden', 'toppled-automaton', 'requiem-conductor', 'lantern-brood',
+      'mirage-lead', 'ice-shrine', 'burning-page', 'grey-elder', 'locked-vault', 'gate-breaker', 'fog-warden', 'silent-bell', 'hollow-champion',
+      'old-city-archon', 'gorged-beast', 'lantern-mother', 'forgotten-festival', 'starless-whale', 'stopped-clock', 'first-lantern', 'ember-tyrant',
+      'sandstorm-maw', 'mirage-city', 'rime-sovereign', 'white-silence', 'rift-maw', 'thunder-roc', 'storm-conductor', 'starfire-colossus',
+      'mire-hydra', 'grey-blight', 'bog-leviathan', 'faceless-host', 'vault-dragon', 'shadow-parade', 'fortress-colossus', 'siege-titan',
+      'last-commander', 'archon-hand', 'rime-pillar']);
+    // A land's native says where: its land from depth 4 (spec §10); its story line waits for its gate.
+    expect(page(s, 'ashen-treant')).toMatchObject({ name: B.unknown, seen: 0, trait: null, lines: [] });
+    s.bestiary = { 'ashen-treant': { seen: 1, felled: 1 } };
+    expect(page(s, 'ashen-treant')).toMatchObject({ name: ENEMIES['ashen-treant'].name, trait: BESTIARY['ashen-treant']!.trait });
+    expect(page(s, 'ashen-treant')!.lines).toEqual([BESTIARY['ashen-treant']!.lines[0].text]);   // Sylvie's 1st piece not seen
   });
 
   it('an unseen foe is a name of question marks and a place', () => {
