@@ -14,6 +14,7 @@ import { defaultTree, heroTree, memoriesOf, validBuild } from './progression';
 import { SAVE_VERSION, type GameState } from './state';
 import { repairRuneFields } from './sockets';
 import { isBestiary, repairBestiary } from './bestiary';
+import { isGuild, repairGuild } from './guild';
 import { tierUnlocked } from './tiers';
 import { buildOf } from '../data/builds';
 import { BANTER_PAIRS, GROUP_GATE, isSceneId, type BanterPair } from '../data/story/scenes';
@@ -197,6 +198,8 @@ function isValid(d: Record<string, unknown>): boolean {
   if (!['off', 'common', 'magic'].includes(d.autoJunk as string)) return false;
   // Roster plan Task C3: the bestiary's shape (its unknown ids are dropped after this, by repairBestiary).
   if (d.bestiary !== undefined && !isBestiary(d.bestiary)) return false;
+  // Guild quests plan Task A5: the board's shape (its unknown targets are dropped after this, by repairGuild).
+  if (d.guild !== undefined && !isGuild(d.guild)) return false;
   if (!isStory(d.story)) return false;
   // bond plan Task 2: a bond only on someone met (gates read what is told, `storyPieces`); today's gifts and the romance too
   const s = d as unknown as GameState;
@@ -330,6 +333,8 @@ export function loadGame(storage: SaveStorage): LoadResult {
   if (!isValid(data)) { backup(storage, raw); return { status: 'corrupt' }; }
   // A foe this build does not know is dropped from the bestiary, never a corrupt save (roster plan ruling 17).
   repairBestiary(data);
+  // A quest whose target this build does not know is dropped, never a corrupt save (guild quests spec §9.4).
+  repairGuild(data);
   const state = data as unknown as GameState;
   // The game never writes a codex id twice; a hand-edited save that does is tidied rather than refused.
   state.codex = [...new Set(state.codex)];
