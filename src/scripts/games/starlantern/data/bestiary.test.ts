@@ -185,6 +185,29 @@ const L3_NEUTRAL_LORE: Record<string, string> = {
   'starfire-tiara': '頭冠上的星火一閃一閃，想事情的時候閃得特別快。',
 };
 
+/** Roster plan L4 (spec §13.5 R4): the twenty-seven of the fourth live wave, the mire, the shade and the iron lands. */
+const WAVE_4 = [
+  'bog-mother', 'rot-lily', 'leech-knight', 'ashen-treant', 'spore-moth', 'mirror-thief', 'veil-stalker', 'hush-acolyte', 'vault-mimic',
+  'debt-collector', 'rivet-golem', 'siege-crab', 'herald-engine', 'fallen-knight', 'banner-bearer', 'mire-hydra', 'grey-blight',
+  'bog-leviathan', 'faceless-host', 'vault-dragon', 'shadow-parade', 'fortress-colossus', 'siege-titan', 'last-commander', 'grey-elder',
+  'locked-vault', 'gate-breaker',
+];
+/** The neutral lore PR A gave the fourth wave's twelve own uniques (data/gear.roster.ts), for L4a to write over. */
+const L4_NEUTRAL_LORE: Record<string, string> = {
+  'arrowmark-bow': '弓身滿是小小的刻痕，每一道都指著同一個方向。',
+  'hungry-purse': '錢袋永遠覺得自己不夠飽，所以總能多撿一點。',
+  'gatewarden-shield': '盾面坑坑疤疤，卻一次也沒讓身後的人受傷。',
+  'hydra-fang': '刃上有兩道細溝，總是一次咬兩口。',
+  'greenward-cloak': '斗篷沾著青草的味道，雨水一碰就滑走了。',
+  'bog-ring': '指環沉甸甸的，戴久了反而覺得踏實。',
+  'faceless-mask': '面具上沒有表情，所以戴上它的人想要什麼表情都行。',
+  'gilded-mail': '金光閃閃，敵人第一眼都會先看錢，再看人。',
+  'parade-boots': '走在夜裡，腳步聲會混進別人的腳步聲裡。',
+  'colossus-gauntlet': '螺栓一顆都沒少，握拳時會發出很可靠的喀聲。',
+  'wallclimber-boots': '鞋尖的鐵釘專咬石縫，再高的牆也爬得上去。',
+  'red-horn': '號角的紅漆已經褪了，吹起來的聲音卻還很響亮。',
+};
+
 const entries = (): [string, BestiaryText][] => Object.entries(BESTIARY).filter((x): x is [string, BestiaryText] => !!x[1]);
 
 describe('the bestiary text and its gates (roster plan Task C5)', () => {
@@ -302,6 +325,57 @@ describe('the bestiary text and its gates (roster plan Task C5)', () => {
       expect(problemsOf(id, { trait: lore, lines: [{ text: lore }] }), id).toEqual([]);
       expect(lore, id).not.toBe(L3_NEUTRAL_LORE[id]);   // rewritten by the W steps, not the placeholder PR A left
     }
+  });
+
+  it('the fourth live wave is written, its story lines behind their gates (L4a)', () => {
+    // Roster plan Task L4a: E4's twenty-seven, each with an entry that passes the gates below.
+    const missing = WAVE_4.filter((id) => !BESTIARY[id]);
+    expect(missing).toEqual([]);
+    for (const id of WAVE_4) expect(problemsOf(id, BESTIARY[id]!), id).toEqual([]);
+    const gates = (id: string) => BESTIARY[id]!.lines.map((l) => l.after);
+    const all = (id: string) => [BESTIARY[id]!.trait, ...BESTIARY[id]!.lines.map((l) => l.text)].join('');
+    // Spec §4.2: the mire is Sylvie's wood from her 1st piece (the treant), the fog could not be shot from her 2nd (the blight),
+    // the last seed from her 5th (the elder).
+    expect(gates('ashen-treant')).toEqual([undefined, { seen: ['mem:sylvie:1'] }]);
+    expect(gates('grey-blight')).toEqual([undefined, { seen: ['mem:sylvie:2'] }]);
+    expect(gates('grey-elder')).toEqual([undefined, { seen: ['mem:sylvie:5'] }]);
+    // Spec §4.2 with ruling 20 (§0 item 11): the knocking shadow says the debt from Liz's 2nd piece, the locked vault that she
+    // came to pay it from her 3rd, the hungry vault the vault's door from her 4th. Never the shop, the town or her father's name.
+    expect(gates('debt-collector')).toEqual([undefined, { seen: ['mem:liz:2'] }]);
+    expect(gates('locked-vault')).toEqual([undefined, { seen: ['mem:liz:3'] }]);
+    expect(gates('vault-mimic')).toEqual([undefined, { seen: ['mem:liz:4'] }]);
+    for (const id of ['debt-collector', 'locked-vault', 'vault-mimic']) expect(all(id), id).not.toMatch(/道具店|露米亞|歐里克/);
+    // Spec §4.2, ruling 20, I-222: the hushed acolyte may say 靜鐘會 from act 3; never Rin, the bellkeeper, the errand or the one
+    // who walked out of the deep (as the bell tower's two).
+    expect(gates('hush-acolyte')).toEqual([undefined, { seen: ['act3'] }]);
+    expect(all('hush-acolyte')).not.toMatch(/凜|鐘守|師父|從深處走出來|殺|石門|出口/);
+    // Spec §4.2: the fortress was Scarlet's country from her 2nd piece (the knight, the banner and the beast that climbed its
+    // walls), the rammed gate from her 3rd; only the last commander, behind her 5th, may say the horns were the withdrawal's.
+    // Ruling 20, I-211: the princess's fate is never written.
+    for (const id of ['fallen-knight', 'banner-bearer', 'siege-titan']) expect(gates(id), id).toEqual([undefined, { seen: ['mem:scarlet:2'] }]);
+    expect(gates('gate-breaker')).toEqual([undefined, { seen: ['mem:scarlet:3'] }]);
+    expect(gates('last-commander')).toEqual([undefined, { seen: ['mem:scarlet:5'] }]);
+    for (const id of ['fallen-knight', 'banner-bearer', 'siege-titan', 'gate-breaker']) expect(all(id), id).not.toMatch(/撤退|密道/);
+    for (const id of ['fallen-knight', 'banner-bearer', 'siege-titan', 'gate-breaker', 'last-commander']) expect(all(id), id).not.toMatch(/公主|殿下/);
+    // Every other one of the wave is one line, no story.
+    const story = ['ashen-treant', 'grey-blight', 'grey-elder', 'debt-collector', 'locked-vault', 'vault-mimic', 'hush-acolyte', 'fallen-knight',
+      'banner-bearer', 'siege-titan', 'gate-breaker', 'last-commander'];
+    for (const id of WAVE_4.filter((x) => !story.includes(x))) expect(gates(id), id).toEqual([undefined]);
+  });
+
+  it("the fourth wave's own uniques carry lore that keeps every gate (L4a)", () => {
+    for (const id of Object.keys(L4_NEUTRAL_LORE)) {
+      const lore = SPECIALS[id].lore ?? '';
+      expect(problemsOf(id, { trait: lore, lines: [{ text: lore }] }), id).toEqual([]);
+      expect(lore, id).not.toBe(L4_NEUTRAL_LORE[id]);   // rewritten by the W steps, not the placeholder PR A left
+    }
+  });
+
+  it('every roster foe is written once all four waves are (L4a)', () => {
+    // Roster plan Task L4c Step 1: the whole roster has its words; with the four waves no roster id is left without an entry.
+    const roster = Object.keys(ENEMIES).filter((id) => !LEGACY_ENEMY_IDS.includes(id));
+    expect(roster).toHaveLength(100);
+    expect(roster.filter((id) => !BESTIARY[id])).toEqual([]);
   });
 
   it('no entry for a foe that does not exist', () => {

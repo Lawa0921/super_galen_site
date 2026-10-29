@@ -8,7 +8,7 @@ import { Game } from '../../engine/game';
 import { meet } from '../../engine/party';
 import type { SaveStorage } from '../../engine/save';
 import { restoreNight } from '../../engine/story/nights';
-import { WAVE_1_LIVE, WAVE_2_LIVE, constRng, memoryStorage, withRosterLive, withRosterOnly } from '../../engine/testing';
+import { WAVE_1_LIVE, WAVE_2_LIVE, WAVE_3_LIVE, constRng, memoryStorage, withRosterLive, withRosterOnly } from '../../engine/testing';
 import { BESTIARY, BESTIARY_UI } from '../../data/bestiary.zh-TW';
 import { ENEMIES } from '../../data/enemies';
 import { MATERIALS } from '../../data/materials';
@@ -517,7 +517,8 @@ describe('the bestiary page (roster plan Task C6)', () => {
     expect(new Set(t.labels())).toEqual(new Set([B.unknown]));
   }));
 
-  it('the third live wave: the road, the lands and the bosses, each foe 「？？？」 until met (L3b)', () => {
+  it('the third live wave: the road, the lands and the bosses, each foe 「？？？」 until met (L3b)', () => withRosterOnly([...WAVE_3_LIVE], () => {
+    // L4b: measures the game as it was before the fourth wave.
     const t = setup();
     t.goTab(H.tabs.codex);
     expect(t.labels()).toEqual([B.filters.road, B.filters.lands, B.filters.bosses]);   // the fire, frost and storm natives
@@ -526,6 +527,20 @@ describe('the bestiary page (roster plan Task C6)', () => {
     expect(t.row(B.filters.road).querySelector('.slx-right')!.textContent).toBe(B.count(0, 37));
     expect(t.row(B.filters.lands).querySelector('.slx-right')!.textContent).toBe(B.count(0, 15));
     expect(t.row(B.filters.bosses).querySelector('.slx-right')!.textContent).toBe(B.count(0, 30));
+    t.pick(B.filters.lands);
+    expect(t.labels().length).toBeGreaterThan(0);
+    expect(new Set(t.labels())).toEqual(new Set([B.unknown]));
+  }));
+
+  it('the fourth live wave: the whole roster on the three rows, each foe 「？？？」 until met (L4b)', () => {
+    const t = setup();
+    t.goTab(H.tabs.codex);
+    expect(t.labels()).toEqual([B.filters.road, B.filters.lands, B.filters.bosses]);
+    // The road as before (37); the lands: all six lands' thirty natives; the bosses: the thirty before, the last three
+    // lands' nine bosses and their three wardens.
+    expect(t.row(B.filters.road).querySelector('.slx-right')!.textContent).toBe(B.count(0, 37));
+    expect(t.row(B.filters.lands).querySelector('.slx-right')!.textContent).toBe(B.count(0, 30));
+    expect(t.row(B.filters.bosses).querySelector('.slx-right')!.textContent).toBe(B.count(0, 42));
     t.pick(B.filters.lands);
     expect(t.labels().length).toBeGreaterThan(0);
     expect(new Set(t.labels())).toEqual(new Set([B.unknown]));

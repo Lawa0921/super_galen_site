@@ -47,10 +47,11 @@ describe('roster switches (roster plan Task A1, spec §11.1)', () => {
     }
   });
 
-  it('only the live waves are listed (L2b, L2c, L3b: the first three waves)', () => {
-    // Roster plan L1b, L2b, L3b: the first three waves went live, the lantern-mother with the finale (L2c) before the third;
-    // nothing else is listed until its own go-live task.
-    const live = [...WAVE_2.filter((id) => id !== 'lantern-mother'), 'lantern-mother', ...WAVE_3.filter((id) => !WAVE_2.includes(id))];
+  it('only the live waves are listed (L2b, L2c, L3b, L4b: all four waves)', () => {
+    // Roster plan L1b, L2b, L3b, L4b: the four waves went live, the lantern-mother with the finale (L2c) before the third;
+    // with the fourth every roster id is live (L4c Step 1).
+    const live = [...WAVE_2.filter((id) => id !== 'lantern-mother'), 'lantern-mother', ...WAVE_3.filter((id) => !WAVE_2.includes(id)),
+      ...WAVE_4.filter((id) => !WAVE_3.includes(id))];
     expect([...ROSTER_LIVE]).toEqual(live);
     expect(liveRosterIds()).toEqual(live);
     const fresh = Object.keys(ENEMIES).filter((id) => !LEGACY_ENEMY_IDS.includes(id));
@@ -66,6 +67,16 @@ describe('roster switches (roster plan Task A1, spec §11.1)', () => {
     expect(artEnemy('ash-mourner')).toBe(true);          // R3's ash-mourner, published in E4 with its chrysanthemum (Task E3c)
     expect(artEnemy('bog-mother')).toBe(true);           // R4: published in E4 (independent review 2026-10-28/29, rounds 1-2)
     expect(listedEnemy('no-such-foe')).toBe(false);
+  });
+
+  it('the whole roster is live, and what is live is what is drawn (L4c Step 1)', () => {
+    // Roster plan L4c Step 1: ROSTER_LIVE is every one of the hundred roster ids, and ROSTER_ART is the same set (the
+    // bestiary's words for each: data/bestiary.test.ts, "every live foe has an entry").
+    const roster = Object.keys(ENEMIES).filter((id) => !LEGACY_ENEMY_IDS.includes(id));
+    expect(roster).toHaveLength(100);
+    expect(ROSTER_LIVE.size).toBe(100);
+    expect([...ROSTER_LIVE].sort()).toEqual([...roster].sort());
+    expect([...ROSTER_ART].sort()).toEqual([...ROSTER_LIVE].sort());
   });
 });
 
@@ -620,7 +631,8 @@ describe('roster tables, bosses and wardens (roster plan Task A4, spec §3.4, §
     expect(wardenGroup('lantern-brood')).toEqual(['lantern-brood', 'lantern-larva']);
   }));
 
-  it('the third live wave meets its bosses and wardens where the spec puts them (L3b)', () => {
+  it('the third live wave meets its bosses and wardens where the spec puts them (L3b)', () => withRosterOnly(WAVE_3, () => {
+    // L4b: measures the game as it was before the fourth wave.
     // Spec §5.5, §5.6 on the real live set: the fire, frost and storm lands' three bosses at 5, 10, 15, cycling at 20 and on
     // (the permafrost's warden with its two pillars first); the other three lands still the lantern-eater. Each of the three
     // lands' wardens from depth 8 on its 3s and 8s; the main road as before.
@@ -640,6 +652,25 @@ describe('roster tables, bosses and wardens (roster plan Task A4, spec §3.4, §
     expect(wardenGroup('burning-page')).toEqual(['burning-page', 'stolen-tome']);
     expect(wardenGroup('mirage-lead')).toEqual(['mirage-lead']);
     expect(wardenGroup('ice-shrine')).toEqual(['ice-shrine']);
+  }));
+
+  it('the fourth live wave meets its bosses and wardens where the spec puts them (L4b)', () => {
+    // Spec §5.5, §5.6 on the real live set: the mire, shade and iron lands' three bosses at 5, 10, 15, cycling at 20 and on;
+    // no region keeps the lantern-eater now. Each land's warden from depth 8 on its 3s and 8s; the main road as before.
+    const boss = (r: RegionId, d: number) => bossFor(r, d).at(-1);
+    const at = [5, 10, 15, 20, 25, 30];
+    expect(at.map((d) => boss('mire', d))).toEqual(['mire-hydra', 'grey-blight', 'bog-leviathan', 'mire-hydra', 'grey-blight', 'bog-leviathan']);
+    expect(at.map((d) => boss('shade', d))).toEqual(['faceless-host', 'vault-dragon', 'shadow-parade', 'faceless-host', 'vault-dragon', 'shadow-parade']);
+    expect(at.map((d) => boss('iron', d))).toEqual(['fortress-colossus', 'siege-titan', 'last-commander', 'fortress-colossus', 'siege-titan', 'last-commander']);
+    for (const r of NATIVE_REGIONS) for (const d of at) expect(bossFor(r, d).at(-1), `${r} ${d}`).not.toBe('lanterneater');
+    expect([20, 30].map((d) => boss('mainline', d))).toEqual(['old-city-archon', 'lanterneater']);
+    for (const [r, w] of [['mire', 'grey-elder'], ['shade', 'locked-vault'], ['iron', 'gate-breaker']] as const) {
+      expect([3, 8, 13, 18, 23].map((d) => wardenFor(r, d)), r).toEqual([null, w, w, w, w]);
+    }
+    // The gate-breaker comes with its live knight; the grey elder and the locked vault fight alone (WARDEN_GROUPS).
+    expect(wardenGroup('gate-breaker')).toEqual(['gate-breaker', 'fallen-knight']);
+    expect(wardenGroup('grey-elder')).toEqual(['grey-elder']);
+    expect(wardenGroup('locked-vault')).toEqual(['locked-vault']);
   });
 
   it('salts are distinct', () => {
@@ -857,6 +888,51 @@ describe('the third wave as tuned (roster plan L3b, spec §0 item 23)', () => {
     expect(sk('rift-maw', '裂口之息')).toEqual([{ chance: 0.35, power: 110 }, { chance: 0.5, power: 115 }]);
     expect(sk('rime-pillar', '冰之加護')).toEqual([{ chance: 0.25, power: 25 }]);
     expect(E['ice-komainu'].stats.hp).toBe(310);   // its hp ×0.85 for 22c frost d25 moved nothing and turned 22a red
+  });
+});
+
+describe('the fourth wave as tuned (roster plan L4b, spec §0 item 24)', () => {
+  const E = ENEMIES;
+  const sk = (id: string, name: string) => [...E[id].skills, ...(E[id].stages ?? []).flatMap((x) => x.skills)].filter((x) => x.name === name)
+    .map((k) => { const e = k.effects[0] as { power?: number; max?: number; kind: string }; return { chance: k.chance, power: e.power ?? e.max }; });
+  it('the attempts kept, and the ones that moved nothing back at their spec values', () => {
+    // Kept for the frozen bands 7 and 18b (mire, iron): the mire's two heavies, the crab; the iron natives by the controller's
+    // ruling X (item 24: hp ×0.85 on the knight, the rivet golem, the herald and the banner, the guards back at .25).
+    expect(E['ashen-treant'].stats.hp).toBe(264);   // 310 ×0.85
+    expect(sk('ashen-treant', '纏根')).toEqual([{ chance: 0.2, power: undefined }]);   // .3 → .2
+    expect(E['bog-mother'].stats.hp).toBe(264);
+    expect(E['siege-crab'].stats.hp).toBe(264);
+    expect(sk('siege-crab', '破城鉗')).toEqual([{ chance: 0.2, power: 120 }]);          // 170 → 120
+    for (const id of ['fallen-knight', 'rivet-golem']) expect(E[id].stats.hp, id).toBe(264);
+    for (const id of ['herald-engine', 'banner-bearer']) expect(E[id].stats.hp, id).toBe(140);   // 165 ×0.85
+    expect(sk('rivet-golem', '鉚接')).toEqual([{ chance: 0.25, power: undefined }]);   // tried .10: worse, back
+    expect(sk('fallen-knight', '騎士之盾')).toEqual([{ chance: 0.25, power: undefined }]);
+    // Kept: each moved its cells toward the band and turned no other red (item 23).
+    expect(sk('grey-blight', '枯灰')).toEqual([{ chance: 0.35, power: 90 }]);           // its pair 110 → 90
+    expect(sk('grey-blight', '灰燼之觸')).toEqual([{ chance: 0.3, power: 130 }]);       // 160 → 130
+    expect(sk('shadow-parade', '行列又長了')).toEqual([{ chance: 0.35, power: undefined }]);   // .5 → .35
+    expect(sk('fortress-colossus', '攻城砲')).toEqual([{ chance: 0.25, power: 75 }]);   // 95 → 75
+    expect(sk('bog-leviathan', '巨口')).toEqual([{ chance: 0.3, power: 210 }]);         // 170 → 210
+    expect(sk('gate-breaker', '撞門')).toEqual([{ chance: 0.2, power: 65 }]);           // 85 → 65
+    expect(sk('grey-elder', '枯枝')).toEqual([{ chance: 0.3, power: 95 }]);             // 120 → 95
+    expect(sk('locked-vault', '金庫門')).toEqual([{ chance: 0.3, power: 110 }]);        // 150 → 110, def ×1.15 → ×1
+    expect(E['locked-vault'].stats.def).toBe(25);
+    expect(sk('vault-mimic', '吞金')).toEqual([{ chance: 0.3, power: 120 }]);           // 150 → 120
+    // Tried once, moved nothing or turned another cell red, so back at the spec's numbers (item 24's named exceptions instead).
+    expect(sk('spore-moth', '撲翅')).toEqual([{ chance: 0.45, power: 115 }]);
+    expect(sk('mirror-thief', '鏡刃')).toEqual([{ chance: 0.45, power: 140 }]);
+    expect(sk('veil-stalker', '背刺')).toEqual([{ chance: 0.4, power: 130 }]);
+    expect(sk('debt-collector', '敲門')).toEqual([{ chance: 0.5, power: 155 }]);
+    expect(sk('faceless-host', '無面之擊')).toEqual([{ chance: 0.3, power: 140 }]);
+    expect(sk('siege-titan', '重擊')).toEqual([{ chance: 0.4, power: 220 }]);
+    expect(sk('last-commander', '指揮刀')).toEqual([{ chance: 0.4, power: 200 }]);
+    expect(sk('vault-dragon', '龍爪')).toEqual([{ chance: 0.4, power: 175 }]);
+  });
+  it("the iron natives' groups after ruling X", () => {
+    // Five natives in two groups each within six force four native pairs; every pair with a heavy walled band 18b's allPhys
+    // party at depth 8, so the crab stands alone twice and the two buffers pair up (controller ruling, item 24).
+    expect(NATIVE_GROUPS.iron).toEqual([['siege-crab'], ['siege-crab'], ['herald-engine', 'banner-bearer'], ['fallen-knight', 'herald-engine'],
+      ['rivet-golem', 'banner-bearer'], ['fallen-knight', 'rivet-golem']]);
   });
 });
 

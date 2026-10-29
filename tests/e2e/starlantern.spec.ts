@@ -16,7 +16,7 @@ import { TREES } from '../../src/scripts/games/starlantern/data/trees';
 import { STAT_CATEGORIES } from '../../src/scripts/games/starlantern/engine/stats';
 import { maxValue } from '../../src/scripts/games/starlantern/engine/loot/item';
 import { mkdirSync, readFileSync } from 'node:fs';
-import { WAVE_1_LIVE, WAVE_2_LIVE, version8Save } from '../../src/scripts/games/starlantern/engine/testing';
+import { WAVE_1_LIVE, WAVE_2_LIVE, WAVE_3_LIVE, version8Save } from '../../src/scripts/games/starlantern/engine/testing';
 import { defaultTalents, defaultTree } from '../../src/scripts/games/starlantern/engine/progression';
 import { buildTalents, buildTree } from '../../src/scripts/games/starlantern/engine/builds';
 import { buildOf } from '../../src/scripts/games/starlantern/data/builds';
@@ -2430,6 +2430,12 @@ test.describe('starlantern', () => {
     page.on('response', (r) => { if (r.status() === 404) missing.push(r.url()); });
     await fitTo(page, 1280, 720);
     const w = await setup(page, 7);
+    // L4b: exactly the first three waves live, as this smoke was written (the fourth wave is live in the game now).
+    await page.evaluate((ids) => {
+      const { ROSTER_LIVE } = (window as unknown as { __starlanternDebug: { roster: { ROSTER_LIVE: Set<string> } } }).__starlanternDebug.roster;
+      ROSTER_LIVE.clear();
+      for (const id of ids) ROSTER_LIVE.add(id);
+    }, [...WAVE_3_LIVE]);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const run = <R = unknown>(src: string) => page.evaluate((s) => new Function('g', s)((window as any).__starlanternDebug.game), src) as Promise<R>;
     const shot = async (name: string) => { if (process.env.SL_SHOTS) await page.screenshot({ path: `${process.env.SL_SHOTS}/l3c-${name}.png` }); };
@@ -2517,6 +2523,113 @@ test.describe('starlantern', () => {
     await tome.click();
     await expect(page.locator('.slx-hb-detail')).toContainText(B.tally(1, 1));
     await shot('bestiary-lands');
+    expect(await legibility(page, { requireReady: true })).toEqual([]);
+    expect(w.errors).toEqual([]);
+    expect(missing).toEqual([]);
+  });
+
+  test("the whole roster: every land's depth-5 boss, a member fighting on from inside the bog's mouth, an own unique crafted and an inscription (roster plan L4d)", async ({ page }) => {
+    const missing: string[] = [];
+    page.on('response', (r) => { if (r.status() === 404) missing.push(r.url()); });
+    await fitTo(page, 1280, 720);
+    const w = await setup(page, 7);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const run = <R = unknown>(src: string) => page.evaluate((s) => new Function('g', s)((window as any).__starlanternDebug.game), src) as Promise<R>;
+    const shot = async (name: string) => { if (process.env.SL_SHOTS) await page.screenshot({ path: `${process.env.SL_SHOTS}/l4d-${name}.png` }); };
+    const down = async (region: string, depth: number) => {
+      await run(`g.battle = null; g.run = null; g.phase = 'town'; g.state.dungeon.reached['${region}'] = 15;
+        const r = g.depart({ region: '${region}', condition: 'plain' }, ${Math.floor(depth / 5) * 5 || 1}); if (!r.ok) throw new Error('no departure: ' + r.reason);
+        if (g.floor !== ${depth}) g.changeFloor(${depth});`);
+      await go(page, 'dungeon');
+      await expect(page.locator('.slx-dungeon')).toBeVisible(); await w.closeTalk();
+    };
+    /** Every foe down, then 全員攻擊 until the result, and through it back to the map. */
+    const win = async () => {
+      await run('for (const e of g.battle.enemies) { e.hp = 0; e.alive = false; }');
+      for (let i = 0; i < 40 && !(await page.locator('.slx-result').isVisible()); i++) {
+        if (await page.locator('.slx-bcmd [role=option]').count()) { await w.key('ArrowUp'); await w.key('Enter'); }
+        else await page.waitForTimeout(50);
+      }
+      await expect(page.locator('.slx-result')).toContainText('勝利');
+      for (let i = 0; i < 20 && !(await page.locator('.slx-dungeon').isVisible()); i++) { await w.key('z'); await page.waitForTimeout(60); }
+      await expect(page.locator('.slx-dungeon')).toBeVisible(); await w.closeTalk();
+    };
+    /** The floor's boss tile (placed beside a floor tile), stepped onto from that tile. */
+    const toBoss = async () => {
+      const at = await run<{ x: number; y: number }>(`const m = g.map();
+        const at = [...Array(m.tiles.length).keys()].flatMap((y) => m.tiles[y].map((t, x) => ({ t, x, y }))).find((c) => c.t === 'floor' && m.tiles[c.y][c.x - 1] === 'floor');
+        m.tiles[at.y][at.x] = 'boss'; m.boss = { x: at.x, y: at.y }; g.pos = { x: at.x - 1, y: at.y }; g.encounter = 0; return { x: at.x, y: at.y };`);
+      expect(at).toBeTruthy();
+      await w.key('ArrowRight');
+      for (let i = 0; i < 14 && !(await page.locator('.slx-battle').isVisible()); i++) { await w.key('z'); await page.waitForTimeout(60); }
+      await expect(page.locator('.slx-battle')).toBeVisible();
+      // A 'z' that lands as the fight opens picks 攻擊 and opens the target list (a land's boss floor plays a memory caption first).
+      for (let i = 0; i < 3 && await page.locator('.slx-btarget').isVisible(); i++) { await w.key('Escape'); await page.waitForTimeout(60); }
+      await expect(page.locator('.slx-bcmd [role=option]').first()).toBeVisible();
+    };
+
+    // Every land's depth 5 is its own first boss now (spec §5.6), the permafrost with its two pillars in front.
+    const first: [string, string[]][] = [
+      ['blaze', ['ember-tyrant']], ['frost', ['rime-pillar', 'rime-pillar', 'rime-sovereign']], ['storm', ['thunder-roc']],
+      ['mire', ['mire-hydra']], ['shade', ['faceless-host']], ['iron', ['fortress-colossus']],
+    ];
+    for (const [region, ids] of first) {
+      await down(region, 5);
+      await toBoss();
+      expect(await run('return [g.battle.boss, g.battle.enemies.map((e) => e.defId)];'), region).toEqual([true, ids]);
+      await shot(`${region}-d5`);
+      await win();
+    }
+
+    // Mire depth 15: the bog's mouth swallows the member about to act; she still acts, and the mouth is all she can hit.
+    await down('mire', 15);
+    await toBoss();
+    expect(await run('return g.battle.enemies.map((e) => e.defId);')).toEqual(['bog-leviathan']);
+    const before = await run<number>(`const s = g.battle, m = s.party.find((c) => c.alive && c.sleep === 0 && !c.frozen), e = s.enemies[0];
+      m.engulfed = e.key; e.gulp = { key: m.key, until: s.round + 1, taken: 0 }; e.max.atk = 1; e.max.mag = 1;
+      for (const c of s.party) if (c !== m) { c.max.atk = 0; c.max.mag = 0; }   // only her blow can hurt the mouth this round
+      return e.hp;`);
+    // Her 攻擊 goes straight to the mouth, the one foe she can reach: no target list opens.
+    await w.choose('.slx-bcmd', '攻擊');
+    await expect(page.locator('.slx-btarget')).toHaveCount(0);
+    await shot('mire-d15-inside');
+    // The rest guard (and could not hurt it anyway); the round plays, and the mouth has taken her blow from inside.
+    for (let i = 0; i < 40 && (await run<number>('return g.battle?.round ?? -1;')) === 0; i++) {
+      if (await page.locator('.slx-bcmd [role=option]').count()) await w.choose('.slx-bcmd', '防禦');
+      else await page.waitForTimeout(50);
+    }
+    expect(await run<number>('return g.battle.enemies[0].hp;')).toBeLessThan(before);
+    await win();
+
+    // The forge: the hydra fell on mire depth 5, so its own unique can be made; the bog mother is live, so its peat inscribes.
+    await run(`g.battle = null; g.run = null; g.phase = 'town'; g.state.gold = 100000;
+      Object.assign(g.state.inventory, { 'hydra-scale': 5, 'star-tear': 1, 'bog-peat': 3, 'essence-rare': 5 });
+      g.state.bag.push({ uid: g.mintUid(), base: 'moss-charm', rarity: 'rare', ilvl: 10, affixes: [{ key: 'hp', value: 30 }, { key: 'res', value: 4 }], enhance: 0 });`);
+    expect(await run('return g.state.bestiary["mire-hydra"].felled;')).toBeGreaterThanOrEqual(1);
+    await go(page, 'town');
+    await expect(page.locator('.slx-town')).toBeVisible(); await w.closeTalk();
+    await w.choose('.slx-town', '鍛造屋');
+    await expect(page.locator('.slx-forge')).toBeVisible(); await w.closeTalk();
+    await page.locator('.slx-forge .slx-cmd [data-id=craft]').click();
+    await page.locator('.slx-forge [data-id=own]').click();
+    // Thirty-nine own uniques in an eight-row window: walk down to the hydra's.
+    for (let i = 0; i < 40 && !(await page.locator('.slx-forge [data-id=hydra-fang]').count()); i++) await w.key('ArrowDown');
+    await page.locator('.slx-forge [data-id=hydra-fang]').click();
+    await page.locator('.slx-confirm [data-id=yes]').click();
+    await w.closeTalk();
+    expect(await run('return g.state.bag.some((it) => it.special === "hydra-fang");')).toBe(true);
+    await shot('forge-own');
+    await w.key('Escape');
+    await w.key('Escape');
+    const neckUid = await run<number>('return g.state.bag.find((it) => it.base === "moss-charm").uid;');
+    await page.locator('.slx-forge .slx-cmd [data-id=reroll]').click();
+    await page.locator(`.slx-forge [data-id=g${neckUid}]`).click();
+    await page.locator('.slx-forge [data-id=a0]').click();
+    await page.locator('.slx-forge [data-id="ins:bog-mother"]').click();
+    await page.locator('.slx-confirm [data-id=yes]').click();
+    await w.closeTalk();
+    expect(await run(`const it = g.state.bag.find((x) => x.uid === ${neckUid}); return [it.inscription, it.affixes[0].key];`)).toEqual(['bog-mother', 'hp']);
+    await shot('forge-inscribed');
     expect(await legibility(page, { requireReady: true })).toEqual([]);
     expect(w.errors).toEqual([]);
     expect(missing).toEqual([]);
@@ -3057,6 +3170,14 @@ test.describe('starlantern', () => {
     await expect(page.locator('.slx-bcmd [role=option]').first()).toBeVisible();
     const row = page.locator(`.slx-partybar [data-key=${who}] .slx-pm-ail`);
     await expect(row).toBeVisible();
+    // The 14px icons stream in behind the title (ui2/lateArt.ts): a row laid out before they land draws its words bare and
+    // narrower, and lays itself out again when they do. Wait for that second layout (every word in the row wearing its loaded
+    // icon) before measuring, so a slow load cannot fit two bare words where one dressed word belongs.
+    const dressed = () => row.evaluate((r) => [...r.querySelectorAll('.slx-ail:not(.slx-ail-more)')].every((w) => {
+      const i = w.querySelector<HTMLImageElement>('img.slx-chip-ico');
+      return !!i && i.complete && i.naturalWidth > 0;
+    }));
+    await expect.poll(dressed, { message: 'every word in the row wears its loaded 14px icon', timeout: 30000 }).toBe(true);
     // One line, the most severe first; what does not fit is counted in +N.
     // At 12px (legibility Task 4), each word with its 14px icon in front (art step 9): one word, the rest in +N.
     expect(await row.locator('.slx-ail').allTextContents()).toEqual(['流血×2', '+4']);

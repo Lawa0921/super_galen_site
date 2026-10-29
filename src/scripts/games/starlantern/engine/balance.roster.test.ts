@@ -125,6 +125,16 @@ const EXCEPTION_22A: Record<string, { floor?: number; ceiling?: number; why: str
   'forge-hound': { floor: 0.052, why: 'its attempt (熔吼 .25 → .35, 熔牙 145 → 175) made it softer (.062 → .032): more turns spent winding up (item 23)' },
   'frozen-pilgrim': { floor: 0, why: 'its pair is felled in the ice before it thaws; its attempt (冰之祈 140/.4 → 170/.5) moved nothing (.000) (item 23)' },
   'sand-scorpion': { floor: 0.095, why: 'in the band but .132 under its reference; its attempt (毒針 135 → 165) gave .123 and put 22c blaze d25 over .45 (item 23)' },
+  // Spec §0 item 24 (plan L4b): the mire, shade and iron natives first met at depth 4, each on its measured loss less .01
+  // (rounded outward to three places). Three give way to the frozen bands 7 and 18b (ruling 21's order: the treant, and the
+  // two buffers by the controller's ruling X), the rest tried once and moved nothing. Backlog F10.
+  'ashen-treant': { floor: 0.217, why: 'its hp ×0.85 and 纏根 .3 → .2 greened frozen band 7 mire d10 and 18b mire; 22a went .252 → .227, .087 under the golem (item 24)' },
+  'spore-moth': { floor: 0.14, why: 'its attempt (撲翅 115 → 150) moved nothing (.150 → .153), back at 115 (item 24)' },
+  'mirror-thief': { floor: 0.073, why: 'its attempt (鏡刃 140 → 180) moved nothing (.084 → .085), back at 140 (item 24)' },
+  'veil-stalker': { floor: 0.109, why: 'its attempt (背刺 130 → 160) moved nothing (.120 → .125), back at 130 (item 24)' },
+  'debt-collector': { floor: 0.075, why: 'its attempt (敲門 155 → 190) moved little (.085 → .093) and took 22c shade d25 further out; back at 155 (item 24)' },
+  'herald-engine': { floor: 0.029, why: 'a buffer with no blow of its own; the controller kept ruling X (hp ×0.85 for frozen band 18b iron), .088 → .039 (item 24; frozen first, item 21)' },
+  'banner-bearer': { floor: 0.07, why: 'in the band at .167 until the controller kept ruling X (hp ×0.85 for frozen band 18b iron), .167 → .080 (item 24; frozen first, item 21)' },
 };
 
 /**
@@ -149,6 +159,24 @@ const EXCEPTION_22: Record<string, { min?: number; max?: number; why: string }> 
   '22c frost d25 loss': { max: 0.531, why: 'the loss of the same cell (.521); the komainu attempt is back at the spec (item 23)' },
   '22f mirage-city blaze d15 allPhys': { min: 0.79, why: 'the attempt that greened its noHeal (.7 → .9) left allPhys at .8 to the eater 1.0 (item 23)' },
   '22f rift-maw frost d15 allPhys': { min: 0.79, why: 'its attempt (裂口之息 .5 → .35 past half) moved nothing (.8 to the eater 1.0) (item 23)' },
+  // Spec §0 item 24 (plan L4b): the fourth wave's cells still red after their one attempt, kept or back at the spec as item
+  // 23 rules, and the six wardens past the tuned depth that L1b left to the go-live tasks, now measured. Backlog F10.
+  '22b faceless-host shade d20': { max: 0.135, why: 'its attempt (無面之擊 140 → 115) took the distance .125 to .25; back at 140 (item 24)' },
+  '22b grey-blight mire d25': { max: 0.198, why: 'its attempt (its pair 110/160 → 90/130) left .188 here and moved its 22f allPhys .6 → .8; kept (item 24)' },
+  '22b shadow-parade shade d30': { max: 0.135, why: 'its attempt (行列又長了 .5 → .35) left .125 here and moved its 22j cells toward the eater; kept (item 24)' },
+  '22b vault-dragon shade d25': { max: 0.26, why: 'its attempt (龍爪 175 → 210) took .25 to .125 but turned its 22j depth 25 red; back at 175 (item 24)' },
+  '22c mire d25': { min: 0.542, why: 'the treant and the bog mother at depth 25 (.552 to the legacy .765), after the hp ×0.85 frozen band 7 asked for (item 24)' },
+  '22c mire d25 loss': { max: 0.612, why: 'the loss of the same cell (.601 to the legacy .458) (item 24)' },
+  '22c shade d25': { min: 0.833, why: 'its attempt (餓肚子的寶庫 吞金 150 → 120) moved the loss .459 → .453 and the rate not (.844); kept (item 24)' },
+  '22c shade d25 loss': { max: 0.463, why: 'the loss of the same cell (.453) (item 24)' },
+  '22f grey-blight mire d10 allPhys': { min: 0.79, why: 'its attempt (its pair 110/160 → 90/130) took .6 to .8 against the eater 1.0; kept (item 24)' },
+  '22f shadow-parade shade d15 noHeal': { min: 0.79, why: 'its attempt (行列又長了 .5 → .35) greened allPhys and left noHeal at .8 (item 24)' },
+  '22i lantern-brood mainline d28': { min: 0, why: 'past the tuned depth 25 (bands 19a, 19b): the expected party carried on by depth wins none (item 24)' },
+  '22i false-moon mainline d33': { min: 0.212, why: 'past the tuned depth: the expected party carried on wins .222 (item 24)' },
+  '22i bell-warden mainline d38': { min: 0, why: 'past the tuned depth: the expected party carried on wins none (item 24)' },
+  '22i toppled-automaton mainline d43': { min: 0, why: 'past the tuned depth: the expected party carried on wins none (item 24)' },
+  '22i requiem-conductor mainline d48': { min: 0, why: 'past the tuned depth: the expected party carried on wins none (item 24)' },
+  '22i lantern-brood mainline d53': { min: 0, why: 'past the tuned depth: the expected party carried on wins none (item 24)' },
 };
 /**
  * L3b review: the direction each exception holds, one bound a cell. 22a: the wick shade a ceiling only, every other a floor
@@ -180,7 +208,8 @@ const exceptedCell = (label: string, value: number): boolean => {
 
 describe('band 22a names its exceptions (ruling 21)', () => {
   it('exactly the paper moth and the mist twins, each with its floor, and the wick shade with its ceiling (item 22)', () => {
-    expect(Object.keys(EXCEPTION_22A).sort()).toEqual(['ash-mourner', 'forge-hound', 'frozen-pilgrim', 'mist-twin', 'paper-moth', 'sand-scorpion', 'wick-shade']);
+    expect(Object.keys(EXCEPTION_22A).sort()).toEqual(['ash-mourner', 'ashen-treant', 'banner-bearer', 'debt-collector', 'forge-hound', 'frozen-pilgrim',
+      'herald-engine', 'mirror-thief', 'mist-twin', 'paper-moth', 'sand-scorpion', 'spore-moth', 'veil-stalker', 'wick-shade']);
     expect(EXCEPTION_22A['paper-moth'].floor).toBe(0.099);
     expect(EXCEPTION_22A['mist-twin']?.floor).toBe(0.171);
     expect(EXCEPTION_22A['wick-shade']).toMatchObject({ ceiling: 0.467 });
@@ -189,6 +218,18 @@ describe('band 22a names its exceptions (ruling 21)', () => {
     // (the frozen pilgrim held at nothing: its pair is felled in the ice).
     expect(Object.fromEntries(['ash-mourner', 'forge-hound', 'frozen-pilgrim', 'sand-scorpion'].map((id) => [id, EXCEPTION_22A[id].floor])))
       .toEqual({ 'ash-mourner': 0.031, 'forge-hound': 0.052, 'frozen-pilgrim': 0, 'sand-scorpion': 0.095 });
+    // Spec §0 item 24 (plan L4b): the mire, shade and iron natives first met at depth 4, each on its measured loss less .01.
+    expect(Object.fromEntries(['ashen-treant', 'spore-moth', 'mirror-thief', 'veil-stalker', 'debt-collector', 'herald-engine', 'banner-bearer']
+      .map((id) => [id, EXCEPTION_22A[id].floor])))
+      .toEqual({ 'ashen-treant': 0.217, 'spore-moth': 0.14, 'mirror-thief': 0.073, 'veil-stalker': 0.109, 'debt-collector': 0.075, 'herald-engine': 0.029, 'banner-bearer': 0.07 });
+    for (const id of ['ashen-treant', 'spore-moth', 'mirror-thief', 'veil-stalker', 'debt-collector', 'herald-engine', 'banner-bearer']) {
+      expect(EXCEPTION_22A[id].why, id).toMatch(/item 24/);
+    }
+    // The controller's ruling X (item 24) turned the two buffers red for frozen band 18b: floors only, and said so.
+    for (const id of ['herald-engine', 'banner-bearer']) {
+      expect(EXCEPTION_22A[id].ceiling, id).toBeUndefined();
+      expect(EXCEPTION_22A[id].why, id).toMatch(/ruling X/);
+    }
   });
   it('each cell holds one direction: the wick shade a ceiling only, every other a floor only (L3b review)', () => {
     expect(directionBreaks22A(EXCEPTION_22A)).toEqual([]);
@@ -214,13 +255,30 @@ describe('band 22 names its other exceptions (spec §0 item 22, plan L2b)', () =
       '22c frost d25 loss': 0.531,
       '22f mirage-city blaze d15 allPhys': 0.79,
       '22f rift-maw frost d15 allPhys': 0.79,
+      // Spec §0 item 24 (plan L4b): the fourth wave's cells, and the six wardens past the tuned depth now measured.
+      '22b faceless-host shade d20': 0.135,
+      '22b grey-blight mire d25': 0.198,
+      '22b shadow-parade shade d30': 0.135,
+      '22b vault-dragon shade d25': 0.26,
+      '22c mire d25': 0.542,
+      '22c mire d25 loss': 0.612,
+      '22c shade d25': 0.833,
+      '22c shade d25 loss': 0.463,
+      '22f grey-blight mire d10 allPhys': 0.79,
+      '22f shadow-parade shade d15 noHeal': 0.79,
+      '22i lantern-brood mainline d28': 0,
+      '22i false-moon mainline d33': 0.212,
+      '22i bell-warden mainline d38': 0,
+      '22i toppled-automaton mainline d43': 0,
+      '22i requiem-conductor mainline d48': 0,
+      '22i lantern-brood mainline d53': 0,
     });
     // A 22b cell bounds its distance from the lantern-eater from above, and a 22c loss cell its loss; every other one its
     // rate from below.
     expect(EXCEPTION_22['22b gorged-beast mainline d25'].max).toBe(0.135);
     for (const [k, e] of Object.entries(EXCEPTION_22)) if (!k.startsWith('22b') && !k.endsWith(' loss')) expect(e.max, k).toBeUndefined();
     for (const [k, e] of Object.entries(EXCEPTION_22)) if (k.endsWith(' loss')) expect(e.min, k).toBeUndefined();
-    for (const e of Object.values(EXCEPTION_22)) expect(e.why, e.why).toMatch(/item 2[23]/);
+    for (const e of Object.values(EXCEPTION_22)) expect(e.why, e.why).toMatch(/item 2[234]/);
   });
   it('each cell holds one direction: a 22b distance and a loss from above only, every other rate from below only (L3b review)', () => {
     expect(directionBreaks22(EXCEPTION_22)).toEqual([]);
@@ -237,21 +295,7 @@ describe('band 22 names its other exceptions (spec §0 item 22, plan L2b)', () =
  * keeps a deferred cell).
  */
 const DEFERRED_22: Record<string, { wave: 'L2' | 'L3' | 'L4'; id: string }> = {
-  '22a debt-collector (std) shade d4': { wave: 'L4', id: 'debt-collector' },
-  '22a herald-engine (support) iron d4': { wave: 'L4', id: 'herald-engine' },
-  '22a mirror-thief (std) shade d4': { wave: 'L4', id: 'mirror-thief' },
-  '22a siege-crab (heavy) iron d4': { wave: 'L4', id: 'siege-crab' },
-  '22a spore-moth (swarm) mire d4': { wave: 'L4', id: 'spore-moth' },
-  '22a veil-stalker (std) shade d4': { wave: 'L4', id: 'veil-stalker' },
-  '22b faceless-host shade d20': { wave: 'L4', id: 'faceless-host' },
-  '22b fortress-colossus iron d20': { wave: 'L4', id: 'fortress-colossus' },
-  '22b grey-blight mire d25': { wave: 'L4', id: 'grey-blight' },
-  '22b shadow-parade shade d30': { wave: 'L4', id: 'shadow-parade' },
-  '22b vault-dragon shade d25': { wave: 'L4', id: 'vault-dragon' },
-  '22f grey-blight mire d10 allPhys': { wave: 'L4', id: 'grey-blight' },
-  '22f shadow-parade shade d15 allPhys': { wave: 'L4', id: 'shadow-parade' },
-  '22f shadow-parade shade d15 noHeal': { wave: 'L4', id: 'shadow-parade' },
-  '22i gate-breaker iron d8': { wave: 'L4', id: 'gate-breaker' },
+  // L4b: the fourth wave's cells are its own now (measured, passed or named in EXCEPTION_22A / EXCEPTION_22); none is left.
 };
 const deferredCell = (label: string): boolean => {
   const d = DEFERRED_22[label];
@@ -260,11 +304,15 @@ const deferredCell = (label: string): boolean => {
 };
 
 describe('band 22 defers only what is not live yet (controller ruling 2026-10-28)', () => {
-  const liveDeferred = () => [...new Set(Object.values(DEFERRED_22).map((d) => d.id))].filter((id) => ROSTER_LIVE.has(id));
+  const liveDeferred = (t: typeof DEFERRED_22 = DEFERRED_22) => [...new Set(Object.values(t).map((d) => d.id))].filter((id) => ROSTER_LIVE.has(id));
   it('no live species keeps a deferred cell', () => {
     expect(liveDeferred()).toEqual([]);
-    // The check bites: a species gone live with its cell still deferred is caught.
-    withRosterLive(['spore-moth'], () => expect(liveDeferred()).toEqual(['spore-moth']));
+    // L4b: every roster species is live, so nothing is deferred any more.
+    expect(Object.keys(DEFERRED_22)).toEqual([]);
+    // The check bites: a deferred cell of a live species is caught (an injected table); of one not live, it is not.
+    const injected = { '22a spore-moth (swarm) mire d4': { wave: 'L4' as const, id: 'spore-moth' } };
+    expect(liveDeferred(injected)).toEqual(['spore-moth']);
+    withRosterOnly([], () => expect(liveDeferred(injected)).toEqual([]));
   });
   it('every deferred cell is a roster species of a later wave', () => {
     for (const [label, d] of Object.entries(DEFERRED_22)) {
@@ -409,6 +457,9 @@ describe.skipIf(!on)('band 22: the roster against the lantern-eater and its own 
       const same = sameTables(encounterTable(region, d), legacyEncounterTable(region, d));
       // L1b: the legacy table as it was met with nothing live (no deep trait), as recorded.
       const legacy = same ? r : withRosterOnly([], () => expected(d, region, legacyEncounterTable(region, d)));
+      // L4b: a named cell whose legacy misses the band is still one of the relative cells (pinned below).
+      const named = !!EXCEPTION_22[label];
+      if (named && !inBand(legacy)) relative22c.push(`${region} d${d}`);
       if (exceptedCell(label, r.rate)) {
         // Item 23: the rate held to its floor; the loss to its own ceiling, or the band's.
         if (!exceptedCell(`${label} loss`, r.hpLoss)) { ex(r.hpLoss, label).toBeGreaterThanOrEqual(0.1); ex(r.hpLoss, label).toBeLessThanOrEqual(0.45); }
@@ -556,17 +607,18 @@ describe.skipIf(!on)('band 22: the roster against the lantern-eater and its own 
       }
     });
     expect(new Set(cells.map((c) => c.id)).size).toBe(11);
-    // No tuned expected party exists past EXPECTED_DEPTH_MAX: those wardens are deferred to the go-live tasks, not passed.
-    const deferred = cells.filter((c) => c.depth > EXPECTED_DEPTH_MAX);
-    for (const c of deferred) say(`22i ${c.id} ${c.region} d${c.depth} deferred to L: no tuned expected party past depth ${EXPECTED_DEPTH_MAX} (bands 19a, 19b)`);
-    expect(deferred.map((c) => `${c.id} d${c.depth}`)).toEqual(['lantern-brood d28', 'false-moon d33', 'bell-warden d38', 'toppled-automaton d43', 'requiem-conductor d48', 'lantern-brood d53']);
+    // No tuned expected party exists past EXPECTED_DEPTH_MAX (bands 19a, 19b). Those wardens were left to the go-live tasks;
+    // with every warden live (L4b) they are measured too, the same expected party carried on by depth, and judged as the rest
+    // are (one still red is named in EXCEPTION_22, item 24).
+    const past = cells.filter((c) => c.depth > EXPECTED_DEPTH_MAX);
+    for (const c of past) say(`22i ${c.id} ${c.region} d${c.depth} past the tuned depth ${EXPECTED_DEPTH_MAX}: the expected party carried on by depth`);
+    expect(past.map((c) => `${c.id} d${c.depth}`)).toEqual(['lantern-brood d28', 'false-moon d33', 'bell-warden d38', 'toppled-automaton d43', 'requiem-conductor d48', 'lantern-brood d53']);
     for (const c of cells) allLive(() => {
       const group = wardenGroup(c.id);
       const scale = { depth: c.depth, region: c.region, elite: group[0] };
-      // The ENHANCE_MAX check needs no tuned party (B2 review item 6): every warden takes it, the deferred ones too.
-      const tuned = c.depth <= EXPECTED_DEPTH_MAX;
+      // The ENHANCE_MAX check needs no tuned party (B2 review item 6): every warden takes it.
       let wins = 0;
-      if (tuned) for (let kit = 1; kit <= KITS; kit++) for (let seed = 1; seed <= 6; seed++) {
+      for (let kit = 1; kit <= KITS; kit++) for (let seed = 1; seed <= 6; seed++) {
         const r = simBattle(kitParty(levelAt(c.depth), c.depth, kit, undefined, expectedEnhance(c.depth), EXPECT), group, false, seed * 7919, scale);
         if (r.outcome === 'win') wins++;
       }
@@ -578,9 +630,8 @@ describe.skipIf(!on)('band 22: the roster against the lantern-eater and its own 
         rounds += r.rounds;
       }
       const label = `22i ${c.id} ${c.region} d${c.depth}`;
-      if (!tuned) { sayRun(`${label} +${ENHANCE_MAX} (win rate deferred to L)`, { rounds: rounds / 6 }); return; }
       sayRun(label, { rate, rounds: rounds / 6 });
-      if (!deferredCell(label)) ex(rate, label).toBeGreaterThanOrEqual(0.6);
+      if (!deferredCell(label) && !exceptedCell(label, rate)) ex(rate, label).toBeGreaterThanOrEqual(0.6);
     });
   }, 900_000);
 });

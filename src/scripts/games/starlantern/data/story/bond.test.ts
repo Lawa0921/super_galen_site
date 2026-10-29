@@ -67,12 +67,13 @@ describe('bond data', () => {
       // Roster plan L3a (ruling 13): Chizuru's, Safira's and Noel's keepsakes, declined until her pieces are all told.
       chizuru: { loved: ['old-coin', 'moss'], liked: ['star-stone', 'crystal-shell'], declined: ['ice-crystal', 'frost-heart', 'shrine-rope'], healed: { 'shrine-rope': 'liked' } },
       safira: { loved: ['lizard-scale', 'king-scale'], liked: ['star-stone', 'bat-wing'], declined: ['blaze-core', 'copper-anklet'], healed: { 'blaze-core': 'liked', 'copper-anklet': 'liked' } },
-      sylvie: { loved: ['moss', 'thorn-fang'], liked: ['bat-wing', 'lizard-scale'], declined: ['mire-gland'], healed: { 'mire-gland': 'neutral' } },
+      // Roster plan L4a (ruling 13): Sylvie's, Liz's and Scarlet's keepsakes, declined until her pieces are all told.
+      sylvie: { loved: ['moss', 'thorn-fang'], liked: ['bat-wing', 'lizard-scale'], declined: ['mire-gland', 'ashen-acorn'], healed: { 'mire-gland': 'neutral', 'ashen-acorn': 'liked' } },
       noel: { loved: ['storm-stone', 'crystal-shell'], liked: ['king-scale', 'star-tear'], declined: ['star-stone', 'ash-page'], healed: { 'star-stone': 'liked', 'ash-page': 'liked' } },
       // Roster plan L2a (ruling 13): Bobby's keepsake, the fallen automaton's core, declined until her pieces are all told.
       bobby: { loved: ['ancient-gear', 'iron-shard'], liked: ['star-stone', 'crystal-shell', 'storm-stone'], declined: ['mire-gland', 'automaton-core'], healed: { 'automaton-core': 'liked' } },
-      liz: { loved: ['old-coin', 'king-scale'], liked: ['star-tear', 'ancient-gear'], declined: ['shade-crystal'], healed: { 'shade-crystal': 'neutral' } },
-      scarlet: { loved: ['blaze-core', 'dusk-cloth'], liked: ['king-scale', 'star-stone'], declined: ['iron-shard'], healed: { 'iron-shard': 'liked' } },
+      liz: { loved: ['old-coin', 'king-scale'], liked: ['star-tear', 'ancient-gear'], declined: ['shade-crystal', 'vault-coin'], healed: { 'shade-crystal': 'neutral', 'vault-coin': 'liked' } },
+      scarlet: { loved: ['blaze-core', 'dusk-cloth'], liked: ['king-scale', 'star-stone'], declined: ['iron-shard', 'gate-splinter'], healed: { 'iron-shard': 'liked', 'gate-splinter': 'liked' } },
     });
     expect(Object.keys(GIFT_TASTE).sort()).toEqual([...COMPANIONS].sort());
     for (const c of COMPANIONS) {

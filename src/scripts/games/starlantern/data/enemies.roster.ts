@@ -262,11 +262,11 @@ const NATIVE: [string, Spec][] = [
     skills: [sk('火之頁', 0.6, 'enemy', hit(110, 'fire'))],
     stages: [{ skills: [sk('冰之頁', 0.6, 'enemy', hit(110, 'ice'))] }, { skills: [sk('雷之頁', 0.6, 'enemy', hit(110, 'thunder'))] }] }],
   // 腐毒沼澤
-  ['bog-mother', { name: '泥沼母體', arch: 'heavy', home: 'mire', inscribe: 'hp', skills: [call('冒泡', 'slime', 1, 0.15), sk('泥漿', 0.25, 'row', hit(55))] }],
+  ['bog-mother', { name: '泥沼母體', arch: 'heavy', mul: { hp: DOWNDOWN }, home: 'mire', inscribe: 'hp', skills: [call('冒泡', 'slime', 1, 0.15), sk('泥漿', 0.25, 'row', hit(55))] }],
   ['rot-lily', { name: '腐百合', arch: 'support', home: 'mire', inscribe: 'poisonRes',
     skills: [sk('腐香', 0.3, 'cross', poison(0.5)), sk('腐蝕', 0.25, 'row', buff('res', -30, 2))] }],
   ['leech-knight', { name: '蛭甲騎士', arch: 'std', home: 'mire', inscribe: 'armor', skills: [sk('吸血突刺', 0.3, 'enemy', bite(hit(130), 50))] }],
-  ['ashen-treant', { name: '枯灰樹人', arch: 'heavy', home: 'mire', inscribe: 'wil', lore: 'sylvie', mend: { pct: 10 }, skills: [sk('纏根', 0.3, 'row', buff('spd', -40, 2))] }],
+  ['ashen-treant', { name: '枯灰樹人', arch: 'heavy', mul: { hp: DOWNDOWN }, home: 'mire', inscribe: 'wil', lore: 'sylvie', mend: { pct: 10 }, skills: [sk('纏根', 0.2, 'row', buff('spd', -40, 2))] }],
   ['spore-moth', { name: '孢子蛾', arch: 'swarm', home: 'mire', inscribe: 'tp', skills: [sk('孢子', 0.3, 'enemy', poison(0.4)), sk('撲翅', 0.45, 'enemy', hit(115))],
     onFall: { name: '孢子四散', target: 'cross', effects: [poison(0.5)] } }],
   // 暗影迴廊
@@ -275,19 +275,19 @@ const NATIVE: [string, Spec][] = [
   ['hush-acolyte', { name: '靜默侍者', arch: 'caster', home: 'shade', inscribe: 'tpCost', lore: 'rin', remnant: true,
     skills: [sk('靜默', 0.3, 'cross', hit(60, 'ice'), forget(0.4)), sk('鈴聲', 0.3, 'enemy', hit(110, 'ice'))] }],
   ['vault-mimic', { name: '餓肚子的寶庫', arch: 'heavy', home: 'shade', inscribe: 'goldFind', lore: 'liz', opener: 'disguise',
-    skills: [sk('吞金', 0.3, 'enemy', hit(150), steal(5))] }],
+    skills: [sk('吞金', 0.3, 'enemy', hit(120), steal(5))] }],
   ['debt-collector', { name: '敲門的影子', arch: 'std', home: 'shade', inscribe: 'vuln', lore: 'liz', remnant: true,
     skills: [sk('記下名字', 0.25, 'enemy', hunt), sk('敲門', 0.5, 'enemy', hit(155), steal(5))] }],
   // 鋼鐵要塞
-  ['rivet-golem', { name: '鉚釘機兵', arch: 'heavy', home: 'iron', inscribe: 'armor', skills: [sk('鉚接', 0.25, 'ally', guard(2)), sk('鉚錘', 0.3, 'enemy', hit(140))] }],
-  ['siege-crab', { name: '攻城蟹', arch: 'heavy', home: 'iron', inscribe: 'meleeDR', skills: [windup(sk('破城鉗', 0.2, 'row', hit(170)), '舉鉗')] }],
-  ['herald-engine', { name: '號令機', arch: 'support', home: 'iron', inscribe: 'gauge',
+  ['rivet-golem', { name: '鉚釘機兵', arch: 'heavy', mul: { hp: DOWNDOWN }, home: 'iron', inscribe: 'armor', skills: [sk('鉚接', 0.25, 'ally', guard(2)), sk('鉚錘', 0.3, 'enemy', hit(140))] }],
+  ['siege-crab', { name: '攻城蟹', arch: 'heavy', mul: { hp: DOWNDOWN }, home: 'iron', inscribe: 'meleeDR', skills: [windup(sk('破城鉗', 0.2, 'row', hit(120)), '舉鉗')] }],
+  ['herald-engine', { name: '號令機', arch: 'support', mul: { hp: DOWNDOWN }, home: 'iron', inscribe: 'gauge',
     skills: [sk('號令', 0.4, 'allies', buff('atk', 25, 3)), sk('整隊', 0.3, 'allies', buff('def', 20, 3))] }],
-  ['fallen-knight', { name: '要塞的騎士殘影', arch: 'heavy', home: 'iron', inscribe: 'block', lore: 'scarlet', remnant: true,
+  ['fallen-knight', { name: '要塞的騎士殘影', arch: 'heavy', mul: { hp: DOWNDOWN }, home: 'iron', inscribe: 'block', lore: 'scarlet', remnant: true,
     onAllyFall: { name: '騎士的誓言', effects: [buff('def', 30, 3)] },
     skills: [sk('騎士之盾', 0.25, 'ally', guard(2)), sk('斬擊', 0.3, 'enemy', hit(140))] }],
   // M26: while the banner stands every other foe hits harder; it hardly fights itself.
-  ['banner-bearer', { name: '紅旗旗手', arch: 'support', home: 'iron', inscribe: 'str', lore: 'scarlet', remnant: true, rally: { atk: 20 },
+  ['banner-bearer', { name: '紅旗旗手', arch: 'support', mul: { hp: DOWNDOWN }, home: 'iron', inscribe: 'str', lore: 'scarlet', remnant: true, rally: { atk: 20 },
     skills: [sk('旗竿', 0.3, 'enemy', hit(80))] }],
 ];
 
@@ -316,11 +316,11 @@ const WARDENS: [string, Spec][] = [
     onFall: { name: '最後一頁', target: 'enemies', effects: [{ kind: 'restore', tp: 20 }] },
     skills: [sk('燃頁', 0.35, 'enemy', drain(hit(120, 'fire', { scale: 'atk' }), 15)), sk('灰燼之字', 0.25, 'row', forget(0.4))] }],
   ['grey-elder', { name: '灰化的老樹', arch: 'heavy', rank: 'warden', home: 'mire', lore: 'sylvie', mend: { pct: 5 },
-    skills: [every(call('長出孢子', 'spore-moth', undefined, 1), 3), sk('纏根', 0.3, 'row', buff('spd', -40, 2)), sk('枯枝', 0.3, 'enemy', hit(120))] }],
-  ['locked-vault', { name: '鎖著的金庫', arch: 'heavy', rank: 'warden', mul: { def: UPUP }, home: 'shade', lore: 'liz',
-    skills: [sk('金庫門', 0.3, 'enemy', hit(150), steal(5))] }],
+    skills: [every(call('長出孢子', 'spore-moth', undefined, 1), 3), sk('纏根', 0.3, 'row', buff('spd', -40, 2)), sk('枯枝', 0.3, 'enemy', hit(95))] }],
+  ['locked-vault', { name: '鎖著的金庫', arch: 'heavy', rank: 'warden', home: 'shade', lore: 'liz',
+    skills: [sk('金庫門', 0.3, 'enemy', hit(110), steal(5))] }],
   ['gate-breaker', { name: '撞門的巨影', arch: 'heavy', rank: 'warden', mul: { hp: DOWNDOWN }, home: 'iron', lore: 'scarlet',
-    skills: [call('爬上城牆', 'fallen-knight', 1, 0.15), windup(sk('撞門', 0.2, 'enemies', hit(85)), '後退助跑')] }],
+    skills: [call('爬上城牆', 'fallen-knight', 1, 0.15), windup(sk('撞門', 0.2, 'enemies', hit(65)), '後退助跑')] }],
 ];
 
 /** Two plain boss skills: an area spell and a heavy single blow (the lantern-eater's pattern), named per boss. */
@@ -397,10 +397,10 @@ const BOSSES: [string, Spec][] = [
     ] }],
   // M4, M7, M10: its pods are spore moths: while one stands it is shielded, and each bursts into poison as it falls.
   ['grey-blight', { name: '灰枯', arch: 'boss', home: 'mire', lore: 'sylvie', parts: { cutPct: 50, by: ['spore-moth'] },
-    skills: [call('結出孢子莢', 'spore-moth', 1, 0.25), ...pair('枯灰', 'fire', '灰燼之觸')] }],
+    skills: [call('結出孢子莢', 'spore-moth', 1, 0.25), sk('枯灰', 0.35, 'enemies', hit(90, 'fire')), sk('灰燼之觸', 0.3, 'enemy', hit(130))] }],
   // M28 (ruling 9): it swallows one member for a round; she fights on from inside.
   ['bog-leviathan', { name: '沼底巨口', arch: 'boss', mul: { hp: 1.1 }, home: 'mire',
-    skills: [sk('吞入', 0.3, 'enemy', hit(90), { kind: 'engulf' }), sk('巨口', 0.3, 'enemy', hit(170)), sk('沼氣', 0.3, 'cross', poison(0.5))] }],
+    skills: [sk('吞入', 0.3, 'enemy', hit(90), { kind: 'engulf' }), sk('巨口', 0.3, 'enemy', hit(210)), sk('沼氣', 0.3, 'cross', poison(0.5))] }],
   // 暗影迴廊
   ['faceless-host', { name: '無面之主', arch: 'boss', mul: { hp: DOWN }, home: 'shade',
     skills: [call('鏡中人', 'mirror-thief', 1, 0.1), mirror('無面的回禮', 110), sk('影刃', 0.35, 'enemies', hit(95, 'ice')), sk('無面之擊', 0.3, 'enemy', hit(140))] }],
@@ -408,10 +408,10 @@ const BOSSES: [string, Spec][] = [
     skills: [sk('金幣吐息', 0.4, 'row', { ...hit(125, 'fire'), hoardPct: 100 } as Effect), sk('龍爪', 0.4, 'enemy', hit(175), steal(5))] }],
   // M4, M26: one more shadow joins the line each turn while there is room, and each one makes it stronger.
   ['shadow-parade', { name: '影之行列', arch: 'boss', home: 'shade', throng: { id: 'lost-shadow', per: { atk: 15, mag: 15 } },
-    skills: [call('行列又長了', 'lost-shadow', undefined, 0.5), ...pair('夜行', 'ice', '影之鞭')] }],
+    skills: [call('行列又長了', 'lost-shadow', undefined, 0.35), ...pair('夜行', 'ice', '影之鞭')] }],
   // 鋼鐵要塞
   ['fortress-colossus', { name: '要塞巨像', arch: 'boss', home: 'iron',
-    skills: [call('調來機兵', 'rivet-golem', 1, 0.15), windup(sk('攻城砲', 0.25, 'enemies', hit(95, 'phys', { melee: false })), '裝填'), sk('鐵拳', 0.3, 'enemy', hit(140))] }],
+    skills: [call('調來機兵', 'rivet-golem', 1, 0.15), windup(sk('攻城砲', 0.25, 'enemies', hit(75, 'phys', { melee: false })), '裝填'), sk('鐵拳', 0.3, 'enemy', hit(140))] }],
   ['siege-titan', { name: '攻城巨獸', arch: 'boss', mul: { hp: 1.1, atk: UPUP }, home: 'iron', lore: 'scarlet',
     skills: [sk('破甲', 0.3, 'row', buff('def', -30, 2)), windup(sk('重擊', 0.4, 'enemy', hit(220)), '蓄勢'), sk('踐踏', 0.3, 'enemies', hit(100))] }],
   ['last-commander', { name: '最後的指揮官', arch: 'boss', home: 'iron', lore: 'scarlet', remnant: true,

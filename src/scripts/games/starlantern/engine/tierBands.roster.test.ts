@@ -18,7 +18,7 @@ import type { RegionId } from '../data/regions';
 import { MAX_LEVEL } from './party';
 import { depthLevel } from './scaling';
 import { AFFIX_PAIRS, HELL_BOSS_SEEDS, TIER_SEEDS, measureCell, pooled, tierLineup, withTrigger, type TierCell, type TierRun } from './tierBands';
-import { withRosterLive } from './testing';
+import { withRosterLive, withRosterOnly } from './testing';
 
 const on = process.env.BANDS === '1';
 const report = !!process.env.BALANCE_REPORT && process.env.BALANCE_REPORT !== '0';
@@ -48,21 +48,7 @@ function cell(depth: number, region: RegionId, group: string[], hell: boolean, a
  * to Ln`), only not asserted; every other cell must pass. Its wave's go-live commit removes it (pinned below).
  */
 const DEFERRED_22J: Record<string, { wave: 'L2' | 'L3' | 'L4'; id: string }> = {
-  'bog-leviathan mire d15 hell rare bare': { wave: 'L4', id: 'bog-leviathan' },
-  'bog-leviathan mire d15 nightmare magic bare': { wave: 'L4', id: 'bog-leviathan' },
-  'faceless-host shade d20 hell rare bare': { wave: 'L4', id: 'faceless-host' },
-  'grey-blight mire d25 hell rare': { wave: 'L4', id: 'grey-blight' },
-  'grey-blight mire d25 nightmare magic': { wave: 'L4', id: 'grey-blight' },
-  'last-commander iron d15 hell rare bare': { wave: 'L4', id: 'last-commander' },
-  'last-commander iron d15 nightmare magic bare': { wave: 'L4', id: 'last-commander' },
-  'shadow-parade shade d15 hell rare': { wave: 'L4', id: 'shadow-parade' },
-  'shadow-parade shade d15 nightmare magic': { wave: 'L4', id: 'shadow-parade' },
-  'siege-titan iron d10 hell rare bare': { wave: 'L4', id: 'siege-titan' },
-  'siege-titan iron d10 nightmare magic bare': { wave: 'L4', id: 'siege-titan' },
-  'vault-dragon shade d10 hell rare bare': { wave: 'L4', id: 'vault-dragon' },
-  'gate-breaker iron': { wave: 'L4', id: 'gate-breaker' },
-  'grey-elder mire': { wave: 'L4', id: 'grey-elder' },
-  'locked-vault shade': { wave: 'L4', id: 'locked-vault' },
+  // L4b: the fourth wave's cells are its own now (measured, passed or named in EXCEPTION_22J); none is left.
 };
 /**
  * Spec §0 item 22 (plan L2b; the user's direction 2026-10-28, balance is not the priority): 22j's cells of a live boss or
@@ -85,6 +71,23 @@ const EXCEPTION_22J: Record<string, { min?: number; max?: number; why: string }>
   'storm-conductor storm d25 nightmare magic bare': { max: 0.61, why: 'its attempt (雷杖 190 → 225) took the bare party .742 to .600 against the eater .217 (item 23)' },
   'storm-conductor storm d25 hell rare bare': { max: 0.553, why: 'its attempt took the bare party .636 to .543 against the eater .050 (item 23)' },
   'ice-shrine frost': { min: 0.697, why: 'its attempt (喚醒狛犬 two calls → one) took Hell depth 23 .236 to .707 (item 23)' },
+  // Spec §0 item 24 (plan L4b; controller rulings 2026-10-28/29): the fourth wave's cells still red after their one attempt,
+  // bounded as item 23's (a built cell its rate less .01, a bare one its rate plus .01, rounded outward). Backlog F10.
+  'bog-leviathan mire d15 nightmare magic bare': { max: 0.831, why: 'its attempt (巨口 170 → 210) took the bare party .933 to .821 against the eater .171 (item 24)' },
+  'bog-leviathan mire d15 hell rare bare': { max: 0.625, why: 'its attempt took the bare party .786 to .614 against the eater .086 (item 24)' },
+  'faceless-host shade d20 hell rare bare': { max: 0.468, why: 'its attempt (無面之擊 140 → 115) moved this .457 to .450 but took its 22b distance .125 to .25; back at 140 (item 24)' },
+  'grey-blight mire d25 nightmare magic': { min: 0, why: 'its attempt (its pair 110/160 → 90/130) left it at none against the eater .375; kept for 22f (item 24)' },
+  'grey-blight mire d25 hell rare': { min: 0.19, why: 'its attempt took .086 to .200 against the eater .400 (item 24)' },
+  'last-commander iron d15 nightmare magic bare': { max: 0.806, why: 'its attempt (指揮刀 200 → 240) moved the bare party .796 to .783 but turned its 22b depth 30 red; back at 200 (item 24)' },
+  'last-commander iron d15 hell rare bare': { max: 0.81, why: 'its attempt moved .800 to .721 but turned its 22b depth 30 red; back at 200, against the eater .164 (item 24)' },
+  'shadow-parade shade d15 nightmare magic': { min: 0.835, why: 'its attempt (行列又長了 .5 → .35) took .787 to .846 against the eater .979 (item 24)' },
+  'shadow-parade shade d15 hell rare': { min: 0.854, why: 'its attempt took .857 to .864 against the eater .979 (item 24)' },
+  'siege-titan iron d10 nightmare magic bare': { max: 0.96, why: 'its attempt (重擊 220 → 270) left the bare party at .950 and turned 22b and 22j depth 25 red; back at 220 (item 24)' },
+  'siege-titan iron d10 hell rare bare': { max: 0.868, why: 'its attempt moved .857 to .814 but turned depth 25 red; back at 220, against the eater .629 (item 24)' },
+  'vault-dragon shade d10 hell rare bare': { max: 0.982, why: 'its attempt (龍爪 175 → 210) took the bare party .971 to .986 and turned depth 25 red; back at 175 (item 24)' },
+  'grey-elder mire': { min: 0.697, why: 'its attempt (枯枝 120 → 95) took Hell depth 23 .614 to .707 (item 24)' },
+  'locked-vault shade': { min: 0.268, why: 'its attempt (金庫門 150 → 110, def ×1.15 → ×1) took Hell depth 23 .057 to .279 (item 24)' },
+  'gate-breaker iron': { min: 0.404, why: 'its attempt (撞門 85 → 65) took Hell depth 23 .343 to .414; its knight comes with it (item 24)' },
 };
 /** L3b review: a bare cell holds its rate from above only (`max`), every other from below only (`min`). */
 function directionBreaks22J(t: Record<string, { min?: number; max?: number; why: string }>): string[] {
@@ -108,7 +111,7 @@ const deferred = (label: string): boolean => {
 };
 
 describe('band 22j names its exceptions (spec §0 item 22, plan L2b)', () => {
-  it('exactly the requiem conductor in Hell at depth 23, with its floor, and the third wave cells (item 23)', () => {
+  it('exactly the requiem conductor in Hell at depth 23, with its floor, and the cells of the third and fourth waves (items 23, 24)', () => {
     expect(Object.fromEntries(Object.entries(EXCEPTION_22J).map(([k, e]) => [k, e.min ?? e.max]))).toEqual({
       'requiem-conductor mainline': 0.397,
       // Spec §0 item 23 (plan L3b): a built cell holds its rate from below, a bare cell from above.
@@ -123,9 +126,25 @@ describe('band 22j names its exceptions (spec §0 item 22, plan L2b)', () => {
       'storm-conductor storm d25 nightmare magic bare': 0.61,
       'storm-conductor storm d25 hell rare bare': 0.553,
       'ice-shrine frost': 0.697,
+      // Spec §0 item 24 (plan L4b): the fourth wave's cells.
+      'bog-leviathan mire d15 nightmare magic bare': 0.831,
+      'bog-leviathan mire d15 hell rare bare': 0.625,
+      'faceless-host shade d20 hell rare bare': 0.468,
+      'grey-blight mire d25 nightmare magic': 0,
+      'grey-blight mire d25 hell rare': 0.19,
+      'last-commander iron d15 nightmare magic bare': 0.806,
+      'last-commander iron d15 hell rare bare': 0.81,
+      'shadow-parade shade d15 nightmare magic': 0.835,
+      'shadow-parade shade d15 hell rare': 0.854,
+      'siege-titan iron d10 nightmare magic bare': 0.96,
+      'siege-titan iron d10 hell rare bare': 0.868,
+      'vault-dragon shade d10 hell rare bare': 0.982,
+      'grey-elder mire': 0.697,
+      'locked-vault shade': 0.268,
+      'gate-breaker iron': 0.404,
     });
     for (const [k, e] of Object.entries(EXCEPTION_22J)) expect([k.endsWith(' bare'), e.max !== undefined, e.min === undefined], k).toEqual([k.endsWith(' bare'), k.endsWith(' bare'), k.endsWith(' bare')]);
-    for (const e of Object.values(EXCEPTION_22J)) expect(e.why, e.why).toMatch(/item 2[23]/);
+    for (const e of Object.values(EXCEPTION_22J)) expect(e.why, e.why).toMatch(/item 2[234]/);
   });
   it('each cell holds one direction: a bare cell from above only, every other from below only (L3b review)', () => {
     expect(directionBreaks22J(EXCEPTION_22J)).toEqual([]);
@@ -135,10 +154,15 @@ describe('band 22j names its exceptions (spec §0 item 22, plan L2b)', () => {
 });
 
 describe('band 22j defers only what is not live yet (controller ruling 2026-10-28)', () => {
-  const liveDeferred = () => [...new Set(Object.values(DEFERRED_22J).map((d) => d.id))].filter((id) => ROSTER_LIVE.has(id));
+  const liveDeferred = (t: typeof DEFERRED_22J = DEFERRED_22J) => [...new Set(Object.values(t).map((d) => d.id))].filter((id) => ROSTER_LIVE.has(id));
   it('no live boss or warden keeps a deferred cell', () => {
     expect(liveDeferred()).toEqual([]);
-    withRosterLive(['grey-elder'], () => expect(liveDeferred()).toEqual(['grey-elder']));
+    // L4b: every roster boss and warden is live, so nothing is deferred any more.
+    expect(Object.keys(DEFERRED_22J)).toEqual([]);
+    // The check bites: a deferred cell of a live warden is caught (an injected table); of one not live, it is not.
+    const injected = { 'grey-elder mire': { wave: 'L4' as const, id: 'grey-elder' } };
+    expect(liveDeferred(injected)).toEqual(['grey-elder']);
+    withRosterOnly([], () => expect(liveDeferred(injected)).toEqual([]));
   });
   it('every deferred cell names a roster boss or warden', () => {
     for (const [label, d] of Object.entries(DEFERRED_22J)) {

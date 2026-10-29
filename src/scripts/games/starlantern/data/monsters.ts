@@ -56,6 +56,12 @@ export const ROSTER_LIVE: ReadonlySet<string> = new Set<string>([
   'ice-komainu', 'frozen-pilgrim', 'thunder-kite', 'storm-totem', 'charge-jelly', 'star-ember', 'stolen-tome', 'ember-tyrant',
   'sandstorm-maw', 'mirage-city', 'rime-sovereign', 'white-silence', 'rift-maw', 'thunder-roc', 'storm-conductor', 'starfire-colossus',
   'mirage-lead', 'ice-shrine', 'burning-page', 'rime-pillar',
+  // L4b, the fourth wave: the mire, shade and iron lands' natives, their bosses at 5, 10, 15 and their wardens from depth 8;
+  // with it every roster id is live
+  'bog-mother', 'rot-lily', 'leech-knight', 'ashen-treant', 'spore-moth', 'mirror-thief', 'veil-stalker', 'hush-acolyte', 'vault-mimic',
+  'debt-collector', 'rivet-golem', 'siege-crab', 'herald-engine', 'fallen-knight', 'banner-bearer', 'mire-hydra', 'grey-blight',
+  'bog-leviathan', 'faceless-host', 'vault-dragon', 'shadow-parade', 'fortress-colossus', 'siege-titan', 'last-commander', 'grey-elder',
+  'locked-vault', 'gate-breaker',
 ]);
 
 /** An enemy any list may show: a legacy one, or a roster one gone live. */
@@ -153,9 +159,11 @@ export const NATIVE_GROUPS: Record<Land, string[][]> = {
     x2('veil-stalker'), ['vault-mimic'], ['hush-acolyte', 'debt-collector'], ['mirror-thief', 'hush-acolyte'],
     ['debt-collector', 'mirror-thief'], ['vault-mimic', 'veil-stalker'],
   ],
+  // L4b (spec §0 item 24, controller ruling 2026-10-29): frozen band 18b's allPhys walls at iron depths 4 and 8 were the heavy
+  // pairs; five natives in two groups each force four native pairs, so the crab stands alone twice and the two buffers pair up.
   iron: [
-    ['fallen-knight', 'banner-bearer'], ['rivet-golem'], ['herald-engine', 'siege-crab'], ['fallen-knight', 'herald-engine'],
-    ['siege-crab', 'rivet-golem'], ['banner-bearer', 'rivet-golem'],
+    ['siege-crab'], ['siege-crab'], ['herald-engine', 'banner-bearer'], ['fallen-knight', 'herald-engine'],
+    ['rivet-golem', 'banner-bearer'], ['fallen-knight', 'rivet-golem'],
   ],
 };
 
