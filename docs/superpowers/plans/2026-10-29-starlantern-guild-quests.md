@@ -38,7 +38,7 @@
 | §0.6 排除 | `remnant`、`lore`、`story`、`rank: 'part'`、`lantern-mother`；懸賞另排 `lanterneater`；討伐另排 `TREASURE`；收購排除被排除物種的素材 | `engine/types.ts:252-321`；名冊計畫裁定 6；`data/monsters.ts:89`、`:166-208` | 受影響的 25 個素材 id 在 spec §5.5 |
 | §0.2 這一趟算數 | `Run.worked`（不存檔） | `engine/dungeon/run.ts:19-70`（型別只加可選欄位）；`engine/game.ts` 的 `submitRound`、`changeFloor`、`toTown`、`wipe` | 控制者審查 M1 |
 | §8.5 回城那一句的順序 | `const draw = says.length === 0` | `ui2/scenes/town.ts:121-123` | 控制者審查 H2：委託那一句在 `draw` 之後才放 |
-| §7.3 說話者 | `speakerOf` | `data/story/voiceGates.ts:46-56` | 加 `guild` 分支（審查 M5） |
+| §7.3 說話者 | `speakerOf` | `data/story/voiceGates.ts:45-56` | 加 `guild` 分支（審查 M5） |
 | §0.13 鹽 | `GUILD_SALT = 0xb5c0fbcf` | `engine/loot/drops.ts:195-197` | 加進名冊的 `salts are distinct`（`data/monsters.test.ts`） |
 | §0.14 存檔 | `isValid`、`repairBestiary` 之後 | `engine/save.ts:199`、`:332` | `SAVE_VERSION` 9 |
 | §5.1 委託深度 | `BAND_DEPTHS` | `engine/story/handbook.ts:168` | A2 export |
@@ -72,7 +72,7 @@ spec 是控制者授權的設計者草案；下面是 spec 沒寫細的地方，
    - `knownMaterial(s, id)`（含排除規則，計畫裁定 8）、`questDepth(kind, target, s)`、`excluded(id)`、`bountyExcluded(id)`（`excluded` 再加 `lanterneater`）、`huntExcluded(id)`（`excluded` 再加 `TREASURE`）。
    - `guildOpen(s): boolean`：`GUILD_SWITCH.live && GUILD_SWITCH.open(s)`，`open` 預設 `(s) => s.story.act1Cleared`。**引擎、介面、存檔的每一個入口只認這一個述詞**（審查 M6）。
 4. **`Game` 的方法**（A7）：`board(): GuildState | null`（`guildOpen` 為假回 `null`）、`openBoard()`（補貼＋寫 `viewed`、`intro`，存檔）、`acceptQuest(id)`、`abandonQuest(id)`、`turnInQuest(id)`；每一個成功都 `saveInTown`（照 `returnFragment`，`engine/game.ts:1237-1247`）。`get questsReady(): number`（進行中而且達成的件數）。`submitRound` 的回傳 `end` 加 `quests?: string[]`（勝利時，`noteFelled` 之前 `questSnapshot`、之後 `questsNewlyDone`）；`changeFloor` 之後在 `Game` 上留 `scoutDone?: string[]`，`ui2/scenes/dungeon.ts` 讀完就清。全部在 `guildOpen(this.state)` 之下；否則什麼都不做、不讀。
-   - **這一趟算數**（審查 M1）：`Run` 型別加可選的 `worked?: true`（不存檔，`engine/dungeon/run.ts` 只加這一個欄位）；`submitRound` 勝利時、`changeFloor` 換到不同的層時設它（不看開關，它只是一個布林，不碰任何串流，也不進存檔）。`toTown` 與 `wipe` 在 `this.run = null` 之前讀它，以參數交給 `arrive(worked)`；`arrive` 在日子推進之後 `if (worked && guildOpen(state)) postBoard(state)`。`restartAfterClear` 走 `toTown`，解鎖那一場勝利已經設了它。
+   - **這一趟算數**（審查 M1）：`Run` 型別加可選的 `worked?: true`（不存檔，`engine/dungeon/run.ts` 只加這一個欄位）；`submitRound` 勝利時、`changeFloor` 換到不同的層時設它（不看開關，它只是一個布林，不碰任何串流，也不進存檔）。`toTown` 與 `wipe` 在 `this.run = null` 之前讀它，以參數交給 `arrive(afterFinale, worked)`（保留既有的 `afterFinale = false`，`engine/game.ts:1479`）；`arrive` 在日子推進之後 `if (worked && guildOpen(state)) postBoard(state)`。`restartAfterClear` 走 `toTown`，解鎖那一場勝利已經設了它。
 5. **貼布告的抽法**（A3，寫進 `engine/guild.ts` 的註解）：每一格依序：
    1. 第 0 格：評等 ≥ 一燈而且懸賞候選非空時固定懸賞；四燈時第 1 格也固定懸賞。其餘格子抽種類：`pickWeighted(rng, WEIGHTS × 是否開放 × 候選是否非空)`。
    2. 抽目標：`pick(rng, pool)`；同一張布告已有同種類同目標就重抽，最多 8 次，抽不到這一格留空（`offers` 變短，不補）。
@@ -93,7 +93,7 @@ spec 是控制者授權的設計者草案；下面是 spec 沒寫細的地方，
     - 開關關著：雜湊逐一相同；
     - `withGuildLive(f, { open: false })`：解鎖被擋住、其餘照真的遊戲走，整段重跑，雜湊逐一相同，而且每一步 `state.guild === undefined`；
     - `withGuildLive(f)`：解鎖之後每一步刪掉 `guild` 欄位再取雜湊，逐一相同。
-16. **文字併進檢查**（審查 M5 更正）：C1 在 `storyTexts()` 走完 `STORY` 之後另走 `walk(GUILD_TEXT, ['guild'])`，照 `NIGHT_BEATS` 的寫法（`data/story/voiceGates.ts:33-34`）。**更正**：舊版寫「照 `BOND_SCENES` 併進 `storyTexts()`」是錯的：好感度的場景是併進 `STORY.scenes`（`data/story.zh-TW.ts:1969-1973`），`storyTexts()` 沒有另外處理它。`speakerOf`（`voiceGates.ts:46-56`）加 `top === 'guild'` 的分支：`notes.<kind>` → `KIND_GIVER[kind]`（收購的三種與懸賞的兩種照 C1 定稿的鍵名對應）、`thanks.<giver>` → giver、`anna` → `anna`、`remarks.<c>` → `c`、`personal.<giver>` 的紙條 → giver（完成時的對話帶 `who`，由 `line.who` 決定）。前綴 `guild.` 加進 `POLISHED`；`position()`（`data/story/story.test.ts:366-425`）加 `guild` 的位置：一般委託 `act1`，`guild.personal.<id>` 是「那位鎮民交還之後」。名冊 A5 的名字掃描清單抽成 `data/guild.test.ts` 也能用的常數（若它是 `monsters.test.ts` 裡的區域變數，C1 把它移到 `data/monsters.ts` 旁的測試共用檔，不改內容）。
+16. **文字併進檢查**（審查 M5 更正）：C1 在 `storyTexts()` 走完 `STORY` 之後另走 `walk(GUILD_TEXT, ['guild'])`，照 `NIGHT_BEATS` 的寫法（`data/story/voiceGates.ts:33-34`）。**更正**：舊版寫「照 `BOND_SCENES` 併進 `storyTexts()`」是錯的：好感度的場景是併進 `STORY.scenes`（`data/story.zh-TW.ts:1969-1973`），`storyTexts()` 沒有另外處理它。`speakerOf`（`voiceGates.ts:45-56`）加 `top === 'guild'` 的分支：`notes.<kind>` → `KIND_GIVER[kind]`（收購的三種與懸賞的兩種照 C1 定稿的鍵名對應）、`thanks.<giver>` → giver、`anna` → `anna`、`remarks.<c>` → `c`、`personal.<giver>` 的紙條 → giver（完成時的對話帶 `who`，由 `line.who` 決定）。前綴 `guild.` 加進 `POLISHED`；`position()`（`data/story/story.test.ts:366-425`）加 `guild` 的位置：一般委託 `act1`，`guild.personal.<id>` 是「那位鎮民交還之後」。名冊 A5 的名字掃描清單抽成 `data/guild.test.ts` 也能用的常數（若它是 `monsters.test.ts` 裡的區域變數，C1 把它移到 `data/monsters.ts` 旁的測試共用檔，不改內容）。
 17. **介面字串與故事字串分開**：`T.ui2.board`（`data/text.zh-TW.ts`，B1）只放分頁名、種類名、格式函式、按鈕、空狀態、評等名；所有鎮民與夥伴說的話在 `GUILD_TEXT`（C2、C3）。B 的介面測試用 `GUILD_TEXT` 的註冊表鍵（C1 之前是空的物件，B 的測試以「有字串就顯示、沒有就不說」寫；C 補上字串後 D 的 e2e 檢查真的有說）。**介面不顯示任何佔位文字**：B 合併時 `GUILD_LIVE` 仍是 `false`。
 18. **e2e**：D2 起。e2e 的種子與存檔用既有的 `w.*` 工具；解鎖路線用 e2e 既有的「第一幕結束」流程（先 grep 有沒有；沒有就以 `localStorage` 注入一份測試存檔，照 e2e 既有的存檔注入寫法）。
 19. **PR F 的美術**：照 `art-factory/starlantern/contract.md` 新增兩列（`guild-rank`、`quest-kind`）；風格樣本由使用者核准（`approve --batch g0 --by "<使用者原話> <YYYY-MM-DD>"`）之後，其餘照名冊裁定 21 的「機械 QA＋全新脈絡的獨立代理審核」發布。codex Plus 額度用完改用 codex credits，兩者都用完才暫停回報；絕不用佔位美術。
@@ -386,7 +386,7 @@ spec 是控制者授權的設計者草案；下面是 spec 沒寫細的地方，
 ### Task A7：`Game` 接線（開關仍關著）
 
 **Files:**
-- Modify：`engine/game.ts`（計畫裁定 4 的方法；`arrive(worked)` 在日子推進之後、`worked && guildOpen` 時 `postBoard`；`toTown`、`wipe` 讀 `Run.worked` 傳給它；`submitRound` 勝利時設 `run.worked`、在 `noteFelled` 之前 `questSnapshot`、之後 `questsNewlyDone`，放進 `end.quests`；`changeFloor` 換層時設 `run.worked`，之後算探路的達成，放進 `scoutDone`）、`engine/dungeon/run.ts`（`Run.worked?: true`）、`engine/game.test.ts`、`engine/guild.legacy.test.ts`（加兩個情境）。
+- Modify：`engine/game.ts`（計畫裁定 4 的方法；`arrive(afterFinale, worked)`（保留既有的 `afterFinale = false`，`engine/game.ts:1479`） 在日子推進之後、`worked && guildOpen` 時 `postBoard`；`toTown`、`wipe` 讀 `Run.worked` 傳給它；`submitRound` 勝利時設 `run.worked`、在 `noteFelled` 之前 `questSnapshot`、之後 `questsNewlyDone`，放進 `end.quests`；`changeFloor` 換層時設 `run.worked`，之後算探路的達成，放進 `scoutDone`）、`engine/dungeon/run.ts`（`Run.worked?: true`）、`engine/game.test.ts`、`engine/guild.legacy.test.ts`（加兩個情境）。
 - 已知會紅：預期沒有。
 
 - [ ] **Step 1：寫失敗的測試**
