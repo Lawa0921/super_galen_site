@@ -510,8 +510,14 @@ def repair_key_hue(img, min_neighbours=REPAIR_MIN_NEIGHBOURS):
     8-neighbours that are not key hue themselves (a key row never repairs itself from itself); alpha kept, nothing else
     changes; fewer than `min_neighbours` such neighbours: reported, not repaired. Returns (image, repaired, skipped) as
     repair_pink_outliers. Running it again repairs nothing."""
+    return _repair_median(img, key_hue_pixels(img), min_neighbours)
+
+
+def _repair_median(img, keys, min_neighbours=REPAIR_MIN_NEIGHBOURS):
+    """repair_key_hue's repair for any pixel set `keys`: each takes the rounded per-channel median of its opaque 8-neighbours
+    outside `keys`, in passes; alpha kept; nothing else changes. Returns (image, repaired, skipped)."""
     src = np.asarray(img.convert('RGBA')); out = src.copy(); h, w = src.shape[:2]; fixed = []
-    keys = set(key_hue_pixels(img))
+    keys = set(keys)
     while keys:   # passes: a key pixel walled in by other key pixels is repaired once its neighbours have been
         done = {}
         for x, y in sorted(keys, key=lambda t: (t[1], t[0])):
@@ -528,6 +534,145 @@ def repair_key_hue(img, min_neighbours=REPAIR_MIN_NEIGHBOURS):
                 if (yy, xx) != (y, x) and out[yy, xx, 3] == 255 and (xx, yy) not in keys)
         skipped.append((x, y, tuple(int(v) for v in src[y, x, :3]), n))
     return Image.fromarray(out, 'RGBA'), fixed, skipped
+
+
+# --- plan Task F8 (controller 2026-10-29): the older published icons' key residue, narrow deterministic rules -------------------
+def _hsv_arrays(rgb):
+    c = rgb.astype(np.float32); r, g, b = c[..., 0], c[..., 1], c[..., 2]
+    mx = np.maximum(np.maximum(r, b), g); mn = np.minimum(np.minimum(r, b), g); sat = (mx - mn) / np.maximum(mx, 1)
+    d = np.maximum(np.maximum(r, b) - g, 1e-6); hue = np.where(r >= b, (60 * (g - b) / d) % 360, 240 + 60 * (r - g) / d)
+    return hue, sat, mx / 255
+
+
+def _outline(op):
+    """Opaque pixels touching transparency or the image edge in their 8-neighbourhood (key_hue_pixels' outline)."""
+    h, w = op.shape; pad = np.pad(~op, 1, constant_values=True); edge = np.zeros_like(op)
+    for dy in (0, 1, 2):
+        for dx in (0, 1, 2):
+            if dy == 1 and dx == 1: continue
+            edge |= pad[dy:dy + h, dx:dx + w]
+    return op & edge
+
+
+def _xy(mask):
+    return [(int(x), int(y)) for y, x in zip(*np.nonzero(mask))]
+
+
+def outline_blend_pixels(img):
+    """[(x, y)] of outline pixels that are the key blended into a dark outline: magenta_spill (min(R, B) - G >= SPILL_STEP,
+    hue in SPILL_HUE), saturation >= DEEP_KEY_SAT_MIN and hue <= DEEP_KEY_HUE[1]. _deep_key's RB floor (75) and its hue
+    floor (285) leave these: ancient-gear (32,1,31), ice-crystal (94,13,127) hue 283. Maroon (hue over 330), the art's own
+    low-saturation violet and lavender, and anything off the outline never count. F8, controller 2026-10-29."""
+    arr = np.asarray(img.convert('RGBA')); op = arr[..., 3] == 255; hue, sat, _ = _hsv_arrays(arr[..., :3])
+    return _xy(_outline(op) & magenta_spill(arr) & (sat >= DEEP_KEY_SAT_MIN) & (hue <= DEEP_KEY_HUE[1]))
+
+
+KEY_ADJACENT_SAT_MIN = 0.6   # key_adjacent_blend_pixels: outline_blend's saturation floor (.8) lowered to this next to key
+
+
+def key_adjacent_blend_pixels(img):
+    """[(x, y)] of outline pixels that outline_blend_pixels would take but for its saturation floor (saturation >=
+    KEY_ADJACENT_SAT_MIN instead of DEEP_KEY_SAT_MIN), connected on the outline (8-neighbourhood, through each other) to
+    key_hue or outline_blend pixels: the key mixed into the outline beside the key itself (F8 review: dusk-cloth (4,9)
+    (63,15,65), ether (20,27) (95,25,118), thorn-fang (21,3) (80,17,72), moss (12,12) and (13,13)). The hue floor stays at
+    SPILL_HUE's 280: violet art at 278 also stands next to key (crystal-shell (126,14,193), antidote (41,0,65))."""
+    arr = np.asarray(img.convert('RGBA')); op = arr[..., 3] == 255; hue, sat, _ = _hsv_arrays(arr[..., :3])
+    cand = set(_xy(_outline(op) & magenta_spill(arr) & (sat >= KEY_ADJACENT_SAT_MIN) & (hue <= DEEP_KEY_HUE[1])))
+    reached = set(key_hue_pixels(img)) | set(outline_blend_pixels(img)); cand -= reached; got = set(); front = reached
+    while front:
+        new = {(x, y) for x, y in cand - got if any((x + dx, y + dy) in front for dx in (-1, 0, 1) for dy in (-1, 0, 1))}
+        got |= new; front = new
+    return sorted(got, key=lambda t: (t[1], t[0]))
+
+
+def outline_key_pixels(img):
+    """key_hue_pixels, outline_blend_pixels and key_adjacent_blend_pixels together, sorted (row, then column)."""
+    return sorted(set(key_hue_pixels(img)) | set(outline_blend_pixels(img)) | set(key_adjacent_blend_pixels(img)),
+                  key=lambda t: (t[1], t[0]))
+
+
+def repair_outline_key(img, keep=(), min_neighbours=REPAIR_MIN_NEIGHBOURS, also=()):
+    """repair_key_hue over outline_key_pixels, minus `keep` (pixels a review classified as art), plus `also` (opaque pixels
+    a review classified as key residue that no detector takes): each takes the rounded median of its opaque 8-neighbours
+    outside that set, in passes; alpha kept; nothing else changes."""
+    arr = np.asarray(img.convert('RGBA')); also = {tuple(a) for a in also}
+    bad = [a for a in also if not (0 <= a[1] < arr.shape[0] and 0 <= a[0] < arr.shape[1] and arr[a[1], a[0], 3] == 255)]
+    if bad: raise ValueError(f'also: not opaque pixels of the image: {sorted(bad)}')
+    return _repair_median(img, (set(outline_key_pixels(img)) | also) - {tuple(k) for k in keep}, min_neighbours)
+
+
+GUTTER_MIN_RUN = 3   # gutter_key_lines: a bbox edge line of at least this many opaque pixels, every one of them key
+
+
+def gutter_key_lines(img, keys):
+    """[(x, y)] on the subject's bbox edge lines (top and bottom row, left and right column) whose opaque pixels are all in
+    `keys` and at least GUTTER_MIN_RUN: the sheet gutter's key cut in with the cell (crystal-shell (5-8,35); lizard-scale's
+    R4 row (7-12,35), passed by its recorded pixels). Cleared, not recoloured: a recoloured gutter is a pad (R4 round 2)."""
+    arr = np.asarray(img.convert('RGBA')); op = arr[..., 3] == 255; keys = {tuple(k) for k in keys}
+    if not op.any(): return []
+    ys, xs = np.nonzero(op); out = set()
+    lines = [[(int(x), int(y)) for x in np.nonzero(op[y])[0]] for y in (ys.min(), ys.max())]
+    lines += [[(int(x), int(y)) for y in np.nonzero(op[:, x])[0]] for x in (xs.min(), xs.max())]
+    for line in lines:
+        if len(line) >= GUTTER_MIN_RUN and all(p in keys for p in line): out |= set(line)
+    return sorted(out, key=lambda t: (t[1], t[0]))
+
+
+def clear_pixels(img, pixels):
+    """Alpha 0 (and colour 0, as cutout leaves the background) at `pixels`; nothing else changes. Returns (image,
+    [(x, y, old rgba)])."""
+    arr = np.asarray(img.convert('RGBA')).copy(); cleared = []
+    for x, y in sorted({tuple(p) for p in pixels}, key=lambda t: (t[1], t[0])):
+        cleared.append((x, y, tuple(int(v) for v in arr[y, x]))); arr[y, x] = 0
+    return Image.fromarray(arr, 'RGBA'), cleared
+
+
+SPECK_MIN_CLEAR = 5   # key_specks: at least this many of the 8 neighbours transparent (or off the image)
+
+
+def key_specks(img, keys, min_neighbours=REPAIR_MIN_NEIGHBOURS):
+    """[(x, y)] of `keys` hanging off the outline: at least SPECK_MIN_CLEAR transparent 8-neighbours and fewer than
+    `min_neighbours` opaque ones outside `keys`, so the median repair has nothing to take from (moss (11,11), (32,15)).
+    Cleared: the cutout should have taken them with the background."""
+    arr = np.asarray(img.convert('RGBA')); op = arr[..., 3] == 255; h, w = op.shape; keys = {tuple(k) for k in keys}; out = []
+    for x, y in sorted(keys, key=lambda t: (t[1], t[0])):
+        if not op[y, x]: continue
+        nb = [(xx, yy) for yy in range(y - 1, y + 2) for xx in range(x - 1, x + 2) if (xx, yy) != (x, y)]
+        clear = sum(1 for xx, yy in nb if not (0 <= yy < h and 0 <= xx < w and op[yy, xx]))
+        solid = sum(1 for xx, yy in nb if 0 <= yy < h and 0 <= xx < w and op[yy, xx] and (xx, yy) not in keys)
+        if clear >= SPECK_MIN_CLEAR and solid < min_neighbours: out.append((x, y))
+    return out
+
+
+LONE_TINT_HUE = (300, 350)   # lone tint (F8, R4 round 2): a key-ward pink to rose ...
+LONE_TINT_SAT_MIN = 0.3      # ... fairly saturated ...
+LONE_TINT_V_MIN = 0.3        # ... not outline-dark ...
+LONE_TINT_RG_MIN = 30        # ... red at least this above green ...
+LONE_TINT_BG_MIN = 10        # ... blue above green (the key's pull) ...
+LONE_TINT_NB_V_MIN = 0.25    # ... and no 8-neighbour of this brightness or more in the same band: alone on the outline
+
+
+def lone_tint_pixels(img):
+    """[(x, y)] of outline pixels with a hue in LONE_TINT_HUE, saturation >= LONE_TINT_SAT_MIN, value >= LONE_TINT_V_MIN,
+    R - G >= LONE_TINT_RG_MIN and B - G >= LONE_TINT_BG_MIN, none of whose opaque 8-neighbours (value >= LONE_TINT_NB_V_MIN,
+    saturation >= LONE_TINT_SAT_MIN) is in that hue band: the key's anti-aliasing sampled onto a lone outline pixel, too
+    pale for pink_outliers (crab-plate's spike tip (131,71,85); the bat's claw (104,36,78)). Rose art of two pixels or more
+    never counts."""
+    arr = np.asarray(img.convert('RGBA')); op = arr[..., 3] == 255; hue, sat, v = _hsv_arrays(arr[..., :3])
+    c = arr[..., :3].astype(np.int16); band = (hue >= LONE_TINT_HUE[0]) & (hue <= LONE_TINT_HUE[1])
+    cand = (_outline(op) & band & (sat >= LONE_TINT_SAT_MIN) & (v >= LONE_TINT_V_MIN)
+            & (c[..., 0] - c[..., 1] >= LONE_TINT_RG_MIN) & (c[..., 2] - c[..., 1] >= LONE_TINT_BG_MIN))
+    rose = op & band & (sat >= LONE_TINT_SAT_MIN) & (v >= LONE_TINT_NB_V_MIN); h, w = op.shape; out = []
+    for x, y in _xy(cand):
+        if not any(rose[yy, xx] for yy in range(max(0, y - 1), min(h, y + 2)) for xx in range(max(0, x - 1), min(w, x + 2))
+                   if (yy, xx) != (y, x)):
+            out.append((x, y))
+    return out
+
+
+def repair_lone_tint(img, keep=(), min_neighbours=REPAIR_MIN_NEIGHBOURS):
+    """lone_tint_pixels minus `keep`, each the rounded median of its opaque 8-neighbours (as repair_key_hue)."""
+    return _repair_median(img, set(lone_tint_pixels(img)) - {tuple(k) for k in keep}, min_neighbours)
 
 
 def roster_key_tint_gate(qa, final):
