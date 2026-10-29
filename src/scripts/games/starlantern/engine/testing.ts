@@ -10,6 +10,7 @@ import { CHARACTER_IDS } from '../data/characters';
 import { newGame, type GameState } from './state';
 import { BOND_SWITCH } from './story/bond';
 import { ROSTER_ART, ROSTER_LIVE } from '../data/monsters';
+import { GUILD_SWITCH } from '../data/guild';
 
 /** A plain common instance of a base (no affixes) at the base's own level, for fixtures. */
 export function plainItem(base: string, uid: number): ItemInstance {
@@ -201,5 +202,22 @@ export function withRosterOnly<T>(ids: string[], f: () => T): T {
     return out;
   } finally {
     if (!later) restore();
+  }
+}
+
+/**
+ * Guild quests plan Task A1 (spec §9.5, review M6): runs `f` with the guild board's switch on (GUILD_LIVE) and, with
+ * `{ open: false }`, its unlock held shut (`GUILD_SWITCH.open` false whatever the story), then puts both back as they were,
+ * even when `f` throws. Test support only: nothing in the game imports it.
+ */
+export function withGuildLive<T>(f: () => T, opts: { open?: boolean } = {}): T {
+  const was = { live: GUILD_SWITCH.live, open: GUILD_SWITCH.open };
+  GUILD_SWITCH.live = true;
+  if (opts.open === false) GUILD_SWITCH.open = () => false;
+  try {
+    return f();
+  } finally {
+    GUILD_SWITCH.live = was.live;
+    GUILD_SWITCH.open = was.open;
   }
 }
