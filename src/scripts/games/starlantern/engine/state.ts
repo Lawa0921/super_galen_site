@@ -7,6 +7,7 @@ import type { Difficulty } from './battle';
 import type { Portal } from './dungeon/run';
 import type { AutoJunk } from './loot/bag';
 import type { Bestiary } from './bestiary';
+import type { GiverId, QuestKind } from '../data/guild';
 import { newParty, START_LINEUP } from './party';
 import { rollPortals } from './portals';
 import { mulberry32, type Rng } from './rng';
@@ -99,6 +100,44 @@ export interface StoryState {
 /** A new game opens with the prologue and the inn night after it waiting for its first arrival in town. */
 export const newStory = (): StoryState => ({ act1Cleared: false, finaleCleared: false, seen: [], fresh: [], queue: ['prologue', 'prologue-inn'], nodes: [], pity: {}, returned: [], fed: false });
 
+/**
+ * Guild quests spec §9.3: what a quest pays, written on the note when the board is posted (plan ruling 5), so turning it
+ * in draws nothing. `rune` is a rune key, 「id@tier」.
+ */
+export interface QuestReward { gold: number; items?: Record<string, number>; rune?: string }
+/** One note on the guild board (spec §9.3). */
+export interface QuestOffer {
+  /** `${day}:${slot}`: once in a save. */
+  id: string;
+  kind: QuestKind; giver: GiverId; variant: 0 | 1;
+  /** An enemy id (hunt, bounty), a material id (deliver), or a region id (scout, sweep). */
+  target: string;
+  /** How many (hunt, sweep, bounty, deliver), or the depth to reach (scout). */
+  n: number;
+  /** The quest depth its rewards were read at (spec §5); never shown. */
+  depth: number;
+  reward: QuestReward; merit: number;
+}
+/** A note taken (spec §9.3): where the count stood (`base`), and for a sweep the kinds it counts, frozen (plan ruling 9). */
+export interface ActiveQuest extends QuestOffer { base: number; ids?: string[] }
+/** The guild board (spec §9.3); absent until the first board is posted, and never written while the board is shut. */
+export interface GuildState {
+  /** The day this board was posted on (its stream's key). */
+  day: number;
+  /** The notes still on it: at most BOARD_MAX. */
+  offers: QuestOffer[];
+  /** The quests taken: at most ACTIVE_MAX. */
+  active: ActiveQuest[];
+  /** 0 to GUILD_MAX; the lamp rank is derived from it (`rankOf`). */
+  merit: number;
+  /** The rank whose gift was paid last (0 to 4). */
+  paid: number;
+  /** The day whose board was looked at (the town's 新 mark). */
+  viewed?: number;
+  /** Anna has told how the board works. */
+  intro?: true;
+}
+
 export interface GameState {
   version: typeof SAVE_VERSION;
   gold: number;
@@ -139,6 +178,11 @@ export interface GameState {
    * Absent: nothing met yet. Unknown ids are dropped on load.
    */
   bestiary?: Bestiary;
+  /**
+   * Guild quests spec §9.3, §0 item 14: the guild board. Absent while the board is shut (`guildOpen`) and until the first
+   * board is posted; unknown targets are dropped on load (`repairGuild`).
+   */
+  guild?: GuildState;
 }
 
 /**

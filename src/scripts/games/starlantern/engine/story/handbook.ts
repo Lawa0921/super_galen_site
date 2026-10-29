@@ -165,10 +165,10 @@ export function handbook(s: GameState): Handbook {
 const filterOf = (e: EnemyDef): BeastFilter => (e.boss || e.rank ? 'bosses' : e.home ? 'lands' : 'road');
 
 /** The depths of the main road's bands (spec §3.1); F has no floor. */
-const BAND_DEPTHS: Record<NonNullable<EnemyDef['band']>, [number, number?]> = { B: [4, 9], C: [10, 15], D: [16, 24], E: [25, 30], F: [31] };
+export const BAND_DEPTHS: Record<NonNullable<EnemyDef['band']>, [number, number?]> = { B: [4, 9], C: [10, 15], D: [16, 24], E: [25, 30], F: [31] };
 
 /** Where a kind is met (spec §10): from the tables that list it (data/monsters.ts). */
-function hauntsOf(e: EnemyDef): string {
+export function hauntsOf(e: EnemyDef): string {
   const U = BESTIARY_UI.haunts;
   if (LEGACY_ENEMY_IDS.includes(e.id)) return e.boss ? U.bossFloors : U.everywhere;
   const body = Object.keys(BOSS_PARTS).find((b) => BOSS_PARTS[b].includes(e.id));

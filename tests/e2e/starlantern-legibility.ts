@@ -236,6 +236,11 @@ const runeRowsKeepTheirLine = async (page: Page, scope: string) => {
  * line of its own text. At least `min` are on screen.
  */
 const nativeIcons = async (page: Page, scope: string, img: string, px: number, min = 1) => {
+  // The pictures land after the screen is drawn (ui2/lateArt.ts), and each <img> then loads its own file: wait until every
+  // icon on screen has loaded before measuring, so a slow load (provoke-16.png) is not read as a 0x0 picture.
+  await expect.poll(() => page.locator(`${scope} ${img}`).evaluateAll((els) => els.filter((e) => (e as HTMLElement).checkVisibility())
+    .every((e) => (e as HTMLImageElement).complete && (e as HTMLImageElement).naturalWidth > 0)),
+  { message: `${scope} ${img}: every icon loaded`, timeout: 30000 }).toBe(true);
   const found = await page.locator(`${scope} ${img}`).evaluateAll((els) => els.filter((e) => (e as HTMLElement).checkVisibility()).map((e) => {
     const i = e as HTMLImageElement; const r = i.getBoundingClientRect();
     const row = (i.closest('[role=option], .slx-skill, .slx-ail, .slx-mech') ?? i.parentElement!) as HTMLElement;

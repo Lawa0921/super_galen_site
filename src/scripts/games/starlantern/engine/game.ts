@@ -43,7 +43,9 @@ import { afterWin, arrivalScenes, calendarOf, markRead, nextEnding, onReturn, sc
 import { NIGHT_BEATS, type ScriptLine } from '../data/story.zh-TW';
 import { DAWN_BACKLOG, dawnMemory, eveMemories, nextBeat, orderNight, planNight, restoreNight } from './story/nights';
 import { SPRING_AFTER, dayOf, nextDay } from './calendar';
-import { newGame, type GameState } from './state';
+import { newGame, type GameState, type GuildState } from './state';
+import { guildOpen } from '../data/guild';
+import { abandon as guildAbandon, accept as guildAccept, postBoard, progressOf, questSnapshot, questsNewlyDone, turnIn as guildTurnIn, type TurnIn } from './guild';
 import { craftBase, craftItem, craftOwnUnique, craftSet } from './forge/craft';
 import type { ForgeFail, RerollOpts } from './forge/cost';
 import { dismantle, enhance, fuse, inscribeAt, reroll } from './forge/forge';
@@ -117,6 +119,8 @@ export interface BattleEnd {
   runes?: RuneRef[];
   /** Runes paid as gold for want of room (RUNE_STACK); their gold is in `state.gold`, not in `gold` or the run pack. */
   runeGold?: BattleRuneGold[];
+  /** Guild quests spec §8.5: the quests held that this win finished (they were not done before it); absent when none. */
+  quests?: string[];
 }
 
 /** Turn a floor's boss tile into stairs down. */
@@ -168,6 +172,11 @@ export class Game {
   followEnded: CharacterId[] = [];
   /** Bond plan ruling 14: who rose a bond tier on the last dive (CHARACTER_IDS order), for the town to say once. Not saved. */
   bondUps: { id: Companion; tier: BondTier }[] = [];
+  /**
+   * Guild quests spec §8.5: the scouts a floor change finished, in order, for the map to say once (it reads and clears
+   * it). Not saved; absent when none.
+   */
+  scoutDone?: string[];
   /** Each companion's tier as the dive set out (ruling 14); null in town. */
   private tiersAtDepart: Partial<Record<Companion, BondTier>> | null = null;
   /** Scenes the screen should play now (not saved): a returned townsfolk fragment. A memory never waits here (story L). */
@@ -738,7 +747,13 @@ export class Game {
     this.fightTier = undefined;
     if (b.outcome === 'fled') { this.phase = 'map'; return { battle: b, end: empty }; }
     if (b.outcome === 'lose') { this.wipe(); return { battle: b, end: empty }; }
+    // Guild plan ruling 4, controller ruling (spec §0 item 21): a fight won with a foe felled makes the trip count for the
+    // board; one where every foe ran off is no fight won (as afterWin below, roster plan B1 review item 13).
+    if (!b.enemies.every((e) => e.left)) this.run!.worked = true;
+    // Guild spec §8.5 (review L8): the quests held, counted before the bestiary moves; read only, nothing drawn.
+    const held = guildOpen(this.state) ? questSnapshot(this.state) : null;
     noteFelled(this.state, b);   // the bestiary (roster plan Task C3): every foe beaten, on a win only
+    const quests = held ? questsNewlyDone(held, this.state) : [];
     const rw = rewards(b, this.rng, hasPassive(this.state.party, 'dropBoost'), CONDITIONS[this.run!.condition].dropMul);
     this.run!.loot.gold += rw.gold;
     const found = this.battleGear(b, elite !== null, tier);
@@ -829,7 +844,7 @@ export class Game {
       this.phase = 'clear';
     }
     else this.phase = 'map';
-    return { battle: b, end: { outcome: 'win', ...rw, drops: taken, levelUps: awarded.results.filter((x) => x.levels > 0), left, gear, gearLeft, ...(met ? { met } : {}), ...(fragments.length ? { fragments } : {}), ...(runes.runes.length ? { runes: runes.runes } : {}), ...(runes.gold.length ? { runeGold: runes.gold } : {}) } };
+    return { battle: b, end: { outcome: 'win', ...rw, drops: taken, levelUps: awarded.results.filter((x) => x.levels > 0), left, gear, gearLeft, ...(met ? { met } : {}), ...(fragments.length ? { fragments } : {}), ...(runes.runes.length ? { runes: runes.runes } : {}), ...(runes.gold.length ? { runeGold: runes.gold } : {}), ...(quests.length ? { quests } : {}) } };
   }
 
   /**
@@ -1246,6 +1261,62 @@ export class Game {
     return r;
   }
 
+  /** Guild quests spec §8: today's board while it is open (`guildOpen`); null while it is shut or before the first is posted. */
+  board(): GuildState | null {
+    return guildOpen(this.state) ? this.state.guild ?? null : null;
+  }
+
+  /**
+   * The board opened in town (spec §8.1): the first board is posted now if none is yet; today's is marked seen, and Anna
+   * has told how it works (`first` the time she does). Saved. Nothing is drawn but the board's own stream.
+   */
+  openBoard(): { ok: true; first: boolean } | { ok: false; reason: 'locked' | 'invalid' } {
+    if (!guildOpen(this.state)) return { ok: false, reason: 'locked' };
+    if (this.phase !== 'town') return { ok: false, reason: 'invalid' };
+    const g = this.state.guild ?? postBoard(this.state).guild!;
+    const first = !g.intro;
+    g.intro = true;
+    g.viewed = g.day;
+    this.state.guild = g;
+    this.saveInTown();
+    return { ok: true, first };
+  }
+
+  /** Takes a note off the board (spec §8.4): town only, saved at once, as `returnFragment`. */
+  acceptQuest(id: string): TownResult {
+    if (!guildOpen(this.state)) return { ok: false, reason: 'locked' };
+    if (this.phase !== 'town') return { ok: false, reason: 'invalid' };
+    const r = this.apply(guildAccept(this.state, id));
+    if (r.ok) this.saveInTown();
+    return r;
+  }
+
+  /** Drops a quest held (spec §8.4): town only, saved at once. */
+  abandonQuest(id: string): TownResult {
+    if (!guildOpen(this.state)) return { ok: false, reason: 'locked' };
+    if (this.phase !== 'town') return { ok: false, reason: 'invalid' };
+    const r = this.apply(guildAbandon(this.state, id));
+    if (r.ok) this.saveInTown();
+    return r;
+  }
+
+  /** Turns a quest in (spec §8.4): town only, saved at once, so a reload can neither undo the reward nor claim it again. */
+  turnInQuest(id: string): TurnIn | { ok: false; reason: 'locked' | 'invalid' } {
+    if (!guildOpen(this.state)) return { ok: false, reason: 'locked' };
+    if (this.phase !== 'town') return { ok: false, reason: 'invalid' };
+    const r = guildTurnIn(this.state, id);
+    if (!r.ok) return r;
+    this.state = r.state;
+    this.saveInTown();
+    return r;
+  }
+
+  /** Guild spec §8.5: how many quests held are done now (0 while the board is shut). */
+  get questsReady(): number {
+    if (!guildOpen(this.state)) return 0;
+    return (this.state.guild?.active ?? []).filter((q) => progressOf(this.state, q).done).length;
+  }
+
   /** Whether Glen's perk offers a portal reroll now: town, his fragment home, and this arrival's reroll unspent. */
   canReroll(): boolean {
     return this.phase === 'town' && !this.rerolled && hasPerk(this.state, 'portal-reroll');
@@ -1476,7 +1547,7 @@ export class Game {
    * What a return to town queues: acts reached, Rin's reveal; then the arrival, with one chat and one banter (B1). Story L
    * spec §4.6: then the night (`planNight`), kept in `story.tonight`; the memories the day owes lead the arrival.
    */
-  private arrive(afterFinale = false): void {
+  private arrive(afterFinale = false, worked = false): void {
     // bond plan ruling 14: whoever rose a tier on this dive (a wipe comes home too), in CHARACTER_IDS order
     const was = this.tiersAtDepart;
     this.tiersAtDepart = null;
@@ -1509,6 +1580,9 @@ export class Game {
     this.leadSaid = false;
     // time and moon (ruling 1): the return and its night end the dive's day; the town wakes on the next, saved with it
     this.state.story.day = nextDay(dayOf(this.state));
+    // Guild spec §9.1 (plan ruling 4, review M1): a trip that won a fight or changed floors posts today's board; one that
+    // did not leaves it as it was. Only the board's own stream draws.
+    if (worked && guildOpen(this.state)) this.state.guild = postBoard(this.state).guild;
   }
 
   /** The main road's depth 30 boss is the finale until it has been beaten once (spec §8.4); after that it is an ordinary boss. */
@@ -1567,6 +1641,7 @@ export class Game {
    * has slots (the rest is reported as `overflow`); special items and their sets enter the codex.
    */
   private toTown(viaLamp = false, afterFinale = false): void {
+    const worked = this.run?.worked === true;   // read before the run is gone (guild plan ruling 4)
     this.finaleWaiting = false;
     const loot = this.run?.loot;
     this.banked = null;
@@ -1586,7 +1661,7 @@ export class Game {
     this.run = null;
     this.state.dungeon.portals = rollPortals(this.rng, favouredRegions(this.state.party.recruited), nextLead(this.state)?.region);
     this.rerolled = false;
-    this.arrive(afterFinale);
+    this.arrive(afterFinale, worked);
   }
 
   /** A special piece and its set enter the codex once: when banked, or when worn from the run pack. */
@@ -1602,10 +1677,17 @@ export class Game {
 
   private changeFloor(floor: number): { kind: 'floor'; floor: number } {
     const region = this.run!.region;
+    if (floor !== this.floor) this.run!.worked = true;   // guild plan ruling 4: another floor makes the trip count
+    const was = this.state.dungeon.reached[region];
     this.floor = floor;
     this.forceGlimmers(floor);
     this.pos = { ...this.map().entrance };
     this.state.dungeon.reached[region] = Math.min(MAX_REACHED, Math.max(this.state.dungeon.reached[region], floor));
+    if (guildOpen(this.state)) {
+      // Guild spec §8.5: a scout of this region that this floor finished; read only, nothing drawn.
+      const done = (this.state.guild?.active ?? []).filter((q) => q.kind === 'scout' && q.target === region && was < q.n && progressOf(this.state, q).done).map((q) => q.id);
+      if (done.length) this.scoutDone = [...(this.scoutDone ?? []), ...done];
+    }
     this.revealHere();
     return { kind: 'floor', floor };
   }
@@ -1759,6 +1841,7 @@ export class Game {
   }
 
   private wipe(): void {
+    const worked = this.run?.worked === true;   // read before the run is gone (guild plan ruling 4)
     // Levels and exp stay, the run pack is lost and a quarter of the gold goes; the inn save is not read back.
     this.state.gold = Math.floor(this.state.gold * 0.75);
     for (const m of Object.values(this.state.party.roster)) if (m.hp <= 0) m.hp = 1;   // the fallen are carried home
@@ -1770,6 +1853,6 @@ export class Game {
     this.notice = 'wipe';
     this.state.dungeon.portals = rollPortals(this.rng, favouredRegions(this.state.party.recruited), nextLead(this.state)?.region);
     this.rerolled = false;
-    this.arrive();
+    this.arrive(false, worked);
   }
 }

@@ -1,0 +1,54 @@
+[
+  {
+    "step": "new game",
+    "sha": "874114000ebbd8a0a29e419dcf88d37e973e3fc284fbbe24acd76b2dd284601f"
+  },
+  {
+    "step": "depart the main road",
+    "sha": "9a59f6f0890812c20e575305ff5278f80f230dd6d7471fa14513471097811116"
+  },
+  {
+    "step": "main road depth 2",
+    "sha": "dd8575b69a7b3ca410a0ad216fba2bbe5edc55353e7d0b909cd540d9bc533888"
+  },
+  {
+    "step": "main road depth 3",
+    "sha": "77620efb4ab87d73d7a50e889693db1c67dee03ea9b056172d6f93888c7c04fd"
+  },
+  {
+    "step": "the depth-3 boss",
+    "sha": "22180ced2f78433ed5577e34bf2810b2cf042a5e3b629537653606347c8f1975"
+  },
+  {
+    "step": "home after the act-one clear",
+    "sha": "a87c32f8583f15874a56ef289425c2873469cfa69d4c50916b16a695fb9621ac"
+  },
+  {
+    "step": "a night at the inn",
+    "sha": "61c8a8c3e6aae2b5a5969a270f9a2c94ad008801006f1b8a2ff8f6a229da6bf2"
+  },
+  {
+    "step": "sold one moss",
+    "sha": "9e6b5c792105d61984babb3899bd2accbb0965567dbde4a5fe2891046c65e430"
+  },
+  {
+    "step": "the orik fragment given back",
+    "sha": "759fbf71093fb076a3b8857f6bfaa15033651b9bce32e6a8e89f248139405583"
+  },
+  {
+    "step": "depart storm",
+    "sha": "759fbf71093fb076a3b8857f6bfaa15033651b9bce32e6a8e89f248139405583"
+  },
+  {
+    "step": "storm depth 2",
+    "sha": "a3416373cb4cab6c961ce854680f24a495ad55414fb8fe5483122f59c6eef422"
+  },
+  {
+    "step": "the return lamp home",
+    "sha": "13879a4b673119294cc56150fe887e8b28084e4f618a417f83826fb4890bf2a8"
+  },
+  {
+    "step": "the guild opened",
+    "sha": "13879a4b673119294cc56150fe887e8b28084e4f618a417f83826fb4890bf2a8"
+  }
+]

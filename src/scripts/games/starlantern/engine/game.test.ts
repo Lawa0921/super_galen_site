@@ -64,7 +64,7 @@ import { GIFT_LINES, RIN_OATH, type GiftPools } from '../data/bond.zh-TW';
 import { BOND_RUN_CAP, FIELD_POINTS } from '../data/story/bond';
 import { BONDS_WRITTEN, ROMANCES_WRITTEN, TOGETHER_WRITTEN, sceneTime } from '../data/story/scenes';
 import { today } from './story/bond';
-import { WAVE_2_LIVE, withBondEarn, withBondScale, withRosterLive, withRosterOnly } from './testing';
+import { WAVE_2_LIVE, withBondEarn, withBondScale, withGuildLive, withRosterLive, withRosterOnly } from './testing';
 /**
  * Bond plan Task 17: the registries hold what is written now, so a test that registers its own puts back what was there
  * (`bondsBack`), registers a companion only once (`bondsAdd`), and gives a written scene back instead of deleting it.
@@ -6818,4 +6818,233 @@ describe("an elite's own piece takes its inscription roll (PR C review S1)", () 
     expect(marks).toBeGreaterThan(0);
     expect(marks).toBeLessThan(12);
   });
+});
+
+describe('the guild board in the game (guild quests plan Task A7)', () => {
+  /** A game in town past the first act, the main road reached to 3, lamps to spare. */
+  const townGame = (rng: Rng = mulberry32(0x6a7), storage = memoryStorage()) => {
+    const g = new Game(rng, storage, undefined, 0, HERO_LINEUP);
+    g.state.dungeon.reached.mainline = 3;
+    g.state.story.act1Cleared = true;
+    g.state.inventory['return-lamp'] = 9;
+    return g;
+  };
+  /** Sets out and wins one fight (a planted elite, felled at once); stays on the map. */
+  const winOne = (g: Game): BattleEnd => {
+    if (g.phase === 'town') expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    stepOnto(g, plantAt(g, 'elite'));
+    expect(g.phase).toBe('battle');
+    return killAll(g);
+  };
+  /** The ways home: a dive that counts (a win, or a floor gone down) or one that does not (the gate, a lamp at once). */
+  const home = {
+    win: (g: Game) => { winOne(g); expect(g.useReturnLamp()).toBe(true); },
+    floor: (g: Game) => { expect(g.depart(MAIN, 1)).toEqual({ ok: true }); downstairs(g, g.map().down!); expect(g.useReturnLamp()).toBe(true); },
+    door: (g: Game) => { expect(g.depart(MAIN, 1)).toEqual({ ok: true }); expect(g.returnToTown()).toBe(true); },
+    lamp: (g: Game) => { expect(g.depart(MAIN, 1)).toEqual({ ok: true }); expect(g.useReturnLamp()).toBe(true); },
+    wipe: (g: Game) => {
+      winOne(g);
+      g.encounter = 99;
+      const dir = DIRS.find((d) => tileAt(g.map(), { x: g.pos.x + DELTA[d].x, y: g.pos.y + DELTA[d].y }) === 'floor')!;
+      expect(g.move(dir)).toEqual({ kind: 'battle' });
+      for (const c of g.battle!.party) { c.hp = 0; c.alive = false; }
+      expect(g.submitRound({})!.end!.outcome).toBe('lose');
+      expect(g.phase).toBe('town');
+    },
+  };
+  const quest = (kind: 'hunt' | 'scout', target: string, n: number, base: number) => ({
+    id: `9:${kind}`, kind, giver: kind === 'hunt' ? 'marta' as const : 'glen' as const, variant: 0 as const, target, n, depth: 2,
+    reward: { gold: 50 }, merit: 2, base,
+  });
+  const LOCKED = { ok: false, reason: 'locked' };
+
+  it('off, nothing at all', () => {
+    const g = townGame();
+    const end = winOne(g);
+    expect('quests' in end).toBe(false);
+    expect(g.useReturnLamp()).toBe(true);
+    home.win(g);
+    expect(g.state.guild).toBeUndefined();
+    expect(g.board()).toBeNull();
+    expect([g.openBoard(), g.acceptQuest('1:0'), g.abandonQuest('1:0'), g.turnInQuest('1:0')]).toEqual([LOCKED, LOCKED, LOCKED, LOCKED]);
+    expect(g.questsReady).toBe(0);
+    expect(g.scoutDone).toBeUndefined();
+  });
+
+  it('on, locked until the first act', () => {
+    withGuildLive(() => {
+      const g = townGame();
+      g.state.story.act1Cleared = false;
+      home.win(g);
+      expect(g.state.guild).toBeUndefined();
+      expect(g.board()).toBeNull();
+      expect(g.openBoard()).toEqual(LOCKED);
+      expect(g.state.guild).toBeUndefined();
+    });
+    withGuildLive(() => {
+      const g = townGame();
+      home.win(g);
+      expect(g.state.story.act1Cleared).toBe(true);
+      expect(g.state.guild).toBeUndefined();
+      expect(g.board()).toBeNull();
+      expect(g.openBoard()).toEqual(LOCKED);
+      expect(g.state.guild).toBeUndefined();
+    }, { open: false });
+  });
+
+  it('on and open', () => withGuildLive(() => {
+    const g = townGame();
+    home.win(g);
+    const b = g.board()!;
+    expect(b.day).toBe(dayOf(g.state));
+    expect(b.offers.length).toBeGreaterThan(0);
+    expect(g.rest().ok).toBe(true);   // a night at the inn: a day on, the same board
+    expect(dayOf(g.state)).toBe(b.day + 1);
+    expect(g.board()).toEqual(b);
+    home.win(g);
+    expect(g.board()!.day).toBe(dayOf(g.state));
+    expect(g.board()!.offers.map((o) => o.id)).not.toEqual(b.offers.map((o) => o.id));
+    // opening it: today's mark and Anna's word on the first time, saved
+    expect(g.openBoard()).toEqual({ ok: true, first: true });
+    expect([g.board()!.viewed, g.board()!.intro]).toEqual([dayOf(g.state), true]);
+    expect(g.openBoard()).toEqual({ ok: true, first: false });
+    const r = loadGame(g.storage!);
+    expect(r.status === 'ok' && r.state.guild).toEqual(g.board());
+  }));
+
+  it('a turn at the door posts nothing', () => withGuildLive(() => {
+    const g = townGame();
+    home.win(g);
+    const b = structuredClone(g.board()!);
+    for (const way of [home.door, home.lamp]) {
+      const day = dayOf(g.state);
+      way(g);
+      expect(dayOf(g.state)).toBe(day + 1);   // the day goes on
+      expect(g.board()).toEqual(b);   // the board does not
+    }
+    home.floor(g);   // a floor gone down, no fight: it counts
+    expect(g.board()!.day).toBe(dayOf(g.state));
+    expect(g.board()!.offers).not.toEqual(b.offers);
+    const before = g.board()!.day;
+    home.wipe(g);   // a wipe after a win counts too
+    expect(g.board()!.day).toBe(dayOf(g.state));
+    expect(g.board()!.day).toBeGreaterThan(before);
+  }));
+
+  it("the board's turn survives a reload", () => withGuildLive(() => {
+    const st = memoryStorage();
+    const g = townGame(mulberry32(31), st);
+    home.win(g);
+    expect(g.rest().ok).toBe(true);   // saved
+    const saved = structuredClone(g.board()!);
+    const r = loadGame(st);
+    expect(r.status === 'ok' && r.state.guild).toEqual(saved);
+    home.win(g);   // a new board, never saved
+    expect(g.board()!.day).not.toBe(saved.day);
+    const back = Game.boot(mulberry32(31), st);
+    expect(back.state.guild).toEqual(saved);
+  }));
+
+  it('the board posts on the way home and draws nothing', () => {
+    const play = () => {
+      let draws = 0;
+      const base = mulberry32(0x77);
+      const g = townGame(() => { draws++; return base(); });
+      const counts: number[] = [];
+      for (const way of [home.win, home.floor, home.door, home.win]) { way(g); counts.push(draws); }
+      g.openBoard();
+      const first = g.state.guild?.offers[0];
+      if (first) g.acceptQuest(first.id);
+      g.abandonQuest(first?.id ?? 'x');
+      counts.push(draws);
+      return { counts, guild: g.state.guild };
+    };
+    const off = play();
+    const on = withGuildLive(play);
+    expect(off.guild).toBeUndefined();
+    expect(on.guild).toBeDefined();
+    expect(on.counts).toEqual(off.counts);
+  });
+
+  it('a win where every foe ran away posts nothing (controller ruling, spec §0 item 21)', () => withGuildLive(() => {
+    // as roster plan B1 review item 13: a win with no foe felled is no fight won, so the trip does not count
+    const g = townGame();
+    home.win(g);
+    const before = structuredClone(g.board()!);
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    (g as unknown as { startBattle: (ids: string[], boss: boolean) => void }).startBattle(['slime'], false);
+    const b = g.battle!;
+    b.enemyDefs!.e0 = { ...b.enemyDefs!.e0, fleeAfter: 1, skills: [] };
+    const r = g.submitRound(Object.fromEntries(b.party.map((c) => [c.key, { kind: 'defend' as const }])))!;
+    expect(r.end!.outcome).toBe('win');
+    expect(g.run!.worked).toBeUndefined();
+    expect(g.useReturnLamp()).toBe(true);
+    expect(g.board()).toEqual(before);
+  }));
+
+  it('a win that finishes a hunt says so', () => withGuildLive(() => {
+    const g = townGame();
+    home.win(g);
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    stepOnto(g, plantAt(g, 'elite'));
+    const foe = g.battle!.enemies[0].defId;
+    const felled = g.state.bestiary?.[foe]?.felled ?? 0;
+    g.state.guild!.active = [quest('hunt', foe, 1, felled)];
+    expect(killAll(g).quests).toEqual(['9:hunt']);
+    expect('quests' in winOne(g)).toBe(false);   // done already: not said again
+    expect(g.useReturnLamp()).toBe(true);
+    expect(g.questsReady).toBe(1);
+  }));
+
+  it('a scout finishes on the floor it reaches', () => withGuildLive(() => {
+    const g = townGame();
+    home.win(g);
+    g.state.dungeon.reached.mainline = 1;
+    g.state.guild!.active = [quest('scout', 'mainline', 2, 0)];
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(g.scoutDone).toBeUndefined();
+    downstairs(g, g.map().down!);
+    expect(g.scoutDone).toEqual(['9:scout']);
+    g.scoutDone = undefined;   // the screen reads it and clears it
+    downstairs(g, g.map().down!);
+    expect(g.scoutDone).toBeUndefined();
+  }));
+
+  it('turning in saves', () => withGuildLive(() => {
+    const st = memoryStorage();
+    const g = townGame(mulberry32(5), st);
+    home.win(g);
+    g.state.guild!.active = [quest('scout', 'mainline', 2, 0)];
+    const gold = g.state.gold;
+    const r = g.turnInQuest('9:scout');
+    expect(r.ok).toBe(true);
+    const saved = loadGame(st);
+    expect(saved.status).toBe('ok');
+    if (saved.status !== 'ok') return;
+    expect(saved.state.guild!.active).toEqual([]);
+    expect(saved.state.guild!.merit).toBe(2);
+    expect(saved.state.gold).toBe(gold + 50);
+    expect(g.turnInQuest('9:scout')).toEqual({ ok: false, reason: 'invalid' });
+    // accepting and dropping save too
+    const id = g.board()!.offers[0].id;
+    expect(g.acceptQuest(id).ok).toBe(true);
+    expect(JSON.parse(st.getItem(SAVE_KEY)!).guild.active.map((q: { id: string }) => q.id)).toEqual([id]);
+    expect(g.abandonQuest(id).ok).toBe(true);
+    expect(JSON.parse(st.getItem(SAVE_KEY)!).guild.active).toEqual([]);
+  }));
+
+  it('a reload in the labyrinth loses the run and keeps the board', () => withGuildLive(() => {
+    const st = memoryStorage();
+    const g = townGame(mulberry32(9), st);
+    home.win(g);
+    const hunt = g.board()!.offers.find((o) => o.kind === 'hunt') ?? g.board()!.offers[0];
+    expect(g.acceptQuest(hunt.id).ok).toBe(true);
+    const kept = structuredClone(g.state);
+    winOne(g);
+    winOne(g);
+    const back = Game.boot(mulberry32(9), st);
+    expect(back.phase).toBe('town');
+    expect(back.state.guild).toEqual(kept.guild);
+    expect(back.state.bestiary).toEqual(kept.bestiary);
+  }));
 });

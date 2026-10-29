@@ -22,6 +22,7 @@ import { RUNE_SALT } from '../engine/loot/runes';
 import { ABSORB_SALT } from '../engine/story/fragments';
 import { MEMORY_SALT } from '../engine/story/memories';
 import { AFFIX_SALT } from '../engine/tiers';
+import { GUILD_SALT } from './guild';
 
 /** The art factory's registry: what is published, from where (read independently of the switches it is checked against). */
 const REGISTRY = JSON.parse(readFileSync('art-factory/starlantern/registry.json', 'utf8')) as {
@@ -684,6 +685,9 @@ describe('roster tables, bosses and wardens (roster plan Task A4, spec §3.4, §
     // Plan C1: the trophy stream's salt, SHA-256's second round constant.
     expect(TROPHY_SALT).toBe(0x71374491);
     expect([...used, WARDEN_SALT]).not.toContain(TROPHY_SALT);
+    // Guild quests plan Task A1: the board's stream, SHA-256's third round constant.
+    expect(GUILD_SALT).toBe(0xb5c0fbcf);
+    expect([...used, WARDEN_SALT, TROPHY_SALT]).not.toContain(GUILD_SALT);
   });
 });
 

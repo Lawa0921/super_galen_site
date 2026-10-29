@@ -1,6 +1,6 @@
 import { afterEach, describe, it, expect } from 'vitest';
 import { BACKUP_KEY, SAVE_KEY, V8_KEY, loadGame, saveGame } from './save';
-import { SAVE_VERSION, newGame, type GameState } from './state';
+import { SAVE_VERSION, newGame, type GameState, type GuildState, type QuestOffer } from './state';
 import { STANDARD_LINEUP } from './party';
 import { socketable, validRuneFields } from './sockets';
 import { RUNE_STACK, type RuneRef } from '../data/runes';
@@ -1598,5 +1598,100 @@ describe('the bestiary in the save (roster plan Task C3)', () => {
       ['a huge count', { slime: { seen: 1e12, felled: 0 } }],
     ];
     for (const [name, b] of cases) expect(loadGame(memoryStorage({ [SAVE_KEY]: raw(b) })).status, name).toBe('corrupt');
+  });
+});
+
+describe('the guild board in the save (guild quests plan Task A5)', () => {
+  const note = (extra: Record<string, unknown> = {}) => ({
+    id: '3:0', kind: 'hunt', giver: 'marta', variant: 1, target: 'slime', n: 6, depth: 2, reward: { gold: 63, items: { 'essence-magic': 1 } }, merit: 2, ...extra,
+  });
+  const board = (extra: Record<string, unknown> = {}) => ({
+    day: 3, offers: [note(), note({ id: '3:1', kind: 'scout', giver: 'glen', target: 'frost', n: 7, depth: 7, reward: { gold: 120, items: { 'return-lamp': 1 } }, merit: 3 })],
+    active: [note({ id: '2:0', kind: 'sweep', giver: 'glen', target: 'frost', n: 8, depth: 4, reward: { gold: 118, items: { 'essence-rare': 1 } }, merit: 3, base: 4, ids: ['frost-doll', 'snow-caller'] })],
+    merit: 14, paid: 1, ...extra,
+  });
+  const raw = (guild: unknown) => JSON.stringify({ ...JSON.parse(JSON.stringify(newGame())), guild });
+  const load = (guild: unknown) => loadGame(memoryStorage({ [SAVE_KEY]: raw(guild) }));
+  const guildOf = (guild: unknown) => { const r = load(guild); expect(r.status).toBe('ok'); return r.status === 'ok' ? r.state.guild : null; };
+
+  it('the save version stays 9', () => expect(SAVE_VERSION).toBe(9));
+
+  it('a board round-trips', () => {
+    const st = memoryStorage();
+    const g = newGame();
+    g.guild = {
+      ...(board() as unknown as GuildState), viewed: 3, intro: true,
+      offers: [{ ...(note() as unknown as QuestOffer), kind: 'bounty', giver: 'anna', target: 'fog-warden', n: 1, depth: 5, reward: { gold: 300, items: { 'ancient-gear': 1, 'shard-dim': 2 }, rune: 'focus@magic' }, merit: 6 }],
+    };
+    expect(saveGame(st, g)).toBe(true);
+    expect(loadGame(st)).toEqual({ status: 'ok', state: g });
+  });
+
+  it('a save without one loads without one', () => {
+    const st = memoryStorage();
+    expect(saveGame(st, newGame())).toBe(true);
+    const r = loadGame(st);
+    expect(r.status === 'ok' && 'guild' in r.state).toBe(false);
+  });
+
+  it('bad shapes are corrupt', () => {
+    const six = Array.from({ length: 6 }, (_, i) => note({ id: `3:${i}` }));
+    const five = Array.from({ length: 5 }, (_, i) => note({ id: `2:${i}`, base: 0 }));
+    const cases: [string, unknown][] = [
+      ['not an object', []],
+      ['a negative merit', board({ merit: -1 })],
+      ['a fraction of merit', board({ merit: 1.5 })],
+      ['merit past the cap', board({ merit: 1e9 + 1 })],
+      ['six notes', board({ offers: six })],
+      ['five held', board({ active: five })],
+      ['an unknown kind', board({ offers: [note({ kind: 'gather' })] })],
+      ['an unknown giver', board({ offers: [note({ giver: 'rin' })] })],
+      ['paid five', board({ paid: 5 })],
+      ['a gift paid past the rank (controller ruling, spec §0 item 21)', board({ merit: 14, paid: 2 })],
+      ['no day', board({ day: undefined })],
+      ['a zero item', board({ offers: [note({ reward: { gold: 1, items: { moss: 0 } } })] })],
+      ['a negative item', board({ offers: [note({ reward: { gold: 1, items: { moss: -2 } } })] })],
+      ['negative gold', board({ offers: [note({ reward: { gold: -1 } })] })],
+      ['no reward', board({ offers: [note({ reward: undefined })] })],
+      ['a base that is a string', board({ active: [note({ base: '3' })] })],
+      ['a held note with no base', board({ active: [note()] })],
+      ['ids that are not a list', board({ active: [note({ kind: 'sweep', target: 'frost', base: 0, ids: 'frost-doll' })] })],
+      ['a rune that is no key', board({ offers: [note({ reward: { gold: 1, rune: 'focus' } })] })],
+      ['a rune of no tier', board({ offers: [note({ reward: { gold: 1, rune: 'focus@shiny' } })] })],
+      ['a variant of 2', board({ offers: [note({ variant: 2 })] })],
+      ['a count of 0', board({ offers: [note({ n: 0 })] })],
+      ['a target that is no string', board({ offers: [note({ target: 7 })] })],
+      ['intro false', board({ intro: false })],
+      ['a viewed day of 0', board({ viewed: 0 })],
+      ['two notes with one id', board({ offers: [note(), note()] })],
+    ];
+    expect(guildOf(board())).toEqual(board());
+    for (const [name, g] of cases) expect(load(g).status, name).toBe('corrupt');
+  });
+
+  it('an unknown target is dropped, not corrupt', () => {
+    // review L7: each kind looks in its own table; the enemy `shade` and the region `shade` share a name
+    expect(guildOf(board({ offers: [note({ target: 'shade' }), note({ id: '3:1', target: 'iron' })] }))!.offers.map((o) => o.target)).toEqual(['shade']);
+    const scouts = [note({ kind: 'scout', giver: 'glen', target: 'shade', n: 4 }), note({ id: '3:1', kind: 'scout', giver: 'glen', target: 'slime', n: 4 })];
+    expect(guildOf(board({ offers: scouts }))!.offers.map((o) => o.target)).toEqual(['shade']);
+    const goods = [note({ kind: 'deliver', giver: 'orik', target: 'moss', n: 5 }), note({ id: '3:1', kind: 'deliver', giver: 'orik', target: 'slime', n: 5 })];
+    expect(guildOf(board({ offers: goods }))!.offers.map((o) => o.target)).toEqual(['moss']);
+    const bounties = [note({ kind: 'bounty', giver: 'anna', target: 'fog-warden', n: 1 }), note({ id: '3:1', kind: 'bounty', giver: 'anna', target: 'frost', n: 1 })];
+    expect(guildOf(board({ offers: bounties }))!.offers.map((o) => o.target)).toEqual(['fog-warden']);
+    // a sweep loses only the kind this build does not know; with none left, the whole quest goes
+    const sweep = (ids: string[], id = '2:0') => note({ id, kind: 'sweep', giver: 'glen', target: 'frost', n: 8, base: 0, ids });
+    expect(guildOf(board({ active: [sweep(['frost-doll', 'no-such-foe', 'snow-caller'])] }))!.active[0].ids).toEqual(['frost-doll', 'snow-caller']);
+    expect(guildOf(board({ active: [sweep(['no-such-foe']), sweep(['frost-doll'], '2:1')] }))!.active.map((q) => q.id)).toEqual(['2:1']);
+    expect(guildOf(board({ active: [{ ...sweep(['frost-doll']), target: 'atlantis' }] }))!.active).toEqual([]);
+    // a reward's unknown item goes, the rest is paid
+    expect(guildOf(board({ offers: [note({ reward: { gold: 5, items: { moss: 1, 'no-such-thing': 2, 'shard-clear': 1 } } })] }))!.offers[0].reward)
+      .toEqual({ gold: 5, items: { moss: 1, 'shard-clear': 1 } });
+    // a rune key of the right shape whose rune this build does not have goes too
+    expect(guildOf(board({ offers: [note({ reward: { gold: 5, rune: 'no-such-rune@rare' } })] }))!.offers[0].reward).toEqual({ gold: 5 });
+    expect(guildOf(board({ offers: [note({ reward: { gold: 5, rune: 'heavy@rare' } })] }))!.offers[0].reward).toEqual({ gold: 5, rune: 'heavy@rare' });
+    // everything else as it was
+    const g = guildOf(board({ offers: [note({ target: 'no-such-foe' })] }))!;
+    expect(g.offers).toEqual([]);
+    expect({ ...g, offers: [] }).toEqual({ ...board(), offers: [] });
   });
 });
