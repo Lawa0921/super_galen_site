@@ -7,7 +7,7 @@ import { REGIONS, type RegionId } from '../../data/regions';
 import { RUNE_STACK, parseRuneKey } from '../../data/runes';
 import { T } from '../../data/text.zh-TW';
 import { bountyLine, progressOf, rankOf, type Progress } from '../../engine/guild';
-import type { ActiveQuest, GuildState, QuestOffer, QuestReward } from '../../engine/state';
+import type { ActiveQuest, GameState, GuildState, QuestOffer, QuestReward } from '../../engine/state';
 import { hauntsOf } from '../../engine/story/handbook';
 import type { CharacterId } from '../../engine/types';
 import { art, enemyArt, type StoryMood } from '../../render/artPaths';
@@ -99,6 +99,12 @@ function giftParts(rank: number): string[] {
   return [...(g.gold ? [T.gold(g.gold)] : []), ...Object.entries(g.items ?? {}).map(([id, n]) => `${itemName(id)} ×${n}`)];
 }
 
+/** A held quest's row on the right (spec §8.2): 可回報 in gold once done, else its progress. Shared with the labyrinth's page. */
+export function heldRight(s: GameState, q: ActiveQuest): Pick<MenuItem, 'right' | 'rightClass'> {
+  const p = progressOf(s, q);
+  return p.done ? { right: B.ready, rightClass: 'slx-fresh' } : { right: progressText(q, p) };
+}
+
 /** A held quest's progress in its row (spec §8.2): 3／6, 最深 5／9, 持有 3／8. */
 function progressText(q: QuestOffer, p: Progress): string {
   return q.kind === 'scout' ? B.deepest(p.have, p.need) : q.kind === 'deliver' ? B.held(p.have, p.need) : B.progress(Math.min(p.have, p.need), p.need);
@@ -179,10 +185,8 @@ export class BoardLayer implements Layer {
         : [{ id: '', label: B.emptyBoard, disabled: true }];
     }
     if (tab === 'active') {
-      return g.active.length ? g.active.map((q) => {
-        const p = progressOf(this.game.state, q);
-        return { id: q.id, label: questLabel(q), icon: this.icon(q), ...(p.done ? { right: B.ready, rightClass: 'slx-fresh' } : { right: progressText(q, p) }) };
-      }) : [{ id: '', label: B.emptyActive, disabled: true }];
+      return g.active.length ? g.active.map((q) => ({ id: q.id, label: questLabel(q), icon: this.icon(q), ...heldRight(this.game.state, q) }))
+        : [{ id: '', label: B.emptyActive, disabled: true }];
     }
     const now = rankOf(g.merit);
     return RANKS.map((r, i) => ({ id: String(i), label: B.rankNames[i], ...(i === now ? { right: B.current, rightClass: 'slx-fresh' } : { right: B.rankFrom(r.merit) }) }));

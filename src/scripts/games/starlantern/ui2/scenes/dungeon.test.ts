@@ -8,6 +8,8 @@ import { chestHasGear } from '../../engine/loot/drops';
 import { SHARD_IDS, fragmentName } from '../../data/story/fragments';
 import type { ItemInstance } from '../../engine/types';
 import { constRng } from '../../engine/testing';
+import { dayOf } from '../../engine/calendar';
+import { withGuildLive } from '../../engine/testing';
 import { NO_ART } from '../../render/textures';
 import { capacity, carried, formatWeight as kg, weightOf } from '../../data/weights';
 import { MATERIALS } from '../../data/materials';
@@ -1218,5 +1220,98 @@ describe('DungeonScene tier badge (difficulty plan Task 7b)', () => {
     const plain = setup({ region: 'mainline', condition: 'fog' }).root;
     expect(top(root)).toEqual(top(plain));
     expect(top(root).slice(0, 3)).toEqual(['slx-win slx-floorname', 'slx-win slx-condition slx-cond-fog', 'slx-win slx-condition-tip']);
+  });
+});
+
+describe('DungeonScene: the guild board in the labyrinth (guild quests plan Task B4)', () => {
+  const B = T.ui2.board;
+  /** The first act over and quests held: a scout of the main road to depth 2, a hunt of six slimes, a delivery of moss. */
+  const holding = (g: Game) => {
+    const day = dayOf(g.state);
+    g.state.story.act1Cleared = true;
+    const base = { giver: 'glen' as const, variant: 0 as const, depth: 2, reward: { gold: 70 }, merit: 3, base: 0 };
+    g.state.guild = { day, offers: [], merit: 0, paid: 0, active: [
+      { ...base, id: `${day}:0`, kind: 'scout', target: 'mainline', n: 2 },
+      { ...base, id: `${day}:1`, kind: 'hunt', giver: 'marta', target: 'slime', n: 6 },
+      { ...base, id: `${day}:2`, kind: 'deliver', giver: 'orik', target: 'moss', n: 8 },
+    ] };
+    g.state.inventory.moss = 3;
+  };
+  const toStairs = (t: ReturnType<typeof setup>) => {
+    const down = t.game.map().down!;
+    const dir = (['up', 'down', 'left', 'right'] as const).find((d) => tileAt(t.game.map(), { x: down.x - DELTA[d].x, y: down.y - DELTA[d].y }) !== 'wall')!;
+    t.game.pos = { x: down.x - DELTA[dir].x, y: down.y - DELTA[dir].y };
+    t.s.onAction(dir);
+  };
+  const ids = (root: HTMLElement) => [...root.querySelectorAll<HTMLElement>('.slx-layer:last-child [role=option]')].map((o) => o.dataset.id);
+
+  it("a scout's goal follows the floor name, said once", () => withGuildLive(() => {
+    const t = setup(undefined, true, {}, holding);
+    t.game.state.party.roster.scarlet.level = 6;
+    toStairs(t);
+    t.pick('前往');
+    expect(t.game.floor).toBe(2);
+    expect(t.text()).toBe(`第 2 層　水晶洞窟\n${B.done(B.row(B.kinds.scout, B.depthAt(B.main, 2)))}`);
+    expect(t.game.scoutDone ?? []).toEqual([]);   // read and cleared
+  }));
+
+  it('no scout finished: the floor name alone', () => withGuildLive(() => {
+    const t = setup(undefined, true, {}, (g) => { holding(g); g.state.guild!.active[0].n = 3; });
+    t.game.state.party.roster.scarlet.level = 6;
+    toStairs(t);
+    t.pick('前往');
+    expect(t.text()).toBe('第 2 層　水晶洞窟');
+  }));
+
+  it('the field menu shows the quests read-only once the board is open', () => withGuildLive(() => {
+    const t = setup(undefined, true, {}, holding);
+    t.s.onAction('menu');
+    expect(ids(t.root)).toEqual(['status', 'skills', 'items', 'equip', 'workshop', 'formation', 'lamp', 'condition', 'handbook', 'settings', 'quests', 'close']);
+    expect(ids(t.root)).toHaveLength(12);   // FIELD_MENU_ROWS: all of it on screen, no ▼
+    expect(t.root.querySelector('.slx-layer:last-child .slx-more-down')).toBeNull();
+    t.pick(B.title);
+    const rows = [...t.root.querySelectorAll('.slx-layer:last-child [role=option]')];
+    expect(rows.map((r) => r.querySelector('.slx-label')!.textContent)).toEqual([
+      B.row(B.kinds.scout, B.depthAt(B.main, 2)), B.row(B.kinds.hunt, B.count('苔蘚史萊姆', 6)), B.row(B.kinds.deliver, B.count('發光苔', 8)),
+    ]);
+    expect(rows.map((r) => r.querySelector('.slx-right')!.textContent)).toEqual([B.deepest(1, 2), B.progress(0, 6), B.held(3, 8)]);
+    expect(t.root.querySelector('.slx-layer:last-child')!.textContent).toContain(B.fieldNote);
+    t.s.onAction('confirm');   // read only: nothing happens
+    expect(t.game.state.guild!.active).toHaveLength(3);
+    t.s.onAction('cancel');
+    expect(ids(t.root)).toContain('quests');   // back on the field menu
+  }));
+
+  it('no delivery held: no note about the stock', () => withGuildLive(() => {
+    const t = setup(undefined, true, {}, (g) => { holding(g); g.state.guild!.active.pop(); });
+    t.s.onAction('menu');
+    t.pick(B.title);
+    expect(t.root.querySelector('.slx-layer:last-child')!.textContent).not.toContain(B.fieldNote);
+  }));
+
+  it('nothing held: one greyed line', () => withGuildLive(() => {
+    const t = setup(undefined, true, {}, (g) => { holding(g); g.state.guild!.active = []; });
+    t.s.onAction('menu');
+    t.pick(B.title);
+    const rows = [...t.root.querySelectorAll('.slx-layer:last-child [role=option]')];
+    expect(rows.map((r) => r.textContent)).toEqual([B.emptyActive]);
+    expect(rows[0].getAttribute('aria-disabled')).toBe('true');
+  }));
+
+  it('the field menu keeps its eleven while the board is shut, or open but locked', () => {
+    const eleven = ['status', 'skills', 'items', 'equip', 'workshop', 'formation', 'lamp', 'condition', 'handbook', 'settings', 'close'];
+    const off = setup(undefined, true, {}, holding);
+    off.s.onAction('menu');
+    expect(ids(off.root)).toEqual(eleven);
+    withGuildLive(() => {
+      const locked = setup(undefined, true, {}, holding);
+      locked.s.onAction('menu');
+      expect(ids(locked.root)).toEqual(eleven);
+    }, { open: false });
+    withGuildLive(() => {
+      const early = setup(undefined, true, {}, (g) => { holding(g); g.state.story.act1Cleared = false; });
+      early.s.onAction('menu');
+      expect(ids(early.root)).toEqual(eleven);
+    });
   });
 });

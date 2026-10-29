@@ -36,6 +36,7 @@ import { Dialogue, MenuView, backControl, richInto, win, type Rich } from '../wi
 import { textCps } from '../settings';
 import { playAndRecord, storyCtx } from '../story';
 import { playRescue } from '../rescue';
+import { questLabel } from './board';
 import { memScene, type SceneId } from '../../data/story/scenes';
 
 /** Width kept clear for the command window; must match $slx-battle-left in _starlantern-ui.scss. */
@@ -717,6 +718,11 @@ export class BattleScene implements Scene {
       for (const [id, n] of Object.entries(end.drops)) lines.push({ text: T.battle.drop(itemName(id), n) });
       for (const [id, n] of Object.entries(end.left)) lines.push({ text: T.battle.leftBehind(itemName(id), n) });
       for (const it of end.gearLeft) lines.push({ text: fillRich(T.battle.gearLeft, [gearPart(it, gearIconLate(this.ctx.art, it))]), cls: 'slx-loot-left' });
+      // Guild quests spec §8.5: each quest this fight finished, in gold, after the spoils and before the level-ups.
+      for (const id of end.quests ?? []) {
+        const q = this.ctx.game.state.guild?.active.find((x) => x.id === id);
+        if (q) lines.push({ text: T.ui2.board.done(questLabel(q)), cls: 'slx-quest' });
+      }
       lines.push(...levelUpLines(end.levelUps, this.ctx.game.state.party));
     } else if (end.outcome === 'lose') this.ctx.sfx.lose?.();
     const title = end.outcome === 'win' ? T.battle.win : end.outcome === 'lose' ? T.battle.lose : T.battle.fled;

@@ -1615,3 +1615,8 @@ $slx-starlit: #bff6ff;
 .slx-board-info .slx-hb-foe { height: auto; }
 // A note is four lines tall whatever its length, so the lines under it stay put as the cursor moves (spec §8.3).
 .slx-board-note { min-height: 64px; color: $slx-dim; }
+// Guild quests (plan Task B4): a quest a fight finished reads in gold among the spoils; a held quest's 可回報 is gold on
+// the board and on the labyrinth's quest page, as the town's 新 is.
+.slx-result .slx-quest { color: $slx-gold; }
+.slx-guild .slx-fresh, .slx-dungeon .slx-fresh { color: $slx-gold; }
+.slx-field-quests .slx-hint { margin: 4px 0 0; }
