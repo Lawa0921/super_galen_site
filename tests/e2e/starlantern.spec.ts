@@ -2357,7 +2357,11 @@ test.describe('starlantern', () => {
       for (let i = 0; i < 20 && !(await page.locator('.slx-dungeon').isVisible()); i++) { await w.key('z'); await page.waitForTimeout(60); }
       await expect(page.locator('.slx-dungeon')).toBeVisible(); await w.closeTalk();
     };
-    /** Step onto the tile at `at` from a floor tile beside it. */
+    /**
+     * Step onto the tile at `at` from a floor tile beside it. A warden's room asks first (its window; one confirm steps in),
+     * a boss tile goes straight to the fight. No key is pressed blind while the fight opens: a 'z' landing just as the
+     * battle comes up picked 攻擊, so the command menu was gone when the test looked for it (the flake on master).
+     */
     const stepOnto = async (at: { x: number; y: number }) => {
       const k = await run<string>(`const m = g.map();
         for (const [k, dx, dy] of [['ArrowRight', -1, 0], ['ArrowLeft', 1, 0], ['ArrowDown', 0, -1], ['ArrowUp', 0, 1]]) {
@@ -2368,7 +2372,9 @@ test.describe('starlantern', () => {
         return '';`);
       expect(k).not.toBe('');
       await w.key(k);
-      for (let i = 0; i < 14 && !(await page.locator('.slx-battle').isVisible()); i++) { await w.key('z'); await page.waitForTimeout(60); }
+      const ask = page.locator('.slx-dungeon .slx-event');
+      await expect(page.locator('.slx-battle').or(ask).first()).toBeVisible();
+      if (await ask.isVisible()) await w.key('z');   // the room's 挑戰; the window closes on it, so it is pressed once
       await expect(page.locator('.slx-battle')).toBeVisible();
       await expect(page.locator('.slx-bcmd [role=option]').first()).toBeVisible();
     };
