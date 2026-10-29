@@ -67,6 +67,11 @@ export interface Run {
    * (a run never is); the points themselves go straight into `Member.bond.field`, so a wipe keeps them.
    */
   bond: Partial<Record<CharacterId, number>>;
+  /**
+   * Guild quests plan ruling 4 (review M1): this trip has won a fight or gone to another floor, so its return posts a new
+   * board. Not saved (a run never is), drawn from nothing; set by the Game, read by `toTown` and `wipe`.
+   */
+  worked?: true;
 }
 
 export function newRun(seed: number, region: RegionId, condition: ConditionId, startDepth: number, rescues: Record<number, Meetable> = {}, difficulty?: Difficulty): Run {

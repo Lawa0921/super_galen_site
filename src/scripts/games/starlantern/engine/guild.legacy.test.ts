@@ -10,7 +10,7 @@ import type { Portal } from './dungeon/run';
 import { statsOf } from './party';
 import { saveGame, SAVE_KEY } from './save';
 import { sell } from './town';
-import { memoryStorage } from './testing';
+import { memoryStorage, withGuildLive } from './testing';
 import type { GameState } from './state';
 import type { Pos } from './types';
 
@@ -58,11 +58,8 @@ interface TownRun {
   guilds: unknown[];
 }
 
-/**
- * The script. `strip`: each step's text leaves `guild` out. `openGuild`: what opening the guild does, after the town
- * methods the script calls (nothing before the board exists).
- */
-function townScript(opts: { strip?: boolean; openGuild?: (g: Game) => void } = {}): TownRun {
+/** The script. `strip`: each step's text leaves `guild` out (ruling 15's third case). */
+function townScript(opts: { strip?: boolean } = {}): TownRun {
   const steps: TownRun['steps'] = [];
   const depths: number[] = [];
   const guilds: unknown[] = [];
@@ -136,7 +133,7 @@ function townScript(opts: { strip?: boolean; openGuild?: (g: Game) => void } = {
   expect(g.useReturnLamp()).toBe(true);
   expect(phaseOf(g)).toBe('town');
   note('the return lamp home');
-  opts.openGuild?.(g);
+  g.openBoard();   // Task A7: the guild's board; shut, it does nothing
   note('the guild opened');
   return { steps, depths, guilds };
 }
@@ -151,6 +148,22 @@ describe('the guild board leaves the town as it was (guild quests plan Task A0)'
     expect(existsSync(FIXTURE), 'the town fixture is recorded (GUILD_RECORD=1)').toBe(true);
     expect(now.steps).toEqual(JSON.parse(readFileSync(FIXTURE, 'utf8')));
     expect(now.guilds.every((x) => x === undefined)).toBe(true);
+  });
+
+  // Task A7 (ruling 15, review M6): the same script and the same fixture, with the board on.
+  it('the board on but the unlock held shut: the same town, and never a board', () => {
+    const now = withGuildLive(() => townScript(), { open: false });
+    expect(now.steps).toEqual(JSON.parse(readFileSync(FIXTURE, 'utf8')));
+    expect(now.guilds.every((x) => x === undefined)).toBe(true);
+  });
+
+  it('the board on and open: the same town once the board is left out', () => {
+    const now = withGuildLive(() => townScript({ strip: true }));
+    expect(now.steps).toEqual(JSON.parse(readFileSync(FIXTURE, 'utf8')));
+    // the board comes with the act-one clear's return and not before
+    const at = now.steps.findIndex((x) => x.step === 'home after the act-one clear');
+    expect(now.guilds.slice(0, at).every((x) => x === undefined)).toBe(true);
+    expect(now.guilds.slice(at).every((x) => x !== undefined)).toBe(true);
   });
 
   it('the script stays in the first band', () => {
