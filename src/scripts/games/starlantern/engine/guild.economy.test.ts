@@ -255,46 +255,77 @@ function boardValue(offers: readonly QuestOffer[]): number {
   }
   return v;
 }
-/** Named exceptions (spec §10 item 6, plan A6 Step 2): `rank:depth` with the bound measured, and why. */
-const BOARD_CAP_EXCEPTIONS: Record<string, { max: number; why: string }> = {};
+/**
+ * Named exceptions (spec §10 item 6, plan A6 Step 2, §0 item 20): a realistic `rank:depth` pair over BOARD_CAP in the full
+ * sweep. `measured` is the worst board the full sweep finds there (pinned exactly when it runs); `max`, the bound asserted,
+ * is `measured` + 0.01 × BOARD_CAP(d). Carried as a to-do in the SDD's A/carry.md.
+ */
+const BOARD_CAP_EXCEPTIONS: Record<string, { measured: number; max: number; why: string }> = {
+  // measured 2026-10-29 with the full sweep (GUILD_CAP_FULL=1), the formulas untouched (spec §0 item 20)
+  '1:5': { measured: 1210, max: 1222, why: 'seed 902 of the full sweep: 1210 against a cap of 1200 (to-do G1 in carry.md)' },
+  '4:22': { measured: 3308, max: 3340.4, why: 'seed 357 of the full sweep: 3308 against a cap of 3240 (to-do G1 in carry.md)' },
+};
+
+/**
+ * Review M1 of PR A: how many seeds each (rank, depth) pair is sampled with. The full sweep (`GUILD_CAP_FULL=1`) is every
+ * rank × depths 1–60 × seeds 0–999, 300 000 boards: the exceptions were measured with it. The everyday run takes seeds
+ * 0–39 of every pair (12 000 boards), the same boards the full sweep begins with, so it can only find less.
+ */
+const CAP_FULL = process.env.GUILD_CAP_FULL === '1';
+const CAP_SEEDS = CAP_FULL ? 1000 : 40;
+const SWEEP_MS = CAP_FULL ? 1_800_000 : 120_000;
+
+/** One sweep of every rank × depth × CAP_SEEDS seeds, shared by the two tests: each pair's worst board, and bounty misplacements. */
+let capMemo: { worst: Record<string, { v: number; seed: number }>; misplaced: string[] } | null = null;
+function capSweep() {
+  if (capMemo) return capMemo;
+  const worst: Record<string, { v: number; seed: number }> = {};
+  const misplaced: string[] = [];
+  for (let r = 0; r < RANKS.length; r++) {
+    const most = RANKS[r].doubleBounty ? 2 : 1;
+    for (const d of DEPTHS) {
+      const k = `${r}:${d}`;
+      for (let seed = 0; seed < CAP_SEEDS; seed++) {
+        const b = postBoard(atDepth(d, r, seed)).guild!.offers;
+        const bounties = b.filter((o) => o.kind === 'bounty');
+        // at most one a board (two at four lamps), and only in the fixed slots
+        if (bounties.length > most || bounties.some((o) => Number(o.id.split(':')[1]) >= most)) misplaced.push(`${k} seed ${seed}: ${bounties.map((o) => o.id).join(', ')}`);
+        const v = boardValue(b);
+        if (!worst[k] || v > worst[k].v) worst[k] = { v, seed };
+      }
+    }
+  }
+  return (capMemo = { worst, misplaced });
+}
 
 describe('6. a board has a ceiling', () => {
   it('one bounty a board, two at four lamps (controller ruling)', () => {
-    for (let seed = 0; seed < 1000; seed++) {
-      for (let r = 0; r < RANKS.length; r++) {
-        const d = DEPTHS[seed % DEPTHS.length];
-        const b = postBoard(atDepth(d, r, seed)).guild!.offers;
-        const bounties = b.filter((o) => o.kind === 'bounty').length;
-        expect(bounties, `rank ${r} depth ${d} seed ${seed}`).toBeLessThanOrEqual(RANKS[r].doubleBounty ? 2 : 1);
-        // and only the fixed slots hold one
-        b.forEach((o) => { if (o.kind === 'bounty') expect(Number(o.id.split(':')[1]), o.id).toBeLessThan(RANKS[r].doubleBounty ? 2 : 1); });
-      }
-    }
-  });
+    const { worst, misplaced } = capSweep();
+    expect(Object.keys(worst)).toHaveLength(RANKS.length * DEPTHS.length);
+    expect(misplaced).toEqual([]);
+  }, SWEEP_MS);
 
-  it('a thousand boards at every depth stay under BOARD_CAP', () => {
-    // measured 2026-10-29 with the one-bounty ruling: every realistic pair under the cap, so none is named
-    expect(BOARD_CAP_EXCEPTIONS).toEqual({});
-    const worst: Record<string, number> = {};
-    for (let seed = 0; seed < 1000; seed++) {
-      for (let r = 0; r < RANKS.length; r++) {
-        const d = DEPTHS[seed % DEPTHS.length];
-        const v = boardValue(postBoard(atDepth(d, r, seed)).guild!.offers);
-        const k = `${r}:${d}`;
-        worst[k] = Math.max(worst[k] ?? -Infinity, v);
-      }
+  it(`boards at every depth stay under BOARD_CAP (${CAP_SEEDS} seeds a pair)`, () => {
+    const { worst } = capSweep();
+    const cap = (k: string) => BOARD_CAP(Number(k.split(':')[1]));
+    const realistic = (k: string) => Number(k.split(':')[1]) >= RANK_MIN_DEPTH[Number(k.split(':')[0])];
+    const over = Object.entries(worst).filter(([k, w]) => w.v > cap(k));
+    console.log(`[guild cap] ${CAP_SEEDS} seeds a pair; over the cap where no player stands yet (not asserted): ${over.filter(([k]) => !realistic(k)).map(([k, w]) => `${k} ${w.v}/${cap(k)} (seed ${w.seed})`).join(', ') || 'none'}`);
+    console.log(`[guild cap] realistic pairs over the cap: ${over.filter(([k]) => realistic(k)).map(([k, w]) => `${k} ${w.v}/${cap(k)} (seed ${w.seed})`).join(', ') || 'none'}`);
+    for (const [k, ex] of Object.entries(BOARD_CAP_EXCEPTIONS)) {
+      expect(realistic(k), `${k} is a realistic pair`).toBe(true);
+      expect(ex.max, k).toBe(Math.round((ex.measured + 0.01 * cap(k)) * 100) / 100);
+      // the full sweep finds exactly what was measured; a smaller one never more
+      if (CAP_FULL) expect(worst[k].v, `${k} measured`).toBe(ex.measured);
+      else expect(worst[k].v, `${k} measured`).toBeLessThanOrEqual(ex.measured);
     }
-    const over = Object.entries(worst).filter(([k, v]) => v > BOARD_CAP(Number(k.split(':')[1]))).map(([k, v]) => `${k} ${v}/${BOARD_CAP(Number(k.split(':')[1]))}`);
-    const unrealistic = over.filter((x) => Number(x.split(':')[1].split(' ')[0]) < RANK_MIN_DEPTH[Number(x.split(':')[0])]);
-    console.log(`[guild cap] over the cap where no player stands yet (not asserted): ${unrealistic.join(', ') || 'none'}`);
-    for (const [k, v] of Object.entries(worst)) {
-      const [r, d] = k.split(':').map(Number);
-      if (d < RANK_MIN_DEPTH[r]) continue;
+    for (const [k, w] of Object.entries(worst)) {
+      if (!realistic(k)) continue;
       const ex = BOARD_CAP_EXCEPTIONS[k];
-      if (ex) console.log(`[guild cap] exception ${k}: ${v} (bound ${ex.max}, cap ${BOARD_CAP(d)}): ${ex.why}`);
-      expect(v, `rank ${r} depth ${d}`).toBeLessThanOrEqual(ex ? ex.max : BOARD_CAP(d));
+      if (ex) console.log(`[guild cap] exception ${k}: ${w.v} (bound ${ex.max}, cap ${cap(k)}): ${ex.why}`);
+      expect(w.v, `${k} seed ${w.seed}`).toBeLessThanOrEqual(ex ? ex.max : cap(k));
     }
-  });
+  }, SWEEP_MS);
 });
 
 describe('7. taking, dropping and turning in draw nothing', () => {

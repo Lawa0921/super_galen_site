@@ -377,7 +377,7 @@ spec 是控制者授權的設計者草案；下面是 spec 沒寫細的地方，
   3. `a delivery pays for goods, not gold`：每一個能交的貨 × 它的 Q，報酬只有金幣、等於 `round(1.6 × Q × price)`；報酬裡沒有素材。
   4. `a note pays once`：同一則回報兩次第二次 `invalid`；放棄之後 `accept` 同一個 id 回 `invalid`；同一天再 `postBoard`，`offers`、`active` 不變（沒算數的回城不貼，在 A7 的 `Game` 層測）。
   5. `a gift pays once a lamp`：升級發一次；同一狀態再 `turnIn` 別的委託、或 `saveGame`→`loadGame` 之後再升，不重發；功績在上限停住。
-  6. `a board has a ceiling`（寬鬆）：一千個種子 × 深度 1–60 的情境，一張布告所有報酬的價值（金幣＋素材的賣價＋符文的 `RUNE_SELL`）≤ `BOARD_CAP(d)`。
+  6. `a board has a ceiling`（寬鬆）：每個評等 × 深度 1–60 × 種子 0–999 的情境（`GUILD_CAP_FULL=1` 的完整抽樣三十萬張；平常跑每組前 40 個種子，一萬兩千張），一張布告所有報酬的價值（金幣＋素材的賣價＋符文的 `RUNE_SELL`；收購以淨值計）≤ `BOARD_CAP(d)`，只對合理組合斷言（spec §0 第 20 條）。
   7. `taking, dropping and turning in draw nothing`：`forgeDraws`、`story.pity`、`bestiary` 不變。
 - [ ] **Step 2**：執行。第 1–5、7 條預期綠（A1–A4 已經照規則寫）；紅了就是實作錯，修實作。第 6 條紅了：調 `data/guild.ts` 的公式**一次**，還紅就在測試裡以 `BOARD_CAP_EXCEPTIONS` 具名放過（理由、最大值），加一條待辦到 SDD `A/carry.md`。
 - [ ] **Step 3**：全套、tsc、閘門、四個快照。
