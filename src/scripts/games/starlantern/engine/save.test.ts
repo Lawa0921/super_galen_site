@@ -1647,6 +1647,7 @@ describe('the guild board in the save (guild quests plan Task A5)', () => {
       ['an unknown kind', board({ offers: [note({ kind: 'gather' })] })],
       ['an unknown giver', board({ offers: [note({ giver: 'rin' })] })],
       ['paid five', board({ paid: 5 })],
+      ['a gift paid past the rank (controller ruling, spec §0 item 21)', board({ merit: 14, paid: 2 })],
       ['no day', board({ day: undefined })],
       ['a zero item', board({ offers: [note({ reward: { gold: 1, items: { moss: 0 } } })] })],
       ['a negative item', board({ offers: [note({ reward: { gold: 1, items: { moss: -2 } } })] })],

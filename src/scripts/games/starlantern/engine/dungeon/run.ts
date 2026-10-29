@@ -68,8 +68,8 @@ export interface Run {
    */
   bond: Partial<Record<CharacterId, number>>;
   /**
-   * Guild quests plan ruling 4 (review M1): this trip has won a fight or gone to another floor, so its return posts a new
-   * board. Not saved (a run never is), drawn from nothing; set by the Game, read by `toTown` and `wipe`.
+   * Guild quests plan ruling 4 (review M1): this trip has won a fight with a foe felled (spec §0 item 21) or gone to
+   * another floor, so its return posts a new board. Not saved (a run never is), drawn from nothing; set by the Game, read by `toTown` and `wipe`.
    */
   worked?: true;
 }

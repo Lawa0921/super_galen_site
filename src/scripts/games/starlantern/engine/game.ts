@@ -747,7 +747,9 @@ export class Game {
     this.fightTier = undefined;
     if (b.outcome === 'fled') { this.phase = 'map'; return { battle: b, end: empty }; }
     if (b.outcome === 'lose') { this.wipe(); return { battle: b, end: empty }; }
-    this.run!.worked = true;   // guild plan ruling 4: a won fight makes the trip count for the board
+    // Guild plan ruling 4, controller ruling (spec §0 item 21): a fight won with a foe felled makes the trip count for the
+    // board; one where every foe ran off is no fight won (as afterWin below, roster plan B1 review item 13).
+    if (!b.enemies.every((e) => e.left)) this.run!.worked = true;
     // Guild spec §8.5 (review L8): the quests held, counted before the bestiary moves; read only, nothing drawn.
     const held = guildOpen(this.state) ? questSnapshot(this.state) : null;
     noteFelled(this.state, b);   // the bestiary (roster plan Task C3): every foe beaten, on a win only

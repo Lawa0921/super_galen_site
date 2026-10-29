@@ -467,10 +467,12 @@ function isHeld(v: unknown): boolean {
 
 /**
  * Spec §9.4: the board's shape, and only its shape (`repairGuild` looks the targets up): whole numbers in range, the
- * kinds and givers known, at most BOARD_MAX notes and ACTIVE_MAX held, `paid` a rank, ids once each, rune keys well formed.
+ * kinds and givers known, at most BOARD_MAX notes and ACTIVE_MAX held, `paid` a rank no higher than the merit's, ids once
+ * each, rune keys well formed.
  */
 export function isGuild(v: unknown): boolean {
   if (!isObj(v) || !whole(v.day, 1, MAX_DAY) || !whole(v.merit, 0, GUILD_MAX) || !whole(v.paid, 0, RANKS.length - 1)) return false;
+  if ((v.paid as number) > rankOf(v.merit as number)) return false;   // a gift past the rank (controller ruling, spec §0 item 21)
   if (v.viewed !== undefined && !whole(v.viewed, 1, MAX_DAY)) return false;
   if (v.intro !== undefined && v.intro !== true) return false;
   if (!Array.isArray(v.offers) || v.offers.length > BOARD_MAX || !v.offers.every(isNote)) return false;

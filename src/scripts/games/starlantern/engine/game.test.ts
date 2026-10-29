@@ -6966,6 +6966,22 @@ describe('the guild board in the game (guild quests plan Task A7)', () => {
     expect(on.counts).toEqual(off.counts);
   });
 
+  it('a win where every foe ran away posts nothing (controller ruling, spec §0 item 21)', () => withGuildLive(() => {
+    // as roster plan B1 review item 13: a win with no foe felled is no fight won, so the trip does not count
+    const g = townGame();
+    home.win(g);
+    const before = structuredClone(g.board()!);
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    (g as unknown as { startBattle: (ids: string[], boss: boolean) => void }).startBattle(['slime'], false);
+    const b = g.battle!;
+    b.enemyDefs!.e0 = { ...b.enemyDefs!.e0, fleeAfter: 1, skills: [] };
+    const r = g.submitRound(Object.fromEntries(b.party.map((c) => [c.key, { kind: 'defend' as const }])))!;
+    expect(r.end!.outcome).toBe('win');
+    expect(g.run!.worked).toBeUndefined();
+    expect(g.useReturnLamp()).toBe(true);
+    expect(g.board()).toEqual(before);
+  }));
+
   it('a win that finishes a hunt says so', () => withGuildLive(() => {
     const g = townGame();
     home.win(g);
