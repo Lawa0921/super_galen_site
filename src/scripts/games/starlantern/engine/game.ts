@@ -45,7 +45,8 @@ import { DAWN_BACKLOG, dawnMemory, eveMemories, nextBeat, orderNight, planNight,
 import { SPRING_AFTER, dayOf, nextDay } from './calendar';
 import { newGame, type GameState, type GuildState } from './state';
 import { guildOpen } from '../data/guild';
-import { gatherOpen, type GatherMode, type GatherType, type SpotRule } from '../data/gather';
+import { gatherOpen, spotRegionOf, type GatherMode, type GatherType, type SpotRule } from '../data/gather';
+import { craftTool } from './forge/gatherTools';
 import { innerFor, outcome, remarkFor, ruleOf, spotGather, spotHurt, type GatherLine, type GatherOutcome, type StepRate } from './gather';
 import { abandon as guildAbandon, accept as guildAccept, postBoard, progressOf, questSnapshot, questsNewlyDone, turnIn as guildTurnIn, type TurnIn } from './guild';
 import { craftBase, craftItem, craftOwnUnique, craftSet } from './forge/craft';
@@ -1545,9 +1546,22 @@ export class Game {
   }
   dismantle(uids: number[]) { return this.forgeAct((s) => dismantle(s, uids)); }
   enhance(uid: number) { return this.forgeAct((s) => enhance(s, uid)); }
-  reroll(uid: number, index: number, o: RerollOpts) { return this.forgeAct((s) => reroll(s, uid, index, o)); }
+  /** A spot as the pin (gathering spec §7.3) only while gathering is open; every other reroll as it was. */
+  reroll(uid: number, index: number, o: RerollOpts) {
+    if (o?.mat !== undefined && spotRegionOf(o.mat) && !gatherOpen(this.state)) return { ok: false as const, reason: 'locked' as const };
+    return this.forgeAct((s) => reroll(s, uid, index, o));
+  }
   fuse(uids: number[], slot?: GearSlot) { return this.forgeAct((s) => fuse(s, uids, slot)); }
-  craftItem(id: string, qty: number) { return this.forgeAct((s) => craftItem(s, id, qty)); }
+  /** `alt`: the second recipe, from gathered goods (gathering spec §7.2), only while gathering is open. */
+  craftItem(id: string, qty: number, alt = false) {
+    if (alt && !gatherOpen(this.state)) return { ok: false as const, reason: 'locked' as const };
+    return this.forgeAct((s) => craftItem(s, id, qty, alt));
+  }
+  /** Gathering spec §6.3: a gathering tool, once each, only while gathering is open; saved at once like any forge action. */
+  craftTool(level: 1 | 2) {
+    if (!gatherOpen(this.state)) return { ok: false as const, reason: 'locked' as const };
+    return this.forgeAct((s) => craftTool(s, level));
+  }
   craftBase(slot: GearSlot) { return this.forgeAct((s) => craftBase(s, slot)); }
   craftSet(pieceId: string) { return this.forgeAct((s) => craftSet(s, pieceId)); }
   /** Roster plan Task C4: 銘刻 (inscribe `species`' key on affix `index`) and crafting an own unique. */

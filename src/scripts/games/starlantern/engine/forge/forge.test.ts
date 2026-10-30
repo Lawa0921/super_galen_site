@@ -16,6 +16,7 @@ import { MATERIALS } from '../../data/materials';
 import { statsOf } from '../party';
 import type { GameState } from '../state';
 import { LEGACY_LINEUP } from '../party';
+import { GATHER_PIN_QTY } from '../../data/gather';
 import type { ItemInstance, Rarity } from '../types';
 
 const at = (rarity: Rarity, uid: number): ItemInstance => ({ ...plainItem('moss-charm', uid), rarity });
@@ -699,5 +700,48 @@ describe('inscribing over an inscription (PR C review L3)', () => {
     const marked = dropped({ affixes: [{ key: 'res', value: 4 }, { key: 'hp', value: 30 }] });
     const free = inscribeAt(stocked(marked), 1, 1, 'lamp-wight');
     expect(free.ok && free.state.bag[0].affixes.map((a) => a.key)).toEqual(['res', 'heal']);
+  });
+});
+
+describe('a spot at the forge (gathering plan Task A4)', () => {
+  const gear = (): ItemInstance => ({
+    ...plainItem('moss-charm', 1), rarity: 'rare', ilvl: 20,
+    affixes: [{ key: 'str', value: 5 }, { key: 'hp', value: 30 }, { key: 'spd', value: 2 }],
+  });
+  const stocked = (): GameState => {
+    const s = withBag([gear()]);
+    s.gold = 1_000_000;
+    s.inventory = { 'essence-rare': 50, 'iron-shard': 5, 'scrap-iron': 5, 'copper-ore': 5 };
+    return s;
+  };
+
+  // Spec §7.3 (second review M1): today reroll takes only a REGION_AFFIX_GROUP key as its pin.
+  it('a spot pins its land at the forge', () => {
+    expect(swapPool(gear(), 1, 'iron-shard').length).toBeGreaterThan(0);
+    for (let i = 0; i < 100; i++) {
+      const s = stocked();
+      s.forgeDraws = i;
+      const r = reroll(s, 1, 1, { swap: true, mat: 'scrap-iron' });
+      expect(r.ok, `draws ${i}`).toBe(true);
+      if (!r.ok) continue;
+      expect(REGION_AFFIX_GROUP['iron-shard']).toContain(r.out.after.key);
+      expect(r.state.inventory['scrap-iron']).toBe(5 - GATHER_PIN_QTY);
+      expect(r.state.inventory['iron-shard']).toBe(5);
+      // the same draws as a pin with the region's material, and the same new affix
+      const viaShard = reroll(s, 1, 1, { swap: true, mat: 'iron-shard' });
+      expect(viaShard.ok && viaShard.state.forgeDraws).toBe(r.state.forgeDraws);
+      expect(viaShard.ok && viaShard.out.after).toEqual(r.out.after);
+      expect(r.state.forgeDraws - s.forgeDraws).toBe(2);   // a swap draws its key and its value
+    }
+    // neither a spot nor a region material: refused as before
+    expect(reroll(stocked(), 1, 1, { swap: true, mat: 'copper-ore' })).toEqual({ ok: false, reason: 'invalid' });
+    // a spot, like a region material, pins only a swap
+    expect(reroll(stocked(), 1, 1, { swap: false, mat: 'scrap-iron' })).toEqual({ ok: false, reason: 'invalid' });
+    // one short of two: mats, nothing spent
+    const short = stocked();
+    short.inventory['scrap-iron'] = 1;
+    const before = structuredClone(short);
+    expect(reroll(short, 1, 1, { swap: true, mat: 'scrap-iron' })).toEqual({ ok: false, reason: 'mats' });
+    expect(short).toEqual(before);
   });
 });

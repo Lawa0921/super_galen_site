@@ -2,6 +2,8 @@ import { AFFIXES, GEAR_SLOTS, ROLL_FLOOR, affixRange, generalLegendaries } from 
 import { ENHANCE_COST, ENHANCE_MAX, ENHANCE_SUCCESS, ESSENCE_OF, FUSE_GOLD, FUSE_SLOT_COST, INSCRIBE_QTY, REGION_AFFIX_GROUP, REROLL, type Cost } from '../../data/forge';
 import { ENEMIES } from '../../data/enemies';
 import { MATERIALS } from '../../data/materials';
+import { GATHER_PIN_QTY, spotRegionOf } from '../../data/gather';
+import { REGIONS } from '../../data/regions';
 import { itemSlot, maxValue } from '../loot/item';
 import { mix } from '../loot/drops';
 import { mulberry32, type Rng } from '../rng';
@@ -11,9 +13,10 @@ import type { AnyStat, CharacterId, GearSlot, ItemInstance, Slot } from '../type
 /**
  * Why a forge action was refused. `phase` is only ever returned by `Game`, never by the engine; `affixLocked` is not
  * `T.reasons.locked`, which means "not unlocked yet" in the shop; `unbeaten`, an own unique whose owner was never felled
- * (roster plan Task C4).
+ * (roster plan Task C4); `locked`, the forge's gathering work while gathering is shut (gathering plan Task A4; only ever
+ * returned by `Game`, and it is `T.reasons.locked`, not yet unlocked).
  */
-export type ForgeFail = 'invalid' | 'stock' | 'gold' | 'mats' | 'max' | 'full' | 'affixLocked' | 'none' | 'phase' | 'unbeaten';
+export type ForgeFail = 'invalid' | 'stock' | 'gold' | 'mats' | 'max' | 'full' | 'affixLocked' | 'none' | 'phase' | 'unbeaten' | 'locked';
 export type ForgeResult<O> = { ok: true; state: GameState; out: O } | { ok: false; reason: ForgeFail };
 
 /** What is missing for `c`, gold first; null when the state can pay. */
@@ -78,12 +81,26 @@ export function enhanceChance(it: ItemInstance): number {
 
 export type RerollOpts = { swap: boolean; mat?: string };
 
-/** What one reroll costs: an essence of the item's rarity, gold (double to swap), the region material if any, a star tear for legendary. */
+/**
+ * The affix group a pin `mat` steers a swap to: a region material's own, or (gathering spec §7.3) a spot's region's. Null
+ * for anything else.
+ */
+export function pinGroup(mat: string): AnyStat[] | null {
+  if (Object.prototype.hasOwnProperty.call(REGION_AFFIX_GROUP, mat)) return REGION_AFFIX_GROUP[mat];
+  const r = spotRegionOf(mat);
+  const own = r ? REGIONS[r].material : null;
+  return own && Object.prototype.hasOwnProperty.call(REGION_AFFIX_GROUP, own) ? REGION_AFFIX_GROUP[own] : null;
+}
+
+/**
+ * What one reroll costs: an essence of the item's rarity, gold (double to swap), the pin if any (a region material, or two of
+ * a spot: GATHER_PIN_QTY), a star tear for legendary.
+ */
 export function rerollCost(it: ItemInstance, o: RerollOpts): Cost {
   const mats: Record<string, number> = { [ESSENCE_OF[it.rarity]]: o.swap ? REROLL.essence.swap : REROLL.essence.value };
   const gold = REROLL.gold(it.ilvl) * (o.swap ? 2 : 1);
   let c: Cost = { gold, mats };
-  if (o.mat) c = addCost(c, { gold: 0, mats: { [o.mat]: REROLL.regionQty } });
+  if (o.mat) c = addCost(c, { gold: 0, mats: { [o.mat]: spotRegionOf(o.mat) ? GATHER_PIN_QTY : REROLL.regionQty } });
   if (it.rarity === 'legendary') c = addCost(c, { gold: 0, mats: { [REROLL.legendaryMat]: REROLL.legendaryQty } });
   return c;
 }
@@ -101,11 +118,14 @@ export function rerollRange(it: ItemInstance, index: number): [number, number] |
   return [Math.max(1, Math.round(lo + (hi - lo) * floor)), Math.max(1, Math.round(hi))];
 }
 
-/** The keys a swap can choose: legal for the item's slot, not already on the item, and in the material's group when one is given. */
+/**
+ * The keys a swap can choose: legal for the item's slot, not already on the item, and in the pin's group when one is given
+ * (a spot pins its region's group, `pinGroup`).
+ */
 export function swapPool(it: ItemInstance, _index: number, mat?: string): AnyStat[] {
   const slot = itemSlot(it);
   const have = new Set(it.affixes.map((a) => a.key));
-  const group = mat === undefined ? null : (REGION_AFFIX_GROUP[mat] ?? []);
+  const group = mat === undefined ? null : (pinGroup(mat) ?? []);
   return (Object.keys(AFFIXES) as AnyStat[]).filter((k) => AFFIXES[k].slots.includes(slot) && !have.has(k) && (!group || group.includes(k)));
 }
 

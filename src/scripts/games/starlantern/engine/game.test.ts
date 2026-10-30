@@ -7443,3 +7443,77 @@ describe('gathering in the game (gathering plan Task A3)', () => {
     }, { open: true });
   });
 });
+
+/** Gathering plan Task A4 (spec §6.3, §7.2, §7.3, §11 items 4 and 7): the forge's gathering work, behind the one switch. */
+describe("the forge's gathering work (gathering plan Task A4)", () => {
+  /** A game in town with gold, every material and a rare piece in the bag (uid 1); `seen` the first return. */
+  const atForge = (rng: Rng = mulberry32(0x6a7e), storage: ReturnType<typeof memoryStorage> | null = memoryStorage(), seen = true): Game => {
+    const g = Game.fresh(rng, storage);
+    g.state.gold = 1_000_000;
+    g.state.inventory = Object.fromEntries(Object.keys(MATERIALS).map((m) => [m, 50]));
+    g.state.bag = [{ ...plainItem('moss-charm', 1), rarity: 'rare', ilvl: 20, affixes: [{ key: 'str', value: 5 }, { key: 'hp', value: 30 }, { key: 'spd', value: 2 }] }];
+    g.state.nextUid = 100;
+    if (seen) g.state.story.seen.push('first-return');
+    return g;
+  };
+  const savedGather = (mem: ReturnType<typeof memoryStorage>) => JSON.parse(mem.getItem(SAVE_KEY)!).gather;
+
+  it("the forge's gathering work is shut while gathering is", () => {
+    const locked = { ok: false, reason: 'locked' };
+    const shut = (g: Game) => {
+      const before = structuredClone(g.state);
+      expect(g.craftTool(1)).toEqual(locked);
+      expect(g.craftItem('potion', 1, true)).toEqual(locked);
+      expect(g.reroll(1, 1, { swap: true, mat: 'scrap-iron' })).toEqual(locked);
+      expect(g.state).toEqual(before);
+      // the forge's own work is as it was
+      expect(g.craftItem('potion', 1).ok).toBe(true);
+      expect(g.reroll(1, 1, { swap: true, mat: 'iron-shard' }).ok).toBe(true);
+    };
+    shut(atForge());                                                       // off
+    withGatherLive(() => shut(atForge(undefined, undefined, false)));      // on, before the first return
+    withGatherLive(() => shut(atForge()), { open: false });                // on, held shut
+    withGatherLive(() => {
+      const mem = memoryStorage();
+      const g = atForge(mulberry32(0x6a7e), mem);
+      expect(g.craftTool(1)).toMatchObject({ ok: true, out: { level: 1 } });
+      expect(savedGather(mem)).toEqual({ tool: 1, got: {} });             // made and saved at once
+      expect(g.craftTool(2)).toMatchObject({ ok: true, out: { level: 2 } });
+      expect(savedGather(mem)).toEqual({ tool: 2, got: {} });
+      expect(g.craftTool(2)).toEqual({ ok: false, reason: 'invalid' });
+      const potions = g.state.inventory.potion ?? 0;
+      expect(g.craftItem('potion', 3, true)).toMatchObject({ ok: true, out: { id: 'potion', qty: 3 } });
+      expect(g.state.inventory.potion).toBe(potions + 3);
+      expect(JSON.parse(mem.getItem(SAVE_KEY)!).inventory.potion).toBe(potions + 3);
+      const r = g.reroll(1, 1, { swap: true, mat: 'scrap-iron' });
+      expect(r.ok).toBe(true);
+      expect(JSON.parse(mem.getItem(SAVE_KEY)!).inventory['scrap-iron']).toBe(g.state.inventory['scrap-iron']);
+      // out of town: the forge's own refusal
+      expect(g.depart({ region: 'mainline', condition: 'plain' }, 1)).toEqual({ ok: true });
+      expect(g.craftTool(1)).toEqual({ ok: false, reason: 'phase' });
+    });
+  });
+
+  it("the forge's gathering work draws nothing", () => {
+    withGatherLive(() => {
+      let draws = 0;
+      const base = mulberry32(0x6a7e);
+      const g = atForge(() => { draws++; return base(); });
+      const watch = () => ({ draws, forge: g.state.forgeDraws });
+      const before = watch();
+      expect(g.craftTool(1).ok).toBe(true);
+      expect(g.craftTool(2).ok).toBe(true);
+      expect(g.craftItem('phoenix', 2, true).ok).toBe(true);
+      expect(watch()).toEqual(before);
+      // a spot's pin draws from the forge's stream exactly as the region material's pin does, and nothing else
+      const twin = atForge(mulberry32(1));
+      twin.state.forgeDraws = g.state.forgeDraws;
+      const viaSpot = g.reroll(1, 1, { swap: true, mat: 'scrap-iron' });
+      const viaMat = twin.reroll(1, 1, { swap: true, mat: 'iron-shard' });
+      expect(viaSpot.ok && viaMat.ok).toBe(true);
+      expect(g.state.forgeDraws - before.forge).toBe(twin.state.forgeDraws - before.forge);
+      expect(g.state.forgeDraws - before.forge).toBe(2);
+      expect(draws).toBe(before.draws);
+    }, { open: true });
+  });
+});

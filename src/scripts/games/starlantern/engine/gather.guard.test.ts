@@ -15,7 +15,8 @@ const STREAMS = ['this.rng', 'lootRng', 'memoryRng', 'trophyRng', 'runeRng', 'sp
 
 describe('gathering guards (gathering plan Task A3)', () => {
   it('the gathering rules draw nothing', () => {
-    for (const file of ['gather.ts']) {
+    // Task A4 adds the forge's tools
+    for (const file of ['gather.ts', 'forge/gatherTools.ts']) {
       const text = source(file);
       for (const name of STREAMS) expect(text.includes(name), `engine/${file} names ${name}`).toBe(false);
     }
