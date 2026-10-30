@@ -221,3 +221,25 @@ export function withGuildLive<T>(f: () => T, opts: { open?: boolean } = {}): T {
     GUILD_SWITCH.open = was.open;
   }
 }
+
+/**
+ * Controller ruling 2026-10-30 (guild quests spec §0 item 24): the board is up since PR D, so a test of the switched-off
+ * game (the kill switch, GUILD_LIVE false) runs `f` under this, then the switch is put back as it was: after `f` returns,
+ * after it throws, or, when `f` returns a promise, once that promise settles (so the switch stays off across its awaits).
+ * Test support only: nothing in the game imports it.
+ */
+export function withGuildOff<T>(f: () => T): T {
+  const was = GUILD_SWITCH.live;
+  GUILD_SWITCH.live = false;
+  let later = false;
+  try {
+    const r = f();
+    if (r instanceof Promise) {
+      later = true;
+      return r.finally(() => { GUILD_SWITCH.live = was; }) as T;
+    }
+    return r;
+  } finally {
+    if (!later) GUILD_SWITCH.live = was;
+  }
+}

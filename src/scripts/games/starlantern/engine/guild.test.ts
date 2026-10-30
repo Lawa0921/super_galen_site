@@ -14,7 +14,7 @@ import {
 } from './guild';
 import { grantRune } from './loot/runes';
 import { activeIds, meet } from './party';
-import { withGuildLive, withRosterOnly } from './testing';
+import { withGuildLive, withGuildOff, withRosterOnly } from './testing';
 import { dayOf } from './calendar';
 import type { QuestOffer } from './state';
 import { MAX_REACHED } from './levels';
@@ -702,11 +702,11 @@ describe('take, track, drop and turn in guild quests; the lamp ranks (guild ques
 
   it('locked while the board is shut', () => {
     const s = boardWith([offer('hunt', 'slime', 6)]);
-    expect(accept(s, s.guild!.offers[0].id)).toEqual({ ok: false, reason: 'locked' });
+    withGuildOff(() => expect(accept(s, s.guild!.offers[0].id)).toEqual({ ok: false, reason: 'locked' }));   // switched off (controller ruling, spec §0 item 24)
     const t = ok(live(() => accept(s, s.guild!.offers[0].id))).state;
     fell(t, 'slime', 6);
     const q = t.guild!.active[0].id;
-    for (const shut of [<T>(f: () => T) => f(), <T>(f: () => T) => withGuildLive(f, { open: false })]) {
+    for (const shut of [<T>(f: () => T) => withGuildOff(f), <T>(f: () => T) => withGuildLive(f, { open: false })]) {   // switched off (controller ruling, spec §0 item 24)
       shut(() => {
         expect(accept(s, s.guild!.offers[0].id)).toEqual({ ok: false, reason: 'locked' });
         expect(abandon(t, q)).toEqual({ ok: false, reason: 'locked' });

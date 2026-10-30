@@ -1092,6 +1092,13 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
       head: (rank: string, merit: number, next?: number) => `公會評等：${rank}　功績 ${next === undefined ? merit : `${merit}／${next}`}`,
       acceptAsk: (label: string) => `要接下${label}嗎？`,
       accepted: (label: string) => `已接下委託：${label}。`,
+      /**
+       * Plain system lines in the guild's box where Anna's own words (GUILD_TEXT.anna, PR C) are not written: the board before
+       * the first act is over, a full hand, the first look (spec §0 item 24: PR C deferred, go-live with neutral text).
+       */
+      locked: '委託在第一幕結束後開放。',
+      full: '手上的委託已滿，先回報或放棄一件。',
+      intro: '接下布告上的委託，完成後回來回報，可得報酬與功績。',
       abandonAsk: (label: string) => `要放棄${label}嗎？`,
       turnIn: '回報', abandon: '放棄', back: '返回',
       emptyBoard: '下次回城會貼新的委託。',

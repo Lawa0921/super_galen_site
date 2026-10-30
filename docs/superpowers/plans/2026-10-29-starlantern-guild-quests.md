@@ -100,6 +100,7 @@ spec 是控制者授權的設計者草案；下面是 spec 沒寫細的地方，
 20. **回城那一句不准移動 `game.rng`**（控制者審查 H2，硬性約束）：`ui2/scenes/town.ts` 的 `arrive()` 以 `const draw = says.length === 0`（:122）決定今天的一句要不要抽 `game.rng`。委託那一句（`T.ui2.board.questsReady(n)`）**在 `draw` 算好之後**才 `push`，位置和 `bondUps` 相同（:121-123），在 `bondUps` 之前。B4 有一條以計數的 `game.rng` 驗的測試：委託那一句是唯一在前面的一句時，抽取次數和沒有委託時相同。
 21. **存檔的查表**（審查 L7）：`isGuild` 只看形狀；`repairGuild` 依種類查各自的表（`hunt`／`bounty` → `ENEMIES`；`deliver` → `MATERIALS`；`scout`／`sweep` → `REGIONS`；掃蕩的 `ids` 逐一查 `ENEMIES`；指名委託依 `kind`），因為敵人 `shade` 與地區 `shade` 同名。符文：形狀不對（不是 `id@tier`、tier 不在 `RuneTier`）＝損毀；形狀對、`id` 不存在＝丟掉那一項報酬。spec §9.4 是唯一的寫法，本計畫照抄。
 22. **指名委託凍結目標**（審查 M2）：`acceptPersonal` 在接下時算好 `{ kind, target, n }` 寫進 `guild.personal[g]`（spec §9.3 的 `PersonalQuest`），之後不重算；探路的 `n` 照 spec §5.4 封頂（本道終幕前 ≤ 29、任何地區 ≤ `MAX_REACHED`）；封頂之後 `n ≤ reached` 就不開放（不是已完成）。指名委託的探路與收購讀絕對值（`reached`、`inventory`），所以不需要基準；舊版的 `personalBase` 取消。
+23. **先上線、文字延後**（使用者方向＋控制者裁定 2026-10-30，spec §0 第 24 條）：使用者要先把重心放在玩法上、整體劇情未定，**PR C 與 PR E 延後**（PR F 照舊等風格樣本），PR D 不等 C 就上線，`GUILD_TEXT` 維持空的。因此「D 要 A、B、C」改成「D 要 A、B」，D2 的 e2e 不檢查「真的有說」委託人與安娜的話；上線用中性系統句（`T.ui2.board.locked`、`full`、`intro`，安娜的台詞寫了就取代）。測「開關關著」的既有測試改用 `withGuildOff(f)`（`engine/testing.ts`，控制者裁定）包住關著的那一半，斷言不改；清單見 spec §0 第 24 條。C、E 重啟時本計畫的 C1–C3、E1–E3 照舊，開工條件改成「D 已合併」。
 
 ## 分期與 PR
 
@@ -107,9 +108,9 @@ spec 是控制者授權的設計者草案；下面是 spec 沒寫細的地方，
 |---|---|---|---|---|---|
 | **A** 骨架 | `feat/starlantern-guild-a` | 城鎮快照、開關與資料、候選、貼布告、進度與回報、存檔、經濟測試、`Game` 接線 | A0–A7（8） | identical | 0 |
 | **B** 介面 | `feat/starlantern-guild-b` | 介面字串、指令與鎖、布告 layer、接下／放棄／回報／升級、評等頁、迷宮與城鎮的提示 | B1–B5（5） | identical | 0 |
-| **C** 文字 | `feat/starlantern-guild-c` | 文字註冊表與守門、紙條與回信、安娜與夥伴的台詞；帳本 | C1–C3（3） | identical | 0 |
+| **C** 文字（延後，計畫裁定 23） | `feat/starlantern-guild-c` | 文字註冊表與守門、紙條與回信、安娜與夥伴的台詞；帳本 | C1–C3（3） | identical | 0 |
 | **D** 上線 | `feat/starlantern-guild-live` | 打開 `GUILD_LIVE`、既有清單測試改寫、e2e | D1–D2（2） | identical | 0 |
-| **E** 指名委託 | `feat/starlantern-guild-personal` | 五則指名委託的資料、引擎、評等頁、文字與冷讀 | E1–E3（3） | identical | 0 |
+| **E** 指名委託（延後，計畫裁定 23） | `feat/starlantern-guild-personal` | 五則指名委託的資料、引擎、評等頁、文字與冷讀 | E1–E3（3） | identical | 0 |
 | **F** 美術（等使用者） | `feat/starlantern-guild-art` | 評等章 ×5（16／48 px）、種類小圖示 ×5（14 px）：契約、風格樣本、生成與發布、介面接線 | F1–F4（4） | 不跑（F4 只動 `ui2/`、`render/`） | 15 張（章 10、圖示 5） |
 
 合計 6 個 PR、25 個任務。每一個任務的普通帶報告都是 `gate: identical`（委託不碰戰鬥）；沒有任何任務可以重錄 sim gate。
@@ -557,6 +558,8 @@ W3 細則：
 ---
 
 # PR D：上線
+
+> **2026-10-30 調整**（計畫裁定 23、spec §0 第 24 條）：PR C 延後，D 在空的 `GUILD_TEXT` 上線，先補三句中性系統句（未解鎖、手上滿了、第一次打開）。D1 另有六個測「開關關著」的測試因預設值改變而紅，照控制者裁定以 `withGuildOff` 包住關著的那一半；城鎮快照照下面的改法，另加 `withGuildOff` 情境。D2 的 e2e 以收購＋討伐走完一趟，不檢查委託人與安娜的台詞。
 
 ### Task D1：打開開關
 

@@ -4,7 +4,10 @@ import type { GiverId } from './guild';
 /**
  * The guild board's spoken words (guild quests spec §7.2, plan ruling 17): the townsfolk's notes on the board and their
  * thanks, Anna's lines at the board, and a companion's word on a quest turned in her land. PR C writes them (Tasks C1–C3,
- * the W steps). Until then every slot is empty, and a screen says nothing where a line would go: no placeholder text.
+ * the W steps; deferred by the user's gameplay-first direction, spec §0 item 24). Until then every slot is empty, and a
+ * screen says nothing where a line would go: no placeholder text. Three exceptions say one plain system line instead,
+ * each replaced by Anna's own once written: the board before the first act (`T.ui2.board.locked` for `anna.locked`), a
+ * full hand (`T.ui2.board.full` for `anna.full`) and the first look (`T.ui2.board.intro` for `anna.intro`).
  * The interface's own words (tabs, buttons, formats) are `T.ui2.board` (data/text.zh-TW.ts).
  */
 

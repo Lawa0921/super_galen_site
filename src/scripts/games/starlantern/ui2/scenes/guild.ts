@@ -74,13 +74,13 @@ export class GuildScene extends FacilityScene {
   }
 
   /**
-   * Spec §8.1: before the board opens (`guildOpen`, the one predicate) Anna says one line and nothing is written; nothing
-   * of hers is written before PR C, so then only the error cue. Open, the board goes up (ui2/scenes/board.ts).
+   * Spec §8.1: before the board opens (`guildOpen`, the one predicate) Anna says one line and nothing is written: her own
+   * once PR C writes it, a plain one until then (spec §0 item 24). Open, the board goes up (ui2/scenes/board.ts).
    */
   private board(): void {
     if (!guildOpen(this.ctx.game.state)) {
       this.ctx.sfx.error();
-      if (GUILD_TEXT.anna.locked) void this.say(GUILD_TEXT.anna.locked);
+      void this.say(GUILD_TEXT.anna.locked ?? T.ui2.board.locked);
       return;
     }
     openBoard(this.boardHost());

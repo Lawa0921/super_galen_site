@@ -2060,8 +2060,7 @@ test.describe('starlantern', () => {
     const run = <R = unknown>(src: string) => page.evaluate((s) => new Function('g', s)((window as any).__starlanternDebug.game), src) as Promise<R>;
     const shot = async (name: string) => { if (process.env.SL_SHOTS) { await page.waitForTimeout(400); await page.screenshot({ path: `${process.env.SL_SHOTS}/board-${name}.png` }); } };   // windows fade in
     const B = T.ui2.board;
-    // GUILD_LIVE stays off until the guild plan's PR D: the dev build's debug handle turns it on for this page alone.
-    await page.evaluate(() => { (window as unknown as { __starlanternDebug: { guild: { GUILD_SWITCH: { live: boolean } } } }).__starlanternDebug.guild.GUILD_SWITCH.live = true; });
+    // The board is up since the guild plan's PR D: on the list in the game as shipped.
     await w.choose('.slx-town', '冒險者公會');
     await expect(page.locator('.slx-guild')).toBeVisible();
     // Eleven commands, 委託 last before 離開, the window whole above Anna's box.
@@ -2085,15 +2084,20 @@ test.describe('starlantern', () => {
     expect(await legibility(page, { requireReady: true })).toEqual([]);
     const openBoard = () => page.locator('.slx-cmd [role=option]').filter({ hasText: B.title }).click();
 
-    // Locked before the first act is over: nothing opens and nothing is written.
+    // Locked before the first act is over: nothing opens and nothing is written; the guild's box says when it opens, in
+    // plain words until Anna's own are written (spec §0 item 24).
     await openBoard();
+    await expect(page.locator('.slx-talk .slx-text')).toHaveText(B.locked);
     await expect(page.locator('.slx-board')).toHaveCount(0);
     expect(await run('return g.state.guild === undefined;')).toBe(true);
+    await w.closeTalk();
 
-    // The first act over: the first look posts today's board. Then a board of every kind in its place.
+    // The first act over: the first look posts today's board and says how it works. Then a board of every kind in its place.
     await run('g.state.story.act1Cleared = true;');
     await openBoard();
     await expect(page.locator('.slx-board')).toBeVisible();
+    await expect(page.locator('.slx-talk .slx-text')).toHaveText(B.intro);
+    await w.closeTalk();
     await w.key('Escape');
     await expect(page.locator('.slx-board')).toHaveCount(0);
     await run(`const day = g.state.guild.day;
@@ -2206,6 +2210,134 @@ test.describe('starlantern', () => {
     await w.key('ArrowLeft');
     await expect(rows).toHaveText([B.emptyBoard]);
     await expect(page.locator('.slx-board [role=option]')).toHaveAttribute('aria-disabled', 'true');
+    expect(await legibility(page, { requireReady: true })).toEqual([]);
+    expect(w.errors).toEqual([]);
+  });
+
+  test('the guild board live: a delivery and a hunt taken, a fight won below, home, both turned in, the board kept over a reload (guild quests plan Task D2) @dpr', async ({ page }) => {
+    await fitTo(page, 1280, 720);
+    const w = await setup(page, 7);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const run = <R = unknown>(src: string) => page.evaluate((s) => new Function('g', s)((window as any).__starlanternDebug.game), src) as Promise<R>;
+    const B = T.ui2.board;
+    const said = page.locator('.slx-talk:not([hidden]) .slx-text');
+    const board = () => page.locator('.slx-cmd [role=option]').filter({ hasText: B.title }).click();
+    const rows = page.locator('.slx-board [role=option] .slx-label');
+    /**
+     * Through the box's lines until `text` shows (review N4): a key is pressed only once the line is typed out in full (its
+     * ▼ shown), so it turns the page and never finishes a line half typed, and the next read waits for the page to turn.
+     */
+    const reach = async (text: string) => {
+      const next = page.locator('.slx-talk:not([hidden]) .slx-next');
+      for (let i = 0; i < 12; i++) {
+        await expect(next).toBeVisible();
+        const now = (await said.textContent()) ?? '';
+        if (now === text) return;
+        await w.key('z');
+        await expect.poll(async () => (await page.locator('.slx-talk:not([hidden])').count()) === 0 || (await said.textContent()) !== now).toBe(true);
+      }
+      throw new Error(`the box never said ${text}`);
+    };
+
+    // A test save in play (plan ruling 18): the first act over, the slime seen, eight moss in the stock.
+    await run(`g.state.story.act1Cleared = true;
+      g.state.bestiary = { ...g.state.bestiary, slime: { seen: 1, felled: 0 } };
+      g.state.inventory.moss = 8; g.state.inventory['return-lamp'] = 1;`);
+
+    // The board as shipped: 委託 on the guild's list; the first look posts today's board and says how it works.
+    await w.choose('.slx-town', '冒險者公會');
+    await expect(page.locator('.slx-guild')).toBeVisible(); await w.closeTalk();
+    await board();
+    await expect(page.locator('.slx-board')).toBeVisible();
+    await expect(said).toHaveText(B.intro);
+    await w.closeTalk();
+    await w.key('Escape');
+    await expect(page.locator('.slx-board')).toHaveCount(0);
+    // Today's notes, fixed for the test: a delivery the stock already holds, and a hunt of two slimes.
+    const day = await run<number>(`const day = g.state.guild.day;
+      g.state.guild.offers = [
+        { id: day + ':0', kind: 'deliver', giver: 'orik', variant: 0, target: 'moss', n: 4, depth: 0, reward: { gold: 77 }, merit: 2 },
+        { id: day + ':1', kind: 'hunt', giver: 'marta', variant: 0, target: 'slime', n: 2, depth: 2, reward: { gold: 78, items: { 'essence-magic': 1 } }, merit: 2 },
+      ];
+      return day;`);
+    const deliver = B.row(B.kinds.deliver, B.count('發光苔', 4));
+    const hunt = B.row(B.kinds.hunt, B.count(ENEMIES.slime.name, 2));
+    await board();
+    await expect(rows).toHaveText([deliver, hunt]);
+    for (const label of [deliver, hunt]) {
+      await expect(page.locator('.slx-board [aria-selected=true] .slx-label')).toHaveText(label);
+      await w.key('Enter');
+      await expect(page.locator('.slx-confirm')).toContainText(B.acceptAsk(label));
+      await w.key('Enter');   // 是
+      await expect(said).toHaveText(B.accepted(label));
+      await w.closeTalk();
+    }
+    await expect(rows).toHaveText([B.emptyBoard]);
+    expect(await run('return g.state.guild.active.map((q) => q.id);')).toEqual([`${day}:0`, `${day}:1`]);
+    await w.key('Escape');
+    await w.key('Escape');
+    await expect(page.locator('.slx-town')).toBeVisible(); await w.closeTalk();
+
+    // Down the main road: a fight with the two slimes, won; the spoils say the hunt is done.
+    await depart(page, w);
+    await w.closeTalk();
+    await run("g.startBattle(['slime', 'slime'], false);");
+    await go(page, 'battle');
+    await expect(page.locator('.slx-bcmd [role=option]').first()).toBeVisible();
+    await run('for (const e of g.battle.enemies) { e.hp = 0; e.alive = false; }');
+    for (let i = 0; i < 40 && !(await page.locator('.slx-result').isVisible()); i++) {
+      if (await page.locator('.slx-bcmd [role=option]').count()) { await w.key('ArrowUp'); await w.key('Enter'); }   // 全員攻擊
+      else await page.waitForTimeout(50);
+    }
+    await expect(page.locator('.slx-result')).toContainText('勝利');
+    await expect(page.locator('.slx-result .slx-quest')).toHaveText([B.done(hunt)]);
+    expect(await legibility(page, { requireReady: true })).toEqual([]);
+    for (let i = 0; i < 20 && !(await page.locator('.slx-dungeon').isVisible()); i++) { await w.key('z'); await page.waitForTimeout(60); }
+    await expect(page.locator('.slx-dungeon')).toBeVisible();
+
+    // Home by the lamp: the trip counted, so a new board is up; the box says two are ready, and the guild is marked 新.
+    await lampHome(page, w);
+    await reach(B.questsReady(2));
+    await w.closeTalk();
+    await expect(page.locator('.slx-town [data-id=guild] .slx-right')).toHaveText(T.ui2.handbook.fresh);
+    const home = await run<{ day: number; offers: { id: string }[]; active: { id: string }[] }>('return JSON.parse(JSON.stringify(g.state.guild));');
+    expect(home.day).toBeGreaterThan(day);
+    expect(home.offers.every((o) => !o.id.startsWith(`${day}:`))).toBe(true);
+    expect(home.active.map((q) => q.id)).toEqual([`${day}:0`, `${day}:1`]);
+
+    // A reload: 繼續 brings back the same board and the same quests held.
+    await page.reload();
+    await page.locator('.slx-title [data-id=cont]').click();
+    await expect(page.locator('.slx-town')).toBeVisible(); await w.closeTalk();
+    expect(await run('return JSON.parse(JSON.stringify(g.state.guild));')).toEqual(home);
+
+    // Both turned in at the board: each its reward, the merit up by both, the goods taken from the stock.
+    const before = await run<{ gold: number; moss: number }>('return { gold: g.state.gold, moss: g.state.inventory.moss };');
+    await w.choose('.slx-town', '冒險者公會');
+    await expect(page.locator('.slx-guild')).toBeVisible(); await w.closeTalk();
+    await board();
+    await expect(page.locator('.slx-board')).toBeVisible();
+    await w.key('ArrowRight');
+    await expect(page.locator('.slx-board [role=option] .slx-right')).toHaveText([B.ready, B.ready]);
+    expect(await legibility(page, { requireReady: true })).toEqual([]);
+    for (const reward of ['77 G', '78 G、魔法精華 ×1']) {
+      await w.key('Enter');
+      await expect(page.locator('.slx-board-menu [role=option] .slx-label')).toHaveText([B.turnIn, B.abandon, B.back]);
+      await w.key('Enter');   // 回報
+      await expect(said).toHaveText(T.ui2.exchange.reward(reward));
+      await w.closeTalk();
+    }
+    await expect(rows).toHaveText([B.emptyActive]);
+    const after = await run<{ gold: number; moss: number; merit: number; active: number }>('return { gold: g.state.gold, moss: g.state.inventory.moss, merit: g.state.guild.merit, active: g.state.guild.active.length };');
+    expect(after).toEqual({ gold: before.gold + 77 + 78, moss: before.moss - 4, merit: 4, active: 0 });
+    expect(await run('return JSON.parse(localStorage.getItem("starlantern-save")).guild.merit;')).toBe(4);   // saved at once
+
+    // Review L6: the rank tab at the top lamp reads whole too.
+    await run('g.state.guild.merit = 200; g.state.guild.paid = 4;');
+    await w.key('ArrowRight');
+    await expect(page.locator('.slx-board .slx-tab-sel')).toHaveText(B.tabs.rank);
+    await expect(page.locator('.slx-board-info')).toContainText(B.rankNow('四燈'));
+    await expect(page.locator('.slx-board-info')).toContainText(B.rankTop);
     expect(await legibility(page, { requireReady: true })).toEqual([]);
     expect(w.errors).toEqual([]);
   });

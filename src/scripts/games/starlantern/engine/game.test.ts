@@ -64,7 +64,7 @@ import { GIFT_LINES, RIN_OATH, type GiftPools } from '../data/bond.zh-TW';
 import { BOND_RUN_CAP, FIELD_POINTS } from '../data/story/bond';
 import { BONDS_WRITTEN, ROMANCES_WRITTEN, TOGETHER_WRITTEN, sceneTime } from '../data/story/scenes';
 import { today } from './story/bond';
-import { WAVE_2_LIVE, withBondEarn, withBondScale, withGuildLive, withRosterLive, withRosterOnly } from './testing';
+import { WAVE_2_LIVE, withBondEarn, withBondScale, withGuildLive, withGuildOff, withRosterLive, withRosterOnly } from './testing';
 /**
  * Bond plan Task 17: the registries hold what is written now, so a test that registers its own puts back what was there
  * (`bondsBack`), registers a companion only once (`bondsAdd`), and gives a written scene back instead of deleting it.
@@ -6858,7 +6858,7 @@ describe('the guild board in the game (guild quests plan Task A7)', () => {
   });
   const LOCKED = { ok: false, reason: 'locked' };
 
-  it('off, nothing at all', () => {
+  it('off, nothing at all', () => withGuildOff(() => {   // switched off (controller ruling, spec §0 item 24)
     const g = townGame();
     const end = winOne(g);
     expect('quests' in end).toBe(false);
@@ -6869,7 +6869,7 @@ describe('the guild board in the game (guild quests plan Task A7)', () => {
     expect([g.openBoard(), g.acceptQuest('1:0'), g.abandonQuest('1:0'), g.turnInQuest('1:0')]).toEqual([LOCKED, LOCKED, LOCKED, LOCKED]);
     expect(g.questsReady).toBe(0);
     expect(g.scoutDone).toBeUndefined();
-  });
+  }));
 
   it('on, locked until the first act', () => {
     withGuildLive(() => {
@@ -6959,7 +6959,7 @@ describe('the guild board in the game (guild quests plan Task A7)', () => {
       counts.push(draws);
       return { counts, guild: g.state.guild };
     };
-    const off = play();
+    const off = withGuildOff(play);   // switched off (controller ruling, spec §0 item 24)
     const on = withGuildLive(play);
     expect(off.guild).toBeUndefined();
     expect(on.guild).toBeDefined();

@@ -358,11 +358,23 @@ describe('the guild board: take, drop, turn in, the rank tab (guild quests plan 
     expect(o.sfx.error).toHaveBeenCalledTimes(1);
     expect(top(o.root).classList.contains('slx-board')).toBe(true);   // no question
     expect(o.game.state.guild).toEqual(before);
-    expect(talk(o.root).hidden).toBe(true);   // nothing of hers written yet: nothing said
+    // Nothing of hers written (PR C deferred, spec §0 item 24): the guild's box says why, in plain words.
+    expect(await drain(o)).toEqual([{ who: '安娜', text: B.full }]);
+    expect(o.game.state.guild).toEqual(before);
     GUILD_TEXT.anna.full = 'FULL';
     o.s.onAction('confirm');
     expect(await drain(o)).toEqual([{ who: '安娜', text: 'FULL' }]);
     expect(o.game.state.guild).toEqual(before);
+  }));
+
+  it('the first look says how the board works: her lines once written, one plain line until then (spec §0 item 24)', liveAsync(async () => {
+    const first = open({ guild: { intro: undefined } });
+    expect(await drain(first)).toEqual([{ who: '安娜', text: B.intro }]);
+    expect(first.game.state.guild!.intro).toBe(true);
+    // Seen once, never again; her own lines take its place once PR C writes them.
+    expect(await drain(open())).toEqual([]);
+    GUILD_TEXT.anna.intro = ['INTRO1', 'INTRO2'];
+    expect((await drain(open({ guild: { intro: undefined } }))).map((l) => l.text)).toEqual(['INTRO1', 'INTRO2']);
   }));
 
   it('dropping asks twice, 否 first', () => withGuildLive(() => {
@@ -510,7 +522,7 @@ describe('the guild board: take, drop, turn in, the rank tab (guild quests plan 
   }));
 });
 
-describe('the guild board end to end, switch still off in the game (guild quests plan Task B5)', () => {
+describe('the guild board end to end, with the switch on as the game ships since PR D (guild quests plan Task B5)', () => {
   it('locked, then open: the first look posts the board, a hunt is taken, felled, turned in, and the first lamp is stamped', liveAsync(async () => {
     const game = new Game(() => 0.5, memoryStorage(), undefined, 0, [...LEGACY_LINEUP] as never);
     game.state.bestiary = { ...game.state.bestiary, slime: { seen: 1, felled: 0 } };
@@ -527,10 +539,12 @@ describe('the guild board end to end, switch still off in the game (guild quests
     expect(sfx.error).toHaveBeenCalledTimes(1);
     expect(root.querySelector('.slx-board')).toBeNull();
     expect(game.state.guild).toBeUndefined();
+    expect(await drain(o)).toEqual([{ who: '安娜', text: B.locked }]);   // in plain words until PR C (spec §0 item 24)
 
-    // The first act over: the first look posts today's board (its own stream only) and marks it read.
+    // The first act over: the first look posts today's board (its own stream only), marks it read and says how it works.
     game.state.story.act1Cleared = true;
     board();
+    expect(await drain(o)).toEqual([{ who: '安娜', text: B.intro }]);
     const g = game.state.guild!;
     expect(g.day).toBe(dayOf(game.state));
     expect([g.viewed, g.intro]).toEqual([g.day, true]);

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Game } from '../../engine/game';
-import { constRng } from '../../engine/testing';
+import { constRng, withGuildOff } from '../../engine/testing';
 import { dayOf } from '../../engine/calendar';
 import { GUILD_SWITCH } from '../../data/guild';
 import { NO_ART, type ArtIndex } from '../../render/textures';
@@ -1054,7 +1054,7 @@ describe('TownScene: the guild board on the way home (guild quests plan Task B4)
       expect(guildRow(t.root).querySelector('.slx-fresh')).toBeNull();
       expect(t.draws()).toBe(1);
     };
-    await check();
+    await withGuildOff(check);   // switched off (controller ruling, spec §0 item 24)
     const was = GUILD_SWITCH.open;
     GUILD_SWITCH.open = () => false;
     try { await live(check); } finally { GUILD_SWITCH.open = was; }

@@ -71,6 +71,10 @@
     - **接下時的那一句**：介面說中性的系統句「已接下委託：{label}。」（`T.ui2.board.accepted`）；安娜自己的說法是 `GUILD_TEXT.anna.accepted`（PR C 寫），寫了就說她的、取代系統句（§8.4）。
 23. **公會指令視窗的列高**（控制者裁定 2026-10-30）：「委託」在指令列上時（`GUILD_SWITCH.live`），公會的指令視窗加 `slx-cmd-board`，十一列每列 16 px（12 px 字、不加上下留白），視窗底在 248，安娜的對話框頂在 264（1280×720 量），整個視窗在對話框之上。開關關著時視窗照今天（每列 20 px）。實作只用 SCSS，沒有行內樣式、沒有 `!important`。檢查：e2e 在 chromium、dpr125、dpr150 三個專案量「視窗底 ≤ 對話框頂」，量每一列高 16、字不超出列、游標箭頭不高於列；legibility 掃描多一個畫面 `guild-board-listed`（這個狀態的公會）。
     - **既有的重疊，不動**：開關關著時，今天十列的視窗底在 284，已經比安娜招呼時的對話框頂（264）低 20 px，「離開」在她說話時被對話框蓋住、說完才露出。這是 PR B 之前就有的樣子，本裁定不改它。
+24. **先上線、文字延後**（使用者方向＋控制者裁定 2026-10-30）：使用者要先把重心放在玩法上，整體劇情還沒定案，劇情工作暫停。所以：
+    - **PR C（文字與冷讀）與 PR E（指名委託）延後**，PR F（美術）照舊等使用者核准風格樣本。PR D 照計畫打開 `GUILD_LIVE`，但 `GUILD_TEXT` 維持空的：沒有委託人的紙條與回信、沒有安娜的台詞、沒有夥伴的一句話。§7 的文字規則、§0 第 11 條與 §7.5 的指名委託在 C、E 重啟時照舊適用。
+    - **上線用中性的系統句**：介面原本「有字才說」，所以文字是空的時候有三個地方完全不說話、看起來像壞掉。改成在公會的對話框說一句簡短、白話、沒有角色口吻的系統句（`T.ui2.board`），安娜的台詞寫了之後一樣由她的取代：未解鎖時「委託在第一幕結束後開放。」（`locked`；第一幕是手冊的章節名，不提第三層的頭目）；手上滿了「手上的委託已滿，先回報或放棄一件。」（`full`）；第一次打開「接下布告上的委託，完成後回來回報，可得報酬與功績。」（`intro`，一句取代安娜的三句）。其餘本來就是中性的系統句，不改：接下（§0 第 22 條）、報酬、升級（`rankUp`）與賀禮（`gift`；燈印那一句沒有字就略過）、回城那一句（`questsReady`）、迷宮的「委託達成」與探路那一行；紙條的區塊沒有字時整段不畫（不留空白）。
+    - **關掉的開關仍有測試**（控制者裁定）：開關打開之後，測「開關關著」的測試不能再靠預設值。`engine/testing.ts` 加 `withGuildOff(f)`：照 `withGuildLive` 把 `GUILD_SWITCH.live` 設成 `false`，`f` 回傳、丟例外、或回傳的 promise 結束之後還原（自己有一條紅綠測試）。只把這些測試「關著的那一半」包進去，斷言一個字都不改、不刪：`ui2/scenes/guild.test.ts` 的 `the board is not on the guild's list while the switch is off` 與 `listed, the board makes the window's rows 16px tall …; off, today's window`、`ui2/scenes/town.test.ts` 的 `with the switch off, or the board locked, neither the line nor the mark`、`engine/game.test.ts` 的 `off, nothing at all` 與 `the board posts on the way home and draws nothing` 的關著那一趟、`engine/guild.test.ts` 的 `locked while the board is shut`（原本直接呼叫 `f()` 的那一種關法），以及 `ui2/scenes/dungeon.test.ts` 的 `the field menu keeps its eleven while the board is shut, or open but locked` 的第一個情境。城鎮快照照計畫 D1 改：原情境刪掉 `guild` 後比對，另加一個 `withGuildOff` 的情境，雜湊逐一相同而且每一步都沒有 `guild`（fixture 不重錄）。
 
 ---
 

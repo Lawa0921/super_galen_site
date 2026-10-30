@@ -8,10 +8,10 @@ import type { RuneId, RuneTier } from './runes';
  */
 
 /**
- * The switch (spec §0 item 15), as BOND_SWITCH: `live` is GUILD_LIVE, false until the guild plan's PR D; `open` is the
+ * The switch (spec §0 item 15), as BOND_SWITCH: `live` is GUILD_LIVE, on since the guild plan's PR D; `open` is the
  * unlock, the first act cleared. Shipped code never changes either; tests go through `withGuildLive` (engine/testing.ts).
  */
-export const GUILD_SWITCH: { live: boolean; open: (s: GameState) => boolean } = { live: false, open: (s) => s.story.act1Cleared };
+export const GUILD_SWITCH: { live: boolean; open: (s: GameState) => boolean } = { live: true, open: (s) => s.story.act1Cleared };
 
 /**
  * The one predicate (review M6): every entry of the engine, the screens and the save that reads or writes `guild` asks
