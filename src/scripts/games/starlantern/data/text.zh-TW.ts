@@ -5,6 +5,7 @@ import { KEYSTONE_GATE } from './talents';
 import { EQUIPMENT } from './equipment';
 import { ITEMS } from './items';
 import { MATERIALS } from './materials';
+import { TOOL_LEVELS } from './gather';
 import { SETS, SPECIALS } from './gear';
 import { ENEMIES } from './enemies';
 import type { RegionId } from './regions';
@@ -1127,7 +1128,7 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
     },
   },
   forge: {
-    kind: { essence: '精華', monster: '怪物素材', region: '地區素材', rare: '稀有素材', junk: '雜物', trophy: '戰利品', keepsake: '遺物' } as Record<MaterialKind, string>,
+    kind: { essence: '精華', monster: '怪物素材', region: '地區素材', rare: '稀有素材', junk: '雜物', trophy: '戰利品', keepsake: '遺物', gather: '採集素材' } as Record<MaterialKind, string>,
     group: FORGE_GROUP,
     use: (u: MaterialUse): string => {
       switch (u.kind) {
@@ -1142,6 +1143,7 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
         case 'unlock': return `${EQUIPMENT[u.base]?.name ?? u.base}解鎖`;
         case 'inscribe': return `銘刻${ENEMIES[u.species]?.name ?? u.species}的銘文`;
         case 'craft': return `製作${SPECIALS[u.unique]?.name ?? u.unique}`;
+        case 'tool': return `打造${TOOL_LEVELS.find((t) => t.level === u.level)?.name ?? u.level}`;
       }
     },
     usedFor: (list: string) => `用於：${list}`,
@@ -1158,6 +1160,7 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
         case 'unlock': return `${EQUIPMENT[u.base]?.name ?? u.base}解鎖`;
         case 'inscribe': return '銘刻';
         case 'craft': return '製作專屬裝備';
+        case 'tool': return '採集工具';
       }
     },
     junkOnly: '雜物：只能賣錢',

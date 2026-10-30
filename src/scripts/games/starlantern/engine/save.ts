@@ -15,6 +15,7 @@ import { SAVE_VERSION, type GameState } from './state';
 import { repairRuneFields } from './sockets';
 import { isBestiary, repairBestiary } from './bestiary';
 import { isGuild, repairGuild } from './guild';
+import { isGather, repairGather } from './gather';
 import { tierUnlocked } from './tiers';
 import { buildOf } from '../data/builds';
 import { BANTER_PAIRS, GROUP_GATE, isSceneId, type BanterPair } from '../data/story/scenes';
@@ -200,6 +201,8 @@ function isValid(d: Record<string, unknown>): boolean {
   if (d.bestiary !== undefined && !isBestiary(d.bestiary)) return false;
   // Guild quests plan Task A5: the board's shape (its unknown targets are dropped after this, by repairGuild).
   if (d.guild !== undefined && !isGuild(d.guild)) return false;
+  // Gathering plan Task A5: the gathering record's shape (its unknown goods are dropped after this, by repairGather).
+  if (d.gather !== undefined && !isGather(d.gather)) return false;
   if (!isStory(d.story)) return false;
   // bond plan Task 2: a bond only on someone met (gates read what is told, `storyPieces`); today's gifts and the romance too
   const s = d as unknown as GameState;
@@ -335,6 +338,8 @@ export function loadGame(storage: SaveStorage): LoadResult {
   repairBestiary(data);
   // A quest whose target this build does not know is dropped, never a corrupt save (guild quests spec §9.4).
   repairGuild(data);
+  // A gathered good this build does not know is dropped, never a corrupt save (gathering spec §0 item 16).
+  repairGather(data);
   const state = data as unknown as GameState;
   // The game never writes a codex id twice; a hand-edited save that does is tidied rather than refused.
   state.codex = [...new Set(state.codex)];

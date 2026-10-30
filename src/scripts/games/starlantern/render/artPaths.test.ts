@@ -8,6 +8,7 @@ import { RARITIES, SETS, SPECIALS, regionSpecials } from '../data/gear';
 import { EQUIPMENT } from '../data/equipment';
 import { REGIONS, type RegionId } from '../data/regions';
 import { MATERIALS } from '../data/materials';
+import { GATHER_ART } from '../data/gather';
 import { SKILLS } from '../data/skills';
 
 describe('artPaths', () => {
@@ -93,7 +94,8 @@ describe('artPaths', () => {
 
   it('every gear, material and skill id has art (art step 9: nothing waits any more)', () => {
     const urls = new Set(allArtUrls());
-    for (const id of Object.keys(MATERIALS)) expect(urls.has(art.icon(id)), id).toBe(artMaterial(id));
+    // Gathering plan ruling 9: a gathered good's icon is listed once it is published (GATHER_ART), as a roster one's.
+    for (const id of Object.keys(MATERIALS)) expect(urls.has(art.icon(id)), id).toBe(artMaterial(id) && (MATERIALS[id].kind !== 'gather' || GATHER_ART.has(id)));
     for (const id of Object.keys(SKILLS)) expect(urls.has(art.skillIcon(id, 16)) && urls.has(art.skillIcon(id, 14)), id).toBe(true);
   });
 

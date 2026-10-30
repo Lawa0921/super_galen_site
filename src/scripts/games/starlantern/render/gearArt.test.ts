@@ -90,7 +90,8 @@ describe('plan 5d gear art plan (art-factory/starlantern/gear-plan.json)', () =>
   it('every material without art and every tree skill has exactly one icon cell', () => {
     const cells = [...cellsOf('sheet-mat-'), ...cellsOf('sheet-skill-')];
     expect(cells).toHaveLength(new Set(cells).size);
-    const mats = Object.keys(MATERIALS).filter((id) => !MATERIALS_WITH_ART.includes(id) && !ROSTER.has(id));
+    // The gathered goods' icons are the gathering plan's PR E, listed through GATHER_ART (data/gather.ts), never these sheets.
+    const mats = Object.keys(MATERIALS).filter((id) => !MATERIALS_WITH_ART.includes(id) && !ROSTER.has(id) && MATERIALS[id].kind !== 'gather');
     expect(mats).toHaveLength(12);
     // Addendum S2: every skill plan 4 drew no icon for (the plan 4 ones are re-derived from their sheets, `sheet-icons-*`).
     // Plan 8c ruling 2: a replaced skill keeps its cell (step 9 leaves it out of the batch), and its successor is G4's.

@@ -10,7 +10,7 @@ import { floorOf, type Portal } from './dungeon/run';
 import { memoriesOf } from './progression';
 import { statsOf } from './party';
 import { CHARACTER_IDS } from '../data/characters';
-import { withBondScale, withRosterOnly } from './testing';
+import { withBondScale, withGatherLive, withRosterOnly } from './testing';
 import type { Pos } from './types';
 
 /**
@@ -41,11 +41,16 @@ const downstairs = (g: Game, at: Pos): MoveResult | null => {
   expect(stepOnto(g, at).kind).toBe('stairs');
   return g.descend();
 };
+/**
+ * Gathering plan ruling 8 (spec §5.5 item 5): a gathering point is plain floor to the two planting helpers below, so with
+ * gathering open they take the very cell they take with it shut.
+ */
+const open = (t: string): boolean => t === 'floor' || t === 'gather';
 /** Copied from game.test.ts: a glimmer with no owner on the first open cell, as the floor would have made it. */
 const plantGlimmer = (g: Game): Pos => {
   const m = g.map();
   for (let y = 0; y < m.height; y++) for (let x = 0; x < m.width; x++) {
-    if (m.tiles[y][x] !== 'floor' || (x === g.pos.x && y === g.pos.y)) continue;
+    if (!open(m.tiles[y][x]) || (x === g.pos.x && y === g.pos.y)) continue;
     m.tiles[y][x] = 'glimmer';
     floorOf(g.run!, g.floor).contents.push({ kind: 'glimmer', at: { x, y }, room: 0 });
     return { x, y };
@@ -56,7 +61,7 @@ const plantGlimmer = (g: Game): Pos => {
 const plantElite = (g: Game): Pos => {
   const m = g.map();
   for (let y = 0; y < m.height; y++) for (let x = 0; x < m.width; x++) {
-    if (m.tiles[y][x] !== 'floor' || (x === g.pos.x && y === g.pos.y)) continue;
+    if (!open(m.tiles[y][x]) || (x === g.pos.x && y === g.pos.y)) continue;
     m.tiles[y][x] = 'elite';
     return { x, y };
   }
@@ -66,8 +71,20 @@ const plantElite = (g: Game): Pos => {
 /** The phase as it is now (a plain read stays narrowed across the fight that moves it). */
 const phaseOf = (g: Game): Game['phase'] => g.phase;
 
-function dive() {
+/**
+ * What a dive with gathering open saw (gathering plan ruling 16): whether each departure's run was flagged, and the floors
+ * (`run:depth`) that held a point. Filled only when passed; the dive's result never holds it.
+ */
+interface Watch { departs: boolean[]; points: Set<string> }
+
+function dive(watch?: Watch) {
   const g = Game.fresh(mulberry32(0x5eed), null);
+  let runs = 0;
+  /** Notes the floors of this run made so far that hold a point. */
+  const look = () => {
+    if (!watch || !g.run) return;
+    for (const [d, f] of g.run.floors) if (f.contents.some((c) => c.kind === 'gather')) watch.points.add(`${runs}:${d}`);
+  };
   const hash = createHash('sha256');
   const draws: number[] = [];
   const trail: string[] = [];
@@ -100,12 +117,19 @@ function dive() {
     }
   };
   /** Leaves town healed for depth 1. */
-  const setOut = () => { heal(); expect(g.depart(MAIN, 1)).toEqual({ ok: true }); };
+  const setOut = () => {
+    look();
+    heal();
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    runs++;
+    watch?.departs.push(g.run!.gather === true);
+  };
   // A level-1 pair cannot beat an elite (they are wiped in three rounds), so the pair starts the dive at LEVEL.
   for (const id of g.state.party.recruited) g.state.party.roster[id].level = LEVEL;
   setOut();
   for (let guard = 0; guard < 20 && !(g.phase === 'map' && g.floor === TARGET); guard++) {
     expect(g.phase).toBe('map');
+    look();
     const floor = g.floor;
     heal();   // a fountain, or a potion between floors: the dive pins pickups and fights, not attrition
     stepOnto(g, plantGlimmer(g));
@@ -132,6 +156,7 @@ function dive() {
     downstairs(g, down);
   }
   expect({ phase: g.phase, floor: g.floor }, trail.join(' ')).toEqual({ phase: 'map', floor: TARGET });
+  look();
   draws.push(g.run!.memoryDraws);
   const roster = g.state.party.roster;
   return {
@@ -156,5 +181,16 @@ describe('story L: the seeded dive (Task 0)', () => {
       writeFileSync(FIXTURE, `${JSON.stringify(now, null, 2)}\n`);
     }
     expect(now).toEqual(JSON.parse(readFileSync(FIXTURE, 'utf8')));
+  });
+
+  // Gathering plan Task A3 (ruling 16, review H1): gathering held open, so the dive's floors really hold points; never
+  // gathered, the dive is the same dive, against the same fixture.
+  it('the dive that never gathers is the dive it was', () => {
+    const watch: Watch = { departs: [], points: new Set() };
+    const now = withRosterOnly([], () => withBondScale(0, () => withGatherLive(() => dive(watch), { open: true })));
+    expect(now).toEqual(JSON.parse(readFileSync(FIXTURE, 'utf8')));
+    expect(watch.departs.length).toBeGreaterThan(0);
+    expect(watch.departs.every((x) => x)).toBe(true);
+    expect(watch.points.size, 'the floors walked held points').toBeGreaterThan(0);
   });
 });

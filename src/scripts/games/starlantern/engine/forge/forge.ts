@@ -1,4 +1,4 @@
-import { DISMANTLE, FUSE_NEXT, REGION_AFFIX_GROUP } from '../../data/forge';
+import { DISMANTLE, FUSE_NEXT } from '../../data/forge';
 import { AFFIXES, generalLegendaries } from '../../data/gear';
 import { ENEMIES } from '../../data/enemies';
 import { noteInscribed } from '../bestiary';
@@ -9,7 +9,7 @@ import { itemSlot, maxValue, rollItem, rollValue } from '../loot/item';
 import type { GameState } from '../state';
 import type { AnyStat, GearSlot, ItemInstance } from '../types';
 import type { Rng } from '../rng';
-import { canPay, enhanceChance, enhanceCost, findItem, forgeRng, fuseCost, fuseSlots, inscribeCost, inscriptionAffix, pay, rerollCost, swapPool, type ForgeResult, type RerollOpts } from './cost';
+import { canPay, enhanceChance, enhanceCost, findItem, forgeRng, fuseCost, fuseSlots, inscribeCost, inscriptionAffix, pay, pinGroup, rerollCost, swapPool, type ForgeResult, type RerollOpts } from './cost';
 
 /** The essences a set of gear dismantles into: the sum of DISMANTLE by rarity. */
 export function dismantleYield(its: ItemInstance[]): Record<string, number> {
@@ -65,7 +65,8 @@ export function reroll(
   if (it.locked !== undefined && it.locked !== index) return { ok: false, reason: 'affixLocked' };
   if (it.starlit && !o.swap) return { ok: false, reason: 'invalid' };
   if (o.swap && (it.rarity === 'unique' || it.rarity === 'set')) return { ok: false, reason: 'invalid' };
-  if (o.mat !== undefined && (!o.swap || !Object.prototype.hasOwnProperty.call(REGION_AFFIX_GROUP, o.mat))) return { ok: false, reason: 'invalid' };
+  // A pin is a region material, or (gathering spec §7.3) a spot standing for its region; the gate is the Game's.
+  if (o.mat !== undefined && (!o.swap || !pinGroup(o.mat))) return { ok: false, reason: 'invalid' };
   const pool = o.swap ? swapPool(it, index, o.mat) : [];
   if (o.swap && pool.length === 0) return { ok: false, reason: 'none' };
   const cost = rerollCost(it, o);

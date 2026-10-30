@@ -23,6 +23,7 @@ import { ABSORB_SALT } from '../engine/story/fragments';
 import { MEMORY_SALT } from '../engine/story/memories';
 import { AFFIX_SALT } from '../engine/tiers';
 import { GUILD_SALT } from './guild';
+import { GATHER_MATERIALS, GATHER_SALT, GATHER_TABLE, GENERIC_TYPES, SPOT_REGIONS, SPOT_RULES, TOOL_LEVELS } from './gather';
 
 /** The art factory's registry: what is published, from where (read independently of the switches it is checked against). */
 const REGISTRY = JSON.parse(readFileSync('art-factory/starlantern/registry.json', 'utf8')) as {
@@ -356,7 +357,8 @@ describe('roster materials and own uniques (roster plan Task A3, spec §7)', () 
     expect(MATERIALS['iou-slip'].name).toBe('泛黃的紙條');
     // The game's own 22 are all still there, untouched.
     for (const id of ['moss', 'old-coin', 'star-tear', 'blaze-core', 'essence-legendary']) expect(MATERIALS[id].owner, id).toBeUndefined();
-    expect(Object.values(MATERIALS).filter((m) => !m.owner)).toHaveLength(22);
+    // Gathering plan Task A1: and the fourteen gathered goods after them, which have no owner either.
+    expect(Object.values(MATERIALS).filter((m) => !m.owner)).toHaveLength(22 + 14);
   });
 
   it('every boss and warden pays one trophy or keepsake', () => {
@@ -688,6 +690,9 @@ describe('roster tables, bosses and wardens (roster plan Task A4, spec §3.4, §
     // Guild quests plan Task A1: the board's stream, SHA-256's third round constant.
     expect(GUILD_SALT).toBe(0xb5c0fbcf);
     expect([...used, WARDEN_SALT, TROPHY_SALT]).not.toContain(GUILD_SALT);
+    // Gathering plan Task A1 (spec §0 item 15): the points' stream, SHA-256's fourth round constant.
+    expect(GATHER_SALT).toBe(0xe9b5dba5);
+    expect([...used, WARDEN_SALT, TROPHY_SALT, GUILD_SALT]).not.toContain(GATHER_SALT);
   });
 });
 
@@ -763,6 +768,23 @@ describe('roster names keep every secret (roster plan Task A5)', () => {
         if (id === 'lantern-mother' && re.source === '燈喰之母') continue;
         expect(re.test(text), `${id} 「${raw}」 matches ${re} (${from})`).toBe(false);
       }
+    }
+  });
+
+  // Gathering plan Task A1 (spec §5.1, plan ruling 11): the gathered goods, the points, the spot rules and the tools are
+  // names any dive shows, so they keep the same secrets.
+  it('no gathering name gives a secret away', () => {
+    const texts: [string, string][] = [
+      ...GATHER_MATERIALS.map((m): [string, string] => [m.id, m.name]),
+      ...GENERIC_TYPES.map((t): [string, string] => [`${t} point`, GATHER_TABLE[t].name]),
+      ...SPOT_REGIONS.map((r): [string, string] => [`${r} spot`, SPOT_RULES[r].point]),
+      ...SPOT_REGIONS.map((r): [string, string] => [`${r} rule`, SPOT_RULES[r].name]),
+      ...TOOL_LEVELS.map((t): [string, string] => [`tool ${t.level}`, t.name]),
+    ];
+    expect(texts).toHaveLength(14 + 4 + 6 + 6 + 2);
+    for (const [id, raw] of texts) {
+      const text = APPROVED_WORDS.reduce((t, { word }) => t.split(word).join('〇'), raw);
+      for (const { re, from } of SECRET_WORDS) expect(re.test(text), `${id} 「${raw}」 matches ${re} (${from})`).toBe(false);
     }
   });
 });

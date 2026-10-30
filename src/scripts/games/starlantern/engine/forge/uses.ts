@@ -2,6 +2,7 @@ import { BASE_RECIPES, CONSUMABLE_RECIPES, ENHANCE_COST, ESSENCE_OF, FUSE_SLOT_C
 import { EQUIPMENT } from '../../data/equipment';
 import { SETS, SPECIALS } from '../../data/gear';
 import { MATERIALS } from '../../data/materials';
+import { GATHER_RECIPES, TOOL_LEVELS, spotRegionOf } from '../../data/gather';
 import { REGIONS, type RegionId } from '../../data/regions';
 import type { GearSlot } from '../types';
 
@@ -18,7 +19,9 @@ export type MaterialUse =
   /** A roster signature: the forge inscribes that species' key on a piece (roster plan ruling 16; the action is plan C). */
   | { kind: 'inscribe'; species: string }
   /** A roster trophy or keepsake: the forge crafts its owner's own unique (ruling 15; the action is plan C). */
-  | { kind: 'craft'; unique: string };
+  | { kind: 'craft'; unique: string }
+  /** A gathered good: the forge makes a gathering tool of it (gathering spec §6.3; the action is the gathering plan's A4). */
+  | { kind: 'tool'; level: 1 | 2 };
 
 /** The rarities a reroll essence serves (common gear has no affixes; uniques and sets share the legendary essence's reroll). */
 const REROLL_TIERS = ['magic', 'rare', 'epic', 'legendary'] as const;
@@ -27,7 +30,8 @@ const FUSE_TARGETS = ['magic', 'rare', 'legendary'] as const;
 
 /**
  * Everything a material is good for, in a fixed order: enhance, reroll, region reroll, fuse, consumables, bases, sets, unlocks,
- * and a roster material's inscription or craft.
+ * a roster material's inscription or craft, and a gathering tool. A gathered good's second recipes (GATHER_RECIPES) list with
+ * the consumables, and a spot pins its region's affixes as the region's material does (gathering spec §7.2-§7.4).
  */
 export function materialUses(id: string): MaterialUse[] {
   const out: MaterialUse[] = [];
@@ -36,8 +40,11 @@ export function materialUses(id: string): MaterialUse[] {
   for (const tier of REROLL_TIERS) if (ESSENCE_OF[tier] === id) out.push({ kind: 'reroll', tier });
   if (id === REROLL.legendaryMat) out.push({ kind: 'legendaryReroll' });
   for (const r of Object.values(REGIONS)) if (r.material === id && REGION_AFFIX_GROUP[id]) out.push({ kind: 'regionReroll', region: r.id });
+  const spot = spotRegionOf(id);
+  if (spot && REGION_AFFIX_GROUP[REGIONS[spot].material!]) out.push({ kind: 'regionReroll', region: spot });
   for (const target of FUSE_TARGETS) if (FUSE_SLOT_COST[target][id]) out.push({ kind: 'fuseSlot', target });
   for (const [item, c] of Object.entries(CONSUMABLE_RECIPES)) if (c.mats[id]) out.push({ kind: 'consumable', item });
+  for (const [item, c] of Object.entries(GATHER_RECIPES)) if (c.mats[id] && !CONSUMABLE_RECIPES[item]?.mats[id]) out.push({ kind: 'consumable', item });
   for (const [slot, m] of Object.entries(BASE_RECIPES)) if (m[id]) out.push({ kind: 'base', slot: slot as GearSlot });
   for (const s of Object.values(SETS)) if (REGIONS[s.region].material === id || SET_RECIPE.rare === id) out.push({ kind: 'set', set: s.id });
   for (const e of Object.values(EQUIPMENT)) if (e.unlock?.some((u) => u.mat === id)) out.push({ kind: 'unlock', base: e.id });
@@ -47,5 +54,6 @@ export function materialUses(id: string): MaterialUse[] {
     const own = Object.values(SPECIALS).find((s) => s.owner === m.owner);
     if (own) out.push({ kind: 'craft', unique: own.id });
   }
+  for (const t of TOOL_LEVELS) if (t.cost.mats[id]) out.push({ kind: 'tool', level: t.level });
   return out;
 }

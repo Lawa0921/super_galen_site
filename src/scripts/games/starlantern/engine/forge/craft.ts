@@ -13,6 +13,7 @@ import { addItem } from '../town';
 import { hasPerk } from '../story/fragments';
 import { PERKS } from '../../data/story/fragments';
 import { addCost, canPay, forgeRng, pay, type ForgeResult } from './cost';
+import { GATHER_RECIPES } from '../../data/gather';
 
 const has = (o: object, k: string): boolean => Object.prototype.hasOwnProperty.call(o, k);
 
@@ -21,16 +22,20 @@ export function craftLevel(s: GameState): number {
   return itemLevel(Math.min(MAX_REACHED, Math.max(1, ...Object.values(s.dungeon.reached))), 'monster');
 }
 
-/** What crafting `qty` of consumable `id` costs; null when there is no recipe or qty is not a positive integer. */
-export function itemRecipeCost(id: string, qty: number): Cost | null {
-  if (!has(CONSUMABLE_RECIPES, id) || !Number.isInteger(qty) || qty <= 0) return null;
-  const r = CONSUMABLE_RECIPES[id];
+/**
+ * What crafting `qty` of consumable `id` costs; null when there is no recipe or qty is not a positive integer. `alt`: its
+ * second recipe, from gathered goods (GATHER_RECIPES, gathering spec §7.2); the gate is the Game's (`gatherOpen`).
+ */
+export function itemRecipeCost(id: string, qty: number, alt = false): Cost | null {
+  const recipes = alt ? GATHER_RECIPES : CONSUMABLE_RECIPES;
+  if (!has(recipes, id) || !Number.isInteger(qty) || qty <= 0) return null;
+  const r = recipes[id];
   return { gold: r.gold * qty, mats: Object.fromEntries(Object.entries(r.mats).map(([m, n]) => [m, n * qty])) };
 }
 
-/** Crafts consumables into the inventory. Draws nothing; never touches `sold`. */
-export function craftItem(s: GameState, id: string, qty: number): ForgeResult<{ id: string; qty: number }> {
-  const cost = itemRecipeCost(id, qty);
+/** Crafts consumables into the inventory, by the first recipe or (`alt`) the gathered one. Draws nothing; never touches `sold`. */
+export function craftItem(s: GameState, id: string, qty: number, alt = false): ForgeResult<{ id: string; qty: number }> {
+  const cost = itemRecipeCost(id, qty, alt);
   if (!cost) return { ok: false, reason: 'invalid' };
   const lacking = canPay(s, cost);
   if (lacking) return { ok: false, reason: lacking };

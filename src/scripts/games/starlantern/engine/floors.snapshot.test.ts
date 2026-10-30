@@ -23,6 +23,7 @@ const DEPTHS = Array.from({ length: 40 }, (_, i) => i + 1);
 const TILE_CODE: Record<Tile, string> = {
   wall: '#', floor: '.', door: 'D', up: '<', down: '>', chest: 'T', entrance: 'E', boss: 'B',
   fountain: 'F', trap: '^', merchant: 'M', altar: 'A', elite: '!', vault: 'V', key: 'K', rescue: 'R', glimmer: '*', warden: 'W',
+  gather: 'G',   // gathering plan Task A2: never in the fixture (newRun sets no `gather`), here for the type
 };
 
 interface FloorShot { tiles: string[]; contents: Content[] }

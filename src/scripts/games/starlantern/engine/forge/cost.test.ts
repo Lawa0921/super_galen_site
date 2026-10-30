@@ -6,6 +6,11 @@ import { addCost, canPay, findItem, forgeRng, pay, FORGE_SALT } from './cost';
 import { mix } from '../loot/drops';
 import { mulberry32 } from '../rng';
 import { LEGACY_LINEUP } from '../party';
+import { GATHER_PIN_QTY, SPOT_OF, SPOT_REGIONS } from '../../data/gather';
+import { REGIONS } from '../../data/regions';
+import { REROLL } from '../../data/forge';
+import { rerollCost, swapPool } from './cost';
+import type { ItemInstance } from '../types';
 
 const cost = ENHANCE_COST[0];
 const matId = Object.keys(cost.mats)[0];
@@ -101,5 +106,25 @@ describe('forgeRng', () => {
   it('ignores nextUid and the rest of the state the player can change cheaply (shop buys mint uids)', () => {
     const at = (nextUid: number, gold: number) => { const s = newGame(undefined, 0, LEGACY_LINEUP); s.forgeDraws = 4; s.forgeSalt = 9; s.nextUid = nextUid; s.gold = gold; return forgeRng(s)(); };
     expect(new Set([at(1, 0), at(2, 0), at(500, 10), at(1e6, 99999)]).size).toBe(1);
+  });
+});
+
+describe('a spot pins its land (gathering plan Task A4)', () => {
+  const gear = (): ItemInstance => ({ ...plainItem('moss-charm', 1), rarity: 'rare', ilvl: 20, affixes: [{ key: 'str', value: 5 }] });
+  it('a spot pins its land', () => {
+    for (const r of SPOT_REGIONS) {
+      const spot = SPOT_OF[r], mat = REGIONS[r].material!;
+      const bySpot = rerollCost(gear(), { swap: true, mat: spot });
+      const byMat = rerollCost(gear(), { swap: true, mat });
+      expect(bySpot.mats[spot], spot).toBe(GATHER_PIN_QTY);
+      expect(bySpot.mats[mat], spot).toBeUndefined();
+      expect(byMat.mats[mat], mat).toBe(REROLL.regionQty);
+      // gold and the essence as the region material's pin
+      const { [spot]: _s, ...restSpot } = bySpot.mats;
+      const { [mat]: _m, ...restMat } = byMat.mats;
+      expect({ gold: bySpot.gold, mats: restSpot }, spot).toEqual({ gold: byMat.gold, mats: restMat });
+      // the region's own group
+      expect(swapPool(gear(), 0, spot), spot).toEqual(swapPool(gear(), 0, mat));
+    }
   });
 });

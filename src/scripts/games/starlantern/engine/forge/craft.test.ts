@@ -13,6 +13,7 @@ import { MAX_ILVL, MAX_REACHED, depthLevel } from '../levels';
 import { itemLevel, itemSlot } from '../loot/item';
 import { isUnlocked, sell } from '../town';
 import { craftBase, craftItem, craftLevel, craftSet, baseCost, itemRecipeCost, setCost, setRecipeOf } from './craft';
+import { GATHER_RECIPES } from '../../data/gather';
 
 const stocked = (): Record<string, number> => Object.fromEntries(Object.keys(MATERIALS).map((m) => [m, 500]));
 const rich = (): GameState => {
@@ -264,5 +265,38 @@ describe("Doran's master", () => {
       expect(setRecipeOf(s).regionQty).toBe(1);
       expect(setCost(s, piece)!.mats['blaze-core']).toBe(1);
     } finally { perks.setRecipeLess = kept; }
+  });
+});
+
+describe('the gathered recipe (gathering plan Task A4)', () => {
+  it('the gathered recipe', () => {
+    for (const [id, rec] of Object.entries(GATHER_RECIPES)) {
+      expect(itemRecipeCost(id, 2, true), id).toEqual({ gold: rec.gold * 2, mats: Object.fromEntries(Object.entries(rec.mats).map(([m, n]) => [m, n * 2])) });
+      const s = rich();
+      const r = craftItem(s, id, 2, true);
+      expect(r.ok, id).toBe(true);
+      if (!r.ok) continue;
+      expect(r.out).toEqual({ id, qty: 2 });
+      expect(r.state.inventory[id], id).toBe((s.inventory[id] ?? 0) + 2);
+      expect(r.state.gold, id).toBe(s.gold - rec.gold * 2);
+      for (const m of Object.keys(MATERIALS)) expect(r.state.inventory[m] ?? 0, `${id} ${m}`).toBe(s.inventory[m] - (rec.mats[m] ?? 0) * 2);
+      expect(r.state.forgeDraws, id).toBe(s.forgeDraws);
+      expect(r.state.sold, id).toEqual(s.sold);
+      // without alt: today's recipe, as it was
+      expect(itemRecipeCost(id, 2), id).toEqual(itemRecipeCost(id, 2, false));
+      expect(itemRecipeCost(id, 2)!.mats, id).toEqual(Object.fromEntries(Object.entries(CONSUMABLE_RECIPES[id].mats).map(([m, n]) => [m, n * 2])));
+    }
+    expect(itemRecipeCost('no-such', 1, true)).toBeNull();
+    expect(itemRecipeCost('potion', 0, true)).toBeNull();
+    expect(craftItem(rich(), 'no-such', 1, true)).toEqual({ ok: false, reason: 'invalid' });
+    // the monster recipe's goods do not make the gathered one, nor the other way round
+    const s = newGame();
+    s.gold = 100;
+    s.inventory = { moss: 10 };
+    expect(craftItem(s, 'potion', 1, true)).toEqual({ ok: false, reason: 'mats' });
+    expect(craftItem(s, 'potion', 1).ok).toBe(true);
+    s.inventory = { 'stanch-herb': 10 };
+    expect(craftItem(s, 'potion', 1)).toEqual({ ok: false, reason: 'mats' });
+    expect(craftItem(s, 'potion', 1, true).ok).toBe(true);
   });
 });

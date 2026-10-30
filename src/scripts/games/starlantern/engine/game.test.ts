@@ -13,7 +13,7 @@ import { rollAffixes, rollCrowdAffix } from './tiers';
 import { TIERS } from '../data/difficulty';
 import { rollPortals, validPortals } from './portals';
 import { DELTA, posKey, tileAt, type Dir } from './map';
-import { floorOf, type Portal } from './dungeon/run';
+import { floorOf, newRun, type Portal } from './dungeon/run';
 import { capacity, carried, weightOf } from '../data/weights';
 import type { CharacterId, EnemyDef, ItemInstance, Pos } from './types';
 import { ENEMIES } from '../data/enemies';
@@ -25,9 +25,14 @@ import { scaleEnemy } from './scaling';
 import { CHARACTERS } from '../data/characters';
 import { handbook } from './story/handbook';
 import { SETS } from '../data/gear';
-import { activeIds, expToNext, gainExp, MAX_LEVEL, meet, memoryStats, newMember, rowOfCell, statsOf, LEGACY_LINEUP, START_LINEUP } from './party';
+import { activeIds, expToNext, gainExp, hasPassive, MAX_LEVEL, meet, memoryStats, newMember, rowOfCell, statsOf, LEGACY_LINEUP, START_LINEUP } from './party';
 import { depthClearExp, empower, encounterGroup, groupCap } from './scaling';
-import { favouredRegions } from '../data/meetings';
+import { favouredRegions, rescuesFor } from '../data/meetings';
+import { SPOT_OF, type GatherType } from '../data/gather';
+import type { RegionId } from '../data/regions';
+import { FLOORS } from '../data/floors';
+import { POISON_TP_LOSS_PCT, trapDamage } from './events';
+import { nextStep } from './gather';
 import { MAX_ACTIVE } from './formation';
 import { ABYSS, ABYSS_UNLOCK } from '../data/hero';
 import { CONDITIONS } from '../data/conditions';
@@ -64,7 +69,7 @@ import { GIFT_LINES, RIN_OATH, type GiftPools } from '../data/bond.zh-TW';
 import { BOND_RUN_CAP, FIELD_POINTS } from '../data/story/bond';
 import { BONDS_WRITTEN, ROMANCES_WRITTEN, TOGETHER_WRITTEN, sceneTime } from '../data/story/scenes';
 import { today } from './story/bond';
-import { WAVE_2_LIVE, withBondEarn, withBondScale, withGuildLive, withGuildOff, withRosterLive, withRosterOnly } from './testing';
+import { WAVE_2_LIVE, withBondEarn, withBondScale, withGatherLive, withGuildLive, withGuildOff, withRosterLive, withRosterOnly } from './testing';
 /**
  * Bond plan Task 17: the registries hold what is written now, so a test that registers its own puts back what was there
  * (`bondsBack`), registers a companion only once (`bondsAdd`), and gives a written scene back instead of deleting it.
@@ -7047,4 +7052,468 @@ describe('the guild board in the game (guild quests plan Task A7)', () => {
     expect(back.state.guild).toEqual(kept.guild);
     expect(back.state.bestiary).toEqual(kept.bestiary);
   }));
+});
+
+/**
+ * Gathering plan Task A3 Step 0 (second review M2): today's walking, pinned before the gathering preview reuses `walk()`'s
+ * multiplier (`stepMod()`). A seeded game walks back and forth between two plain floor cells of the start floor with
+ * `move()` only, under each multiplier `walk()` can make (stealth or not × plain, fog, calm: 1, 0.8, 0.6, 0.5, 0.4, 0.3),
+ * and fights out every battle it meets. The gauge after each step and the steps that met a battle are written out as they
+ * were on today's code; extracting the multiplier must leave them as they are.
+ */
+describe("walking as it is today (gathering plan Task A3 Step 0)", () => {
+  const STEPS = 60;
+  const COMBOS: { mod: number; condition: 'plain' | 'fog' | 'calm'; stealth: boolean }[] = [
+    { mod: 1, condition: 'plain', stealth: false }, { mod: 0.8, condition: 'fog', stealth: false }, { mod: 0.6, condition: 'calm', stealth: false },
+    { mod: 0.5, condition: 'plain', stealth: true }, { mod: 0.4, condition: 'fog', stealth: true }, { mod: 0.3, condition: 'calm', stealth: true },
+  ];
+  /** Walks STEPS steps under one combination: the gauge after each, each step's result kind, the steps that met a battle. */
+  const walkToday = (condition: 'plain' | 'fog' | 'calm', stealth: boolean) => {
+    const g = Game.fresh(mulberry32(0x57e9), null);
+    if (stealth) {
+      g.state.party = meet(g.state.party, 'liz', 1);
+      g.state.party.roster.liz.tree = { 'twin-slash': 1, stealth: 1 };
+    }
+    for (const id of g.state.party.recruited) {
+      const m = g.state.party.roster[id];
+      m.level = 30;
+      const st = statsOf(m);
+      m.hp = st.hp;
+      m.tp = st.tp;
+    }
+    expect(g.depart({ region: 'mainline', condition }, 1)).toEqual({ ok: true });
+    const mod = (hasPassive(g.state.party, 'encounterDown') ? 0.5 : 1) * CONDITIONS[condition].encounterMul;
+    // the first two side-by-side plain floor cells of the start floor, row by row
+    const m = g.map();
+    let a: Pos | null = null;
+    for (let y = 0; y < m.height && !a; y++) for (let x = 0; x + 1 < m.width && !a; x++) {
+      if (m.tiles[y][x] === 'floor' && m.tiles[y][x + 1] === 'floor') a = { x, y };
+    }
+    g.pos = { ...a! };
+    const gauges: number[] = [], kinds: string[] = [], battles: number[] = [];
+    let wiped: number | null = null;
+    for (let i = 1; i <= STEPS; i++) {
+      const r = g.move(g.pos.x === a!.x ? 'right' : 'left');
+      kinds.push(r.kind);
+      gauges.push(g.encounter);
+      if (r.kind !== 'battle') continue;
+      battles.push(i);
+      for (let k = 0; k < 500 && g.phase === 'battle'; k++) {
+        const b = g.battle!;
+        const foe = b.enemies.find((e) => e.alive)!.key;
+        g.submitRound(Object.fromEntries(b.party.filter((c) => c.alive).map((c) => [c.key, { kind: 'attack' as const, target: foe }])));
+      }
+      if ((g.phase as string) === 'town') { wiped = i; break; }
+      expect(g.phase).toBe('map');
+    }
+    return { mod, gauges, kinds: [...new Set(kinds)].sort(), battles, wiped };
+  };
+
+  /** Today's walking, written out on today's code (gathering plan Task A3 Step 0): the gauge after each step, the steps that met a battle. */
+  const TODAY: Record<number, { gauges: number[]; battles: number[] }> = {
+    1: {
+      gauges: [4,  11,  18,  24,  30,  37,  43,  50,  0,  8,  14,  21,  28,  35,  43,  48,  54,  58,  63,  67,  71,  0,  8,  14,  21,  28,  34,  40,  46,  52,  59,  64,  70,  78,  0,  7,  15,  21,  26,  30,  37,  45,  49,  54,  59,  64,  70,  74,  82,  90,  97,  0,  8,  13,  17,  21,  27,  33,  40,  46],
+      battles: [9,  22,  35,  52],
+    },
+    0.8: {
+      gauges: [3,  9,  15,  19,  23,  29,  34,  39,  45,  51,  0,  6,  12,  18,  25,  32,  36,  43,  48,  54,  0,  3,  7,  11,  18,  22,  29,  34,  40,  44,  48,  54,  59,  65,  69,  74,  80,  84,  89,  94,  0,  3,  6,  10,  14,  18,  23,  27,  33,  37,  43,  48,  53,  57,  61,  67,  70,  74,  0,  4],
+      battles: [11,  21,  41,  59],
+    },
+    0.6: {
+      gauges: [3,  7,  11,  14,  17,  21,  25,  29,  33,  38,  43,  48,  53,  57,  60,  64,  69,  73,  78,  83,  87,  91,  0,  4,  7,  12,  15,  18,  21,  26,  31,  36,  41,  46,  51,  54,  57,  60,  63,  66,  70,  74,  0,  5,  9,  12,  15,  19,  23,  28,  32,  36,  40,  45,  48,  51,  55,  59,  0,  3],
+      battles: [23,  43,  59],
+    },
+    0.5: {
+      gauges: [2,  6,  10,  13,  16,  20,  23,  26,  30,  34,  38,  40,  42,  44,  46,  50,  53,  57,  61,  64,  67,  71,  75,  77,  80,  82,  84,  86,  88,  0,  3,  5,  9,  11,  15,  18,  22,  26,  29,  32,  34,  37,  41,  44,  48,  50,  53,  57,  59,  62,  65,  69,  73,  75,  78,  0,  2,  6,  10,  13],
+      battles: [30,  56],
+    },
+    0.4: {
+      gauges: [2,  5,  8,  10,  12,  15,  18,  21,  24,  27,  30,  32,  35,  37,  40,  43,  45,  48,  51,  54,  57,  60,  63,  66,  0,  2,  5,  7,  9,  11,  14,  17,  20,  23,  26,  29,  32,  35,  38,  40,  42,  44,  46,  48,  51,  54,  56,  59,  62,  65,  67,  69,  72,  0,  2,  5,  7,  9,  12,  15],
+      battles: [25,  54],
+    },
+    0.3: {
+      gauges: [1,  3,  5,  7,  9,  11,  13,  15,  17,  19,  21,  22,  25,  26,  29,  30,  32,  33,  34,  36,  38,  40,  42,  45,  47,  49,  51,  54,  55,  57,  58,  59,  60,  61,  63,  65,  67,  68,  70,  71,  74,  76,  78,  80,  81,  83,  84,  85,  86,  88,  90,  0,  2,  3,  4,  6,  8,  10,  12,  14],
+      battles: [52],
+    },
+  };
+
+  it.each(COMBOS)('the gauge and the battles at multiplier $mod ($condition, stealth $stealth)', ({ mod, condition, stealth }) => {
+    const now = walkToday(condition, stealth);
+    expect(now.mod).toBe(mod);
+    expect(now.wiped).toBeNull();
+    expect(now.kinds).toEqual(['battle', 'moved']);
+    expect({ gauges: now.gauges, battles: now.battles }).toEqual(TODAY[mod]);
+    // a battle empties the gauge; every other step is a plain move
+    for (const b of now.battles) expect(now.gauges[b - 1]).toBe(0);
+  });
+});
+
+/**
+ * Gathering plan Task A3 (spec §5.3, §5.4, §11 items 3 and 7; rulings 4, 6, 17): gathering in the game. Points are
+ * planted by the test where a test needs a kind of point (`plantPoint`); the start floor's own points are checked apart.
+ */
+describe('gathering in the game (gathering plan Task A3)', () => {
+  const MAIN: Portal = { region: 'mainline', condition: 'plain' };
+  type Planted = { type: GatherType; item: string; qty: number; rich?: true };
+  /** A fresh game at Lv30, everyone full; `stealth` puts Liz on the field with her stealth learned. */
+  const ready = (seed = 0x6a7e, storage: ReturnType<typeof memoryStorage> | null = null, stealth = false): Game => {
+    const g = Game.fresh(mulberry32(seed), storage);
+    if (stealth) {
+      g.state.party = meet(g.state.party, 'liz', 1);
+      g.state.party.roster.liz.tree = { 'twin-slash': 1, stealth: 1 };
+    }
+    for (const id of g.state.party.recruited) {
+      const m = g.state.party.roster[id];
+      m.level = 30;
+      const st = statsOf(m);
+      m.hp = st.hp;
+      m.tp = st.tp;
+    }
+    return g;
+  };
+  /** Turns the first plain floor cell of this floor (row by row) into a point holding `gather`, and stands the party on it. */
+  const plantPoint = (g: Game, gather: Planted): Pos => {
+    const f = floorOf(g.run!, g.floor);
+    for (let y = 0; y < f.map.height; y++) for (let x = 0; x < f.map.width; x++) {
+      if (f.map.tiles[y][x] !== 'floor') continue;
+      f.map.tiles[y][x] = 'gather';
+      f.contents.push({ kind: 'gather', at: { x, y }, room: 0, gather: { ...gather } });
+      g.pos = { x, y };
+      return { x, y };
+    }
+    throw new Error('no cell for a point');
+  };
+  const spotOf = (region: Exclude<RegionId, 'mainline'>): Planted => ({ type: 'spot', item: SPOT_OF[region], qty: 2 });
+  const vein: Planted = { type: 'vein', item: 'copper-ore', qty: 3 };
+  const pointsOn = (g: Game): number => g.map().tiles.flat().filter((t) => t === 'gather').length;
+
+  it('off, nothing at all', () => {
+    const g = ready();
+    g.state.story.seen.push('first-return');
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(g.run!.gather).toBeUndefined();
+    for (let d = 1; d <= 6; d++) expect(floorOf(g.run!, d).contents.some((c) => c.kind === 'gather'), `depth ${d}`).toBe(false);
+    plantPoint(g, vein);   // even a point the test puts down is not one the game will gather
+    expect(g.gatherHere()).toBeNull();
+    expect(g.gatherPreview()).toBeNull();
+    expect(g.gather('full')).toEqual({ kind: 'none' });
+    expect(g.state.gather).toBeUndefined();
+  });
+
+  it('on, shut until the first return', () => {
+    for (const [opts, seen] of [[undefined, false], [{ open: false }, true]] as const) {
+      withGatherLive(() => {
+        const g = ready();
+        if (seen) g.state.story.seen.push('first-return');
+        expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+        expect(g.run!.gather).toBeUndefined();
+        expect(pointsOn(g)).toBe(0);
+        plantPoint(g, vein);
+        expect(g.gatherHere()).toBeNull();
+        expect(g.gatherPreview()).toBeNull();
+        expect(g.gather('light')).toEqual({ kind: 'none' });
+        expect(g.state.gather).toBeUndefined();
+      }, opts);
+    }
+    // and with the first return seen, the shipped unlock opens it
+    withGatherLive(() => {
+      const g = ready();
+      g.state.story.seen.push('first-return');
+      expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+      expect(g.run!.gather).toBe(true);
+    });
+  });
+
+  it('the start floor has points', () => {
+    // a seed whose run's start floor holds points, worked out from floorOf on its own (review M2)
+    let seed = 0;
+    for (let k = 1; k < 200 && !seed; k++) {
+      const probe = ready(k);
+      const runSeed = Math.floor(probe.rng() * 2 ** 31);
+      const r = newRun(runSeed, 'mainline', 'plain', 1, rescuesFor('mainline', probe.state.party.recruited));
+      r.gather = true;
+      if (floorOf(r, 1).contents.some((c) => c.kind === 'gather')) seed = k;
+    }
+    expect(seed).toBeGreaterThan(0);
+    withGatherLive(() => {
+      const g = ready(seed);
+      expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+      expect(pointsOn(g)).toBeGreaterThan(0);
+      expect(floorOf(g.run!, 1).contents.some((c) => c.kind === 'gather')).toBe(true);
+    }, { open: true });
+  });
+
+  it('on and open', () => {
+    withGatherLive(() => {
+      const g = ready();
+      expect(g.depart({ region: 'iron', condition: 'plain' }, 1)).toEqual({ ok: true });
+      expect(g.run!.gather).toBe(true);
+      const at = plantPoint(g, { type: 'vein', item: 'copper-ore', qty: 3, rich: true });
+      expect(g.gatherHere()).toEqual({ type: 'vein', item: 'copper-ore', rich: true });
+      g.encounter = 10;
+      const p = g.gatherPreview()!;
+      expect(p.full.qty).toBe(3);
+      const r = g.gather('full');
+      expect(r).toMatchObject({ kind: 'gathered', item: 'copper-ore', qty: 3, gauge: { from: 10, to: 10 + 45 }, danger: { from: 'green', to: 'yellow' } });
+      expect(g.run!.loot.items['copper-ore']).toBe(3);
+      expect(g.state.gather).toEqual({ got: { 'copper-ore': 3 } });
+      expect(tileAt(g.map(), at)).toBe('floor');
+      expect(floorOf(g.run!, g.floor).contents.some((c) => c.kind === 'gather' && c.at.x === at.x && c.at.y === at.y)).toBe(false);
+      expect(g.encounter).toBe(55);
+      expect(g.run!.worked).toBeUndefined();
+      // a spot names its rule
+      plantPoint(g, spotOf('iron'));
+      expect(g.gatherHere()).toEqual({ type: 'spot', item: 'scrap-iron', rich: false, rule: 'clang' });
+    }, { open: true });
+  });
+
+  it('the preview is the outcome', () => {
+    const COMBOS = [
+      { condition: 'plain', stealth: false, mod: 1 }, { condition: 'fog', stealth: false, mod: 0.8 }, { condition: 'calm', stealth: false, mod: 0.6 },
+      { condition: 'plain', stealth: true, mod: 0.5 }, { condition: 'fog', stealth: true, mod: 0.4 }, { condition: 'calm', stealth: true, mod: 0.3 },
+    ] as const;
+    const POINTS: [Exclude<RegionId, 'mainline'>, Planted][] = [
+      ...(['blaze', 'frost', 'storm', 'mire', 'shade', 'iron'] as const).map((r): [Exclude<RegionId, 'mainline'>, Planted] => [r, spotOf(r)]),
+      ['iron', { type: 'crystal', item: 'quartz-chip', qty: 4, rich: true }],
+    ];
+    withGatherLive(() => {
+      for (const c of COMBOS) for (const [region, planted] of POINTS) for (const mode of ['light', 'full'] as const) {
+        const key = `${c.condition} ${c.stealth} ${region} ${planted.type} ${mode}`;
+        const g = ready(0x6a7e, null, c.stealth);
+        g.state.party.roster.rin.hp = 3;          // below the scald: kept at 1
+        g.state.party.roster.hero.tp = 1;         // below the drain: kept at 0
+        g.state.dungeon.reached[region] = 10;
+        expect(g.depart({ region, condition: c.condition }, 5)).toEqual({ ok: true });
+        plantPoint(g, planted);
+        g.encounter = 37;
+        const p = g.gatherPreview()!;
+        const o = p[mode];
+        const before = Object.fromEntries(g.state.party.recruited.map((id) => [id, { hp: g.state.party.roster[id].hp, tp: g.state.party.roster[id].tp }]));
+        const r = g.gather(mode);
+        expect(r.kind, key).toBe('gathered');
+        expect(g.run!.loot.items[planted.item], key).toBe(o.qty);
+        expect(g.encounter, key).toBe(o.gauge.to);
+        expect(o.gauge.from, key).toBe(37);
+        expect(o.next, key).toBe(nextStep(o.gauge.to, { mod: c.mod, rate: FLOORS[g.terrain() - 1].rate }));
+        for (const id of g.state.party.recruited) {
+          const m = g.state.party.roster[id];
+          const t = o.toll?.[id] ?? {};
+          expect({ hp: m.hp, tp: m.tp }, `${key} ${id}`).toEqual({ hp: before[id].hp - (t.hp ?? 0), tp: before[id].tp - (t.tp ?? 0) });
+        }
+        if (region === 'blaze' && planted.type === 'spot') expect(g.state.party.roster.rin.hp, key).toBe(1);
+        if (region === 'storm' && planted.type === 'spot') expect(g.state.party.roster.hero.tp, key).toBe(0);
+      }
+    }, { open: true });
+  });
+
+  it('the land takes its toll', () => {
+    withGatherLive(() => {
+      for (const [region, effect] of [['blaze', 'hurt'], ['mire', 'poison']] as const) {
+        const g = ready();
+        for (const id of ['chizuru', 'noel', 'selene', 'sylvie'] as CharacterId[]) g.state.party = meet(g.state.party, id, 10);
+        expect(g.state.party.grid.includes('sylvie')).toBe(false);   // on the bench, recruited
+        g.state.party.roster.noel.hp = 0;                              // fallen: untouched
+        g.state.party.roster.rin.hp = 2;
+        expect(g.depart({ region, condition: 'plain' }, 1)).toEqual({ ok: true });
+        plantPoint(g, spotOf(region));
+        const n = Math.ceil(trapDamage(effect, 1) / 2);
+        const before = Object.fromEntries(g.state.party.recruited.map((id) => [id, g.state.party.roster[id].hp]));
+        const r = g.gather('light');
+        expect(r).toMatchObject({ kind: 'gathered', hurt: { hp: n } });
+        for (const id of g.state.party.recruited) {
+          const was = before[id];
+          expect(g.state.party.roster[id].hp, `${region} ${id}`).toBe(was > 0 ? Math.max(1, was - n) : 0);
+        }
+        expect(g.state.party.roster.sylvie.hp).toBe(before.sylvie - n);
+      }
+      const g = ready();
+      g.state.party = meet(g.state.party, 'chizuru', 10);
+      g.state.party.roster.rin.tp = 0;
+      expect(g.depart({ region: 'storm', condition: 'plain' }, 1)).toEqual({ ok: true });
+      plantPoint(g, spotOf('storm'));
+      const before = Object.fromEntries(g.state.party.recruited.map((id) => [id, g.state.party.roster[id].tp]));
+      g.gather('full');
+      for (const id of g.state.party.recruited) {
+        const m = g.state.party.roster[id];
+        expect(m.tp, id).toBe(before[id] - Math.min(before[id], Math.floor((statsOf(m).tp * POISON_TP_LOSS_PCT) / 100)));
+      }
+      expect(g.state.party.roster.rin.tp).toBe(0);
+    }, { open: true });
+  });
+
+  it('a full pack leaves the point', () => {
+    withGatherLive(() => {
+      const g = ready();
+      expect(g.depart({ region: 'blaze', condition: 'plain' }, 1)).toEqual({ ok: true });
+      const at = plantPoint(g, spotOf('blaze'));
+      g.run!.loot.items.moss = Math.ceil(capacity(g.state.party) * 2);   // 0.5 each: the pack is full
+      g.encounter = 20;
+      const hp = g.state.party.recruited.map((id) => g.state.party.roster[id].hp);
+      const p = g.gatherPreview()!;
+      const r = g.gather('full');
+      expect(r).toEqual({ kind: 'full', item: 'ember-glass', qty: p.full.qty, need: carried(g.state, g.run!) + p.full.qty * weightOf('ember-glass') - capacity(g.state.party) });
+      expect(tileAt(g.map(), at)).toBe('gather');
+      expect(g.gatherHere()).not.toBeNull();
+      expect(g.encounter).toBe(20);
+      expect(g.state.party.recruited.map((id) => g.state.party.roster[id].hp)).toEqual(hp);
+      expect(g.state.gather).toBeUndefined();
+      expect(g.run!.loot.items['ember-glass']).toBeUndefined();
+      // something left behind: the same gather now takes it
+      delete g.run!.loot.items.moss;
+      expect(g.gather('full')).toMatchObject({ kind: 'gathered', item: 'ember-glass', qty: p.full.qty });
+      expect(g.encounter).toBe(p.full.gauge.to);
+    }, { open: true });
+  });
+
+  it('a point pays once', () => {
+    withGatherLive(() => {
+      const g = ready();
+      expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+      const at = plantPoint(g, vein);
+      expect(g.gather('full').kind).toBe('gathered');
+      const after = { loot: { ...g.run!.loot.items }, got: structuredClone(g.state.gather), encounter: g.encounter };
+      expect(g.gather('full')).toEqual({ kind: 'none' });
+      expect(g.gather('light')).toEqual({ kind: 'none' });
+      expect(g.gatherHere()).toBeNull();
+      expect(g.gatherPreview()).toBeNull();
+      expect(tileAt(g.map(), at)).toBe('floor');
+      expect({ loot: g.run!.loot.items, got: g.state.gather, encounter: g.encounter }).toEqual(after);
+      // standing elsewhere: none
+      g.pos = { ...g.map().entrance };
+      expect(g.gather('full')).toEqual({ kind: 'none' });
+    }, { open: true });
+  });
+
+  it('gathering draws nothing', () => {
+    withGatherLive(() => {
+      let draws = 0;
+      const base = mulberry32(0x6a7e);
+      const g = Game.fresh(() => { draws++; return base(); }, null);
+      for (const id of g.state.party.recruited) g.state.party.roster[id].level = 30;
+      expect(g.depart({ region: 'blaze', condition: 'plain' }, 1)).toEqual({ ok: true });
+      plantPoint(g, { ...spotOf('blaze'), rich: true });
+      const run = g.run!;
+      const watch = () => ({
+        draws, loot: run.lootDraws, memory: run.memoryDraws, trophy: run.trophyDraws, rune: run.runeDraws, forge: g.state.forgeDraws,
+        pity: structuredClone(g.state.story.pity), bestiary: structuredClone(g.state.bestiary),
+      });
+      const before = watch();
+      g.gatherHere();
+      g.gatherPreview();
+      expect(g.gather('full').kind).toBe('gathered');
+      g.gather('full');
+      expect(watch()).toEqual(before);
+    }, { open: true });
+  });
+
+  it('a reload in the labyrinth forgets the trip', () => {
+    withGatherLive(() => {
+      const mem = memoryStorage();
+      const g = ready(0x6a7e, mem);
+      expect(saveGame(mem, g.state)).toBe(true);
+      const saved = mem.getItem(SAVE_KEY);
+      const was = structuredClone(g.state);
+      expect(g.depart({ region: 'blaze', condition: 'plain' }, 1)).toEqual({ ok: true });
+      plantPoint(g, spotOf('blaze'));
+      expect(g.gather('full').kind).toBe('gathered');
+      expect(g.state.gather).toBeDefined();
+      expect(g.state.party.roster.hero.hp).toBeLessThan(was.party.roster.hero.hp);
+      expect(mem.getItem(SAVE_KEY)).toBe(saved);   // nothing written in the labyrinth
+      const back = Game.boot(mulberry32(1), mem);
+      expect(back.run).toBeNull();
+      expect(back.phase).toBe('town');
+      expect(back.state.gather).toBeUndefined();
+      expect(back.state.inventory).toEqual(was.inventory);
+      expect(back.state.party.roster.hero.hp).toBe(was.party.roster.hero.hp);
+      expect(back.state.party.roster.rin.hp).toBe(was.party.roster.rin.hp);
+    }, { open: true });
+  });
+
+  it('silent while the slots are empty', () => {
+    withGatherLive(() => {
+      const g = ready();
+      g.state.party = meet(g.state.party, 'sylvie', 10);
+      expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+      plantPoint(g, { type: 'herb', item: 'stanch-herb', qty: 2 });
+      const r = g.gather('full');
+      expect(r.kind).toBe('gathered');
+      expect(r).not.toHaveProperty('remark');
+      expect(r).not.toHaveProperty('inner');
+      expect(g.run!.gatherTalked).toBeUndefined();
+    }, { open: true });
+  });
+});
+
+/** Gathering plan Task A4 (spec §6.3, §7.2, §7.3, §11 items 4 and 7): the forge's gathering work, behind the one switch. */
+describe("the forge's gathering work (gathering plan Task A4)", () => {
+  /** A game in town with gold, every material and a rare piece in the bag (uid 1); `seen` the first return. */
+  const atForge = (rng: Rng = mulberry32(0x6a7e), storage: ReturnType<typeof memoryStorage> | null = memoryStorage(), seen = true): Game => {
+    const g = Game.fresh(rng, storage);
+    g.state.gold = 1_000_000;
+    g.state.inventory = Object.fromEntries(Object.keys(MATERIALS).map((m) => [m, 50]));
+    g.state.bag = [{ ...plainItem('moss-charm', 1), rarity: 'rare', ilvl: 20, affixes: [{ key: 'str', value: 5 }, { key: 'hp', value: 30 }, { key: 'spd', value: 2 }] }];
+    g.state.nextUid = 100;
+    if (seen) g.state.story.seen.push('first-return');
+    return g;
+  };
+  const savedGather = (mem: ReturnType<typeof memoryStorage>) => JSON.parse(mem.getItem(SAVE_KEY)!).gather;
+
+  it("the forge's gathering work is shut while gathering is", () => {
+    const locked = { ok: false, reason: 'locked' };
+    const shut = (g: Game) => {
+      const before = structuredClone(g.state);
+      expect(g.craftTool(1)).toEqual(locked);
+      expect(g.craftItem('potion', 1, true)).toEqual(locked);
+      expect(g.reroll(1, 1, { swap: true, mat: 'scrap-iron' })).toEqual(locked);
+      expect(g.state).toEqual(before);
+      // the forge's own work is as it was
+      expect(g.craftItem('potion', 1).ok).toBe(true);
+      expect(g.reroll(1, 1, { swap: true, mat: 'iron-shard' }).ok).toBe(true);
+    };
+    shut(atForge());                                                       // off
+    withGatherLive(() => shut(atForge(undefined, undefined, false)));      // on, before the first return
+    withGatherLive(() => shut(atForge()), { open: false });                // on, held shut
+    withGatherLive(() => {
+      const mem = memoryStorage();
+      const g = atForge(mulberry32(0x6a7e), mem);
+      expect(g.craftTool(1)).toMatchObject({ ok: true, out: { level: 1 } });
+      expect(savedGather(mem)).toEqual({ tool: 1, got: {} });             // made and saved at once
+      expect(g.craftTool(2)).toMatchObject({ ok: true, out: { level: 2 } });
+      expect(savedGather(mem)).toEqual({ tool: 2, got: {} });
+      expect(g.craftTool(2)).toEqual({ ok: false, reason: 'invalid' });
+      const potions = g.state.inventory.potion ?? 0;
+      expect(g.craftItem('potion', 3, true)).toMatchObject({ ok: true, out: { id: 'potion', qty: 3 } });
+      expect(g.state.inventory.potion).toBe(potions + 3);
+      expect(JSON.parse(mem.getItem(SAVE_KEY)!).inventory.potion).toBe(potions + 3);
+      const r = g.reroll(1, 1, { swap: true, mat: 'scrap-iron' });
+      expect(r.ok).toBe(true);
+      expect(JSON.parse(mem.getItem(SAVE_KEY)!).inventory['scrap-iron']).toBe(g.state.inventory['scrap-iron']);
+      // out of town: the forge's own refusal
+      expect(g.depart({ region: 'mainline', condition: 'plain' }, 1)).toEqual({ ok: true });
+      expect(g.craftTool(1)).toEqual({ ok: false, reason: 'phase' });
+    });
+  });
+
+  it("the forge's gathering work draws nothing", () => {
+    withGatherLive(() => {
+      let draws = 0;
+      const base = mulberry32(0x6a7e);
+      const g = atForge(() => { draws++; return base(); });
+      const watch = () => ({ draws, forge: g.state.forgeDraws });
+      const before = watch();
+      expect(g.craftTool(1).ok).toBe(true);
+      expect(g.craftTool(2).ok).toBe(true);
+      expect(g.craftItem('phoenix', 2, true).ok).toBe(true);
+      expect(watch()).toEqual(before);
+      // a spot's pin draws from the forge's stream exactly as the region material's pin does, and nothing else
+      const twin = atForge(mulberry32(1));
+      twin.state.forgeDraws = g.state.forgeDraws;
+      const viaSpot = g.reroll(1, 1, { swap: true, mat: 'scrap-iron' });
+      const viaMat = twin.reroll(1, 1, { swap: true, mat: 'iron-shard' });
+      expect(viaSpot.ok && viaMat.ok).toBe(true);
+      expect(g.state.forgeDraws - before.forge).toBe(twin.state.forgeDraws - before.forge);
+      expect(g.state.forgeDraws - before.forge).toBe(2);
+      expect(draws).toBe(before.draws);
+    }, { open: true });
+  });
 });

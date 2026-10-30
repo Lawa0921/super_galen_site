@@ -10,7 +10,7 @@ import type { Portal } from './dungeon/run';
 import { statsOf } from './party';
 import { saveGame, SAVE_KEY } from './save';
 import { sell } from './town';
-import { memoryStorage, withGuildLive, withGuildOff } from './testing';
+import { memoryStorage, withGatherLive, withGuildLive, withGuildOff } from './testing';
 import type { GameState } from './state';
 import type { Pos } from './types';
 
@@ -56,6 +56,10 @@ interface TownRun {
   depths: number[];
   /** `state.guild` after each step (undefined while there is none). */
   guilds: unknown[];
+  /** Gathering plan ruling 16: `state.gather` after each step; each departure's `run.gather`; the floors (`run:depth`) with a point. */
+  gathers: unknown[];
+  departs: boolean[];
+  points: string[];
 }
 
 /** The script. `strip`: each step's text leaves `guild` out (ruling 15's third case). */
@@ -63,10 +67,27 @@ function townScript(opts: { strip?: boolean } = {}): TownRun {
   const steps: TownRun['steps'] = [];
   const depths: number[] = [];
   const guilds: unknown[] = [];
+  const gathers: unknown[] = [];
+  const departs: boolean[] = [];
+  const points = new Set<string>();
+  let runs = 0;
   const g = Game.fresh(mulberry32(SEED), memoryStorage());
+  /** The floors of this run made so far that hold a point (gathering plan ruling 16). */
+  const look = () => {
+    if (!g.run) return;
+    for (const [d, f] of g.run.floors) if (f.contents.some((c) => c.kind === 'gather')) points.add(`${runs}:${d}`);
+  };
   const note = (step: string) => {
+    look();
     steps.push({ step, sha: createHash('sha256').update(saveText(g.state, !!opts.strip)).digest('hex') });
     guilds.push((g.state as GameState & { guild?: unknown }).guild);
+    gathers.push(g.state.gather);
+  };
+  /** Sets out (and notes whether the run was flagged for gathering). */
+  const depart = (p: Portal) => {
+    expect(g.depart(p, 1)).toEqual({ ok: true });
+    runs++;
+    departs.push(g.run!.gather === true);
   };
   /** Fights the battle out one round at a time: everyone standing attacks the first foe standing. */
   const fight = () => {
@@ -99,7 +120,7 @@ function townScript(opts: { strip?: boolean } = {}): TownRun {
   // A level-1 pair cannot beat the depth-3 boss, so the pair sets out at LEVEL (as the story L dive does).
   for (const id of g.state.party.recruited) g.state.party.roster[id].level = LEVEL;
   heal();
-  expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+  depart(MAIN);
   depths.push(g.floor);
   note('depart the main road');
   down();
@@ -125,7 +146,7 @@ function townScript(opts: { strip?: boolean } = {}): TownRun {
   note('the orik fragment given back');
   const region = g.state.dungeon.portals.find((p) => p.region !== 'mainline')!;
   heal();
-  expect(g.depart(region, 1)).toEqual({ ok: true });
+  depart(region);
   depths.push(g.floor);
   note(`depart ${region.region}`);
   down();
@@ -135,7 +156,7 @@ function townScript(opts: { strip?: boolean } = {}): TownRun {
   note('the return lamp home');
   g.openBoard();   // Task A7: the guild's board; shut, it does nothing
   note('the guild opened');
-  return { steps, depths, guilds };
+  return { steps, depths, guilds, gathers, departs, points: [...points] };
 }
 
 describe('the guild board leaves the town as it was (guild quests plan Task A0)', () => {
@@ -177,6 +198,20 @@ describe('the guild board leaves the town as it was (guild quests plan Task A0)'
     const at = now.steps.findIndex((x) => x.step === 'home after the act-one clear');
     expect(now.guilds.slice(0, at).every((x) => x === undefined)).toBe(true);
     expect(now.guilds.slice(at).every((x) => x !== undefined)).toBe(true);
+  });
+
+  // Gathering plan Task A3 (rulings 16, 20; review H1, M4): gathering held open, so the script's floors really hold points;
+  // never gathered, the town is the same town, against the same fixture. Stacked as guild PR D left the first case: the
+  // board is up, so each step leaves `guild` out (`strip`), and the board comes with the act-one clear's return.
+  it('the town as it was, with gathering open but unused', () => {
+    const now = withGatherLive(() => townScript({ strip: true }), { open: true });
+    expect(now.steps).toEqual(JSON.parse(readFileSync(FIXTURE, 'utf8')));
+    const at = now.steps.findIndex((x) => x.step === 'home after the act-one clear');
+    expect(now.guilds.slice(0, at).every((x) => x === undefined)).toBe(true);
+    expect(now.guilds.slice(at).every((x) => x !== undefined)).toBe(true);
+    expect(now.gathers.every((x) => x === undefined)).toBe(true);
+    expect(now.departs).toEqual([true, true]);
+    expect(now.points.length, 'the floors walked held points').toBeGreaterThan(0);
   });
 
   it('the script stays in the first band', () => {
