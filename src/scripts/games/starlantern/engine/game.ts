@@ -45,6 +45,8 @@ import { DAWN_BACKLOG, dawnMemory, eveMemories, nextBeat, orderNight, planNight,
 import { SPRING_AFTER, dayOf, nextDay } from './calendar';
 import { newGame, type GameState, type GuildState } from './state';
 import { guildOpen } from '../data/guild';
+import { gatherOpen, type GatherMode, type GatherType, type SpotRule } from '../data/gather';
+import { innerFor, outcome, remarkFor, ruleOf, spotGather, spotHurt, type GatherLine, type GatherOutcome, type StepRate } from './gather';
 import { abandon as guildAbandon, accept as guildAccept, postBoard, progressOf, questSnapshot, questsNewlyDone, turnIn as guildTurnIn, type TurnIn } from './guild';
 import { craftBase, craftItem, craftOwnUnique, craftSet } from './forge/craft';
 import type { ForgeFail, RerollOpts } from './forge/cost';
@@ -86,6 +88,18 @@ export type MoveResult =
   | FullResult
   /** An opened vault: its materials always; its gear in `gear`, or in `waiting` when it does not fit (see `chest`). */
   | ({ kind: 'vault'; loot: Record<string, number>; gear: ItemInstance[]; waiting?: FullResult; fragments?: FragmentGain[] } & RuneFind);
+/**
+ * What `Game.gather` did (gathering spec §5.4): nothing (no point here, or gathering shut); a full pack, the point left as it
+ * was; or the goods gathered, the gauge moved, the land's toll taken (`toll` each member's, `hurt` the rule's own number:
+ * the HP each lost before the floor of 1, or the largest TP drain), and a words slot to say when one has words.
+ */
+export type GatherResult =
+  | { kind: 'none' }
+  | { kind: 'full'; item: string; qty: number; need: number }
+  | {
+    kind: 'gathered'; item: string; qty: number; gauge: GatherOutcome['gauge']; danger: GatherOutcome['danger'];
+    toll?: GatherOutcome['toll']; hurt?: { hp?: number; tp?: number }; remark?: GatherLine; inner?: GatherLine;
+  };
 /** A rune paid as gold: the player already owned RUNE_STACK of it (plan 8f ruling 7). The gold went straight to `state.gold`. */
 export interface RuneGold { rune: RuneRef; gold: number }
 /** The rune a chest or vault held (plan 8f): `rune` went into the bag, or `runeGold` says it was paid as gold. */
@@ -325,6 +339,8 @@ export class Game {
     const refused = this.departCheck(portal, startDepth);
     if (refused) return { ok: false, reason: refused };
     this.run = newRun(Math.floor(this.rng() * 2 ** 31), portal.region, portal.condition, startDepth, rescuesFor(portal.region, this.state.party.recruited), this.tier());
+    // Gathering spec §0 item 14 (review M2): flagged here, before `this.map()` below makes and caches the start floor.
+    if (gatherOpen(this.state)) this.run.gather = true;
     this.tiersAtDepart = Object.fromEntries(this.state.party.recruited.filter((c): c is Companion => c !== 'hero').map((c) => [c, bondTier(this.state.party.roster[c])]));
     this.pending = [];
     this.eve = [];
@@ -466,13 +482,21 @@ export class Game {
 
   /** An ordinary step: fills the encounter gauge and may start a battle. Event tiles never come through here, so one step triggers one thing. */
   private walk(): MoveResult {
-    const mod = (hasPassive(this.state.party, 'encounterDown') ? 0.5 : 1) * CONDITIONS[this.run!.condition].encounterMul;
+    const mod = this.stepMod();
     const f = FLOORS[this.terrain() - 1];
     const g = advance(this.encounter, this.rng, f.rate, mod);
     this.encounter = g.value;
     if (!g.encounter) return { kind: 'moved' };
     this.startBattle(encounterGroup(this.run!.region, this.floor, this.rng), false);
     return { kind: 'battle' };
+  }
+
+  /**
+   * How fast an ordinary step fills the gauge: halved by stealth on the field, times this trip's condition. The gathering
+   * preview reads the same number (gathering spec §5.4); pinned by game.test.ts "walking as it is today".
+   */
+  private stepMod(): number {
+    return (hasPassive(this.state.party, 'encounterDown') ? 0.5 : 1) * CONDITIONS[this.run!.condition].encounterMul;
   }
 
   private spotId(at: Pos = this.pos): string {
@@ -512,6 +536,83 @@ export class Game {
     }
     this.map().tiles[this.pos.y][this.pos.x] = 'floor';
     return { kind: 'trap', effect, amount, tp };
+  }
+
+  /** The gathering point under the party (gathering spec §5.4): only on the map, on a trip flagged for gathering. */
+  private gatherContent(): Content | undefined {
+    if (!this.run?.gather) return undefined;
+    return this.contentAt('gather', this.pos);
+  }
+
+  /** `walk()`'s multiplier and this floor's rate: what the next ordinary step would add (the preview's `next`). */
+  private gatherStep(): StepRate {
+    return { mod: this.stepMod(), rate: FLOORS[this.terrain() - 1].rate };
+  }
+
+  /** Gathering spec §10.2: the point the party stands on, for the hint; null when none (or gathering is shut). Reads only. */
+  gatherHere(): { type: GatherType; item: string; rich: boolean; rule?: SpotRule } | null {
+    const c = this.gatherContent();
+    if (!c?.gather) return null;
+    const rule = ruleOf(c);
+    return { type: c.gather.type, item: c.gather.item, rich: c.gather.rich === true, ...(rule ? { rule: rule.rule } : {}) };
+  }
+
+  /**
+   * Gathering spec §5.4, §10.3: both ways of gathering the point under the party, worked out in full by the same function
+   * `gather` uses, so the preview is always the outcome; null when there is no point here. Draws nothing.
+   */
+  gatherPreview(): { light: GatherOutcome; full: GatherOutcome; rule?: SpotRule } | null {
+    const c = this.gatherContent();
+    if (!c?.gather) return null;
+    const step = this.gatherStep();
+    const rule = ruleOf(c);
+    return {
+      light: outcome(this.state, c, 'light', this.encounter, step, this.floor),
+      full: outcome(this.state, c, 'full', this.encounter, step, this.floor),
+      ...(rule ? { rule: rule.rule } : {}),
+    };
+  }
+
+  /**
+   * Gathering spec §5.4: gathers the point under the party, lightly or fully. The outcome is worked out first; a pack that
+   * cannot take the goods leaves everything as it was (`full`). Otherwise, at once: the point goes (its cell plain floor),
+   * the goods go into the run pack, the gauge takes the noise, the land takes its toll, and `gather.got` counts them. Draws
+   * nothing, and never makes the trip count for the guild (`worked`). A words slot is said only when it has words.
+   */
+  gather(mode: GatherMode): GatherResult {
+    const c = this.gatherContent();
+    if (!c?.gather || (mode !== 'light' && mode !== 'full')) return { kind: 'none' };
+    const run = this.run!;
+    const o = outcome(this.state, c, mode, this.encounter, this.gatherStep(), this.floor);
+    const item = c.gather.item;
+    const short = this.shortBy({ [item]: o.qty });
+    if (short > 0) return { kind: 'full', item, qty: o.qty, need: short };
+    const remark = remarkFor(this.state, run, c);
+    const inner = innerFor(this.state, item);
+    const here = floorOf(run, this.floor);
+    here.contents.splice(here.contents.indexOf(c), 1);
+    this.map().tiles[c.at.y][c.at.x] = 'floor';
+    this.grant(item, o.qty);
+    this.encounter = o.gauge.to;
+    const rule = ruleOf(c);
+    let hurt: { hp?: number; tp?: number } | undefined;
+    if (o.toll && rule) {
+      let tp = 0;
+      for (const [id, t] of Object.entries(o.toll) as [CharacterId, { hp?: number; tp?: number }][]) {
+        const m = this.state.party.roster[id];
+        m.hp -= t.hp ?? 0;
+        m.tp -= t.tp ?? 0;
+        tp = Math.max(tp, t.tp ?? 0);
+      }
+      hurt = rule.hurt ? { hp: spotHurt(rule.hurt, this.floor) } : { tp };
+    }
+    const g = (this.state.gather ??= { got: {} });
+    g.got[item] = (g.got[item] ?? 0) + o.qty;
+    if (remark) run.gatherTalked = true;
+    return {
+      kind: 'gathered', item, qty: o.qty, gauge: o.gauge, danger: o.danger,
+      ...(o.toll ? { toll: o.toll } : {}), ...(hurt ? { hurt } : {}), ...(remark ? { remark } : {}), ...(inner ? { inner } : {}),
+    };
   }
 
   /** Heal the party's HP and TP by 30% of their maximums; once per run, standing on a fountain. */
@@ -1673,6 +1774,8 @@ export class Game {
   private revealHere(): void {
     const run = this.run!;
     run.explored[this.floor] = reveal(run.explored[this.floor] ?? [], this.map(), this.pos, CONDITIONS[run.condition].sight);
+    // Gathering spec §5.3: a shade spot seen from next to it stays marked for the trip. Reads only; draws nothing.
+    if (run.gather) spotGather(run, this.floor, this.pos, run.explored[this.floor]);
   }
 
   private changeFloor(floor: number): { kind: 'floor'; floor: number } {

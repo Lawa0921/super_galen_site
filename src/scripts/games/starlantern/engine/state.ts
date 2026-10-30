@@ -120,6 +120,15 @@ export interface QuestOffer {
 }
 /** A note taken (spec §9.3): where the count stood (`base`), and for a sweep the kinds it counts, frozen (plan ruling 9). */
 export interface ActiveQuest extends QuestOffer { base: number; ids?: string[] }
+/**
+ * Gathering spec §0 item 16: the gathering tool made at the forge (none, 1 or 2) and how many of each gathered good was ever
+ * gathered (`got`, the guild's `knownMaterial` and the inner voice read it). Absent until either is written.
+ */
+export interface GatherState {
+  tool?: 1 | 2;
+  got: Record<string, number>;
+}
+
 /** The guild board (spec §9.3); absent until the first board is posted, and never written while the board is shut. */
 export interface GuildState {
   /** The day this board was posted on (its stream's key). */
@@ -183,6 +192,11 @@ export interface GameState {
    * board is posted; unknown targets are dropped on load (`repairGuild`).
    */
   guild?: GuildState;
+  /**
+   * Gathering spec §0 item 16: the tool and what was gathered. Absent while gathering is shut (`gatherOpen`) and until the
+   * first gathering or tool; unknown goods are dropped on load (`repairGather`).
+   */
+  gather?: GatherState;
 }
 
 /**
