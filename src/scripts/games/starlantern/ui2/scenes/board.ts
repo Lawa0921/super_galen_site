@@ -1,4 +1,5 @@
 import { ENEMIES } from '../../data/enemies';
+import { gatherTypeOf, spotRegionOf } from '../../data/gather';
 import { RANKS, type QuestKind } from '../../data/guild';
 import { GUILD_TEXT, type NoteKey } from '../../data/guild.zh-TW';
 import { MATERIALS } from '../../data/materials';
@@ -48,13 +49,16 @@ const TABS: readonly Tab[] = ['board', 'active', 'rank'];
 /** The main road as a place in a row or a note: 「本道」. */
 const placeName = (r: RegionId): string => (r === 'mainline' ? B.main : REGIONS[r].name);
 
-/** The land a quest is about, for its note's {place} and its row's icon: a scout's or sweep's own, a foe's, a material's. */
+/**
+ * The land a quest is about, for its note's {place} and the detail's land line: a scout's or sweep's own, a foe's, a
+ * region material's, a gathered spot's (gathering spec §8.2); an ordinary point's goods, the main road.
+ */
 function questLand(q: QuestOffer): RegionId {
   switch (q.kind) {
     case 'scout': case 'sweep': return q.target as RegionId;
     case 'hunt': return ENEMIES[q.target]?.home ?? 'mainline';
     case 'bounty': return bountyLine(q.target)?.region ?? 'mainline';
-    case 'deliver': return (Object.keys(REGIONS) as RegionId[]).find((r) => REGIONS[r].material === q.target) ?? 'mainline';
+    case 'deliver': return (Object.keys(REGIONS) as RegionId[]).find((r) => REGIONS[r].material === q.target) ?? spotRegionOf(q.target) ?? 'mainline';
   }
 }
 
@@ -72,9 +76,13 @@ function targetText(q: QuestOffer): string {
 /** A quest's row label: 【討伐】苔蘚史萊姆 ×6. */
 export const questLabel = (q: QuestOffer): string => B.row(B.kinds[q.kind], targetText(q));
 
-/** Which note a quest posts (data/guild.zh-TW.ts). */
+/** Which note a quest posts (data/guild.zh-TW.ts; a gathered good's by its point, gathering plan ruling 13). */
 function noteKey(q: QuestOffer): NoteKey {
   if (q.kind === 'bounty') return bountyLine(q.target)?.warden ? 'warden' : 'boss';
+  if (q.kind === 'deliver' && MATERIALS[q.target].kind === 'gather') {
+    const t = gatherTypeOf(q.target);
+    return t === 'herb' || t === 'fungus' ? 'deliverPantry' : 'deliverOre';
+  }
   if (q.kind === 'deliver') return MATERIALS[q.target].kind as NoteKey;
   return q.kind;
 }

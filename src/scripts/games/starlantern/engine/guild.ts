@@ -1,10 +1,11 @@
 import { ENEMIES } from '../data/enemies';
+import { gatherOpen, spotRegionOf } from '../data/gather';
 import { MATERIALS } from '../data/materials';
 import { LEGACY_ENEMY_IDS, MAINLINE_BOSSES, MAINLINE_WARDENS, REGION_BOSSES, REGION_WARDENS, TREASURE, listedEnemy } from '../data/monsters';
 import { REGIONS, type RegionId } from '../data/regions';
 import {
-  ACTIVE_MAX, BOARD_MAX, BOUNTY_SHARDS, DELIVER_GIVER, DELIVER_KINDS, GIVERS, GUILD_MAX, GUILD_RUNES, GUILD_SALT, HUNT_N, KIND_GIVER, MERIT,
-  QUEST_KINDS, RANKS, REWARD, SCOUT_FINALE_CAP, SCOUT_K, SWEEP_N, WEIGHTS, deliverQty, guildOpen, runeTierAt, type DeliverKind, type GiverId,
+  ACTIVE_MAX, BOARD_MAX, BOUNTY_SHARDS, DELIVER_KINDS, GIVERS, GUILD_MAX, GUILD_RUNES, GUILD_SALT, HUNT_N, KIND_GIVER, MERIT,
+  QUEST_KINDS, RANKS, REWARD, SCOUT_FINALE_CAP, SCOUT_K, SWEEP_N, WEIGHTS, deliverGiver, deliverQty, guildOpen, runeTierAt, type DeliverKind, type GiverId,
   type QuestKind,
 } from '../data/guild';
 import { ITEMS } from '../data/items';
@@ -129,7 +130,8 @@ export function scoutPool(s: GameState): ScoutCandidate[] {
 /**
  * Plan ruling 8 (review H1): a delivery's goods the party knows. A monster material or a trophy: some foe that is not
  * excluded, felled at least once, drops it, and its owner (when it has one) is not excluded. A region material: its region
- * gone into (depth 2). Nothing of any other kind.
+ * gone into (depth 2). A gathered good (gathering spec §8.1): gathered at least once, while gathering is open. Nothing of
+ * any other kind.
  */
 export function knownMaterial(s: GameState, id: string): boolean {
   return known(s, id, droppedBy(s));
@@ -145,6 +147,7 @@ function known(s: GameState, id: string, dropped: Set<string>): boolean {
   const m = MATERIALS[id];
   if (!m || !DELIVER_KINDS.includes(m.kind)) return false;
   if (m.kind === 'region') return REGION_IDS.some((r) => REGIONS[r].material === id && s.dungeon.reached[r] >= 2);
+  if (m.kind === 'gather') return gatherOpen(s) && (s.gather?.got[id] ?? 0) >= 1;
   if (m.owner && excluded(m.owner)) return false;
   return dropped.has(id);
 }
@@ -295,7 +298,7 @@ function noteFor(s: GameState, rng: Rng, id: string, kind: QuestKind, target: st
     case 'deliver': {
       const m = MATERIALS[target];
       const n = deliverQty(m.price, m.kind as DeliverKind);
-      return { ...base, giver: DELIVER_GIVER[m.kind as DeliverKind], n, depth: questDepth('deliver', target, s), reward: reward(REWARD.deliver(n, m.price)), merit: MERIT.deliver };
+      return { ...base, giver: deliverGiver(target), n, depth: questDepth('deliver', target, s), reward: reward(REWARD.deliver(n, m.price)), merit: MERIT.deliver };
     }
   }
 }
@@ -426,14 +429,14 @@ export function questsNewlyDone(snap: Record<string, number>, s: GameState): str
 
 /**
  * The region a quest is about (plan ruling 12): a sweep's or scout's own, a hunt's foe's home, a bounty's table, a region
- * material's region; none otherwise.
+ * material's region, a gathered spot's region (gathering spec §8.2); none otherwise.
  */
 function questRegion(q: QuestOffer): RegionId | undefined {
   switch (q.kind) {
     case 'sweep': case 'scout': return q.target as RegionId;
     case 'hunt': return ENEMIES[q.target]?.home;
     case 'bounty': return bountyLine(q.target)?.region;
-    case 'deliver': return REGION_IDS.find((r) => REGIONS[r].material === q.target);
+    case 'deliver': return REGION_IDS.find((r) => REGIONS[r].material === q.target) ?? spotRegionOf(q.target);
   }
 }
 

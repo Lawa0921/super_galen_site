@@ -1,5 +1,7 @@
 import type { GameState } from '../engine/state';
 import type { MaterialKind } from '../engine/types';
+import { gatherTypeOf } from './gather';
+import { MATERIALS } from './materials';
 import type { RuneId, RuneTier } from './runes';
 
 /**
@@ -28,14 +30,25 @@ export const QUEST_KINDS: readonly QuestKind[] = ['hunt', 'sweep', 'bounty', 'sc
 export type GiverId = 'anna' | 'marta' | 'glen' | 'orik' | 'doran';
 export const GIVERS: readonly GiverId[] = ['anna', 'marta', 'glen', 'orik', 'doran'];
 
-/** The materials a delivery may ask for (spec §5.5): only ever found in the labyrinth. */
-export const DELIVER_KINDS: readonly MaterialKind[] = ['monster', 'region', 'trophy'];
-export type DeliverKind = 'monster' | 'region' | 'trophy';
+/** The materials a delivery may ask for (spec §5.5): only ever found in the labyrinth; gathered goods since gathering C1. */
+export const DELIVER_KINDS: readonly MaterialKind[] = ['monster', 'region', 'trophy', 'gather'];
+export type DeliverKind = 'monster' | 'region' | 'trophy' | 'gather';
 
 /** Spec §7.1: who posts each kind; a delivery's giver goes by the material's kind (`DELIVER_GIVER`). */
 export const KIND_GIVER: Record<Exclude<QuestKind, 'deliver'>, GiverId> = { hunt: 'marta', sweep: 'glen', bounty: 'anna', scout: 'glen' };
 /** Orik sells monster materials on; Doran forges with region materials and trophies. */
-export const DELIVER_GIVER: Record<DeliverKind, GiverId> = { monster: 'orik', region: 'doran', trophy: 'doran' };
+export const DELIVER_GIVER: Record<Exclude<DeliverKind, 'gather'>, GiverId> = { monster: 'orik', region: 'doran', trophy: 'doran' };
+
+/**
+ * Who posts a delivery of `id` (gathering spec §8.2): the three old kinds by DELIVER_GIVER; a gathered good by its point,
+ * herbs and mushrooms Marta's, ore, crystal and the spots Doran's.
+ */
+export function deliverGiver(id: string): GiverId {
+  const kind = MATERIALS[id].kind;
+  if (kind !== 'gather') return DELIVER_GIVER[kind as Exclude<DeliverKind, 'gather'>];
+  const t = gatherTypeOf(id);
+  return t === 'herb' || t === 'fungus' ? 'marta' : 'doran';
+}
 
 export type RankId = 'novice' | 'lamp1' | 'lamp2' | 'lamp3' | 'lamp4';
 export interface RankDef {
