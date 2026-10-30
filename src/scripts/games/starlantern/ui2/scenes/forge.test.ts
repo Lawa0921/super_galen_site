@@ -4,12 +4,15 @@ import { artMissing, artSrc } from '../lateArt';
 import { T } from '../../data/text.zh-TW';
 import { Game } from '../../engine/game';
 import type { ForgeResult } from '../../engine/forge/cost';
-import { constRng, memoryStorage, withRosterOnly } from '../../engine/testing';
+import { constRng, memoryStorage, withGatherLive, withRosterOnly } from '../../engine/testing';
+import { GATHER_PIN_QTY, GATHER_RECIPES, TOOL_LEVELS } from '../../data/gather';
+import { GATHER_TEXT } from '../../data/gather.zh-TW';
+import { ITEMS } from '../../data/items';
 import type { ItemInstance, Rarity } from '../../engine/types';
 import { NO_ART, type ArtIndex } from '../../render/textures';
 import { art } from '../../render/artPaths';
 import { CHARACTERS } from '../../data/characters';
-import { ENHANCE_COST, ENHANCE_MAX, ENHANCE_STEP, ENHANCE_SUCCESS, REGION_AFFIX_GROUP } from '../../data/forge';
+import { CONSUMABLE_RECIPES, ENHANCE_COST, ENHANCE_MAX, ENHANCE_STEP, ENHANCE_SUCCESS, REGION_AFFIX_GROUP } from '../../data/forge';
 import { EQUIPMENT } from '../../data/equipment';
 import { AFFIXES } from '../../data/gear';
 import { enhanceCost, forgeRng, rerollCost, rerollRange, swapPool } from '../../engine/forge/cost';
@@ -1360,4 +1363,147 @@ describe('the rune tab (plan 8f Task 5)', () => {
     expect(t.line()).toBe('袋子裡沒有可合成的符文。三個同名同階的符文，可以合成一個高一階的符文。');
   });
 });
-
+
+/** Gathering plan Task B3 (spec §10.5, rulings 14 and 21): the tools, the gathered recipes and the spots' pins at the forge. */
+describe('the forge and gathered goods (gathering plan Task B3)', () => {
+  const G = T.ui2.gather;
+  const live = <R>(f: () => R): R => withGatherLive(f, { open: true });
+  /** The forge's 製作 page, as the craft page's tests open it. */
+  function craft(prep: (g: Game) => void = () => {}) {
+    const game = new Game(constRng(0.5), memoryStorage());
+    game.state.gold = 5000;
+    game.state.inventory = {};
+    prep(game);
+    const t = setup(game);
+    t.s.onAction('confirm');                // greeting
+    for (let i = 0; i < 4; i++) t.s.onAction('down');
+    t.s.onAction('confirm');                // 製作
+    const top = () => [...t.root.querySelectorAll('.slx-forge-list')].at(-1) as HTMLElement;
+    const rows = () => [...top().querySelectorAll('[role=option]')] as HTMLElement[];
+    const ids = () => rows().map((r) => r.getAttribute('data-id')!);
+    const row = (id: string) => rows().find((r) => r.getAttribute('data-id') === id)!;
+    const info = () => t.root.querySelector('.slx-info') as HTMLElement;
+    const go = (...a: Array<'up' | 'down' | 'confirm' | 'cancel'>) => a.forEach((x) => t.s.onAction(x));
+    return { ...t, game, rows, ids, row, info, go };
+  }
+  const TOOL_MATS = { 'copper-ore': 6, 'quartz-chip': 2, 'silver-ore': 6, 'deep-quartz': 2, 'ember-glass': 2, 'scrap-iron': 2 };
+
+  it('the tools row opens with gathering', () => {
+    const shut = craft();
+    expect(shut.ids()).not.toContain('tool');
+    live(() => {
+      const { ids, row, rows, go, game, line, info } = craft((g) => { g.state.inventory = { ...TOOL_MATS }; });
+      expect(ids().at(-1)).toBe('tool');
+      expect(row('tool').textContent).toContain(G.tools.row);
+      row('tool').click();
+      expect(ids()).toEqual(['tool@1', 'tool@2']);
+      expect(row('tool@1').textContent).toContain(TOOL_LEVELS[0].name);
+      expect(row('tool@1').getAttribute('aria-disabled')).toBe('false');
+      expect(row('tool@2').getAttribute('aria-disabled')).toBe('true');   // the second waits for the first
+      expect(row('tool@2').textContent).toContain(G.tools.needs(TOOL_LEVELS[0].name));
+      expect(info().textContent).toContain(G.tools.effect[1]);
+      expect(info().textContent).toContain('銅礦石 6／6');
+      go('confirm', 'up', 'confirm');      // ask, then 是
+      expect(game.state.gather?.tool).toBe(1);
+      expect(line()).toBe(G.made(TOOL_LEVELS[0].name));
+      go('confirm');
+      expect(row('tool@1').getAttribute('aria-disabled')).toBe('true');
+      expect(row('tool@1').querySelector('.slx-right')!.textContent).toBe(G.tools.made);
+      expect(row('tool@2').getAttribute('aria-disabled')).toBe('false');
+      expect(rows()).toHaveLength(2);
+    });
+  });
+
+  it('Doran is silent while his slots are empty', () => {
+    live(() => {
+      const empty = craft((g) => { g.state.inventory = { ...TOOL_MATS }; });
+      empty.row('tool').click();
+      expect(empty.talking()).toBe(false);   // nothing said on opening the tools
+      empty.go('confirm', 'up', 'confirm');
+      expect(empty.line()).toBe(G.made(TOOL_LEVELS[0].name));   // the made line alone
+      const { tools, made1 } = GATHER_TEXT.doran;
+      tools.push('「挑一把吧。」');
+      made1.push('「拿去。」');
+      try {
+        const said = craft((g) => { g.state.inventory = { ...TOOL_MATS }; });
+        said.row('tool').click();
+        expect(said.line()).toBe('「挑一把吧。」');
+        said.go('confirm');
+        said.go('confirm', 'up', 'confirm');
+        expect(said.line()).toBe(`${G.made(TOOL_LEVELS[0].name)}\n「拿去。」`);
+      } finally {
+        tools.length = 0;
+        made1.length = 0;
+      }
+    });
+  });
+
+  it('the gathered recipe sits under its item', () => {
+    const shut = craft();
+    shut.row('item').click();
+    expect(shut.ids()).toEqual(Object.keys(CONSUMABLE_RECIPES));   // as today
+    live(() => {
+      const { ids, row, go, game, info, line } = craft((g) => { g.state.inventory = { moss: 10, 'stanch-herb': 10 }; });
+      row('item').click();
+      const want = Object.keys(CONSUMABLE_RECIPES).flatMap((id) => (GATHER_RECIPES[id] ? [id, `${id}@gather`] : [id]));
+      expect(ids()).toEqual(want);
+      expect(row('potion@gather').textContent).toContain(G.altTag(ITEMS.potion.name));
+      // the gathered row takes the gathered goods
+      go('down');
+      expect(info().textContent).toContain('止血草 10／2');
+      go('confirm', 'confirm');
+      expect(game.state.inventory.potion).toBe(1);
+      expect(game.state.inventory['stanch-herb']).toBe(8);
+      expect(game.state.inventory.moss).toBe(10);
+      expect(line()).toBe(T.ui2.forge.craftedItem(ITEMS.potion.name, 1));
+      // the first row, the first recipe
+      go('confirm', 'up', 'confirm', 'confirm');
+      expect(game.state.inventory.potion).toBe(2);
+      expect(game.state.inventory.moss).toBe(8);
+      expect(game.state.inventory['stanch-herb']).toBe(8);
+    });
+  });
+
+  it('no two rows share an id', () => {
+    live(() => {
+      const t = craft((g) => { g.state.inventory = { ...TOOL_MATS }; });
+      t.row('item').click();
+      expect(new Set(t.ids()).size).toBe(t.ids().length);
+      t.go('cancel');
+      t.row('tool').click();
+      expect(new Set(t.ids()).size).toBe(t.ids().length);
+    });
+  });
+});
+
+describe('the reroll pin and spots (gathering plan Task B3)', () => {
+  const sword = () => gear(1, 'iron-sword', 'rare', { ilvl: 30, affixes: [{ key: 'crit', value: 3 }, { key: 'atk', value: 12 }] });
+  function methods(inv: Record<string, number>) {
+    const game = new Game(constRng(0.5), memoryStorage());
+    game.state.bag = [sword()];
+    game.state.gold = 1000;
+    game.state.inventory = { 'essence-rare': 5, 'blaze-core': 2, ...inv };
+    const t = setup(game);
+    t.s.onAction('confirm');
+    t.s.onAction('down'); t.s.onAction('down');
+    t.s.onAction('confirm');                // 重鑄
+    t.s.onAction('confirm'); t.s.onAction('confirm');   // the sword, its first affix
+    const top = () => [...t.root.querySelectorAll('.slx-forge-list')].at(-1) as HTMLElement;
+    const rows = () => [...top().querySelectorAll('[role=option]')] as HTMLElement[];
+    const ids = () => rows().map((r) => r.getAttribute('data-id')!);
+    return { ...t, game, rows, ids };
+  }
+  const regionPins = Object.keys(REGION_AFFIX_GROUP).map((m) => `mat:${m}`);
+
+  it('a spot joins the pin list at two', () => {
+    expect(methods({ 'ember-glass': 2 }).ids().filter((i) => i.startsWith('mat:'))).toEqual(regionPins);   // shut: as today
+    withGatherLive(() => {
+      const one = methods({ 'ember-glass': 1, 'rime-moss': 2, 'scrap-iron': 3 });
+      // region materials first, then the spots held two or more, in the regions' order
+      expect(one.ids().filter((i) => i.startsWith('mat:'))).toEqual([...regionPins, 'mat:rime-moss', 'mat:scrap-iron']);
+      const r = one.rows().find((x) => x.getAttribute('data-id') === 'mat:rime-moss')!;
+      expect(r.textContent).toContain(T.ui2.forge.rerollWith(`霜苔${T.ui2.gather.pinQty(GATHER_PIN_QTY)}`, T.forge.group.frost));
+      expect(new Set(one.ids()).size).toBe(one.ids().length);   // no two rows share an id
+    }, { open: true });
+  });
+});

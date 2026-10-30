@@ -1,4 +1,7 @@
 import { BASE_RECIPES, CONSUMABLE_RECIPES, CRAFT_MAGIC_CHANCE, type Cost } from '../../data/forge';
+import { GATHER_RECIPES, TOOL_LEVELS, gatherOpen } from '../../data/gather';
+import { GATHER_TEXT } from '../../data/gather.zh-TW';
+import { toolCost } from '../../engine/forge/gatherTools';
 import { SETS, SPECIALS, codexName } from '../../data/gear';
 import { ENEMIES } from '../../data/enemies';
 import { ITEMS } from '../../data/items';
@@ -95,18 +98,37 @@ export function openCraft(h: ForgeHost): void {
 
   const newInfo = (): HTMLElement => { const info = win('slx-info slx-craft-info'); h.layerRoot.append(info); return info; };
 
+  /**
+   * A consumable row's id: the item's own for its first recipe, `<item>@gather` for its second, from gathered goods (gathering
+   * plan ruling 21), so no two rows share an id.
+   */
+  const recipeOf = (rowId: string): { id: string; alt: boolean } => {
+    const [id, how] = rowId.split('@');
+    return { id, alt: how === 'gather' };
+  };
   const consumables = () => {
     const info = newInfo();
+    const G = T.ui2.gather;
+    // Gathering spec §10.5: while gathering is open, each item with a second recipe has a row for it under its own.
+    const rowIds = () => Object.keys(CONSUMABLE_RECIPES).flatMap((id) => (gatherOpen(game.state) && GATHER_RECIPES[id] ? [id, `${id}@gather`] : [id]));
+    const nameOf = (rowId: string) => { const r = recipeOf(rowId); const name = ITEMS[r.id]?.name ?? r.id; return r.alt ? G.altTag(name) : name; };
     layer(info, {
-      rows: () => Object.keys(CONSUMABLE_RECIPES).map((id) => recipeRow(game.state, { id, label: ITEMS[id]?.name ?? id, cost: itemRecipeCost(id, 1)!, shop: priceOf(game.state, id) ?? 0 })),
-      detail: (id) => [
-        el('p', { class: 'slx-name-line', text: ITEMS[id]?.name ?? id }),
-        el('p', { class: 'slx-desc', text: ITEMS[id]?.desc ?? '' }),
-        el('p', { text: F.craftShop(priceOf(game.state, id) ?? 0) }),
-        costLine(game.state, itemRecipeCost(id, 1)!),
-      ],
+      rows: () => rowIds().map((rowId) => {
+        const r = recipeOf(rowId);
+        return recipeRow(game.state, { id: rowId, label: nameOf(rowId), cost: itemRecipeCost(r.id, 1, r.alt)!, shop: priceOf(game.state, r.id) ?? 0 });
+      }),
+      detail: (rowId) => {
+        const { id, alt } = recipeOf(rowId);
+        return [
+          el('p', { class: 'slx-name-line', text: nameOf(rowId) }),
+          el('p', { class: 'slx-desc', text: ITEMS[id]?.desc ?? '' }),
+          el('p', { text: F.craftShop(priceOf(game.state, id) ?? 0) }),
+          costLine(game.state, itemRecipeCost(id, 1, alt)!),
+        ];
+      },
       pick: (it, refresh) => {
-        const one = itemRecipeCost(it.id, 1)!;
+        const { id: itemId, alt } = recipeOf(it.id);
+        const one = itemRecipeCost(itemId, 1, alt)!;
         if (!ready(one, false)) return;
         const s = game.state;
         const afford = [...Object.entries(one.mats).map(([m, n]) => Math.floor((s.inventory[m] ?? 0) / n)), ...(one.gold > 0 ? [Math.floor(s.gold / one.gold)] : [])];
@@ -114,7 +136,7 @@ export function openCraft(h: ForgeHost): void {
           change: () => h.ctx.sfx.cursor(),
           done: (n) => {
             h.pop();
-            const r = game.craftItem(it.id, n);
+            const r = game.craftItem(itemId, n, alt);
             if (r.ok) refresh();
             h.afterAct(r, (out) => [F.craftedItem(ITEMS[out.id]?.name ?? out.id, out.qty)]);
           },
@@ -245,10 +267,56 @@ export function openCraft(h: ForgeHost): void {
     });
   };
 
-  // The own uniques' category is there only while some owner is live (nothing changes before the roster goes live).
-  const catIds = ownUniques().length ? (['item', 'base', 'set', 'own'] as const) : (['item', 'base', 'set'] as const);
-  const cats = new MenuView(new Menu(catIds.map((id) => ({ id, label: F.craftCats[id] }))), {
-    pick: (it) => (it.id === 'item' ? consumables() : it.id === 'base' ? bases() : it.id === 'own' ? owns() : sets()),
+  /**
+   * 採集工具 (gathering spec §6.3, §10.5): the two tools, `tool@1` and `tool@2`. One made reads 已打造 and is greyed out; the
+   * second is greyed out with why until the first is made. Doran says his slot's line only when it has words.
+   */
+  const tools = () => {
+    const info = newInfo();
+    const G = T.ui2.gather;
+    const levelOf = (rowId: string) => Number(rowId.split('@')[1]) as 1 | 2;
+    const held = () => game.state.gather?.tool ?? 0;
+    layer(info, {
+      rows: () => TOOL_LEVELS.map((t): MenuItem => {
+        const id = `tool@${t.level}`;
+        if (held() >= t.level) return { id, label: t.name, disabled: true, right: G.tools.made, note: G.tools.made };
+        if (held() !== t.needs) {
+          const why = G.tools.needs(TOOL_LEVELS.find((x) => x.level === t.needs)!.name);
+          return { id, label: t.name, disabled: true, right: why, note: why };
+        }
+        return recipeRow(game.state, { id, label: t.name, cost: t.cost });
+      }),
+      detail: (rowId) => {
+        const level = levelOf(rowId);
+        const t = TOOL_LEVELS.find((x) => x.level === level)!;
+        return [
+          el('p', { class: 'slx-name-line', text: t.name }),
+          el('p', { class: 'slx-desc', text: G.tools.effect[level] }),
+          ...(held() >= level ? [el('p', { text: G.tools.made })] : [costLine(game.state, toolCost(level)!)]),
+        ];
+      },
+      pick: (it, refresh) => {
+        const level = levelOf(it.id);
+        const t = TOOL_LEVELS.find((x) => x.level === level)!;
+        if (!ready(t.cost, false)) return;
+        ask([F.askCraftSet(t.name), `\n${F.craftNeed}`, ...costText(game.state, t.cost)], () => {
+          const r = game.craftTool(level);
+          if (r.ok) refresh();
+          const word = (level === 1 ? GATHER_TEXT.doran.made1 : GATHER_TEXT.doran.made2)[0];
+          h.afterAct(r, () => [word ? `${G.made(t.name)}\n${word}` : G.made(t.name)]);
+        });
+      },
+      back: () => info.remove(),
+    });
+    const word = GATHER_TEXT.doran.tools[0];
+    if (word) void h.say(word);
+  };
+
+  // The own uniques' category is there only while some owner is live (nothing changes before the roster goes live); the
+  // tools' only while gathering is open (gathering spec §10.5), last.
+  const catIds = [...(ownUniques().length ? (['item', 'base', 'set', 'own'] as const) : (['item', 'base', 'set'] as const)), ...(gatherOpen(game.state) ? (['tool'] as const) : [])];
+  const cats = new MenuView(new Menu(catIds.map((id) => ({ id, label: id === 'tool' ? T.ui2.gather.tools.row : F.craftCats[id] }))), {
+    pick: (it) => (it.id === 'item' ? consumables() : it.id === 'base' ? bases() : it.id === 'own' ? owns() : it.id === 'tool' ? tools() : sets()),
     moved: () => h.ctx.sfx.cursor(),
     cancel: () => h.pop(),
   }, 12);
