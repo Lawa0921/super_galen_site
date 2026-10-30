@@ -80,6 +80,7 @@
   - `engine/storyL.dive.test.ts`（`STORY_L_RECORD` 不准設）
   - `engine/guild.legacy.test.ts`
 - 不用 `Math.random`、不讀 `Date`；不為新內容多抽任何既有的亂數串流；`lootFragments` 與 `engine/story/expect.ts` 一個字都不改（R23）。
+- **本計畫只允許新錄兩份快照**，兩份都在任務開工時從 `origin/master` 錄：2.3 的掉落快照（`engine/story/fragments.drops.test.ts`）與 3.1 的 `engine/meetings.hash.test.ts`。它們保護的是「不改掉落」與「不改地圖」，錄好之後不准重錄。
 
 **測試與檢查**
 - **TDD**：先寫失敗的測試，確認它因為正確的理由失敗，再實作。寫作任務照下面的 W1 到 W7。
@@ -180,7 +181,8 @@
   - `S:1853`（`banter:liz-scarlet:2` 絲嘉蕾「那是某個人的記憶。請交還。」）→ 改成「上面刻著名字，就是有主人的東西。請交出去。」；
   - `S:1857`（同段摘要）→ 拿掉「交還」；
   - `S:2367`（`greet.guild.act1` 第二句「主人是誰，我一個一個問到底」）→ 改成不提主人的版本，另寫一句帶 `if.seen: 'town:marta'` 的版本放在同一池；
-  - `data/bestiary.zh-TW.ts:79`（「記憶碎片也照撿不誤」）→ 改成「亮晶晶的碎片也照撿不誤」。
+  - `data/bestiary.zh-TW.ts:79`（「記憶碎片也照撿不誤」）→ 改成「亮晶晶的碎片也照撿不誤」；
+  - `S:2059`（`people.bobby` 第二段「碎片拼出星燈的構造圖：祖先把燈造得什麼記憶都能裝」）→ 這裡的碎片指的是她的拼圖，屬於誤判，但照規則改字：「她一片一片拼出星燈的構造圖：祖先把燈造得什麼記憶都能裝。」（不用白名單，免得之後有人照抄這個句型）。
 - **2.2 再加的介面字串紅燈**：見 Task 2.2。
 
 **(b) 燈與迷宮（分說話者）**
@@ -214,8 +216,8 @@
 **夥伴那一半（只管「她不知道家鄉在下面」）**
 - 在 v6 spec §6.3 的發現之前：
   - 莎菲拉（`mem:safira:5` 之前）不准把「沙漠」和「火」或「熾焰」放在同一句；
-  - 希爾薇（`mem:sylvie:1` 之前）不准說「林子」；
-  - 千鶴（`mem:chizuru:4` 之前）不准把「神社」或「山」和「霜凍」或「冰」放在同一句；
+  - 希爾薇（`mem:sylvie:1` 之前）不准把「沼澤」和「林子」放在同一句；單說「林子」可以（`bond.zh-TW.ts:825` 必須照舊綠）；
+  - 千鶴（`mem:chizuru:4` 之前）不准把「神社」「石階」「九十九」和「霜凍」放在同一句；她以為自己凍在山上的洞窟（R41），所以「山」和「冰」可以一起說；
   - 絲嘉蕾在加入時就發現，不受限。
 - 她「還不肯說」的秘密照舊由 T17 的詞表管。
 - **2.1 已知會紅**：無（以 2.1 開工時跑出來的為準）。
@@ -313,11 +315,20 @@
   - `:1041-1042`、`:1051` 交易所的「交還鎮民碎片」「沒有可以交還的碎片。」與交還失敗訊息；
   - `:438` 「找回全部 n 片記憶後覺醒」（夥伴改成「聽完她的全部 n 段心事後覺醒」）；
   - `:591` 「需要 n 片記憶」（只用在洛恩時照舊，用在夥伴時換說法）。
-- Modify: `ui2/battleText.ts:77`、`ui2/scenes/event.ts:86`、`ui2/scenes/guild.ts:249`（用新的名字；`town:marta` 之前交還那一項不出現）。
+- **命名要在 `fragmentName` 與 `itemName` 這一層決定**，不在各個畫面各自處理：
+  - `fragmentName(id, voices)`、`itemName(id, voices)`（`ui/dom.ts:18-19`；`itemName` 找不到道具時會退到 `fragmentName`）都加一個**必填**的參數 `voices`（`town:marta` 是否看過，由呼叫者從存檔的 `story.seen` 傳進來）。
+  - 參數必填，所以 `tsc` 會把每一個呼叫處都抓出來，一個都漏不掉。
+  - 要改的呼叫處（2026-10-30 量到的）：
+    - `ui/dom.ts:18`；`ui2/loot.ts:12`；`ui2/scenes/battle.ts:717-718`；`ui2/scenes/equip.ts:45`、`:484`、`:550`；
+    - `ui2/scenes/event.ts:86`、`:185`（寶庫那一行）、`:237`、`:244`、`:251`（背包已滿的對話框）；
+    - `ui2/scenes/handbook.ts:64`；`ui2/scenes/inn.ts:104`、`:114`；`ui2/scenes/town.ts:37`；
+    - 直接用 `fragmentName` 的 `ui2/battleText.ts:77`、`ui2/scenes/guild.ts:249`。
+  - 開工時再 grep 一次 `itemName(`、`fragmentName(`，以 `tsc` 的結果為準。
+- `town:marta` 之前，交易所的交還那一項不出現（`ui2/scenes/guild.ts`）。
 - Modify: 手冊的「鎮民」分頁（`ui2/scenes/handbook.ts`；`T.ui2.handbook.tabs.town`、`status`）與 `STORY.town.*.lost`。發現之前只寫鎮民的名字與「？？？」。
 - Modify: `data/bestiary.zh-TW.ts:54`（空殼獵人：「霧把好幾位冒險者的記憶塞進了同一副身體」）。改寫成不提記憶，或綁 `seen: town:marta`。
 - 開工時先 grep 其他字串，清單存成 `<SDD>/task-2.2-inventory.md`：`記憶碎片`、`的記憶`、`交還`、`主人`、`物歸原主`，範圍是 `data/`、`ui2/`、`engine/` 的非測試檔。
-- Test: `data/story/story.test.ts`（T12(a) 的掃描範圍加上這些介面字串：在 `seen` 不含 `town:marta` 時算出來的字串）、`ui2/battleText.test.ts`、`ui2/scenes/guild.test.ts`、`ui2/scenes/handbook.test.ts`、`ui2/scenes/event.test.ts`。
+- Test: `data/story/story.test.ts`（T12(a) 的掃描範圍加上這些介面字串；鎮民碎片的名字一律**經過 `itemName(id, false)`** 算出來再掃，所以任何一個畫面都拿不到發現前的主人名字）、`ui2/battleText.test.ts`、`ui2/scenes/guild.test.ts`、`ui2/scenes/handbook.test.ts`、`ui2/scenes/event.test.ts`。
 - 已知會紅：上面每一個字串的既有斷言（照新字串改），以及 `tests/e2e/starlantern.spec.ts` 裡逐字出現的字串（先 grep）。
 
 **Steps**
@@ -329,17 +340,17 @@
 ### Task 2.3：鎮民碎片在瑪莎之前認不出（R21、R23）
 
 **Files**
-- Modify: 交還層。`engine/story/fragments.ts:71` 的 `returnFragment`：`town:marta` 看過之前，除了瑪莎以外一律回 `{ ok: false, reason: 'unknown' }`。瑪莎的交還改由 `town:marta` 場景完成：撿到之後的第一次回城，場景排入佇列（`engine/story/events.ts`），播完就算交還，給報酬與 `inn-meal`。
+- Modify: 交還層。`engine/story/fragments.ts:71` 的 `returnFragment`：`town:marta` 看過之前，除了瑪莎以外一律回 `{ ok: false, reason: 'unknown' }`。瑪莎的交還改由 `town:marta` 場景完成：**她的碎片在城鎮背包裡的第一次回城**，場景排入佇列（`engine/story/events.ts`），播完就算交還，給報酬與 `inn-meal`。
 - **不改**：`lootFragments`、`townFragmentEligible`、`engine/story/expect.ts`、`TOWN_FRAGMENTS`、`TOWN_DROP`。
 - Test: `engine/story/fragments.test.ts`、`engine/story/events.test.ts`，以及**閘門 identical 的斷言**：
-  1. 新增 `engine/story/fragments.drops.test.ts`：開工時從 `origin/master` 錄一份一千個種子的 `lootFragments` 結果到 `__fixtures__`，之後必須逐筆相同。這是本任務唯一允許錄的新快照，它保護的是「不改掉落」。
+  1. 新增 `engine/story/fragments.drops.test.ts`：開工時從 `origin/master` 錄一份一千個種子的 `lootFragments` 結果到 `__fixtures__`，之後必須逐筆相同。這是本計畫允許新錄的兩份快照之一（另一份是 3.1 的 `meetings.hash`），它保護的是「不改掉落」。
   2. 閘門 `gate: identical` 與四個逐位元測試檔。
 - 已知會紅：`engine/story/fragments.test.ts` 裡在公會交還其他鎮民碎片的測試，前置條件改成先看過 `town:marta`。
 
 **Steps**
 - [ ] 寫測試：
   - `town:marta` 前，交還安娜的碎片失敗；
-  - 撿到瑪莎的碎片後回城，`town:marta` 進佇列，播完瑪莎算交還；
+  - 瑪莎的碎片在城鎮背包裡的第一次回城，`town:marta` 進佇列，播完瑪莎算交還；
   - 之後交還其他人成功；
   - 掉落快照相同。
 - [ ] 確認紅，實作，跑綠；收尾 G。
@@ -392,14 +403,17 @@
   - 莎菲拉、希爾薇、莉茲：她的地區的門**第一次被擲出之後的第一次回城**，排入 `join:<c>`；
   - 波比：本道到第五層之後的第一次回城；
   - 播完把她加入隊伍。
-- Modify: `ui2/rescue.ts`（只給迷宮四位）；`ui2/scenes/event.ts:106` 樓梯的「這層好像還有別人。」對鎮上四位的那一格關掉。
+- Modify: `ui2/rescue.ts`（只給迷宮四位）。樓梯的「這層好像還有別人。」（`ui2/scenes/event.ts:106`）**不另外改**：房裡沒有人以後它自然不出現。
 - **迷宮裡那一格**：
-  - `rescuesFor` 照舊回傳鎮上四位的相遇房位置，地圖生成與亂數不變；
-  - 房裡的內容改成普通地板，沒有人、沒有戰鬥。
+  - `rescuesFor` 照舊回傳鎮上四位的相遇房位置，`placeRescue` 照舊呼叫（它有自己的鹽，`engine/dungeon/run.ts:126-127`），地圖生成與亂數不變；
+  - 把那一格改成普通地板是 `floorOf`（`engine/dungeon/run.ts:120-137`）的**最後一步**：在回憶光點（`:128-130`）與守關者（`:132-133`）都放好之後才做；或者直接在格子層做。這樣其他東西的位置都不會動。
 - **`favouredRegions` 不准變**：照舊把還沒加入的人的地區算進去，這樣她的門會早點擲出。
 - Test:
   - `engine/story/events.test.ts`、`ui2/rescue.test.ts`、`ui2/scenes/event.test.ts`。
-  - **新增 `engine/meetings.hash.test.ts`**：`floors.snapshot` 不涵蓋相遇，這一條補上。固定一組種子與深度，對每個地區產生地圖，把相遇房的位置與房間形狀做雜湊；開工時從 `origin/master` 錄，之後必須相同。
+  - **新增 `engine/meetings.hash.test.ts`**（本計畫允許新錄的兩份快照之一）：`floors.snapshot` 不涵蓋相遇，這一條補上。
+    - 對每個有相遇的地區與深度，用 `newRun` 並**把相遇傳進去**（`rescues` 參數照 `rescuesFor`）產生地圖，雜湊**整層**：格子與內容（房間、寶箱、敵人、回憶光點、守關者、樓梯）。
+    - 唯一遮掉的是被改成地板的那一格相遇房。
+    - 開工時從 `origin/master` 錄，之後必須相同。
   - 跑 `floors.snapshot.test.ts`、`storyL.dive.test.ts`（本道第六層原本是波比的相遇房）、閘門。任何一個動了就 BLOCKED。
 - 已知會紅：`ui2/rescue.test.ts` 與 `dungeon.test.ts` 裡鎮上四位在迷宮被救的測試，改成迷宮四位，鎮上四位改測 `join:*`。
 
@@ -407,7 +421,7 @@
 - [ ] 寫測試：
   - 熾焰之地的門第一次擲出後回城，`join:safira` 進佇列；
   - 播完她在隊伍裡；
-  - 迷宮裡她那一格是普通地板、樓梯不提示；
+  - 迷宮裡她那一格是普通地板，其他格子與內容的雜湊不變；
   - 相遇房的雜湊不變。
 - [ ] 確認紅，實作，跑綠；e2e；收尾 G。
 - [ ] Commit：`feat(starlantern): companions who join in town`
@@ -616,7 +630,7 @@
   - `:429`、`:499`、`:540`（希爾薇）、`:282`、`:345`、`:352`（莎菲拉的沙漠）、`:481`、`:488`、`:526`、`:533`、`:554`（絲嘉蕾）：確認家鄉發現的時程；
   - `:455`、`:462`、`:547`（莉茲）：「她是來替家裡還債的」改成 v6 的說法（她記得、他忘了）；
   - `:327`、`:386`、`:407`、`:408`（諾艾兒）：照 R31。
-- 「她想起」改成「她說過」。鍵不動。
+- 鍵不動；字句只在上面點名的幾句裡改。
 - Test: `data/bestiary.test.ts`（加一條：每一句的門檻都在 v6 揭露表允許的位置之後）。
 - 已知會紅：`bestiary.test.ts` 裡釘住上述字句的斷言。
 
