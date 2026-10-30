@@ -282,7 +282,7 @@ export function openCraft(h: ForgeHost): void {
         if (held() >= t.level) return { id, label: t.name, disabled: true, right: G.tools.made, note: G.tools.made };
         if (held() !== t.needs) {
           const why = G.tools.needs(TOOL_LEVELS.find((x) => x.level === t.needs)!.name);
-          return { id, label: t.name, disabled: true, right: why, note: why };
+          return { id, label: t.name, disabled: true, right: T.reasons.locked, note: why };   // short, so the name stays whole
         }
         return recipeRow(game.state, { id, label: t.name, cost: t.cost });
       }),

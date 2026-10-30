@@ -1400,9 +1400,9 @@ describe('the forge and gathered goods (gathering plan Task B3)', () => {
       expect(row('tool@1').textContent).toContain(TOOL_LEVELS[0].name);
       expect(row('tool@1').getAttribute('aria-disabled')).toBe('false');
       expect(row('tool@2').getAttribute('aria-disabled')).toBe('true');   // the second waits for the first
-      expect(row('tool@2').textContent).toContain(G.tools.needs(TOOL_LEVELS[0].name));
       expect(info().textContent).toContain(G.tools.effect[1]);
       expect(info().textContent).toContain('銅礦石 6／6');
+      expect(row('tool@2').querySelector('.slx-right')!.textContent).toBe(T.reasons.locked);
       go('confirm', 'up', 'confirm');      // ask, then 是
       expect(game.state.gather?.tool).toBe(1);
       expect(line()).toBe(G.made(TOOL_LEVELS[0].name));

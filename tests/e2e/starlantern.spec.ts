@@ -25,6 +25,7 @@ import { GIFT_LINES } from '../../src/scripts/games/starlantern/data/bond.zh-TW'
 import { BESTIARY_UI } from '../../src/scripts/games/starlantern/data/bestiary.zh-TW';
 import { ENEMIES } from '../../src/scripts/games/starlantern/data/enemies';
 import { MAINLINE_TABLES } from '../../src/scripts/games/starlantern/data/monsters';
+import { SPOT_OF, SPOT_RULES } from '../../src/scripts/games/starlantern/data/gather';
 import { SWEEP, asDesktop, asPhone, expectedMode, fitTo, go, legibility, longestGear, placeBeside, snap, stageBox, stageScale, startSweepGame, sweep, writeReviewIndex } from './starlantern-legibility';
 
 test.use({ launchOptions: { args: ['--mute-audio'] } });
@@ -3524,6 +3525,110 @@ test.describe('starlantern', () => {
     if (process.env.SL_SHOTS) { await page.waitForTimeout(800); await page.screenshot({ path: `${process.env.SL_SHOTS}/ailments-390.png` }); }
     expect(w.errors).toEqual([]);
     expect(missing).toEqual([]);
+  });
+
+  // Gathering plan Task B4: gathering is legible. Its switch is off until PR D, so the dev build's debug handle turns it on
+  // (plan ruling 12). On a point: the hint is whole and clear of the weight readout and the party bar; its window, with the
+  // longest spot rule, keeps both rows' right columns whole inside it; the forge's tools list and detail stay apart.
+  test('gathering is legible (gathering plan Task B4) @dpr', async ({ page }) => {
+    const w = await setup(page, 7);
+    await page.evaluate(() => {
+      const sw = (window as unknown as { __starlanternDebug: { gather: { GATHER_SWITCH: { live: boolean; open: () => boolean } } } }).__starlanternDebug.gather.GATHER_SWITCH;
+      sw.live = true;
+      sw.open = () => true;
+    });
+    await depart(page, w);
+    expect(await page.evaluate(() => (window as unknown as Dbg).__starlanternDebug.game.run.gather)).toBe(true);
+    // The longest rule line at this depth, on a rich point holding many goods (the widest numbers).
+    const G = T.ui2.gather;
+    const longest = Object.entries(SPOT_RULES).map(([r, d]) => ({ item: SPOT_OF[r as keyof typeof SPOT_OF], len: G.rules[d.rule](99).length }))
+      .sort((a, b) => b.len - a.len)[0].item;
+    // Every point on this floor becomes that one; with none, one is put on a plain cell beside the party.
+    await page.evaluate((item) => {
+      const g = (window as unknown as Dbg).__starlanternDebug.game;
+      const f = g.run.floors.get(g.floor);
+      const points = f.contents.filter((c: { kind: string }) => c.kind === 'gather');
+      if (!points.length) {
+        const m = g.map();
+        const at = [[1, 0], [-1, 0], [0, 1], [0, -1]].map(([dx, dy]) => ({ x: g.pos.x + dx, y: g.pos.y + dy })).find((p) => m.tiles[p.y]?.[p.x] === 'floor')!;
+        m.tiles[at.y][at.x] = 'gather';
+        f.contents.push({ kind: 'gather', at, room: 0, gather: {} });
+        points.push(f.contents[f.contents.length - 1]);
+      }
+      for (const c of points) c.gather = { type: 'spot', item, qty: 9, rich: true };
+    }, longest);
+    const path = await pathTo(page, 'gather');
+    expect(path).not.toBeNull();
+    for (const k of path!.keys) {
+      await page.evaluate(() => { (window as unknown as Dbg).__starlanternDebug.game.encounter = 0; });
+      await page.keyboard.press(k);
+    }
+    expect(await page.evaluate(() => { const g = (window as unknown as Dbg).__starlanternDebug.game; return `${g.pos.x},${g.pos.y}`; })).toBe(path!.at);
+
+    // The hint: whole, and on neither the weight readout nor the party bar.
+    const hint = page.locator('.slx-gather-hint');
+    await expect(hint).toBeVisible();
+    await expect(hint).toContainText(G.rich);
+    const apart = await page.evaluate(() => {
+      const r = (s: string) => document.querySelector(s)!.getBoundingClientRect();
+      const h = r('.slx-gather-hint');
+      const hit = (o: DOMRect) => h.left < o.right && o.left < h.right && h.top < o.bottom && o.top < h.bottom;
+      const e = document.querySelector('.slx-gather-hint') as HTMLElement;
+      return { weight: hit(r('.slx-weight')), bar: hit(r('.slx-partybar')), cut: e.scrollWidth - e.clientWidth };
+    });
+    expect(apart).toEqual({ weight: false, bar: false, cut: 0 });
+    expect(await legibility(page, { requireReady: true })).toEqual([]);
+
+    // The window: both ways' right columns whole and inside it, the rule line on it.
+    await page.keyboard.press('Enter');
+    const box = page.locator('.slx-event-gather');
+    await expect(box).toBeVisible();
+    await expect(box.locator('.slx-gather-rule')).toHaveCount(1);
+    await expect(box.locator('[role=option]')).toHaveCount(3);
+    const fit = await box.evaluate((b) => {
+      const o = b.getBoundingClientRect();
+      const screen = document.querySelector('#sl-screen')!.getBoundingClientRect();
+      const out: string[] = [];
+      if (o.left < screen.left - 0.5 || o.right > screen.right + 0.5) out.push('window outside the screen');
+      for (const e of b.querySelectorAll<HTMLElement>('.slx-right, .slx-label, p, .slx-event-title')) {
+        const r = e.getBoundingClientRect();
+        if (e.scrollWidth > e.clientWidth + 0.5) out.push(`cut: ${e.textContent}`);
+        if (r.right > o.right + 0.5 || r.left < o.left - 0.5) out.push(`outside: ${e.textContent}`);
+      }
+      return out;
+    });
+    expect(fit).toEqual([]);
+    expect(await legibility(page, { requireReady: true })).toEqual([]);
+    await page.keyboard.press('Escape');
+    await expect(box).toHaveCount(0);
+
+    // The forge: the tools list and its detail, each row walked.
+    await page.evaluate(() => {
+      const s = (window as unknown as Dbg).__starlanternDebug.game.state;
+      s.inventory['return-lamp'] = Math.max(1, s.inventory['return-lamp'] ?? 0);
+    });
+    await lampHome(page, w);
+    await w.closeTalk();
+    await page.evaluate(() => {
+      const s = (window as unknown as Dbg).__starlanternDebug.game.state;
+      s.gold = 99999;
+      Object.assign(s.inventory, { 'copper-ore': 6, 'quartz-chip': 2 });
+    });
+    await w.choose('.slx-town', '鍛造屋');
+    await expect(page.locator('.slx-forge')).toBeVisible(); await w.closeTalk();
+    await page.locator('.slx-forge .slx-cmd [data-id=craft]').click();
+    await page.locator('.slx-forge .slx-layer [data-id=tool]').click();
+    const top = page.locator('.slx-forge .slx-layer').last();
+    await expect(top.locator('[role=option]')).toHaveCount(2);
+    for (let i = 0; i < 2; i++) {
+      expect(await forgeOverlaps(page), `tools row ${i}`).toEqual([]);
+      const cut = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('.slx-forge .slx-layer.slx-list .slx-label, .slx-forge .slx-layer.slx-list .slx-right')]
+        .filter((l) => l.scrollWidth > l.clientWidth + 0.5).map((l) => l.textContent));
+      expect(cut, `tools row ${i}`).toEqual([]);
+      expect(await legibility(page, { requireReady: true })).toEqual([]);
+      await w.key('ArrowDown');
+    }
+    expect(w.errors).toEqual([]);
   });
 
   test.describe('a tapped +N on touch (touch overflow)', () => {
