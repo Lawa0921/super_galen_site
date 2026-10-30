@@ -226,6 +226,13 @@ describe('gathering words (gathering plan Task B1)', () => {
     expect(speakerOf('gather.doran.made2.0')).toBe('doran');
   });
 
+  // Review nit (PR D): the result line keeps the window's floor of 1, so a member stopped at 1 HP is not told a bigger loss.
+  it("the toll's result line says the floor of 1, as the window's rule line does", () => {
+    const G = T.ui2.gather;
+    expect(G.toll.hp('燙手', 6)).toBe('燙手：全員 HP −6（最低剩 1）。');
+    for (const rule of ['scald', 'fumes'] as const) expect(G.rules[rule](6).endsWith('（最低剩 1）'), rule).toBe(true);
+  });
+
   it('system words are plain', () => {
     const G = T.ui2.gather;
     const words: [string, string][] = [

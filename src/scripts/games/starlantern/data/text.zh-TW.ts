@@ -1009,9 +1009,9 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
         clang: () => `${SPOT_RULES.iron.name}：遇敵計量加倍，產量加倍`,
       } as Record<SpotRule, (n: number) => string>,
       got: (item: string, n: number) => `採到了${item} ×${n}。`,
-      /** What the land took, after the goods: the rule's name and the HP lost, or the most TP any member lost. */
+      /** What the land took, after the goods: the rule's name and the HP lost (none below 1, as the window says), or the most TP any member lost. */
       toll: {
-        hp: (rule: string, n: number) => `${rule}：全員 HP −${n}。`,
+        hp: (rule: string, n: number) => `${rule}：全員 HP −${n}（最低剩 1）。`,
         tp: (rule: string, n: number) => `${rule}：全員 TP 最多減少 ${n}。`,
       },
       /** The full pack's window, gathering's version (review M1): what is short, and what giving up leaves. */
