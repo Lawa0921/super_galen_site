@@ -5,6 +5,7 @@ import { EQUIPMENT, WEAPON_KINDS } from '../data/equipment';
 import { RARITIES, SETS, SPECIALS, regionSpecials } from '../data/gear';
 import { ITEMS } from '../data/items';
 import { MATERIALS } from '../data/materials';
+import { GATHER_ART } from '../data/gather';
 import { REGIONS, type RegionId } from '../data/regions';
 import { RUNES, type RuneId } from '../data/runes';
 import { SKILLS } from '../data/skills';
@@ -238,7 +239,9 @@ export function allArtUrls(): string[] {
   for (const k of PORTAL_CARD_KEYS) urls.push(art.portalCard(k));
   for (const k of TRAIT_ICON_KEYS) urls.push(art.traitIcon(k));
   for (const k of EVENT_TILE_KEYS) urls.push(art.eventTile(k));
-  for (const id of [...Object.keys(ITEMS), ...Object.keys(MATERIALS).filter(artMaterial)]) urls.push(art.icon(id));
+  // Gathering plan ruling 9: a gathered good's icon only once it is published (GATHER_ART), so none is asked for before.
+  const listed = (id: string) => artMaterial(id) && (MATERIALS[id].kind !== 'gather' || GATHER_ART.has(id));
+  for (const id of [...Object.keys(ITEMS), ...Object.keys(MATERIALS).filter(listed)]) urls.push(art.icon(id));
   // Art step 9 (G3 and G4): every skill at its two native sizes (the plan 4 icon/<skill>.png they re-derive are retired),
   // and the 14px chip icons of every ailment and mechanic.
   for (const id of Object.keys(SKILLS)) for (const size of SKILL_ICON_SIZES) urls.push(art.skillIcon(id, size));

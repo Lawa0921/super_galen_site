@@ -4,10 +4,12 @@ import { ITEMS } from '../../data/items';
 import { EQUIPMENT } from '../../data/equipment';
 import { GEAR_SLOTS, SETS, SPECIALS } from '../../data/gear';
 import { ENEMIES } from '../../data/enemies';
-import { REGIONS } from '../../data/regions';
+import { REGIONS, type RegionId } from '../../data/regions';
 import { T } from '../../data/text.zh-TW';
 import { RARE_MATERIALS } from '../loot/drops';
 import { materialUses, type MaterialUse } from './uses';
+import { CONSUMABLE_RECIPES } from '../../data/forge';
+import { GATHER_MATERIALS } from '../../data/gather';
 
 const ids = (kind: string) => Object.values(MATERIALS).filter((m) => m.kind === kind).map((m) => m.id).sort();
 
@@ -94,6 +96,42 @@ describe('material uses', () => {
     expect(T.forge.use({ kind: 'reroll', tier: 'epic' })).toBe('重鑄史詩裝備');
     for (const m of Object.values(MATERIALS)) {
       for (const v of materialUses(m.id)) if (v.kind === 'fuseSlot') expect(v.target, m.id).not.toBe('epic');
+    }
+  });
+
+  // Gathering plan Task A1 (moved from A4 by the controller's ruling, 2026-10-30): the gathered goods' uses, listed from the
+  // data (the tools, the second recipes, a spot's pin); the forge's own work is A4's.
+  it('the gathered goods are each good for something, in order', () => {
+    const c = (item: string): MaterialUse => ({ kind: 'consumable', item });
+    const tool = (level: 1 | 2): MaterialUse => ({ kind: 'tool', level });
+    const pin = (region: RegionId): MaterialUse => ({ kind: 'regionReroll', region });
+    expect(Object.fromEntries(GATHER_MATERIALS.map((m) => [m.id, materialUses(m.id)]))).toEqual({
+      'copper-ore': [c('return-lamp'), tool(1)],
+      'silver-ore': [tool(2)],
+      'stanch-herb': [c('potion')],
+      'moonbell-herb': [c('ether'), c('phoenix')],
+      'cap-mushroom': [c('antidote')],
+      'glow-mushroom': [c('phoenix')],
+      'quartz-chip': [c('ether'), c('return-lamp'), tool(1)],
+      'deep-quartz': [c('phoenix'), tool(2)],
+      'ember-glass': [pin('blaze'), tool(2)],
+      'rime-moss': [pin('frost')],
+      'charged-ore': [pin('storm')],
+      'bog-resin': [pin('mire')],
+      'shade-silk': [pin('shade')],
+      'scrap-iron': [pin('iron'), tool(2)],
+    });
+    expect(T.forge.use(tool(1))).toBe('打造鐵鎬與鐮刀');
+    expect(T.forge.use(tool(2))).toBe('打造精工採集工具');
+    expect(T.forge.useShort(tool(2))).toBe('採集工具');
+    // the goods that were here before: no tool, and their consumables are their own recipes only
+    for (const m of Object.values(MATERIALS)) {
+      if (m.kind === 'gather') continue;
+      for (const u of materialUses(m.id)) {
+        expect(u.kind, m.id).not.toBe('tool');
+        if (u.kind === 'consumable') expect(CONSUMABLE_RECIPES[u.item].mats[m.id], `${m.id} ${u.item}`).toBeGreaterThan(0);
+        if (u.kind === 'regionReroll') expect(REGIONS[u.region].material, m.id).toBe(m.id);
+      }
     }
   });
 });

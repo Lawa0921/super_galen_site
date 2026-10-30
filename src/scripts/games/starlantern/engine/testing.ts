@@ -11,6 +11,7 @@ import { newGame, type GameState } from './state';
 import { BOND_SWITCH } from './story/bond';
 import { ROSTER_ART, ROSTER_LIVE } from '../data/monsters';
 import { GUILD_SWITCH } from '../data/guild';
+import { GATHER_SWITCH } from '../data/gather';
 
 /** A plain common instance of a base (no affixes) at the base's own level, for fixtures. */
 export function plainItem(base: string, uid: number): ItemInstance {
@@ -241,5 +242,24 @@ export function withGuildOff<T>(f: () => T): T {
     return r;
   } finally {
     if (!later) GUILD_SWITCH.live = was;
+  }
+}
+
+/**
+ * Gathering plan Task A1 (ruling 16, review H1): runs `f` with gathering's switch on (GATHER_LIVE). `{ open: true }` holds the
+ * unlock open whatever the story (the first return seen or not), so a test really places points; `{ open: false }` holds it
+ * shut; without `open` the unlock is the shipped one. Both are put back as they were, even when `f` throws. Test support
+ * only: nothing in the game imports it.
+ */
+export function withGatherLive<T>(f: () => T, opts: { open?: boolean } = {}): T {
+  const was = { live: GATHER_SWITCH.live, open: GATHER_SWITCH.open };
+  GATHER_SWITCH.live = true;
+  if (opts.open === true) GATHER_SWITCH.open = () => true;
+  if (opts.open === false) GATHER_SWITCH.open = () => false;
+  try {
+    return f();
+  } finally {
+    GATHER_SWITCH.live = was.live;
+    GATHER_SWITCH.open = was.open;
   }
 }

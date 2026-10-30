@@ -242,6 +242,7 @@ spec 是控制者授權的設計者草案；下面是 spec 沒寫細的地方，
 - Create：`data/gather.ts`、`data/gather.test.ts`。
 - Modify：`engine/types.ts`（`MaterialKind` 加 `'gather'`）、`data/materials.ts`（`MATERIALS` 的展開最後加 `...GATHER_MATERIALS`，註解改成「22＋98＋14」）、`data/text.zh-TW.ts`（`T.forge.kind.gather = '採集素材'`）、`render/artPaths.ts`（計畫裁定 9 的 `GATHER_ART` 閘門）、`engine/testing.ts`（`withGatherLive(f, opts?: { open?: boolean })`，照 `withGuildLive`，但 `open: true` 一律打開、`open: false` 一律關，計畫裁定 16）、`data/monsters.test.ts`（`salts are distinct` 加 `GATHER_SALT`；名字掃描涵蓋十四個素材名、spec §5.1 與 §5.3 的點名與規則名、spec §6.3 的工具名：若 `SECRET_WORDS` 的掃描範圍沒有素材，就在同一個 `describe` 加一個 `it` 掃它們）。
 - 已知會紅與改法：`T.forge.kind` 是 `Record<MaterialKind, string>`，本任務同時加 `gather`（tsc 的紅在同一個任務消掉）；A0 Step 3 清單裡釘住素材總數的測試：照實際值 +14，意圖不變，列進報告；`render/artPaths.test.ts` 的總數**不准變**（閘門擋住了），變了就是閘門寫錯。
+- **實作時的偏離（控制者 2026-10-30 裁定）**：A0 Step 3 另找到三個本清單沒列的紅燈：(1) `engine/forge/uses.test.ts` 的「每一個不是雜物的素材都有用途」：A4 的 `materialUses` 資料面（`MaterialUse` 加 `{ kind: 'tool'; level }`、`T.forge.use`／`useShort` 的 `tool`、`GATHER_RECIPES` 推 `consumable`、特產經 `spotRegionOf` 推 `regionReroll`）移到 A1，`uses.test.ts` 的採集素材用途測試也在 A1；鍛造屋的實際動作與它的測試仍在 A4。(2) `render/artPaths.test.ts:96` 的逐一比對改成 `artMaterial(id) && (kind !== 'gather' || GATHER_ART.has(id))`，總數仍由 `data/gather.test.ts` 釘住不變。(3) `render/gearArt.test.ts:93` 的圖表格子清單排除 `kind === 'gather'`（它們的圖示屬 PR E，經 `GATHER_ART`）。
 
 **Interfaces（`data/gather.ts`）**：計畫裁定 3 的全部。
 
@@ -332,6 +333,7 @@ spec 是控制者授權的設計者草案；下面是 spec 沒寫細的地方，
 - Create：`engine/forge/gatherTools.ts`（`toolCost(level)`、`craftTool(s, level)`）、`engine/forge/gatherTools.test.ts`。
 - Modify：`engine/forge/forge.ts`（`reroll` 的 `mat` 檢查（:68）今天只收 `REGION_AFFIX_GROUP` 的鍵：改成也收特產，`swapPool` 用它地區的組、`rerollCost` 收特產 ×`GATHER_PIN_QTY`；`gatherOpen` 的閘門留在 `engine/game.ts`，`forge.ts` 不讀開關）、`engine/forge/forge.test.ts`、`engine/forge/craft.ts`（`itemRecipeCost(id, qty, alt = false)`、`craftItem(s, id, qty, alt = false)`：`alt` 讀 `GATHER_RECIPES`）、`engine/forge/cost.ts`（`rerollCost` 的 `mat` 是特產時收 `GATHER_PIN_QTY`；`swapPool` 的組由 `REGION_AFFIX_GROUP[mat] ?? REGION_AFFIX_GROUP[REGIONS[spotRegionOf(mat)].material]` 決定）、`engine/forge/uses.ts`（`MaterialUse` 加 `{ kind: 'tool'; level: 1 | 2 }`；第二種配方推既有的 `consumable`；特產推既有的 `regionReroll`）、`data/text.zh-TW.ts`（`T.forge.use` 的 `tool` 一支）、`engine/game.ts`（`craftTool(level)`、`craftItem(id, n, alt?)` 的 `alt` 與重鑄的特產 `mat` 都要 `gatherOpen`，否則 `locked`；成功都 `saveInTown`）、`engine/forge/{craft,cost,uses}.test.ts`、`engine/game.test.ts`、`engine/gather.guard.test.ts`（加入 `gatherTools.ts`）。
 - 已知會紅：預期沒有（原配方、原釘選的結果逐一不變；`uses.test.ts` 裡既有素材的用途清單不變，因為第二種配方只用採集素材）。
+- **偏離（控制者 2026-10-30）**：`engine/forge/uses.ts`、`T.forge.use` 的 `tool` 與 `uses.test.ts` 的採集素材用途已在 A1 做完（見 A1 的偏離），本任務不再改它們。
 
 - [ ] **Step 1：寫失敗的測試**：
   - `gatherTools.test.ts`：`the first tool`（材料夠就打好、`tool = 1`、扣錢扣料、`forgeDraws` 不變）；`the second needs the first and two lands`；`a tool is made once`（spec §11 第 4 條：再打一次 `invalid`；`tool` 存檔來回不變）；`short of goods`（回 `gold`／`mats`，狀態不變）；

@@ -344,7 +344,8 @@ export interface ItemInstance {
   inscription?: string;
 }
 /** Roster plan ruling 12: `trophy`, a boss's or warden's spoil; `keepsake`, the warden of a companion's story drops it. */
-export type MaterialKind = 'essence' | 'monster' | 'region' | 'rare' | 'junk' | 'trophy' | 'keepsake';
+/** `gather`: a good only ever gathered at a point in the labyrinth (gathering spec §0 item 9, data/gather.ts). */
+export type MaterialKind = 'essence' | 'monster' | 'region' | 'rare' | 'junk' | 'trophy' | 'keepsake' | 'gather';
 /** `owner`: the roster foe that drops it (data/materials.roster.ts); its icon waits on that foe's art (ROSTER_ART). */
 export interface MaterialDef { id: string; name: string; price: number; kind: MaterialKind; owner?: string }
 export interface FloorDef {

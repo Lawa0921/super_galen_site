@@ -35,9 +35,10 @@ describe('data integrity', () => {
     expect(enemies.filter((e) => !e.boss && !e.story)).toHaveLength(8);
     expect(enemies.filter((e) => e.boss).map((e) => e.id)).toEqual(['lanterneater']);
     expect(Object.keys(EQUIPMENT)).toHaveLength(25);
-    // The game's own 22, then the roster's 98 (each with its `owner`; data/monsters.test.ts ninety-eight new materials).
-    expect(Object.values(MATERIALS).filter((m) => !m.owner)).toHaveLength(22);
-    expect(Object.keys(MATERIALS)).toHaveLength(22 + 98);
+    // The game's own 22, then the roster's 98 (each with its `owner`; data/monsters.test.ts ninety-eight new materials), then
+    // the fourteen gathered goods (gathering plan Task A1; no owner).
+    expect(Object.values(MATERIALS).filter((m) => !m.owner)).toHaveLength(22 + 14);
+    expect(Object.keys(MATERIALS)).toHaveLength(22 + 98 + 14);
     expect(FLOORS.map((f) => f.id)).toEqual([1, 2, 3]);
   });
 
