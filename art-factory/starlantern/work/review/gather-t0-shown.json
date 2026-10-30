@@ -1,0 +1,31 @@
+{
+  "batch": "t0",
+  "parts": {
+    "sample-gather-object-vein": "28edd6a24feb4e1442b60f97ea751d5724ad8d90e01f383923eef3225d571a68",
+    "sample-gather-object-herb": "a399d36622fc40734400d5edc60c6987eac44648622fea827601c7c8fa0756c8",
+    "sample-gather-object-fungus": "f801a11f32bee1a6ac5b955a443fd298cb7f168d6fb5d2457157bc8e0fd8effa",
+    "sample-gather-object-crystal": "bfe7f8a5b40422507789965b8be9be9bc16e1b08ceb6b003e961ce4bf31dd5c7",
+    "sample-gather-object-blaze": "076a967958d5864be81d70ce008954d893a22ba65fd1fe8c1287b9b6684e7219",
+    "sample-gather-object-frost": "254fbcefc21bcebbc319f4b31582467bbf1d421bd969c30bfe912f49f3826f32",
+    "sample-gather-object-storm": "21fa5d052be76ba458c2e007d0e12c61b2b69a8503c6c3da229ca88a4b0361df",
+    "sample-gather-object-mire": "fea1543b3ceb33e10c2e65cabe4b23f2e6f21bd39db5ce63e496a9be329bc13a",
+    "sample-gather-object-shade": "4794795fd40a1eb9eccf5e7f9115c1b93a70b2d752a4c5642a325ad60c954a7d",
+    "sample-gather-object-iron": "b6a8afa798866a54f114a8e911cb5b7204a064c2a5c03cb98dbefe3d74a54551",
+    "sample-gather-ground-vein": "041e74cb111cda836d92f29d144fb38b5ec6f79643d04a868d0d5a5da1a83bb0",
+    "sample-gather-ground-herb": "3dbbb44a5122c8aa683bf29943166393e2ca6e8d71e18549413ffc90fc1989c3",
+    "sample-gather-ground-fungus": "ee934cddf63530414516db580fff77202f38d894ae36340f188293db49301da6",
+    "sample-gather-ground-crystal": "d577840d944aab4790bcf1b496bb20a70f6dcff8dc2513983e564b68e5037f69",
+    "sample-gather-ground-blaze": "29d698bdf342481487f9e4efea769022c67b084e10104e2bf327a4eb810609ab",
+    "sample-gather-ground-frost": "a4384ede483574792519bd65c3aec2218787bd7b50b5af27d2b7fa2c79a9769e",
+    "sample-gather-ground-storm": "0ee19a070e8a7797a8a3771c5c77523a2a5449cf87160b58a7b838d125cb37bd",
+    "sample-gather-ground-mire": "54b9511897d2c5de7e222bb55c82b8c8a4e101ef302908e44dfdee2f6629bec4",
+    "sample-gather-ground-shade": "5c8af1ff3383452a9edf08476faf34af2a19e2fb9e89825ebd032cf916b4c623",
+    "sample-gather-ground-iron": "063665c9b9e7d55b45585645db2fd363c8879ae429c7792bd8d0f6a9ecce45e6",
+    "sample-icon-copper-ore": "3651607f177e6e1c2a8a2979fbd45b06f64105bb9d3f0df448c2b2830636088e",
+    "sample-icon-stanch-herb": "fb1be4e27fcaa635cf95828b1b63d66b8ab5e450b3fca5dc7a74240f3fa4a861",
+    "sample-icon-cap-mushroom": "5761fb09ec07990df8540d503275115064adeace466c277a10f9e4a93facdc93",
+    "sample-icon-ember-glass": "9b553cc767726406a2d01cec06a8ef7a3f738c62c4916829aa25d190f63b3bee",
+    "sample-icon-tool-1": "e018461ec2e8c839877255733ca3987858d98bec388b5be21dbc1872ccbeac89",
+    "sample-icon-tool-2": "6c39d2caf524b7e970cc767cb869fa88ca7cf28a7d0f9fa1bbf856b02221b2e4"
+  }
+}

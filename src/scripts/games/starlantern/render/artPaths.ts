@@ -5,7 +5,7 @@ import { EQUIPMENT, WEAPON_KINDS } from '../data/equipment';
 import { RARITIES, SETS, SPECIALS, regionSpecials } from '../data/gear';
 import { ITEMS } from '../data/items';
 import { MATERIALS } from '../data/materials';
-import { GATHER_ART } from '../data/gather';
+import { GATHER_ART, SPOT_REGIONS, spotRegionOf, type GatherType, type GenericType, type SpotRegion } from '../data/gather';
 import { REGIONS, type RegionId } from '../data/regions';
 import { RUNES, type RuneId } from '../data/runes';
 import { SKILLS } from '../data/skills';
@@ -147,6 +147,10 @@ export const art = {
   fog: `${ART_BASE}/map/fog.png`,
   /** Event marker art for the map (one cell, transparent). */
   eventTile: (k: EventTileKey) => `${ART_BASE}/tiles/event-${k}.png`,
+  /** A gathering point's map art (gathering PR E; registry `tile-gather-<k>`): one cell, transparent, as the event tiles. */
+  gatherTile: (k: GatherTileKey) => `${ART_BASE}/tiles/gather-${k}.png`,
+  /** A gathering tool's icon (gathering PR E; registry `icon-tool-<level>`), on its forge row. */
+  toolIcon: (level: 1 | 2) => `${ART_BASE}/icon/tool-${level}.png`,
   /**
    * Rarity frames (plan 5d Task 5; registry `ui-rarity-<r>`): nine-slice 16 x 16, slice 5, clear centre. Not in
    * allArtUrls until the art plan publishes them, so nothing requests them before then.
@@ -187,6 +191,11 @@ export type TraitIconKey = 'fire' | 'ice' | 'thunder' | 'poison' | 'shade' | 'ir
 export const PORTAL_CARD_KEYS: PortalCardKey[] = ['mainline', 'blaze', 'frost', 'storm', 'mire', 'shade', 'iron'];
 export const TRAIT_ICON_KEYS: TraitIconKey[] = ['fire', 'ice', 'thunder', 'poison', 'shade', 'iron'];
 export const EVENT_TILE_KEYS: EventTileKey[] = ['fountain', 'merchant', 'altar', 'elite', 'vault', 'vault-open', 'key', 'trap'];
+/** A gathering point's tile: the four ordinary kinds by their kind, a land's special spot by its land (gathering PR E). */
+export type GatherTileKey = GenericType | SpotRegion;
+export const GATHER_TILE_KEYS: readonly GatherTileKey[] = ['vein', 'herb', 'fungus', 'crystal', ...SPOT_REGIONS];
+/** The tile of a point of `type` holding `item`: a spot's is its land's (the item's region). */
+export const gatherTileOf = (type: GatherType, item: string): GatherTileKey => (type === 'spot' ? spotRegionOf(item)! : type);
 
 export function tileKey(t: Tile, opened: boolean): TileKey {
   return t === 'chest' && opened ? 'chest-open' : t;
@@ -216,10 +225,10 @@ export function enemyArt(id: string): string {
   return look ? art.standee(look) : art.enemy(id);
 }
 
-/** The map art of a floor's terrain: its tiles, walls, event tiles, the party marker and the fog. */
+/** The map art of a floor's terrain: its tiles, walls, event tiles, the gathering points' tiles, the party marker and the fog. */
 export function mapArtUrls(floor: number): string[] {
   return [...TILE_KEYS.map((k) => art.tile(floor, k)), art.wallTop(floor), art.wallFace(floor), ...EVENT_TILE_KEYS.map((k) => art.eventTile(k)),
-    ...(['up', 'down', 'left', 'right'] as const).map((d) => art.party(d)), art.fog];
+    ...GATHER_TILE_KEYS.map((k) => art.gatherTile(k)), ...(['up', 'down', 'left', 'right'] as const).map((d) => art.party(d)), art.fog];
 }
 
 export function allArtUrls(): string[] {
@@ -239,9 +248,11 @@ export function allArtUrls(): string[] {
   for (const k of PORTAL_CARD_KEYS) urls.push(art.portalCard(k));
   for (const k of TRAIT_ICON_KEYS) urls.push(art.traitIcon(k));
   for (const k of EVENT_TILE_KEYS) urls.push(art.eventTile(k));
+  for (const k of GATHER_TILE_KEYS) urls.push(art.gatherTile(k));   // gathering PR E: the ten points' tiles
   // Gathering plan ruling 9: a gathered good's icon only once it is published (GATHER_ART), so none is asked for before.
   const listed = (id: string) => artMaterial(id) && (MATERIALS[id].kind !== 'gather' || GATHER_ART.has(id));
   for (const id of [...Object.keys(ITEMS), ...Object.keys(MATERIALS).filter(listed)]) urls.push(art.icon(id));
+  urls.push(art.toolIcon(1), art.toolIcon(2));   // gathering PR E: the two gathering tools
   // Art step 9 (G3 and G4): every skill at its two native sizes (the plan 4 icon/<skill>.png they re-derive are retired),
   // and the 14px chip icons of every ailment and mechanic.
   for (const id of Object.keys(SKILLS)) for (const size of SKILL_ICON_SIZES) urls.push(art.skillIcon(id, size));

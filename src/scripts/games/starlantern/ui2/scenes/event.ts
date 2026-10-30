@@ -17,7 +17,7 @@ import { POISON_TP_LOSS_PCT } from '../../engine/events';
 import type { FullResult, MoveResult, RuneFind } from '../../engine/game';
 import { RUNE_STACK } from '../../data/runes';
 import type { ItemInstance, Pos } from '../../engine/types';
-import { ART_BASE } from '../../render/artPaths';
+import { ART_BASE, art, gatherTileOf } from '../../render/artPaths';
 import type { ArtIndex } from '../../render/textures';
 import { el, itemName } from '../../ui/dom';
 import type { UiAction } from '../input';
@@ -58,8 +58,11 @@ export const eventArt = (k: EventKind | 'vault-open' | 'key' | 'trap') => `${ART
 
 const fmtWeight = (w: number) => String(Math.round(w * 10) / 10);
 
-/** The common event window: art (once approved), title, body lines and a choice list. Cancel always means leave. */
-function eventWindow(host: EventHost, kind: EventKind | 'full' | 'stairs', title: string, body: Node[], items: MenuItem[], pick: (id: string) => void, onLeave?: () => void, start = 0): Layer {
+/**
+ * The common event window: art (once approved), title, body lines and a choice list. Cancel always means leave. `picture`:
+ * a gathering point's own tile (gathering PR E, plan ruling 22), never an `event-gather` picture.
+ */
+function eventWindow(host: EventHost, kind: EventKind | 'full' | 'stairs', title: string, body: Node[], items: MenuItem[], pick: (id: string) => void, onLeave?: () => void, start = 0, picture?: string): Layer {
   const { ctx } = host;
   const leave = onLeave ?? (() => { ctx.sfx.cancel(); host.pop(); });
   const view = new MenuView(new Menu(items), {
@@ -69,8 +72,9 @@ function eventWindow(host: EventHost, kind: EventKind | 'full' | 'stairs', title
   }, 6);
   if (start) { view.menu.setCursor(start); view.render(); }
   const head = el('div', { class: 'slx-event-head' }, [el('span', { class: 'slx-event-title', text: title })]);
-  // Its art now, or when it lands (ui2/lateArt). A gathering point's art is not asked for before its PR E (plan ruling 22).
-  if (kind !== 'full' && kind !== 'stairs' && kind !== 'gather') bestPicture(head, 'art', ctx.art, [eventArt(kind)], (src) => el('img', { class: 'slx-event-art', attrs: { src, alt: '' } }), (n) => head.prepend(n));
+  // Its art now, or when it lands (ui2/lateArt). A gathering point wears its own tile (plan ruling 22), never eventArt('gather').
+  const pic = kind === 'gather' ? picture : kind !== 'full' && kind !== 'stairs' ? eventArt(kind) : undefined;
+  if (pic) bestPicture(head, 'art', ctx.art, [pic], (src) => el('img', { class: 'slx-event-art', attrs: { src, alt: '' } }), (n) => head.prepend(n));
   const box = win(`slx-event ${kind === 'full' ? 'slx-full' : `slx-event-${kind}`}`, [head, ...body, view.el]);
   box.setAttribute('role', 'dialog');
   box.setAttribute('aria-label', title);
@@ -226,7 +230,8 @@ function carriedItems(host: EventHost): Record<string, number> {
  * name (rich: with 「（豐）」), the first line says the material, a spot's rule follows with its number, and each way's row
  * says, from `Game.gatherPreview()`, the goods, the gauge before and after with its lamp, and whether the next step meets a
  * battle. The cursor starts on the light way when only the full way would turn the lamp red, else on the full way
- * (plan ruling 15); 離開 is last. `pick` gets the way chosen. Draws nothing and asks for no art.
+ * (plan ruling 15); 離開 is last. `pick` gets the way chosen. Draws nothing; its head wears the point's tile once that is
+ * here (`art.gatherTile`, gathering PR E).
  */
 export function gatherLayer(host: EventHost, pick: (mode: GatherMode) => void): Layer | null {
   const g = host.ctx.game;
@@ -243,7 +248,8 @@ export function gatherLayer(host: EventHost, pick: (mode: GatherMode) => void): 
     id: mode, label: G.modes[mode], right: G.modeRow(o.qty, o.gauge.from, o.gauge.to, T.map.danger[o.danger.to], G.next[o.next]),
   });
   const start = p.full.danger.to === 'red' && p.light.danger.to !== 'red' ? 0 : 1;
-  return eventWindow(host, 'gather', title, body, [row('light', p.light), row('full', p.full), leaveItem()], (id) => pick(id as GatherMode), undefined, start);
+  return eventWindow(host, 'gather', title, body, [row('light', p.light), row('full', p.full), leaveItem()], (id) => pick(id as GatherMode), undefined, start,
+    art.gatherTile(gatherTileOf(here.type, here.item)));
 }
 
 /**

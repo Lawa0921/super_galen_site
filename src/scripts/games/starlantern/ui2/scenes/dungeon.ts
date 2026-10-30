@@ -30,10 +30,11 @@ import { meetingPlate } from '../rescue';
 import { STORY } from '../../data/story.zh-TW';
 import { clearPillars, dropMoment, skipPillar } from '../lootFx';
 import { eventLayer, fullLayer, gatherLayer, showPickUp, stairsLayer, type EventHost } from './event';
-import { SPOT_RULES, spotRegionOf, type GatherMode } from '../../data/gather';
+import { GATHER_ART, SPOT_RULES, spotRegionOf, type GatherMode } from '../../data/gather';
 import { GATHER_TEXT } from '../../data/gather.zh-TW';
 import type { GatherResult } from '../../engine/game';
-import { mapArtUrls } from '../../render/artPaths';
+import { art, mapArtUrls } from '../../render/artPaths';
+import { lateArt } from '../lateArt';
 import { guildOpen } from '../../data/guild';
 import { heldRight, questLabel } from './board';
 
@@ -194,12 +195,18 @@ export class DungeonScene implements Scene {
     c.sfx.chest?.();
     this.refresh();
     const G = T.ui2.gather;
-    const lines = [G.got(itemName(r.item), r.qty)];
+    // The goods, their published icon (gathering PR E) just before their name, once it has landed (ui2/lateArt).
+    const name = itemName(r.item);
+    const got = G.got(name, r.qty);
+    const at = got.indexOf(name);
+    const lines: Rich = GATHER_ART.has(r.item) && at >= 0
+      ? [got.slice(0, at), { text: name, cls: 'slx-gather-got', icon: lateArt(c.art, art.icon(r.item)) }, got.slice(at + name.length)]
+      : [got];
     const spot = spotRegionOf(r.item);
     const rule = spot ? SPOT_RULES[spot].name : '';
-    if (r.hurt?.hp) lines.push(G.toll.hp(rule, r.hurt.hp));
-    else if (r.hurt?.tp) lines.push(G.toll.tp(rule, r.hurt.tp));
-    const said = this.say(lines.join('\n'));
+    if (r.hurt?.hp) lines.push(`\n${G.toll.hp(rule, r.hurt.hp)}`);
+    else if (r.hurt?.tp) lines.push(`\n${G.toll.tp(rule, r.hurt.tp)}`);
+    const said = this.say(lines);
     const remark = r.remark ? this.gatherLine(r.remark.key, r.remark.index) : null;
     if (!remark) return;
     const turn = this.said;

@@ -85,6 +85,7 @@ describe('gathering points on the map (gathering plan Task B1)', () => {
     g.encounter = 0;
     expect(g.move(dir).kind).toBe('moved');   // next to it now
     expect(gatherMarks(g).map((m) => [m.x, m.y])).toEqual([[far.x, far.y]]);
+    expect(gatherMarks(g)[0]).toMatchObject({ type: 'spot', spot: 'shade' });   // a land's spot carries its land (its tile, PR E)
     g.encounter = 0;
     expect(g.move(back[dir]).kind).toBe('moved');   // two steps away again: still marked for this dive
     expect(gatherMarks(g)).toHaveLength(1);

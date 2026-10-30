@@ -1,0 +1,15 @@
+{
+  "batch": "t1",
+  "parts": {
+    "tile-gather-vein": "78d3b0e0a615908358e84c7a141a1f543a6c2ccb8ccfeeebdd266418ac159115",
+    "tile-gather-herb": "7dc0791efe8918f6d423df8fda10d89e04320034e3e12d41b99e03faf4e33a5c",
+    "tile-gather-fungus": "8506df598097fd45e9a7e9681e53c6c08e2f8037abdbfcba2bcb82ab6f9da931",
+    "tile-gather-crystal": "4201b097b4108c7fdde95ae23f97ab29b22c617f4cad9bb1fc96fe9315c4bb9e",
+    "tile-gather-blaze": "fd961fd806fdb28d8ed86f42c6efdfac1e21abc15cab59f003fdc1fb36c48b57",
+    "tile-gather-frost": "bb8c5a95691404c1f3a5ac859de5e0bcecbe1c455ebbbd19e0bbf88bdefd2b83",
+    "tile-gather-storm": "71466e476834f9ca875dcb7a5da71870e945fe7884d7407cd096d9f331cca933",
+    "tile-gather-mire": "a22f97544496fd043939724bf2e3c094afc189eb0223dd0b08ac10ae6ba4567d",
+    "tile-gather-shade": "c67b784b1ba0da6cdfc4a3302cf8780fbef10c55e257427e673d800379fc3c51",
+    "tile-gather-iron": "9f50725cda51ac382d29c95713b441d770e4b5073306e198b022394f4ef9e031"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "batch": "i1",
+  "parts": {
+    "icon-copper-ore": "ebb742a385a1ee25c5639c951ae3778bbcfa8432b6e9abf1742c3a9bf8a7538e",
+    "icon-silver-ore": "1eb4c3c2878494601a02f81d9769239b4b2ef7ad684406e92b2e07bf0666d8cd",
+    "icon-stanch-herb": "4f9d57b024891e1bad2d220439b2b137465f1184f01a09262e583a34e82e500a",
+    "icon-moonbell-herb": "615459412ccab0359e50f434372116e57d660ccc55311621e25bd45014947582",
+    "icon-cap-mushroom": "e9c7d5afc9de93eadfdb7efad9023778eda0c352053288433dcd089eeea409b4",
+    "icon-glow-mushroom": "dd174d9925220fa9132ba7d0c4a60a5c65725bea245f0ede7f7c9a9163d53881",
+    "icon-quartz-chip": "df143d0aea8c472323b183b3ef46c39c7f51ee2b18126f864efc8f4fc833e71c",
+    "icon-deep-quartz": "847641fc3a8f8489d8122e92b3df6000cd963de8af17200136a1a9f180b5bc1f",
+    "icon-ember-glass": "484029e0af50d90b231369b1f3b93b409d259309cde1832416b63dfcf716182a",
+    "icon-rime-moss": "7d63ff6f89afd49a8e6835e712e642e6338296ff386cff51ffe83f6d9e982916",
+    "icon-charged-ore": "7d93ef28118ffaf598ef7abbc794e6cb29b73828292f5e74ff2186e2d156002a",
+    "icon-bog-resin": "27b314649d575245b8e506ae151a774c8677eb188b45bf5d2698cf9ca48e6e1a",
+    "icon-shade-silk": "44c12e74315623af6010f5c052c01e3b49a7bc4b9cb49dd10495802e9d9567f4",
+    "icon-scrap-iron": "60a19a90e99ee4e24a0a02698f80d0904c061105832c3d0514645227b20b67d5",
+    "icon-tool-1": "c147dcb1df6b2c05c60f0b002871a3c5ea8ff80bfa9d1e2ffd68271fc44fd10b",
+    "icon-tool-2": "29b8bc8bd432d999320d94cbf21bccbc6b242cfef0d1af418035249e97d8c919"
+  }
+}
