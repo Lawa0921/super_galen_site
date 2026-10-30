@@ -2223,16 +2223,20 @@ test.describe('starlantern', () => {
     const said = page.locator('.slx-talk:not([hidden]) .slx-text');
     const board = () => page.locator('.slx-cmd [role=option]').filter({ hasText: B.title }).click();
     const rows = page.locator('.slx-board [role=option] .slx-label');
-    /** Every line the box says until it closes, each typed out in full first. */
-    const lines = async () => {
-      const out: string[] = [];
-      for (let i = 0; i < 12 && (await page.locator('.slx-talk:not([hidden])').count()); i++) {
-        if (!(await page.locator('.slx-talk:not([hidden]) .slx-next').isVisible())) await w.key('z');   // the line whole
-        out.push((await said.textContent()) ?? '');
+    /**
+     * Through the box's lines until `text` shows (review N4): a key is pressed only once the line is typed out in full (its
+     * ▼ shown), so it turns the page and never finishes a line half typed, and the next read waits for the page to turn.
+     */
+    const reach = async (text: string) => {
+      const next = page.locator('.slx-talk:not([hidden]) .slx-next');
+      for (let i = 0; i < 12; i++) {
+        await expect(next).toBeVisible();
+        const now = (await said.textContent()) ?? '';
+        if (now === text) return;
         await w.key('z');
-        await page.waitForTimeout(60);
+        await expect.poll(async () => (await page.locator('.slx-talk:not([hidden])').count()) === 0 || (await said.textContent()) !== now).toBe(true);
       }
-      return out;
+      throw new Error(`the box never said ${text}`);
     };
 
     // A test save in play (plan ruling 18): the first act over, the slime seen, eight moss in the stock.
@@ -2293,7 +2297,8 @@ test.describe('starlantern', () => {
 
     // Home by the lamp: the trip counted, so a new board is up; the box says two are ready, and the guild is marked 新.
     await lampHome(page, w);
-    expect(await lines()).toContain(B.questsReady(2));
+    await reach(B.questsReady(2));
+    await w.closeTalk();
     await expect(page.locator('.slx-town [data-id=guild] .slx-right')).toHaveText(T.ui2.handbook.fresh);
     const home = await run<{ day: number; offers: { id: string }[]; active: { id: string }[] }>('return JSON.parse(JSON.stringify(g.state.guild));');
     expect(home.day).toBeGreaterThan(day);

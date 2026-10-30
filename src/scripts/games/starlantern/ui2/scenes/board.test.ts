@@ -522,7 +522,7 @@ describe('the guild board: take, drop, turn in, the rank tab (guild quests plan 
   }));
 });
 
-describe('the guild board end to end, switch still off in the game (guild quests plan Task B5)', () => {
+describe('the guild board end to end, with the switch on as the game ships since PR D (guild quests plan Task B5)', () => {
   it('locked, then open: the first look posts the board, a hunt is taken, felled, turned in, and the first lamp is stamped', liveAsync(async () => {
     const game = new Game(() => 0.5, memoryStorage(), undefined, 0, [...LEGACY_LINEUP] as never);
     game.state.bestiary = { ...game.state.bestiary, slime: { seen: 1, felled: 0 } };
