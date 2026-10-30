@@ -23,6 +23,7 @@ import { NIGHT_BEATS } from '../data/story.zh-TW';
 import { MAX_DAY, SPRING_AFTER, dayOf } from './calendar';
 import { BONDS_WRITTEN, ENDINGS_WRITTEN, ROMANCES_WRITTEN, SEASON_SCENES, TOGETHER_WRITTEN, isSceneId, memScene, type SceneId } from '../data/story/scenes';
 import { meet } from './party';
+import { GATHER_MAX } from '../data/gather';
 /**
  * Bond plan Task 17: the registries hold what is written now, so a test that registers its own puts back what was there
  * (`bondsBack`), registers a companion only once (`bondsAdd`), and gives a written scene back instead of deleting it.
@@ -1693,5 +1694,66 @@ describe('the guild board in the save (guild quests plan Task A5)', () => {
     const g = guildOf(board({ offers: [note({ target: 'no-such-foe' })] }))!;
     expect(g.offers).toEqual([]);
     expect({ ...g, offers: [] }).toEqual({ ...board(), offers: [] });
+  });
+});
+
+describe('gathering in the save (gathering plan Task A5)', () => {
+  const raw = (gather: unknown) => JSON.stringify({ ...JSON.parse(JSON.stringify(newGame())), gather });
+  const load = (gather: unknown) => loadGame(memoryStorage({ [SAVE_KEY]: raw(gather) }));
+
+  it('the save version stays 9', () => expect(SAVE_VERSION).toBe(9));
+
+  it('a gathering record round-trips', () => {
+    for (const gather of [{ tool: 2 as const, got: { 'copper-ore': 14, 'ember-glass': 3 } }, { got: { 'rime-moss': 1 } }, { tool: 1 as const, got: {} }]) {
+      const st = memoryStorage();
+      const g = newGame();
+      g.gather = gather;
+      expect(saveGame(st, g)).toBe(true);
+      expect(loadGame(st)).toEqual({ status: 'ok', state: g });
+    }
+  });
+
+  it('a save without one loads without one', () => {
+    const st = memoryStorage();
+    expect(saveGame(st, newGame())).toBe(true);
+    const r = loadGame(st);
+    expect(r.status === 'ok' && 'gather' in r.state).toBe(false);
+  });
+
+  it('bad shapes are corrupt', () => {
+    const cases: [string, unknown][] = [
+      ['not an object', []],
+      ['null', null],
+      ['a number', 3],
+      ['tool 0', { tool: 0, got: {} }],
+      ['tool 3', { tool: 3, got: {} }],
+      ['tool 1.5', { tool: 1.5, got: {} }],
+      ['tool a string', { tool: '1', got: {} }],
+      ['no got', { tool: 1 }],
+      ['got not an object', { got: [] }],
+      ['got a string', { got: 'copper-ore' }],
+      ['a negative count', { got: { 'copper-ore': -1 } }],
+      ['a fraction', { got: { 'copper-ore': 1.5 } }],
+      ['past the cap', { got: { 'copper-ore': GATHER_MAX + 1 } }],
+      ['a count as text', { got: { 'copper-ore': '3' } }],
+      ['an extra key', { got: {}, extra: 1 }],
+    ];
+    for (const [why, gather] of cases) expect(load(gather).status, why).toBe('corrupt');
+    // the cap itself is fine
+    expect(load({ got: { 'copper-ore': GATHER_MAX } }).status).toBe('ok');
+  });
+
+  it('unknown materials are dropped, not corrupt', () => {
+    const r = load({ tool: 1, got: { moss: 4, 'no-such-good': 2, 'copper-ore': 3 } });
+    expect(r.status === 'ok' && r.state.gather).toEqual({ tool: 1, got: { 'copper-ore': 3 } });
+    // dropped down to nothing, and no tool: the whole field goes
+    const empty = load({ got: { moss: 4, 'no-such-good': 2 } });
+    expect(empty.status).toBe('ok');
+    expect(empty.status === 'ok' && 'gather' in empty.state).toBe(false);
+    // an empty record without a tool goes too; with a tool it stays
+    const none = load({ got: {} });
+    expect(none.status === 'ok' && 'gather' in none.state).toBe(false);
+    const tool = load({ tool: 2, got: { moss: 1 } });
+    expect(tool.status === 'ok' && tool.state.gather).toEqual({ tool: 2, got: {} });
   });
 });

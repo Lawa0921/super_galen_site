@@ -1,6 +1,7 @@
 import {
-  GATHER_NOISE, GATHER_NOISE_TOOL2, LIGHT_SHARE, RICH_NOISE, SPOT_RULES, isDeep, spotRegionOf, type GatherMode, type GatherType, type SpotRuleDef,
+  GATHER_MAX, GATHER_NOISE, GATHER_NOISE_TOOL2, LIGHT_SHARE, RICH_NOISE, SPOT_RULES, isDeep, spotRegionOf, type GatherMode, type GatherType, type SpotRuleDef,
 } from '../data/gather';
+import { MATERIALS } from '../data/materials';
 import { GATHER_TEXT, type GatherText } from '../data/gather.zh-TW';
 import { danger, ENCOUNTER_MAX, ENCOUNTER_PACE, YELLOW_AT, type Danger } from './encounter';
 import { POISON_TP_LOSS_PCT, trapDamage } from './events';
@@ -152,4 +153,30 @@ export function innerFor(s: GameState, item: string, text: GatherText = GATHER_T
   if (!slot) return undefined;
   const pool = text.inner[slot];
   return pool.length ? { key: `inner.${slot}`, index: gotTotal(s) % pool.length } : undefined;
+}
+
+// The save (gathering plan Task A5, ruling 7)
+
+const isObj = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
+
+/**
+ * Whether `v` has the shape of `GameState.gather`: an object of `tool` (absent, 1 or 2) and `got` (whole counts from 0 to
+ * GATHER_MAX), and nothing else. A bad shape is a corrupt save; an id it does not know is not (`repairGather`).
+ */
+export function isGather(v: unknown): boolean {
+  if (!isObj(v) || Object.keys(v).some((k) => k !== 'tool' && k !== 'got')) return false;
+  if (v.tool !== undefined && v.tool !== 1 && v.tool !== 2) return false;
+  return isObj(v.got) && Object.values(v.got).every((n) => Number.isInteger(n) && (n as number) >= 0 && (n as number) <= GATHER_MAX);
+}
+
+/**
+ * Spec §0 item 16: what this build does not know is dropped on load, never a corrupt save (as `repairGuild`): a counted id
+ * that is no gathered good of this build goes; a record left with nothing counted and no tool goes whole. Run after
+ * `isValid`, so the shape is already right.
+ */
+export function repairGather(d: Record<string, unknown>): void {
+  const g = d.gather;
+  if (!isObj(g) || !isObj(g.got)) return;
+  for (const id of Object.keys(g.got)) if (!(Object.hasOwn(MATERIALS, id) && MATERIALS[id].kind === 'gather')) delete g.got[id];
+  if (Object.keys(g.got).length === 0 && g.tool === undefined) delete d.gather;
 }
