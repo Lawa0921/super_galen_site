@@ -52949,6 +52949,902 @@
       },
       "approved_by": "independent review art-factory/starlantern/work/review/roster-r3-deferred-review.md (2026-10-29)",
       "runtime": "/assets/games/starlantern/icon/ash-chrysanthemum.png"
+    },
+    "sample-gather-object-vein": {
+      "defringe": "strong",
+      "deblend": true,
+      "final": "art-factory/starlantern/work/sheet-gather-sample-object/sample-gather-object-vein.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gather-sample-object\\sheet-gather-sample-object-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": [
+          48,
+          41
+        ],
+        "block": 6,
+        "size": [
+          62,
+          62
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "gather-tile:a348427b301c"
+      },
+      "status": "qa_passed",
+      "kind": "gather-tile",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gather-sample-object",
+      "batch": "gather-t0"
+    },
+    "sample-gather-object-herb": {
+      "defringe": "strong",
+      "deblend": true,
+      "final": "art-factory/starlantern/work/sheet-gather-sample-object/sample-gather-object-herb.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gather-sample-object\\sheet-gather-sample-object-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": [
+          48,
+          40
+        ],
+        "block": 6,
+        "size": [
+          62,
+          62
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "gather-tile:a348427b301c"
+      },
+      "status": "qa_passed",
+      "kind": "gather-tile",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gather-sample-object",
+      "batch": "gather-t0"
+    },
+    "sample-gather-object-fungus": {
+      "defringe": "strong",
+      "deblend": true,
+      "final": "art-factory/starlantern/work/sheet-gather-sample-object/sample-gather-object-fungus.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gather-sample-object\\sheet-gather-sample-object-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": [
+          46,
+          44
+        ],
+        "block": 6,
+        "size": [
+          62,
+          62
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "gather-tile:a348427b301c"
+      },
+      "status": "qa_passed",
+      "kind": "gather-tile",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gather-sample-object",
+      "batch": "gather-t0"
+    },
+    "sample-gather-object-crystal": {
+      "defringe": "strong",
+      "deblend": true,
+      "final": "art-factory/starlantern/work/sheet-gather-sample-object/sample-gather-object-crystal.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gather-sample-object\\sheet-gather-sample-object-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": [
+          44,
+          46
+        ],
+        "block": 6,
+        "size": [
+          62,
+          62
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "gather-tile:a348427b301c"
+      },
+      "status": "qa_passed",
+      "kind": "gather-tile",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gather-sample-object",
+      "batch": "gather-t0"
+    },
+    "sample-gather-object-blaze": {
+      "defringe": "strong",
+      "deblend": true,
+      "final": "art-factory/starlantern/work/sheet-gather-sample-object/sample-gather-object-blaze.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gather-sample-object\\sheet-gather-sample-object-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": [
+          47,
+          48
+        ],
+        "block": 6,
+        "size": [
+          62,
+          62
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "gather-tile:a348427b301c"
+      },
+      "status": "qa_passed",
+      "kind": "gather-tile",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gather-sample-object",
+      "batch": "gather-t0"
+    },
+    "sample-gather-object-frost": {
+      "defringe": "strong",
+      "deblend": true,
+      "final": "art-factory/starlantern/work/sheet-gather-sample-object/sample-gather-object-frost.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gather-sample-object\\sheet-gather-sample-object-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": [
+          48,
+          47
+        ],
+        "block": 6,
+        "size": [
+          62,
+          62
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 1,
+        "spec": "gather-tile:a348427b301c"
+      },
+      "status": "qa_passed",
+      "kind": "gather-tile",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gather-sample-object",
+      "batch": "gather-t0"
+    },
+    "sample-gather-object-storm": {
+      "defringe": "strong",
+      "deblend": true,
+      "final": "art-factory/starlantern/work/sheet-gather-sample-object/sample-gather-object-storm.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gather-sample-object\\sheet-gather-sample-object-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": [
+          50,
+          47
+        ],
+        "block": 6,
+        "size": [
+          62,
+          62
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "gather-tile:a348427b301c"
+      },
+      "status": "qa_passed",
+      "kind": "gather-tile",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gather-sample-object",
+      "batch": "gather-t0"
+    },
+    "sample-gather-object-mire": {
+      "defringe": "strong",
+      "deblend": true,
+      "final": "art-factory/starlantern/work/sheet-gather-sample-object/sample-gather-object-mire.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gather-sample-object\\sheet-gather-sample-object-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": [
+          52,
+          42
+        ],
+        "block": 6,
+        "size": [
+          62,
+          62
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "gather-tile:a348427b301c"
+      },
+      "status": "qa_passed",
+      "kind": "gather-tile",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gather-sample-object",
+      "batch": "gather-t0"
+    },
+    "sample-gather-object-shade": {
+      "defringe": "strong",
+      "deblend": true,
+      "final": "art-factory/starlantern/work/sheet-gather-sample-object/sample-gather-object-shade.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gather-sample-object\\sheet-gather-sample-object-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": [
+          49,
+          48
+        ],
+        "block": 6,
+        "size": [
+          62,
+          62
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 1,
+        "spec": "gather-tile:a348427b301c"
+      },
+      "status": "qa_passed",
+      "kind": "gather-tile",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gather-sample-object",
+      "batch": "gather-t0"
+    },
+    "sample-gather-object-iron": {
+      "defringe": "strong",
+      "deblend": true,
+      "final": "art-factory/starlantern/work/sheet-gather-sample-object/sample-gather-object-iron.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gather-sample-object\\sheet-gather-sample-object-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": [
+          51,
+          44
+        ],
+        "block": 6,
+        "size": [
+          62,
+          62
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "gather-tile:a348427b301c"
+      },
+      "status": "qa_passed",
+      "kind": "gather-tile",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gather-sample-object",
+      "batch": "gather-t0"
+    },
+    "sample-gather-ground-vein": {
+      "defringe": "strong",
+      "deblend": true,
+      "final": "art-factory/starlantern/work/sheet-gather-sample-ground/sample-gather-ground-vein.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gather-sample-ground\\sheet-gather-sample-ground-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": [
+          49,
+          41
+        ],
+        "block": 6,
+        "size": [
+          62,
+          62
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "gather-tile:a348427b301c"
+      },
+      "status": "qa_passed",
+      "kind": "gather-tile",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gather-sample-ground",
+      "batch": "gather-t0"
+    },
+    "sample-gather-ground-herb": {
+      "defringe": "strong",
+      "deblend": true,
+      "final": "art-factory/starlantern/work/sheet-gather-sample-ground/sample-gather-ground-herb.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gather-sample-ground\\sheet-gather-sample-ground-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": [
+          49,
+          41
+        ],
+        "block": 6,
+        "size": [
+          62,
+          62
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 2,
+        "spec": "gather-tile:a348427b301c"
+      },
+      "status": "qa_passed",
+      "kind": "gather-tile",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gather-sample-ground",
+      "batch": "gather-t0"
+    },
+    "sample-gather-ground-fungus": {
+      "defringe": "strong",
+      "deblend": true,
+      "final": "art-factory/starlantern/work/sheet-gather-sample-ground/sample-gather-ground-fungus.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gather-sample-ground\\sheet-gather-sample-ground-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 7,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": [
+          48,
+          42
+        ],
+        "block": 6,
+        "size": [
+          62,
+          62
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 1,
+        "spec": "gather-tile:a348427b301c"
+      },
+      "status": "qa_passed",
+      "kind": "gather-tile",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gather-sample-ground",
+      "batch": "gather-t0"
+    },
+    "sample-gather-ground-crystal": {
+      "defringe": "strong",
+      "deblend": true,
+      "final": "art-factory/starlantern/work/sheet-gather-sample-ground/sample-gather-ground-crystal.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gather-sample-ground\\sheet-gather-sample-ground-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 4,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": [
+          49,
+          41
+        ],
+        "block": 6,
+        "size": [
+          62,
+          62
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 4,
+        "spec": "gather-tile:a348427b301c"
+      },
+      "status": "qa_passed",
+      "kind": "gather-tile",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gather-sample-ground",
+      "batch": "gather-t0"
+    },
+    "sample-gather-ground-blaze": {
+      "defringe": "strong",
+      "deblend": true,
+      "final": "art-factory/starlantern/work/sheet-gather-sample-ground/sample-gather-ground-blaze.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gather-sample-ground\\sheet-gather-sample-ground-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": [
+          50,
+          42
+        ],
+        "block": 6,
+        "size": [
+          62,
+          62
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "gather-tile:a348427b301c"
+      },
+      "status": "qa_passed",
+      "kind": "gather-tile",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gather-sample-ground",
+      "batch": "gather-t0"
+    },
+    "sample-gather-ground-frost": {
+      "defringe": "strong",
+      "deblend": true,
+      "final": "art-factory/starlantern/work/sheet-gather-sample-ground/sample-gather-ground-frost.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gather-sample-ground\\sheet-gather-sample-ground-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": [
+          50,
+          43
+        ],
+        "block": 6,
+        "size": [
+          62,
+          62
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 2,
+        "spec": "gather-tile:a348427b301c"
+      },
+      "status": "qa_passed",
+      "kind": "gather-tile",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gather-sample-ground",
+      "batch": "gather-t0"
+    },
+    "sample-gather-ground-storm": {
+      "defringe": "strong",
+      "deblend": true,
+      "final": "art-factory/starlantern/work/sheet-gather-sample-ground/sample-gather-ground-storm.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gather-sample-ground\\sheet-gather-sample-ground-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": [
+          49,
+          43
+        ],
+        "block": 6,
+        "size": [
+          62,
+          62
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 1,
+        "spec": "gather-tile:a348427b301c"
+      },
+      "status": "qa_passed",
+      "kind": "gather-tile",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gather-sample-ground",
+      "batch": "gather-t0"
+    },
+    "sample-gather-ground-mire": {
+      "defringe": "strong",
+      "deblend": true,
+      "final": "art-factory/starlantern/work/sheet-gather-sample-ground/sample-gather-ground-mire.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gather-sample-ground\\sheet-gather-sample-ground-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": [
+          49,
+          42
+        ],
+        "block": 6,
+        "size": [
+          62,
+          62
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 1,
+        "spec": "gather-tile:a348427b301c"
+      },
+      "status": "qa_passed",
+      "kind": "gather-tile",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gather-sample-ground",
+      "batch": "gather-t0"
+    },
+    "sample-gather-ground-shade": {
+      "defringe": "strong",
+      "deblend": true,
+      "final": "art-factory/starlantern/work/sheet-gather-sample-ground/sample-gather-ground-shade.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gather-sample-ground\\sheet-gather-sample-ground-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": [
+          49,
+          43
+        ],
+        "block": 6,
+        "size": [
+          62,
+          62
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 1,
+        "spec": "gather-tile:a348427b301c"
+      },
+      "status": "qa_passed",
+      "kind": "gather-tile",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gather-sample-ground",
+      "batch": "gather-t0"
+    },
+    "sample-gather-ground-iron": {
+      "defringe": "strong",
+      "deblend": true,
+      "final": "art-factory/starlantern/work/sheet-gather-sample-ground/sample-gather-ground-iron.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gather-sample-ground\\sheet-gather-sample-ground-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 3,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": [
+          50,
+          43
+        ],
+        "block": 6,
+        "size": [
+          62,
+          62
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 3,
+        "spec": "gather-tile:a348427b301c"
+      },
+      "status": "qa_passed",
+      "kind": "gather-tile",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gather-sample-ground",
+      "batch": "gather-t0"
+    },
+    "sample-icon-copper-ore": {
+      "final": "art-factory/starlantern/work/sheet-gather-icons-sample/sample-icon-copper-ore.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gather-icons-sample\\sheet-gather-icons-sample-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 10,
+        "size": [
+          35,
+          35
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "roster-icon:8da249263f71"
+      },
+      "status": "qa_passed",
+      "kind": "roster-icon",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gather-icons-sample",
+      "batch": "gather-t0"
+    },
+    "sample-icon-stanch-herb": {
+      "final": "art-factory/starlantern/work/sheet-gather-icons-sample/sample-icon-stanch-herb.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gather-icons-sample\\sheet-gather-icons-sample-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          31,
+          34
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "roster-icon:8da249263f71"
+      },
+      "status": "qa_passed",
+      "kind": "roster-icon",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gather-icons-sample",
+      "batch": "gather-t0"
+    },
+    "sample-icon-cap-mushroom": {
+      "final": "art-factory/starlantern/work/sheet-gather-icons-sample/sample-icon-cap-mushroom.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gather-icons-sample\\sheet-gather-icons-sample-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 11,
+        "size": [
+          34,
+          32
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 1,
+        "spec": "roster-icon:8da249263f71"
+      },
+      "status": "qa_passed",
+      "kind": "roster-icon",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gather-icons-sample",
+      "batch": "gather-t0"
+    },
+    "sample-icon-ember-glass": {
+      "final": "art-factory/starlantern/work/sheet-gather-icons-sample/sample-icon-ember-glass.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gather-icons-sample\\sheet-gather-icons-sample-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 11,
+        "size": [
+          31,
+          33
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "roster-icon:8da249263f71"
+      },
+      "status": "qa_passed",
+      "kind": "roster-icon",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gather-icons-sample",
+      "batch": "gather-t0"
+    },
+    "sample-icon-tool-1": {
+      "final": "art-factory/starlantern/work/sheet-gather-icons-sample/sample-icon-tool-1.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gather-icons-sample\\sheet-gather-icons-sample-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 11,
+        "size": [
+          34,
+          34
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "roster-icon:8da249263f71"
+      },
+      "status": "qa_passed",
+      "kind": "roster-icon",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gather-icons-sample",
+      "batch": "gather-t0"
+    },
+    "sample-icon-tool-2": {
+      "final": "art-factory/starlantern/work/sheet-gather-icons-sample/sample-icon-tool-2.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gather-icons-sample\\sheet-gather-icons-sample-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          32,
+          33
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "roster-icon:8da249263f71"
+      },
+      "status": "qa_passed",
+      "kind": "roster-icon",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gather-icons-sample",
+      "batch": "gather-t0"
     }
   },
   "requa_log": [
