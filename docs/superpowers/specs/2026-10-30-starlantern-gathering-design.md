@@ -64,6 +64,10 @@
     - **L7** 單一行為的檢查（一點一次、工具一次、不抽亂數）移到 A3／A4 的紅綠步驟；A6 只留整體的掃描。
     - **L8** 反目標「重新整理刷點」改寫。
     - **L9** 過期的交叉引用與找路輔助函式的說明補正。
+21. **第二輪審查的裁定（控制者 2026-10-30）**：
+    - **M1** `engine/forge/forge.ts:68` 的 `reroll` 今天只收 `REGION_AFFIX_GROUP` 的鍵；計畫 A4 改成也收特產（對應它地區的組、收特產 ×2），先寫「今天回 `invalid`」的紅燈（§7.3）。
+    - **M2** 把 `walk()` 的倍率抽成 `stepMod()` 之前，先在今天的程式上錄一個走路的特性測試（固定種子、倍率 1、0.8、0.6、0.5、0.4、0.3，N 步的計量與遇敵的步數寫成字面值），抽出來之後必須照舊綠（計畫 A3 Step 0）。
+    - **Low**：行走測試的戰鬥抄潛行測試的 `fight()` 並處理全滅；`fullLayer` 的 `opts` 同時有 `left` 與 `desc`；`GATHER_BOARD_WORST` 在完整抽樣時相等、40 種子時 ≤；倍率樣本補 0.4 與 0.8；兩個腳本沒有找路，改寫成 `stepOnto` 與「種在第一個 `'floor'` 格」的實況（§5.5 第 5 條）；特產釘選的抽取說成「與地區素材釘選相同」（換詞綴時是兩次）。
 
 ---
 
@@ -256,7 +260,7 @@ if (run.gather) placeGather(f, g, mulberry32(seed ^ GATHER_SALT), run.region, de
 
 ### 5.5 決定性、讀檔與證據
 
-- **串流**：新串流只有 `mulberry32(floorSeed ^ GATHER_SALT)` 一條，只在 `placeGather` 用；`gather()`、`gatherPreview()`、工具、配方一個亂數都不抽；用特產釘選的重鑄和用地區素材釘選一樣，照既有規則抽一次 `forgeRng`，不多也不少。所有既有串流（`game.rng`、`lootRng`、`memoryRng`、`trophyRng`、`runeRng`、`spotRuneRng`、`forgeRng`、`absorbRng`、詞綴串流）的抽取次數不變；計畫以掃原始碼的守門與注入計數的 `game.rng` 證明。
+- **串流**：新串流只有 `mulberry32(floorSeed ^ GATHER_SALT)` 一條，只在 `placeGather` 用；`gather()`、`gatherPreview()`、工具、配方一個亂數都不抽；用特產釘選的重鑄，`forgeRng` 的抽取次數與用地區素材釘選相同（重鑄本身照既有規則抽，換詞綴時抽兩次），不多也不少。所有既有串流（`game.rng`、`lootRng`、`memoryRng`、`trophyRng`、`runeRng`、`spotRuneRng`、`forgeRng`、`absorbRng`、詞綴串流）的抽取次數不變；計畫以掃原始碼的守門與注入計數的 `game.rng` 證明。
 - **讀檔**：§0 第 17 條。
 - **證據**（計畫 Global Constraints 照這份清單）：
   1. **關著**：sim gate identical、`contribution.json` 等於 `contribution.8d-final.160.json`；`engine/legacyFights.test.ts` 的釘子；`engine/floors.snapshot.test.ts`、`engine/storyL.dive.test.ts`、`engine/guild.legacy.test.ts`、（v6 3.1 合併後的）`engine/meetings.hash.test.ts` 都不重錄。
@@ -267,7 +271,7 @@ if (run.gather) placeGather(f, g, mulberry32(seed ^ GATHER_SALT), run.region, de
      - **真的踩過點的相對比較**（`engine/gather.walk.test.ts`）：一段種子固定、跨好幾層的行走，用 `move()` 依序踩過每一個點再走到樓梯；同一段行走在點改回 `'floor'` 的樓層上再跑一次；兩次的 `game.rng` 抽取次數、遇敵的次數與位置、每一場戰鬥紀錄的 SHA-256 逐一相同；另斷言第一次真的踩過至少 N 個點；
      - **會壞才算證明**：把 `floorOf` 的 `placeGather` 那一行改成什麼都不做時，上面的非空斷言與「踩過至少 N 個點」必須紅（計畫在 A3 實際做一次，確認後改回）。
   4. **和公會上線疊在一起**：公會 PR D 正在打開 `GUILD_LIVE`。城鎮快照的採集情境沿用 PR D 留給原情境的做法：在 `act1Cleared` 之後刪掉 `guild` 欄位再比，或在 `withGuildLive(…, { open: false })` 之下跑；兩者擇其一照 PR D 合併時的樣子。採集的 A3 在 PR D 合併後 rebase，重新確認這一點。
-  5. **找路的輔助函式**：潛行快照與城鎮快照的腳本、e2e 的走路，都靠各自的找路輔助函式；它若把不認得的格子當牆，採集點會改變路線，比對就不成立。計畫 A0 先讀它，必要時只在**測試檔的輔助函式**把 `'gather'` 加進可走的格子，不動任何 fixture；`engine/gather.walk.test.ts` 的找路只走 `tileAt !== 'wall'`。
+  5. **測試腳本的輔助函式**：潛行快照與城鎮快照的腳本沒有找路的輔助函式：它們用 `stepOnto` 把隊伍直接放到目標旁邊第一個不是牆的格子再走一步，並把回憶光點、精英種在**第一個 `'floor'` 格**（`engine/storyL.dive.test.ts:31-63`；`engine/guild.legacy.test.ts:34-38`）。`stepOnto` 不受採集點影響；但種東西的輔助函式在採集打開時可能因為第一個空地板被採集點佔走而種到別格，比對就不成立。所以採集情境裡，種東西的輔助函式把 `'gather'` 也當成空地板（在**測試檔**裡改，選到的格子和關著時相同），不動任何 fixture；計畫 A0 先讀它們確認。`engine/gather.walk.test.ts` 要真的走路，用它自己的 BFS（只走 `tileAt !== 'wall'`）；e2e 的走路另見計畫 B4。
 
 ## 6. 取捨的設計
 
@@ -353,6 +357,7 @@ if (run.gather) placeGather(f, g, mulberry32(seed ^ GATHER_SALT), run.region, de
 
 ### 7.3 重鑄的釘選（`GATHER_PIN_QTY`）
 
+- 今天的 `reroll` 只收 `REGION_AFFIX_GROUP` 的鍵當 `mat`（`engine/forge/forge.ts:68`），其他一律 `invalid`；改成也收特產：特產對應到它地區的那一組，收的是**特產** ×2，不是地區素材。`gatherOpen` 的閘門照舊在 `engine/game.ts`。
 - 釘選地區詞綴時，`mat` 可以是那個地區的特產；`rerollCost` 收 **2 個**，`swapPool` 用 `REGION_AFFIX_GROUP[REGIONS[r].material]` 的同一組。地區素材照舊收 1 個。
 - 意義：地區素材只有那個地區的怪物會掉；特產給「不想一直打同一種怪」的玩家另一條路，價錢是兩個。
 - 介面：釘選的素材清單在開關打開時多列出手上有 ≥ 2 個的特產（§10.5）。
@@ -380,7 +385,7 @@ if (run.gather) placeGather(f, g, mulberry32(seed ^ GATHER_SALT), run.region, de
 - 這讓收購成為採集的**需求訊號**：布告上掛著「黑沼脂 ×5」，下一趟就有理由去腐毒。
 
 ### 8.4 上限檢查
-- 公會 `engine/guild.economy.test.ts` 第 6 條的既有抽樣（`capSweep`、它的最壞值表與 `BOARD_CAP_EXCEPTIONS`）已經以完整抽樣釘住，**不動它**。採集素材另開一個抽樣 `gatherCapSweep`：同樣的評等 × 深度 1–60 × 種子，存檔情境是「既有的情境＋全部採集素材都 `got ≥ 1`」；它有**自己的**最壞值表（`GATHER_BOARD_WORST`，完整抽樣量到的值逐字釘住）與**自己的**具名例外（`GATHER_BOARD_EXCEPTIONS`）；照公會 §0 第 20 條的量法（合理組合、收購以淨值計）。平常跑每組前 40 個種子，`GUILD_CAP_FULL=1` 跑完整的；超過的合理組合照公會的規則：調公式一次，還超過就寫進它自己的例外。採集素材的淨值是 0.6 × Q × 價格（最多約 0.6 × 8 × 16 ≈ 77），預期不會超過。
+- 公會 `engine/guild.economy.test.ts` 第 6 條的既有抽樣（`capSweep`、它的最壞值表與 `BOARD_CAP_EXCEPTIONS`）已經以完整抽樣釘住，**不動它**。採集素材另開一個抽樣 `gatherCapSweep`：同樣的評等 × 深度 1–60 × 種子，存檔情境是「既有的情境＋全部採集素材都 `got ≥ 1`」；它有**自己的**最壞值表（`GATHER_BOARD_WORST`：完整抽樣量到的值逐字釘住；`GUILD_CAP_FULL=1` 時量到的必須**等於**它，平常的 40 種子只要 **≤** 它，照既有 `capSweep` 的寫法）與**自己的**具名例外（`GATHER_BOARD_EXCEPTIONS`）；照公會 §0 第 20 條的量法（合理組合、收購以淨值計）。平常跑每組前 40 個種子，`GUILD_CAP_FULL=1` 跑完整的；超過的合理組合照公會的規則：調公式一次，還超過就寫進它自己的例外。採集素材的淨值是 0.6 × Q × 價格（最多約 0.6 × 8 × 16 ≈ 77），預期不會超過。
 - 第 1 條（能交的貨買不到、做不出、拆不出）自動涵蓋採集素材；第 2 條（報酬餵不回委託）：公會的報酬裡沒有任何採集素材。
 
 ## 9. 文字
@@ -465,8 +470,8 @@ if (run.gather) placeGather(f, g, mulberry32(seed ^ GATHER_SALT), run.region, de
 4. **工具一次**：一級打兩次第二次 `invalid`；沒有一級不能打二級；`tool` 寫對、存檔來回不變。
 5. **一層的上限**（寬鬆）：種子 0–999 × 七個地區 × 深度 1–60，一層所有點用全力採的價值（含一級工具、帶電、鏗鏘）≤ `GATHER_FLOOR_CAP(d) = 600 + 10 × min(d, 60)`【起始提案】。照 §5 的公式，最多的一點是鋼鐵的豐點：`(2 + ⌊d ÷ 20⌋ + 2 + 1) × 2` 個廢鐵塊（18）；一般點最多 `(5 + ⌊d ÷ 20⌋)` 個（深層 28）；三點的最大值第 1 層 540、第 20 層 648、第 60 層 864，都在上限內。這條是防之後改數字時失手的護欄；紅了調一次 §5.2 的數量公式，還紅寫具名例外（平衡不是優先）。
 6. **收購**：公會的第 1、2、3 條自動涵蓋；布告上限照 §8.4 跑完整抽樣（PR C）。
-7. **不抽取**：`gather()`、`gatherPreview()`、打造工具、採集配方前後，`game.rng` 的計數、`lootDraws`、`memoryDraws`、`trophyDraws`、`runeDraws`、`forgeDraws`、`story.pity`、`bestiary` 都不變。用特產釘選的重鑄照既有規則抽一次 `forgeRng`：它的 `forgeDraws` 增量等於用地區素材釘選的增量，其他都不變。
-8. **預告等於結果**：一千個種子 × 地區 × 深度的每一點、兩種採法、三種工具等級、`mod` 的幾種組合（1、0.5、0.6、0.3），`gatherPreview()` 的數量、計量前後、燈、下一步，以及地區規則對每一位成員的 HP／TP，等於實際 `gather()` 之後的變化：HP 是 `max(1, hp − n)`、TP 是 `tp − min(tp, ⌊最大 TP × 20 ÷ 100⌋)`，對象是 `party.recruited` 裡活著的每一位（含不在場上的）；倒下的成員不變。「下一步」另以同一個 `mod` 與地形的 `rate` 對 `advance()` 的兩端（最小、最大增量）驗證。
+7. **不抽取**：`gather()`、`gatherPreview()`、打造工具、採集配方前後，`game.rng` 的計數、`lootDraws`、`memoryDraws`、`trophyDraws`、`runeDraws`、`forgeDraws`、`story.pity`、`bestiary` 都不變。用特產釘選的重鑄，`forgeRng` 的抽取次數與地區素材釘選相同（`forgeDraws` 的增量相等；換詞綴時兩者都是兩次），其他都不變。
+8. **預告等於結果**：一千個種子 × 地區 × 深度的每一點、兩種採法、三種工具等級、`mod` 的六種組合（1、0.8、0.6、0.5、0.4、0.3：有沒有減半的被動 × 平常／濃霧／靜謐），`gatherPreview()` 的數量、計量前後、燈、下一步，以及地區規則對每一位成員的 HP／TP，等於實際 `gather()` 之後的變化：HP 是 `max(1, hp − n)`、TP 是 `tp − min(tp, ⌊最大 TP × 20 ÷ 100⌋)`，對象是 `party.recruited` 裡活著的每一位（含不在場上的）；倒下的成員不變。「下一步」另以同一個 `mod` 與地形的 `rate` 對 `advance()` 的兩端（最小、最大增量）驗證。
 
 ## 12. 美術
 

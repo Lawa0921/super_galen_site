@@ -76,7 +76,7 @@ spec 是控制者授權的設計者草案；下面是 spec 沒寫細的地方，
    - `SpotRule = 'scald' | 'hush' | 'charge' | 'fumes' | 'hidden' | 'clang'`；`SPOT_RULES: Record<Exclude<RegionId, 'mainline'>, { rule: SpotRule; noiseMul: number; qtyMul: number; qtyAdd: number; hurt?: 'hurt' | 'poison'; tp?: true; hidden?: true }>`（spec §5.3 的表：熾焰 `scald`（`hurt: 'hurt'`）、霜凍 `hush`（`noiseMul: 0`）、雷鳴 `charge`（`tp: true`、`qtyAdd: 1`）、腐毒 `fumes`（`hurt: 'poison'`）、暗影 `hidden`（`noiseMul: 0.5`、`hidden: true`）、鋼鐵 `clang`（`noiseMul: 2`、`qtyMul: 2`））。
    - `GatherMode = 'light' | 'full'`；`GATHER_NOISE = 30`、`GATHER_NOISE_TOOL2 = 20`、`LIGHT_SHARE = 0.5`；`TOOL_LEVELS`（spec §6.3 的兩列：名稱鍵、材料 `Cost`、前提）；`GATHER_RECIPES: Record<string, Cost>`（spec §7.2）；`GATHER_PIN_QTY = 2`；`GATHER_FLOOR_CAP(d) = 600 + 10 × min(d, 60)`；`GATHER_MAX = 1e9`；`GATHER_ART: ReadonlySet<string>`（空，PR E 填）。
 4. **`engine/gather.ts` 的介面**（A3、A5）：
-   - `outcome(s, c, mode, encounter, step: { mod: number; rate: [number, number] }): { qty; noise; gauge: { from; to }; danger: { from; to }; next: 'never' | 'maybe' | 'sure'; toll?: Record<CharacterId, { hp?: number; tp?: number }> }`：spec §5.4 的公式，**唯一的一份**；`toll` 是每一位活著的已加入成員（含不在場上的）的實際變化（`hp − max(1, hp − n)`、`min(tp, ⌊maxTP × 20 ÷ 100⌋)`）；`next` 照 spec §5.4 的 `gMin`／`gMax`。`Game.gatherPreview()` 與 `Game.gather(mode)` 都呼叫它，`step` 由 `Game` 照 `walk()` 的同一個算式給（把 `walk()` 裡的 `mod` 算式抽成私有方法 `stepMod()`，`walk()` 改呼叫它，行為與抽取不變）（spec §11 第 8 條）。
+   - `outcome(s, c, mode, encounter, step: { mod: number; rate: [number, number] }): { qty; noise; gauge: { from; to }; danger: { from; to }; next: 'never' | 'maybe' | 'sure'; toll?: Record<CharacterId, { hp?: number; tp?: number }> }`：spec §5.4 的公式，**唯一的一份**；`toll` 是每一位活著的已加入成員（含不在場上的）的實際變化（`hp − max(1, hp − n)`、`min(tp, ⌊maxTP × 20 ÷ 100⌋)`）；`next` 照 spec §5.4 的 `gMin`／`gMax`。`Game.gatherPreview()` 與 `Game.gather(mode)` 都呼叫它，`step` 由 `Game` 照 `walk()` 的同一個算式給（把 `walk()` 裡的 `mod` 算式抽成私有方法 `stepMod()`，`walk()` 改呼叫它，行為與抽取不變；抽之前先在 A3 Step 0 把今天的走路釘成字面值）（spec §11 第 8 條）。
    - `gatherAt(run, depth, pos)`、`spotGather(run, depth, partyPos, explored)`（暗影的特產：已探索而且八方向距離 ≤ 1 就加進 `run.spotted`；`Game.revealHere()` 之後呼叫）、`visibleGather(run, depth, c)`（暗影的特產看 `run.spotted`，其他照舊）、`remarkFor(s, run, c)`、`innerFor(s, item)`、`isGather(v)`、`repairGather(d)`。
    - `Game`：`gatherHere(): { type; item; rich; rule? } | null`（唯讀；`run.gather` 為假回 `null`）、`gatherPreview(): { light; full; rule? } | null`、`gather(mode): GatherResult`、`craftTool(level)`、`craftItem(id, n, alt?)`（既有方法加可選參數）、重鑄的 `mat` 接受特產。全部在 `gatherOpen(this.state)` 或 `run.gather` 之下，否則 `{ kind: 'none' }`、`null` 或 `{ ok: false, reason: 'locked' }`。
 5. **`placeGather` 的抽法**：照 spec §5.2 的順序寫死（點數 → 每一點：房間、格子、種類、數量、豐、素材），註解逐步編號。候選房間以 id 排序、格子逐列由左到右；`pickWeighted` 寫成本檔的私有函式（照 `engine/guild.ts:203-211`，不 import 公會的；權重 0 的項目永遠不中）。
@@ -87,7 +87,7 @@ spec 是控制者授權的設計者草案；下面是 spec 沒寫細的地方，
    - **去掉採集點就是原樣**（`engine/gather.legacy.test.ts`，A2）：在 `withRosterOnly([])` 下，`newRun` 之後設 `run.gather = true`，把每一層的 `'gather'` 格改回 `'floor'`、拿掉 `kind: 'gather'` 的內容，整份等於 `__fixtures__/roster/floors.before.json`。
    - **點的位置釘住**（`engine/gather.points.test.ts`，A2 錄）：種子 1–3 × 七個地區 × 深度 1–40 的每一點 `{ at, room, type, item, qty, rich }`，`GATHER_RECORD=1` 寫 `engine/__fixtures__/gather/points.json`；A2 之後任何任務都不准重錄；fixture 不存在時失敗。
    - **相對比較補快照沒有的情況**（A2，審查 L5）：同一個 `Run` 開與關（關的那一份就是今天的程式），去掉採集點之後逐一相同，樣本涵蓋：`rescuesFor` 給的救援房（迷宮裡的相遇與鎮上加入的相遇房）、強制的回憶光點（測試直接設 `run.glimmers[depth]`）、上線的守關者（`withRosterLive` 的守關者層 8、13、18⋯⋯），v6 3.1 合併後再加相遇房清理的情況。
-   - **不採集的潛行就是原樣**（A3）：計畫裁定 16。若潛行的找路輔助函式把不認得的格子當牆（A0 Step 2 會先讀），在**測試檔的輔助函式**裡把 `'gather'` 加進可走的格子，列進報告；任何 fixture 都不動。
+   - **不採集的潛行就是原樣**（A3）：計畫裁定 16。兩個腳本沒有找路的輔助函式：`stepOnto` 把隊伍放到目標旁第一個不是牆的格子再走一步（不受採集點影響），`plantGlimmer`／`plantElite` 種在第一個 `'floor'` 格（採集打開時可能被採集點佔走）。採集情境裡，在**測試檔**把種東西的那兩個輔助函式改成「`'floor'` 或 `'gather'`」都算空地板，選到的格子就和關著時相同；列進報告；任何 fixture 都不動（spec §5.5 第 5 條）。
 9. **`GATHER_ART` 閘門**（A1）：`render/artPaths.ts:241` 的素材圖示清單，`kind === 'gather'` 的素材只收 `GATHER_ART.has(id)` 的；所以 A1 加了十四個素材，`allArtUrls` 的總數與 manifest 測試都不變。介面上的圖示一律經 `lateArt`，`ctx.art.has` 為假就不畫。
 10. **文字槽的接線**（B1，照公會計畫裁定 16 的做法）：`storyTexts()` 在走完 `STORY` 之後另走 `walk(GATHER_TEXT, ['gather'])`；`speakerOf` 加 `top === 'gather'` 的分支：`remarks.<c>.*` → `c`、`inner.*` → `hero`、`doran.*` → `doran`；前綴 `gather.` 加進 `voice.test.ts` 的 `POLISHED`；`position()` 給 `gather.` 一個「`first-return` 之後」的位置（`position()` 能表示的最早一格；若沒有比 `act1` 更早的，就用 `act1`，寫進報告）。槽全部是空陣列，所以這些檢查今天走過零句；B1 用一份測試專用的非空 `GATHER_TEXT` 驗每一個鍵都解得出說話者。
 11. **系統文字的規則**（B1、B3）：`T.ui2.gather` 只寫中性的介面說明（spec §9.1）：不帶角色口吻、不解釋迷宮／燈／霧／碎片、數字用阿拉伯數字、零個「……」、零個「！」。所有新名稱（點名、素材名、規則名、工具名）在 A1 加進名冊 A5 的秘密詞掃描。不寫帳本、不做冷讀。
@@ -98,11 +98,11 @@ spec 是控制者授權的設計者草案；下面是 spec 沒寫細的地方，
 16. **「開著但不採」的證明要真的開著**（審查 H1，spec §5.5 第 3 條）：
     - `withGatherLive(f, opts?: { open?: boolean })`：`open: true` → `GATHER_SWITCH.open = () => true`（一律打開，不靠 `first-return`）；`open: false` → 一律關；不給 → 照預設。`finally` 還原 `live` 與 `open`。
     - `engine/storyL.dive.test.ts` 與 `engine/guild.legacy.test.ts` 的採集情境一律用 `{ open: true }`，比對**同一份** fixture，另加非空的斷言：腳本裡至少一次出發之後 `game.run.gather === true`；腳本走過的樓層裡（`game.run.floors` 的每一層）至少一層有 `kind: 'gather'` 的內容。
-    - 新檔 `engine/gather.walk.test.ts`：種子固定的 `Game`、`withGatherLive(f, { open: true })`、本道與一個地區各一段，跨至少三層；每一層用測試檔裡的 BFS（只走 `tileAt !== 'wall'`）依序走到每一個採集點、再走到樓梯，全部用 `move()`，戰鬥用 `engine/testing.ts` 既有的固定打法打完；記下 `game.rng` 的抽取次數（注入計數的 `rng`）、每一場遇敵的層與位置、每一場戰鬥紀錄的 SHA-256。第二次：同樣的種子、同樣的路線（第一次記下每一層要走過的座標序列，第二次照走），但每進一層、第一次 `move` 之前，測試就把 `floorOf(game.run, game.floor)` 快取裡的 `'gather'` 改回 `'floor'`、拿掉內容；兩次逐一相同。斷言第一次踩過的點 ≥ 3。沒有 fixture，不錄任何東西。
+    - 新檔 `engine/gather.walk.test.ts`：種子固定的 `Game`、`withGatherLive(f, { open: true })`、本道與一個地區各一段，跨至少三層；每一層用測試檔裡的 BFS（只走 `tileAt !== 'wall'`）依序走到每一個採集點、再走到樓梯，全部用 `move()`；戰鬥用從 `engine/storyL.dive.test.ts` 抄來的 `fight()`（每一回合所有還站著的人打第一個還站著的敵人，最多 500 回合；`engine/testing.ts` 沒有現成的打法），另處理全滅：`fight()` 之後若 `phase` 是 `'town'`（`wipe`），記下「全滅於第幾層第幾步」並結束這一段，兩次比對照樣要相同；記下 `game.rng` 的抽取次數（注入計數的 `rng`）、每一場遇敵的層與位置、每一場戰鬥紀錄的 SHA-256。第二次：同樣的種子、同樣的路線（第一次記下每一層要走過的座標序列，第二次照走），但每進一層、第一次 `move` 之前，測試就把 `floorOf(game.run, game.floor)` 快取裡的 `'gather'` 改回 `'floor'`、拿掉內容；兩次逐一相同。斷言第一次踩過的點 ≥ 3。沒有 fixture，不錄任何東西。
     - **會壞才算證明**：A3 的 Step 2b：暫時把 `floorOf` 的 `placeGather` 那一行改成什麼都不做（不 commit），跑上面三個檔：非空的斷言與「踩過的點 ≥ 3」必須紅；紅了就把那一行改回來，紀錄存 SDD `A/task-A3-stub.txt`。
 17. **出發層也有點**（審查 M2）：`depart()` 裡 `this.run = newRun(...)` 的下一行就設 `this.run.gather = true`（`gatherOpen` 時），在 `this.forceGlimmers(startDepth)` 與 `this.map()` 之前；A3 有一條測試：用一個在出發層會放點的種子（測試裡先以 `floorOf` 算好），出發之後 `game.map()` 的那一層有點。
-18. **裝不下的重試**（審查 M1）：B2 的 `gatherFull(host, r, mode)` 開 `fullLayer(host, r, () => afterGather(host, game.gather(mode), mode), undefined, [], { left: T.ui2.gather.left })`；`fullLayer` 加一個可選的最後參數 `opts?: { left?: string }`，放棄時說 `opts.left ?? F.left`（既有的呼叫不變）。
-19. **公會的上限另開**（審查 M3，spec §8.4）：`engine/guild.economy.test.ts` 的 `capSweep`、它釘住的最壞值與 `BOARD_CAP_EXCEPTIONS` 一個字都不動；C1 加 `gatherCapSweep()`（同一套評等 × 深度 × 種子，存檔情境多「全部採集素材 `got ≥ 1`」）、`GATHER_BOARD_WORST`（完整抽樣量到的合理組合最壞值，逐字釘住）、`GATHER_BOARD_EXCEPTIONS`（空，或量到才寫）。平常跑每組前 40 個種子，`GUILD_CAP_FULL=1` 跑完整的。
+18. **裝不下的重試**（審查 M1）：B2 的 `gatherFull(host, r, mode)` 開 `fullLayer(host, r, () => afterGather(host, game.gather(mode), mode), undefined, [], { left: T.ui2.gather.left })`；`fullLayer` 加一個可選的最後參數 `opts?: { left?: string; desc?: (item: string, qty: number, need: number) => string }`：放棄時說 `opts.left ?? F.left`，重量不夠的那一行用 `opts.desc ?? F.desc`（既有的呼叫不變）；採集傳 `{ left: T.ui2.gather.full.left, desc: T.ui2.gather.full.desc }`。
+19. **公會的上限另開**（審查 M3，spec §8.4）：`engine/guild.economy.test.ts` 的 `capSweep`、它釘住的最壞值與 `BOARD_CAP_EXCEPTIONS` 一個字都不動；C1 加 `gatherCapSweep()`（同一套評等 × 深度 × 種子，存檔情境多「全部採集素材 `got ≥ 1`」）、`GATHER_BOARD_WORST`（完整抽樣量到的合理組合最壞值，逐字釘住；照既有 `capSweep` 的寫法：`GUILD_CAP_FULL=1` 時量到的值必須**等於**它，平常跑的 40 種子只要 **≤** 它）、`GATHER_BOARD_EXCEPTIONS`（空，或量到才寫）。平常跑每組前 40 個種子，`GUILD_CAP_FULL=1` 跑完整的。
 20. **和公會 PR D 疊在一起**（審查 M4，spec §5.5 第 4 條）：公會 PR D 會打開 `GUILD_LIVE`，並改 `engine/guild.legacy.test.ts` 原情境的比對方式（它的計畫 D1：解鎖之後刪掉 `guild` 欄位再比）。採集的情境照 PR D 留下的做法疊：PR D 刪欄位，採集的情境也在同一個時點刪 `guild`；PR D 若改用 `withGuildLive(…, { open: false })`，採集的情境包在它裡面。A3 的最後一步：公會 PR D 合併之後，把 A3 rebase 到新的 `origin/master`，重跑城鎮快照的兩個情境，報告寫明用的是哪一種。A3 若在 PR D 之後才開工，直接照當時的樣子寫。
 21. **列的 id**（審查 L6）：消耗品的採集配方 `<道具 id>@gather`、工具 `tool@1`、`tool@2`；`pick` 以 `@` 拆開。測試釘住同一個清單裡沒有重複的 id。
 22. **視窗的圖**（審查 L4）：B2 的採集視窗不呼叫 `bestPicture`／`eventArt`；`eventWindow` 對 `'gather'` 和 `'full'`、`'stairs'` 一樣跳過圖；E4 才接 `art.gatherTile`。
@@ -219,7 +219,7 @@ spec 是控制者授權的設計者草案；下面是 spec 沒寫細的地方，
 - 文件：spec §0（計畫裁定抄回）。
 - e2e：`tests/e2e/starlantern.spec.ts`（B4、D2）。
 - 美術（PR E）：`art-factory/starlantern/{contract.md,registry.json}`、`public/assets/games/starlantern/{tiles,icon}/`、manifest、`render/artPaths.test.ts`。
-- **不改**：凍結的平衡檔、`data/story.zh-TW.ts`、`data/story/scenes.ts`、`data/bond.zh-TW.ts`、`data/guild.zh-TW.ts` 的既有字串、帳本、聖經、`data/items.ts`、`data/forge.ts`（`CONSUMABLE_RECIPES`、`REROLL` 原樣；新配方在 `data/gather.ts`）、`data/floors.ts`、`engine/battle.ts`、`engine/encounter.ts`、`engine/events.ts`（`trapDamage` 只讀）、`engine/loot/*.ts`、`engine/dungeon/gen.ts`、`engine/story/*.ts`、`engine/__fixtures__/sim-gate/`、`engine/__fixtures__/roster/`、`engine/__fixtures__/story-l/`、`engine/__fixtures__/guild/`。`engine/game.ts` 的 `move()`、`springTrap()` 一行不改；`walk()` 唯一的改動是把 `mod` 的算式抽成私有方法 `stepMod()` 再呼叫它（同一個算式、同樣的抽取；由逐位元的證據保護，計畫裁定 4）。
+- **不改**：凍結的平衡檔、`data/story.zh-TW.ts`、`data/story/scenes.ts`、`data/bond.zh-TW.ts`、`data/guild.zh-TW.ts` 的既有字串、帳本、聖經、`data/items.ts`、`data/forge.ts`（`CONSUMABLE_RECIPES`、`REROLL` 原樣；新配方在 `data/gather.ts`）、`data/floors.ts`、`engine/battle.ts`、`engine/encounter.ts`、`engine/events.ts`（`trapDamage` 只讀）、`engine/loot/*.ts`、`engine/dungeon/gen.ts`、`engine/story/*.ts`、`engine/__fixtures__/sim-gate/`、`engine/__fixtures__/roster/`、`engine/__fixtures__/story-l/`、`engine/__fixtures__/guild/`。`engine/game.ts` 的 `move()`、`springTrap()` 一行不改；`walk()` 唯一的改動是把 `mod` 的算式抽成私有方法 `stepMod()` 再呼叫它（同一個算式、同樣的抽取；由 A3 Step 0 先錄好的走路特性測試與逐位元的證據保護，計畫裁定 4）。
 
 ---
 
@@ -231,7 +231,7 @@ spec 是控制者授權的設計者草案；下面是 spec 沒寫細的地方，
 - SDD `A/baseline.md`。
 
 - [ ] **Step 1**：`git status` 乾淨；`baseline.md` 記下 `git rev-parse HEAD`、tsc 總數與 starlantern 底下的數字、全套兩行、`Object.keys(MATERIALS).length`、`legacyFights.test.ts` 的兩個釘子值、`allArtUrls()` 的長度、v6 計畫 3.1 是否已合併（`engine/meetings.hash.test.ts` 在不在；`floorOf` 最後一行是什麼）、公會計畫 PR C 是否已合併、`trapDamage` 與 `POISON_TP_LOSS_PCT` 的位置與簽名。
-- [ ] **Step 2**：讀 `engine/storyL.dive.test.ts` 的找路輔助函式：它把哪些格子當成可以走（`tileAt(...) !== 'wall'`，或一份白名單）。記進 `baseline.md`；A3 依此決定要不要在測試檔的輔助函式加 `'gather'`（計畫裁定 8）。`engine/guild.legacy.test.ts` 的腳本同樣讀一次。
+- [ ] **Step 2**：讀 `engine/storyL.dive.test.ts` 與 `engine/guild.legacy.test.ts` 的輔助函式（`stepOnto`、`plantGlimmer`、`plantElite`、`downstairs`）：哪些靠「第一個 `'floor'` 格」選位置。記進 `baseline.md`；A3 依此在測試檔把那些輔助函式改成也認 `'gather'`（計畫裁定 8）。兩個腳本都沒有找路；`engine/testing.ts` 沒有現成的戰鬥打法（`fight()` 在潛行測試檔裡）。
 - [ ] **Step 3**：grep 既有測試裡釘住素材總數、`Tile`、`MaterialKind`、`Content['kind']`、`MarkerKind`、`EventKind`、`MaterialUse` 的地方（`Record<Tile`、`Record<MaterialKind`、`Record<MarkerKind`、`MATERIALS).length`、`toHaveLength(120)` 這類），清單記進 `baseline.md`；A1、A2、B1 的「已知會紅」以這份清單為準。
 - [ ] **Step 4**：閘門錄 `gate-0`（第一次對自己比），`cmp` 沒有輸出；逐位元的其他證據全綠。
 - [ ] **Step 5**：e2e 三個專案各跑一次，通過數記進 `baseline.md`。（A0 不 commit 程式；`baseline.md` 在 SDD 裡。）
@@ -287,13 +287,18 @@ spec 是控制者授權的設計者草案；下面是 spec 沒寫細的地方，
 **Files:**
 - Create：`engine/gather.ts`、`engine/gather.test.ts`、`engine/gather.guard.test.ts`、`engine/gather.walk.test.ts`。
 - Modify：`engine/state.ts`（`GatherState { tool?: 1 | 2; got: Record<string, number> }`、`GameState.gather?`；`newGame` 不寫它）、`engine/game.ts`（`depart`：計畫裁定 17，`newRun` 的下一行設 `run.gather`；`revealHere()` 之後呼叫 `spotGather`；`walk()` 的 `mod` 抽成 `stepMod()`；`gatherHere()`、`gatherPreview()`、`gather(mode)`、`GatherResult` 型別；`move()`、`springTrap()` 不改）、`engine/game.test.ts`、`engine/storyL.dive.test.ts`、`engine/guild.legacy.test.ts`（各加一個 `withGatherLive(f, { open: true })` 的 `it`／情境，計畫裁定 16、20）。
-- 已知會紅：預期沒有。若 A0 Step 2 記的找路輔助函式不把 `'gather'` 當可走，在那個**測試檔的輔助函式**加上它（不動 fixture），列進報告（spec §5.5 第 5 條）。
+- 已知會紅與改法：採集情境下，種在「第一個 `'floor'` 格」的輔助函式（A0 Step 2 的清單）可能選到別格：在**測試檔**把它們改成也認 `'gather'`（不動 fixture），列進報告（spec §5.5 第 5 條）。其他預期沒有。
 
+- [ ] **Step 0：先把今天的走路釘住**（審查第二輪 M2；在任何 `engine/game.ts` 的改動之前，獨立一個 commit）：`engine/game.test.ts` 新 `describe('walking as it is today (gathering plan Task A3 Step 0)')`。
+  - 種子固定的 `Game`（`Game.fresh(mulberry32(<固定值>), null)`），本道第 1 層出發；`mod` 的六種組合 1、0.8、0.6、0.5、0.4、0.3＝有沒有 `encounterDown` 被動 × 狀況 `plain`／`fog`／`calm`（給被動的方法照既有測試：先 grep `encounterDown`；狀況用出發時的 `Portal.condition`）。
+  - 每一種組合：把隊伍放到出發層第一對相鄰的 `'floor'` 格之一（照 `stepOnto` 的放法），之後只用 `move()` 在兩格之間來回 N = 60 步；每一步之後記 `game.encounter`（計量）與 `move` 的結果種類；遇敵時記下第幾步，用抄來的 `fight()` 打完（全滅就記下並結束這一組）。
+  - 在**今天的程式**上跑一次，把六組的計量陣列與「第幾步遇敵」寫成測試裡的**字面值**（不是 fixture 檔）；不帶任何環境變數再跑兩次都綠；commit：`test(starlantern): pin today's walking before the gathering preview reuses its multiplier`。
+  - 之後 Step 3 把 `walk()` 的 `mod` 抽成 `stepMod()` 時，這個測試必須照舊綠；紅了就是抽錯了，修實作，不改字面值。
 - [ ] **Step 1：寫失敗的測試**
   - `engine/gather.test.ts`：
     - `the outcome table`：`outcome` 在下列每一格的數量與聲響等於 spec §5.4 的公式（逐一寫成字面值）：一般點／豐點 × 輕手／全力 × 工具 0／1／2 × 六種地區規則；輕手的數量是 `⌈base ÷ 2⌉`、聲響四捨五入；聲響加上之後上限 99；
     - `the gauge and the lamp`：`gauge` 的前後是數字（例 41 → 74）、`danger` 在計量 0、39、40、74、75、98、99 的燈；
-    - `the next step`（審查 L1）：`next` 對 `mod` 1、0.5、0.8、0.6、0.3 × 三種地形的 `rate` × 計量 0、20、39、41、69、98、99，等於 spec §5.4 的 `gMin`／`gMax` 規則；另用 `advance()` 本身驗兩端：以回傳固定值的假 `rng`（增量取最小、最大；黃燈判定取 0 與接近 1）跑一次 `advance(v, rng, rate, mod)`，「不會」時兩端都不遇敵、「一定」時兩端都遇敵、「可能」時至少一端遇敵；
+    - `the next step`（審查 L1）：`next` 對 `mod` 1、0.8、0.6、0.5、0.4、0.3 × 三種地形的 `rate` × 計量 0、20、39、41、69、98、99，等於 spec §5.4 的 `gMin`／`gMax` 規則；另用 `advance()` 本身驗兩端：以回傳固定值的假 `rng`（增量取最小、最大；黃燈判定取 0 與接近 1）跑一次 `advance(v, rng, rate, mod)`，「不會」時兩端都不遇敵、「一定」時兩端都遇敵、「可能」時至少一端遇敵；
     - `the land's toll`（審查 L2）：燙手與毒氣的 `n` 是 `⌈trapDamage(…, depth) ÷ 2⌉`（深度 1、15、40）；每一位的 HP 變化是 `hp − max(1, hp − n)`（含 hp 是 1、比 n 小、比 n 大的人）；帶電的 TP 變化是 `min(tp, ⌊maxTP × 20 ÷ 100⌋)`（含 tp 是 0 的人）；對象是 `party.recruited` 裡活著的每一位，含不在 `party.grid` 的；倒下的不在 `toll` 裡；無聲、藏在暗處、鏗鏘沒有 `toll`；
     - `hidden until spotted`（審查 L3）：暗影的特產在沒探索、或距離 2 時不進 `run.spotted`；已探索而且距離 ≤ 1（八方向）就進；進了之後走遠仍 `visibleGather`；其他點不看 `run.spotted`；
     - `who would speak`：計畫裁定 6 的每一條（順序、在場的定義、凜的退路、空池不給也不往下找、`gatherTalked` 之後不給、索引是 `Σ got` 的餘數）；`innerFor` 的 `first`、`deep`、兩者同時只給 `first`、空池不給；用一份測試專用的非空 `GATHER_TEXT` 驗「有字時會給」；
@@ -304,7 +309,7 @@ spec 是控制者授權的設計者草案；下面是 spec 沒寫細的地方，
     - `on, shut until the first return`：`withGatherLive`（不給 `open`）、`first-return` 沒看過：同上；`withGatherLive(f, { open: false })` 時看過也一樣；
     - `the start floor has points`（審查 M2，計畫裁定 17）：先用 `floorOf(newRun(...))` 找一個出發層會放點的種子；同一個種子的 `Game` 在 `withGatherLive(f, { open: true })` 下出發，`game.map()` 的那一層有 `'gather'` 格；
     - `on and open`：出發之後 `run.gather === true`；站上一個點（測試直接把 `pos` 放上去）`gatherHere()` 給種類、素材、豐與規則；`gather('full')` 之後背包多了預告的數量、`got` 加了、格子是 `'floor'`、內容不見、計量照預告、`run.worked` 沒有被設；
-    - `the preview is the outcome`：每一種地區規則與豐點各一例、`mod` 的四種組合（有沒有 `encounterDown` × 平常／靜謐），`gatherPreview()` 的兩種採法各自等於實際 `gather(mode)` 之後的數量、計量、每一位成員的 HP／TP；
+    - `the preview is the outcome`：每一種地區規則與豐點各一例、`mod` 的六種組合（有沒有 `encounterDown` × 平常／濃霧／靜謐：1、0.8、0.6、0.5、0.4、0.3），`gatherPreview()` 的兩種採法各自等於實際 `gather(mode)` 之後的數量、計量、每一位成員的 HP／TP；
     - `the land takes its toll`：燙手、毒氣照 `max(1, hp − n)`、帶電照 `min(tp, …)`；不在場上的已加入成員也扣；倒下的成員不扣；
     - `a full pack leaves the point`：背包剩的重量不夠時回 `full`，點、計量、HP／TP、`got` 都不變；丟掉一些素材之後同一個 `gather(mode)` 成功（M1 的引擎面）；
     - `a point pays once`（spec §11 第 3 條）：同一點第二次 `none`；採過的格子是 `'floor'`；
@@ -325,13 +330,14 @@ spec 是控制者授權的設計者草案；下面是 spec 沒寫細的地方，
 
 **Files:**
 - Create：`engine/forge/gatherTools.ts`（`toolCost(level)`、`craftTool(s, level)`）、`engine/forge/gatherTools.test.ts`。
-- Modify：`engine/forge/craft.ts`（`itemRecipeCost(id, qty, alt = false)`、`craftItem(s, id, qty, alt = false)`：`alt` 讀 `GATHER_RECIPES`）、`engine/forge/cost.ts`（`rerollCost` 的 `mat` 是特產時收 `GATHER_PIN_QTY`；`swapPool` 的組由 `REGION_AFFIX_GROUP[mat] ?? REGION_AFFIX_GROUP[REGIONS[spotRegionOf(mat)].material]` 決定）、`engine/forge/uses.ts`（`MaterialUse` 加 `{ kind: 'tool'; level: 1 | 2 }`；第二種配方推既有的 `consumable`；特產推既有的 `regionReroll`）、`data/text.zh-TW.ts`（`T.forge.use` 的 `tool` 一支）、`engine/game.ts`（`craftTool(level)`、`craftItem(id, n, alt?)` 的 `alt` 與重鑄的特產 `mat` 都要 `gatherOpen`，否則 `locked`；成功都 `saveInTown`）、`engine/forge/{craft,cost,uses}.test.ts`、`engine/game.test.ts`、`engine/gather.guard.test.ts`（加入 `gatherTools.ts`）。
+- Modify：`engine/forge/forge.ts`（`reroll` 的 `mat` 檢查（:68）今天只收 `REGION_AFFIX_GROUP` 的鍵：改成也收特產，`swapPool` 用它地區的組、`rerollCost` 收特產 ×`GATHER_PIN_QTY`；`gatherOpen` 的閘門留在 `engine/game.ts`，`forge.ts` 不讀開關）、`engine/forge/forge.test.ts`、`engine/forge/craft.ts`（`itemRecipeCost(id, qty, alt = false)`、`craftItem(s, id, qty, alt = false)`：`alt` 讀 `GATHER_RECIPES`）、`engine/forge/cost.ts`（`rerollCost` 的 `mat` 是特產時收 `GATHER_PIN_QTY`；`swapPool` 的組由 `REGION_AFFIX_GROUP[mat] ?? REGION_AFFIX_GROUP[REGIONS[spotRegionOf(mat)].material]` 決定）、`engine/forge/uses.ts`（`MaterialUse` 加 `{ kind: 'tool'; level: 1 | 2 }`；第二種配方推既有的 `consumable`；特產推既有的 `regionReroll`）、`data/text.zh-TW.ts`（`T.forge.use` 的 `tool` 一支）、`engine/game.ts`（`craftTool(level)`、`craftItem(id, n, alt?)` 的 `alt` 與重鑄的特產 `mat` 都要 `gatherOpen`，否則 `locked`；成功都 `saveInTown`）、`engine/forge/{craft,cost,uses}.test.ts`、`engine/game.test.ts`、`engine/gather.guard.test.ts`（加入 `gatherTools.ts`）。
 - 已知會紅：預期沒有（原配方、原釘選的結果逐一不變；`uses.test.ts` 裡既有素材的用途清單不變，因為第二種配方只用採集素材）。
 
 - [ ] **Step 1：寫失敗的測試**：
   - `gatherTools.test.ts`：`the first tool`（材料夠就打好、`tool = 1`、扣錢扣料、`forgeDraws` 不變）；`the second needs the first and two lands`；`a tool is made once`（spec §11 第 4 條：再打一次 `invalid`；`tool` 存檔來回不變）；`short of goods`（回 `gold`／`mats`，狀態不變）；
   - `engine/game.test.ts`：`the forge's gathering work draws nothing`（spec §11 第 7 條：`craftTool`、`craftItem(..., true)` 前後，注入計數的 `game.rng` 與 `forgeDraws` 不變；特產釘選照重鑄的既有規則抽 `forgeRng`，它的 `forgeDraws` 增量必須等於同一件裝備用地區素材釘選的增量，`game.rng` 不變）；
   - `craft.test.ts`：`the gathered recipe`：每一個 `GATHER_RECIPES` 的道具用 `alt` 做得出來、扣的是採集素材；不帶 `alt` 的結果逐一等於今天；
+  - `forge.test.ts`（先紅）：`a spot pins its land at the forge`：今天的程式用特產當 `mat` 呼叫 `reroll(..., { swap: true, mat: 'ember-glass' })` 回 `invalid`（Step 2 確認就是這個紅）；改完之後成功，換上的詞綴在熾焰的組裡、扣的是 2 個焰琉璃、`blaze-core` 一個都沒少；`forgeDraws` 的增量與用 `blaze-core` 釘選相同；不是特產也不是地區素材的 `mat`（例 `copper-ore`）照舊 `invalid`；
   - `cost.test.ts`：`a spot pins its land`：特產當 `mat` 收 2 個、`swapPool` 等於那個地區素材的組；地區素材照舊收 1 個；
   - `uses.test.ts`：採集素材的用途（工具、消耗品、重鑄）逐一列出；既有素材的用途逐一不變；
   - `engine/game.test.ts`：`the forge's gathering work is shut while gathering is`：開關關著時三個入口 `locked`；打開之後成功並存檔。
@@ -365,7 +371,7 @@ spec 是控制者授權的設計者草案；下面是 spec 沒寫細的地方，
   2. `gather, craft, sell: no loop`（採集配方做出的消耗品 `sell` 回 `invalid`、`sellJunk` 不動它；工具不在 `inventory`；釘選之後少了 2 個特產、裝備的賣價與拆解價值不變）；
   5. `a floor has a ceiling`（抽樣照 Global Constraints；一級工具、全力採；`GATHER_FLOOR_CAP`）；
   6. `the board's rules hold for gathered goods`（資料面）；
-  8. `the preview is the outcome, everywhere`（抽樣照 Global Constraints；每一點 × 兩種採法 × 三種工具等級 × `mod` 的四種組合（1、0.5、0.6、0.3）；預告的數量、計量前後、燈、下一步，以及每一位成員的 HP（`max(1, hp − n)`）與 TP（`tp − min(tp, ⌊maxTP × 20 ÷ 100⌋)`），對象是 `party.recruited` 裡活著的每一位（含不在場上的），等於實際 `gather()` 之後的變化）。
+  8. `the preview is the outcome, everywhere`（抽樣照 Global Constraints；每一點 × 兩種採法 × 三種工具等級 × `mod` 的六種組合（1、0.8、0.6、0.5、0.4、0.3）；預告的數量、計量前後、燈、下一步，以及每一位成員的 HP（`max(1, hp − n)`）與 TP（`tp − min(tp, ⌊maxTP × 20 ÷ 100⌋)`），對象是 `party.recruited` 裡活著的每一位（含不在場上的），等於實際 `gather()` 之後的變化）。
 - [ ] **Step 2**：執行。第 1、2、6、8 條預期綠（A1–A5 已照規則寫）；紅了就是實作錯，修實作。第 5 條紅了：調 `gatherQty` **一次**，還紅就以 `GATHER_CAP_EXCEPTIONS` 具名放過（理由、最大值），加一條待辦到 SDD `A/carry.md`。
 - [ ] **Step 3**：`GATHER_FULL=1` 跑一次完整抽樣（重的工作），結果記進報告；全套、tsc、閘門、逐位元的其他證據。
 - [ ] **Step 4**：收尾 G，commit：`test(starlantern): gathering makes no loop`。
@@ -395,14 +401,14 @@ spec 是控制者授權的設計者草案；下面是 spec 沒寫細的地方，
 ### Task B2：提示、確定鍵、採集視窗
 
 **Files:**
-- Modify：`ui2/scenes/dungeon.ts`（`refresh` 時依 `game.gatherHere()` 顯示或藏起 `slx-gather-hint`（`tapper`，動作 `confirm`）；`onAction` 在沒有 layer、沒有對話時的 `confirm`：站在點上就開採集視窗，否則什麼都不做；採集的結果：`gathered` → `say` 收穫那一行，有地區規則再一行，然後 `remark`、`inner` 有字才說（名牌、臉、心聲的呈現照迷宮對話與 v6 的既有做法；v6 的心聲呈現若還沒合併，`inner` 的鍵一律不說）；`full` → 計畫裁定 18 的 `gatherFull(host, r, mode)`；`none` → `sfx.error`）、`ui2/scenes/event.ts`（`EventKind` 加 `'gather'`；`eventWindow` 對 `'gather'` 不畫圖（計畫裁定 22）；`fullLayer` 加可選的 `opts?: { left?: string }`（計畫裁定 18，既有呼叫不變）；`gatherLayer(host, preview)`：標題（豐點加「（豐）」）、`looks`、規則那一行（帶 `n`）、兩個採法的列（右欄是數量、計量前後、燈、下一步）、`離開`；游標照計畫裁定 15）、`src/styles/_starlantern-ui.scss`（`.slx-gather-hint`：重量讀數之上、12 px、`pointer-events: auto`；位置在本任務依實際量測定）、`ui2/scenes/dungeon.test.ts`、`ui2/scenes/event.test.ts`。
+- Modify：`ui2/scenes/dungeon.ts`（`refresh` 時依 `game.gatherHere()` 顯示或藏起 `slx-gather-hint`（`tapper`，動作 `confirm`）；`onAction` 在沒有 layer、沒有對話時的 `confirm`：站在點上就開採集視窗，否則什麼都不做；採集的結果：`gathered` → `say` 收穫那一行，有地區規則再一行，然後 `remark`、`inner` 有字才說（名牌、臉、心聲的呈現照迷宮對話與 v6 的既有做法；v6 的心聲呈現若還沒合併，`inner` 的鍵一律不說）；`full` → 計畫裁定 18 的 `gatherFull(host, r, mode)`；`none` → `sfx.error`）、`ui2/scenes/event.ts`（`EventKind` 加 `'gather'`；`eventWindow` 對 `'gather'` 不畫圖（計畫裁定 22）；`fullLayer` 加可選的 `opts?: { left?: string; desc?: … }`（計畫裁定 18，既有呼叫不變）；`gatherLayer(host, preview)`：標題（豐點加「（豐）」）、`looks`、規則那一行（帶 `n`）、兩個採法的列（右欄是數量、計量前後、燈、下一步）、`離開`；游標照計畫裁定 15）、`src/styles/_starlantern-ui.scss`（`.slx-gather-hint`：重量讀數之上、12 px、`pointer-events: auto`；位置在本任務依實際量測定）、`ui2/scenes/dungeon.test.ts`、`ui2/scenes/event.test.ts`。
 - 已知會紅：預期沒有（全部在 `run.gather` 之下；`dungeon.test.ts` 的選單清單不變）。
 
 - [ ] **Step 1：寫失敗的測試**：
   - `the hint appears on a point and leaves with it`；`confirm on a point opens the window, elsewhere does nothing`；`holding a direction walks over a point without a window`（連續 `move`，layer 數一直是 0）；
   - `the window shows both ways`（兩列的數量、計量前後的數字、燈名、下一步等於 `gatherPreview()`；有 `encounterDown` 與靜謐時「下一步」照 `mod` 變；豐點的標題；六種地區規則各一例的那一行與 `n`）；`the cursor avoids the red`（計畫裁定 15 的三種情況）；
   - `gathering says what came`（收穫那一行與規則那一行；真的 `GATHER_TEXT`（全空）時不多說任何話；測試用一份非空的槽驗會說、名牌對）；
-  - `a full pack retries the gathering`（審查 M1）：裝不下時開 `fullLayer`，文字是採集的版本；丟掉一些素材之後重試，呼叫的是同一個 `game.gather(mode)`（不是 `pickUpHere`），成功之後說收穫那一行、點不見；放棄時說「採集點還在。」、點還在；既有的寶箱、寶庫、回憶光點的裝不下視窗逐字不變；
+  - `a full pack retries the gathering`（審查 M1）：裝不下時開 `fullLayer`，重量那一行是 `T.ui2.gather.full.desc` 的字、放棄的那一句是 `T.ui2.gather.full.left` 的字（`opts.desc`、`opts.left` 兩個都測）；丟掉一些素材之後重試，呼叫的是同一個 `game.gather(mode)`（不是 `pickUpHere`），成功之後說收穫那一行、點不見；放棄時說「採集點還在。」、點還在；既有的寶箱、寶庫、回憶光點的裝不下視窗逐字不變；
   - `no art is asked for yet`（審查 L4）：採集視窗打開時 `ctx.art` 沒有被要求任何 `tiles/event-gather` 或 `tiles/gather-*` 的路徑；
   - `opening the window draws nothing`（計數的 `game.rng`：開視窗、離開、採集前後計數相同）；
   - `off, confirm does nothing`（開關關著時 `confirm` 照今天）。
@@ -449,7 +455,7 @@ spec 是控制者授權的設計者草案；下面是 spec 沒寫細的地方，
 - [ ] **Step 1：寫失敗的測試**：
   - `engine/guild.test.ts`：`gathered goods once gathered`（`got` 空：收購池和今天逐一相同；`got` 有銅礦石：池子多它、排在原有的後面）；`who asks for gathered goods`（草、菇 → 瑪莎；礦、晶、特產 → 多蘭；原三種不變）；`gathered goods are no excluded foe's`（池子和公會 spec §5.5 的 25 個沒有交集）；`a spot's land`（`remarkFor` 的地區）；`the quantities`（spec §8.3 的十四個 Q）；
   - `ui2/scenes/board.test.ts`：`a spot's note is about its land`（特產的收購列：`{place}` 與列圖示是那個地區；一般採集素材是本道；地區素材的結果逐一不變）；
-  - `engine/guild.economy.test.ts`（計畫裁定 19）：既有的 `capSweep`、最壞值表、`BOARD_CAP_EXCEPTIONS` 一個字都不改；新增 `gatherCapSweep` 與 `describe('gathered deliveries keep the board under its cap')`：存檔情境是既有的情境再加「全部採集素材都 `got ≥ 1`」，合理組合的最壞值逐字等於 `GATHER_BOARD_WORST`、超過上限的只准是 `GATHER_BOARD_EXCEPTIONS` 裡的；另一條 `the pinned sweep is untouched`：舊的 `capSweep` 的結果等於它釘住的值（防止採集素材混進去）。
+  - `engine/guild.economy.test.ts`（計畫裁定 19）：既有的 `capSweep`、最壞值表、`BOARD_CAP_EXCEPTIONS` 一個字都不改；新增 `gatherCapSweep` 與 `describe('gathered deliveries keep the board under its cap')`：存檔情境是既有的情境再加「全部採集素材都 `got ≥ 1`」，合理組合的最壞值：`GUILD_CAP_FULL=1` 時逐字等於 `GATHER_BOARD_WORST`、平常的 40 種子 ≤ 它（照既有 `capSweep` 的寫法）、超過上限的只准是 `GATHER_BOARD_EXCEPTIONS` 裡的；另一條 `the pinned sweep is untouched`：舊的 `capSweep` 的結果等於它釘住的值（防止採集素材混進去）。
 - [ ] **Step 2**：執行，確認紅。
 - [ ] **Step 3**：實作。公會 C1 還沒合併時，照計畫裁定 13 在公會計畫 SDD 的 carry 記一條。
 - [ ] **Step 4**：`GUILD_CAP_FULL=1` 跑完整抽樣**一次**（重的工作，照 Global Constraints 的鎖）：量到的 `gatherCapSweep` 最壞值寫進 `GATHER_BOARD_WORST`（逐字），結果記進報告；合理組合超過就照公會 §0 第 20 條（調公式一次，還超過寫進 `GATHER_BOARD_EXCEPTIONS`，上限＝量到的值＋上限的 0.01），不碰舊的例外表。然後全套、tsc、閘門、逐位元的其他證據、e2e（`ui2/scenes/board.ts` 有改時）。
