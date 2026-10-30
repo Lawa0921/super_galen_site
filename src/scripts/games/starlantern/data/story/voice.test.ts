@@ -1,12 +1,21 @@
 import { describe, expect, it } from 'vitest';
 import { CHARACTER_IDS } from '../characters';
 import { MEETINGS } from '../meetings';
+import { GATHER_TEXT, type GatherText } from '../gather.zh-TW';
 import { STORY, type ScriptLine, type Speaker, flatLines } from '../story.zh-TW';
 import { BANTER_GATE, CHAT_GATE, SCENE_IDS, type SceneId } from './scenes';
 import {
   AFTER_CHOICE, CHIZURU_ARCHAIC, CHIZURU_NEVER, CONNECTIVES, ELLIPSIS, SYLVIE_WORLD, INTERJECTIONS, SENTENCE_PARTICLE, TELEGRAPH_OK, VOCATIVES, VOICE, WORD_LISTS_AT_TASK3,
   dots, heavyScene, opensOnDots, pinBeat, readingsOf, sceneReadings, speakerOf, storyTexts, telegraphBreaks, type Text,
 } from './voiceGates';
+
+/** The gathering slots with one stand-in line in each (gathering plan Task B1): the real ones are empty until written. */
+const gatherFilled = (): GatherText => {
+  const t = structuredClone(GATHER_TEXT);
+  const fill = (v: unknown): void => { for (const x of Object.values(v as object)) { if (Array.isArray(x)) x.push('「好。」'); else fill(x); } };
+  fill(t);
+  return t;
+};
 
 /**
  * The keys the story polish has rewritten (plan 2026-10-23, style bible 2026-10-22 revision). Each rewrite task adds its own
@@ -60,6 +69,9 @@ const POLISHED: string[] = [
   'scenes.ending:', 'scenes.together.',
   // Bond plan Task 21: the nine romances
   'scenes.romance:',
+  // Gathering plan Task B1 (ruling 10): the gathering slots (data/gather.zh-TW.ts), empty until the story is written; what
+  // is written into them later passes every gate here.
+  'gather.',
 ];
 
 type Scope = readonly string[];
@@ -524,7 +536,8 @@ describe('voice gates over the polished script (story polish)', () => {
   });
 
   it('POLISHED names real keys', () => {
-    const keys = storyTexts().map((t) => t.key);
+    // The gathering slots are empty today (gathering spec §9.2): their keys are walked with one stand-in line in each.
+    const keys = [...storyTexts(), ...storyTexts(gatherFilled()).filter((t) => t.key.startsWith('gather.'))].map((t) => t.key);
     for (const p of POLISHED) expect(keys.some((k) => k.startsWith(p)), p).toBe(true);
     expect(CHARACTER_IDS.length).toBe(10);
   });

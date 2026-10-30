@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { Game } from '../engine/game';
 import { floorOf } from '../engine/dungeon/run';
-import { constRng } from '../engine/testing';
+import { constRng, withGatherLive } from '../engine/testing';
+import { markersOf } from '../render/markers';
 import { MINIMAP_COLORS, MINIMAP_H, MINIMAP_W, Minimap, minimapLayout, type Minimap2D } from './minimap';
 
 interface Call { style: string; x: number; y: number; w: number; h: number }
@@ -106,5 +107,37 @@ describe('Minimap', () => {
     const game = new Game(constRng(0.99), null);
     game.depart(PLAIN, 1);
     expect(() => new Minimap(null).draw(game)).not.toThrow();
+  });
+});
+
+describe('Minimap gathering points (gathering plan Task B1)', () => {
+  it('the minimap shows points', () => {
+    const game = withGatherLive(() => { const g = new Game(constRng(0.99), null); g.depart(PLAIN, 1); return g; }, { open: true });
+    const f = floorOf(game.run!, 1);
+    const m = game.map();
+    const cells: { x: number; y: number }[] = [];
+    for (let y = 0; y < m.height && cells.length < 2; y++) for (let x = 0; x < m.width && cells.length < 2; x++) {
+      if (m.tiles[y][x] === 'floor' && (x !== game.pos.x || y !== game.pos.y)) cells.push({ x, y });
+    }
+    const [plain, rich] = cells;
+    for (const [at, r] of [[plain, false], [rich, true]] as const) {
+      m.tiles[at.y][at.x] = 'gather';
+      f.contents.push({ kind: 'gather', at, room: 0, gather: { type: 'herb', item: 'stanch-herb', qty: 1, ...(r ? { rich: true as const } : {}) } });
+    }
+    const { ctx, calls } = fakeCtx();
+    const mm = new Minimap(ctx);
+    const { scale, ox, oy } = minimapLayout(m.width, m.height);
+    const at = (p: { x: number; y: number }, style: string) => calls.some((c) => c.style === style && c.x === ox + p.x * scale && c.y === oy + p.y * scale);
+    game.run!.explored[1] = [];
+    mm.draw(game);
+    expect(at(plain, MINIMAP_COLORS.gather) || at(rich, MINIMAP_COLORS.gatherRich)).toBe(false);   // not seen: not shown
+    game.run!.explored[1] = m.tiles.flatMap((row, y) => row.map((_, x) => `${x},${y}`));
+    mm.draw(game);
+    expect(MINIMAP_COLORS.gather).toBe('#8fd18b');
+    expect(MINIMAP_COLORS.gatherRich).toBe('#e8c46a');
+    expect(at(plain, MINIMAP_COLORS.gather)).toBe(true);
+    expect(at(rich, MINIMAP_COLORS.gatherRich)).toBe(true);
+    // the map and the minimap agree: one point drawn for each marker
+    expect(calls.filter((c) => c.style === MINIMAP_COLORS.gather || c.style === MINIMAP_COLORS.gatherRich)).toHaveLength(markersOf(game).filter((k) => k.kind === 'gather').length);
   });
 });

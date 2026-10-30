@@ -22,6 +22,9 @@ export const MINIMAP_COLORS = {
   boss: '#e2463a',
   event: '#f2c94c',
   trap: '#ff7a6b',
+  /** A gathering point (gathering spec §10.1), gold when rich: the map glyph's own colours. */
+  gather: '#8fd18b',
+  gatherRich: '#e8c46a',
   party: '#ffffff',
 } as const;
 
@@ -84,7 +87,7 @@ export class Minimap {
       }
     }
     for (const m of markersOf(game)) {
-      cell(m.x, m.y, m.kind === 'trap' ? C.trap : C.event);
+      cell(m.x, m.y, m.kind === 'trap' ? C.trap : m.kind === 'gather' ? (m.rich ? C.gatherRich : C.gather) : C.event);
     }
     cell(game.pos.x, game.pos.y, C.party);
   }

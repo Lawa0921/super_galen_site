@@ -5,15 +5,17 @@ import type { CharacterId } from '../../engine/types';
 import { CHARACTERS, CHARACTER_IDS } from '../characters';
 import { NIGHT_BEATS, NPC_NAMES, STORY, flatLines, linesWhen, worstCount, type LineWhen, type NpcId, type SceneLine, type ScriptLine, type Speaker } from '../story.zh-TW';
 import { COMPANIONS } from './bond';
+import { GATHER_TEXT, type GatherText } from '../gather.zh-TW';
 import type { TownFragmentId } from './fragments';
 import { GROUP_GATE, GROUP_MIN_LINES, lineCap, type GroupScene, type SceneId } from './scenes';
 
 export interface Text { key: string; text: string; line?: ScriptLine }
 /**
  * Every string leaf of STORY, keyed by its path, and the night's beats (`nightBeats.<i>.text`, story L Task 8); a line's text
- * carries its ScriptLine. Skips who, mood, if, a beat's tone and moon and scene titles (interface labels).
+ * carries its ScriptLine. Skips who, mood, if, a beat's tone and moon and scene titles (interface labels). Then gathering's
+ * slots (`gather.<path>.<i>`, gathering plan ruling 10), empty until written; `gather` stands in for them in a test.
  */
-export function storyTexts(): Text[] {
+export function storyTexts(gather: GatherText = GATHER_TEXT): Text[] {
   const out: Text[] = [];
   const walk = (v: unknown, path: string[], line?: ScriptLine): void => {
     if (typeof v === 'string') { out.push({ key: path.join('.'), text: v, ...(line ? { line } : {}) }); return; }
@@ -32,6 +34,7 @@ export function storyTexts(): Text[] {
   };
   for (const [k, v] of Object.entries(STORY)) walk(v, [k]);
   walk(NIGHT_BEATS.lines, ['nightBeats']);
+  walk(gather, ['gather']);
   return out;
 }
 
@@ -51,6 +54,8 @@ export function speakerOf(key: string, line?: ScriptLine): Speaker | undefined {
   if (top === 'town' && b === 'after' && a in NPC_NAMES) return a as NpcId;
   if (top === 'bellkeeper' || top === 'merchant') return top;
   if (top === 'leads') return 'anna';
+  // Gathering plan ruling 10: a companion's remark is hers, the inner voice Lorne's, the tools' lines Doran's.
+  if (top === 'gather') return a === 'remarks' ? (b as CharacterId) : a === 'inner' ? 'hero' : a === 'doran' ? 'doran' : undefined;
   return undefined;
 }
 

@@ -4,7 +4,7 @@ import { Game } from '../engine/game';
 import { DELTA, tileAt } from '../engine/map';
 import { mulberry32 } from '../engine/rng';
 import { floorOf } from '../engine/dungeon/run';
-import { constRng, withRosterLive } from '../engine/testing';
+import { constRng, withGatherLive, withRosterLive } from '../engine/testing';
 import { fogState } from './fog';
 import { MAP_CELL, MapView } from './MapView';
 import { MARKER_GLYPH, markersOf } from './markers';
@@ -421,5 +421,73 @@ describe('MapView under 濃霧', () => {
     const v2 = new MapView(bank);
     v2.draw(plain, { width: 640, height: 296 });
     expect(v2.brightCount()).toBeGreaterThan(1);
+  });
+});
+
+describe('MapView gathering points (gathering plan Task B1)', () => {
+  const SIZE = { width: 640, height: 296 };
+  /** No event art at all: markers are text glyphs. */
+  const noEventArt = { get: (u: string) => (u.includes('/tiles/event-') || u.includes('/tiles/gather-') || u.endsWith('-chest.png') ? null : Texture.WHITE), has: () => true } as unknown as TextureBank;
+  const KINDS = [
+    { type: 'vein', item: 'copper-ore' }, { type: 'herb', item: 'stanch-herb' }, { type: 'fungus', item: 'cap-mushroom' },
+    { type: 'crystal', item: 'quartz-chip' }, { type: 'spot', item: 'scrap-iron' },
+  ] as const;
+  /** A game with gathering on, every cell seen, and one point of each kind (the last rich) on plain floor. */
+  function planted(): { game: Game; at: { x: number; y: number }[] } {
+    const game = withGatherLive(() => { const g = new Game(constRng(0.99), null); g.depart({ region: 'iron', condition: 'plain' }, 1); return g; }, { open: true });
+    const f = floorOf(game.run!, game.floor);
+    f.contents = f.contents.filter((c) => c.kind !== 'gather');
+    const m = game.map();
+    for (let y = 0; y < m.height; y++) for (let x = 0; x < m.width; x++) if (m.tiles[y][x] === 'gather') m.tiles[y][x] = 'floor';
+    const at: { x: number; y: number }[] = [];
+    for (let y = 0; y < m.height && at.length < KINDS.length; y++) for (let x = 0; x < m.width && at.length < KINDS.length; x++) {
+      if (m.tiles[y][x] !== 'floor' || (x === game.pos.x && y === game.pos.y)) continue;
+      const k = KINDS[at.length];
+      m.tiles[y][x] = 'gather';
+      f.contents.push({ kind: 'gather', at: { x, y }, room: 0, gather: { ...k, qty: 1, ...(at.length === KINDS.length - 1 ? { rich: true as const } : {}) } });
+      at.push({ x, y });
+    }
+    game.run!.explored[game.floor] = m.tiles.flatMap((row, y) => row.map((_, x) => `${x},${y}`));
+    return { game, at };
+  }
+  const glyphTexts = (view: MapView): Text[] => {
+    const world = view.root.children[0] as Container;
+    const marks = world.children.find((c) => c.label === 'markers') as Container;
+    return marks.children.filter((c): c is Text => c instanceof Text && c.label === 'glyph-gather');
+  };
+
+  it("a point wears its kind's glyph", () => {
+    const { game, at } = planted();
+    const view = new MapView(noEventArt);
+    view.draw(game, SIZE);
+    const texts = glyphTexts(view);
+    expect(texts.map((t) => t.text).sort()).toEqual(['礦', '草', '菇', '晶', '採'].sort());
+    for (const t of texts) expect([t.style.fontSize, t.style.fontWeight]).toEqual([24, 'normal']);
+    const fill = (t: Text) => t.style.fill;
+    expect(texts.filter((t) => t.text !== '採').map(fill)).toEqual([0x8fd18b, 0x8fd18b, 0x8fd18b, 0x8fd18b]);   // pale green
+    // remembered cells are dim: a glyph out of sight is half transparent, in sight it is whole
+    for (const t of texts) {
+      const p = at.find((c) => Math.abs(c.x * MAP_CELL + MAP_CELL / 2 - t.x) < 1 && Math.abs(c.y * MAP_CELL + MAP_CELL / 2 - t.y) < 1)!;
+      expect(t.alpha).toBe(fogState(seenOf(game), game.pos, p.x, p.y) === 'memory' ? 0.6 : 1);
+    }
+    expect(texts.some((t) => t.alpha === 0.6)).toBe(true);
+    // the cell under a point is plain floor art, as under any event
+    expect(view.countByLabel('gather')).toBe(0);
+  });
+
+  it('a rich point is gold', () => {
+    const { game } = planted();
+    const view = new MapView(noEventArt);
+    view.draw(game, SIZE);
+    const rich = glyphTexts(view).find((t) => t.text === '採')!;
+    expect(rich.style.fill).toBe(0xe8c46a);
+  });
+
+  it('asks for no gathering art', () => {
+    const { game } = planted();
+    const urls: string[] = [];
+    const spy = { get: (u: string) => { urls.push(u); return noEventArt.get(u); }, has: () => true } as unknown as TextureBank;
+    new MapView(spy).draw(game, SIZE);
+    expect(urls.filter((u) => /gather/.test(u))).toEqual([]);
   });
 });

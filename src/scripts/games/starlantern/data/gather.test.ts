@@ -12,6 +12,9 @@ import { CONSUMABLE_RECIPES } from './forge';
 import { newGame } from '../engine/state';
 import { withGatherLive } from '../engine/testing';
 import { allArtUrls } from '../render/artPaths';
+import { GATHER_TEXT, type GatherText } from './gather.zh-TW';
+import { speakerOf, storyTexts } from './story/voiceGates';
+import { T } from './text.zh-TW';
 
 /** The number of art urls on master before gathering (SDD A/baseline.md): the fourteen materials add none (ruling 9). */
 const BASELINE_ART_URLS = 999;
@@ -159,5 +162,72 @@ describe('gathering data (gathering plan Task A1)', () => {
   it('nothing to draw yet', () => {
     expect(GATHER_ART.size).toBe(0);
     expect(allArtUrls()).toHaveLength(BASELINE_ART_URLS);
+  });
+});
+
+/** Gathering plan Task B1 (spec §9.1, §9.2, rulings 10 and 11): the empty slots, their speakers, and the plain system words. */
+describe('gathering words (gathering plan Task B1)', () => {
+  /** Every slot of spec §9.2, as `path: []`. */
+  const SLOTS = [
+    'remarks.sylvie.herb', 'remarks.sylvie.fungus', 'remarks.bobby.vein', 'remarks.bobby.crystal', 'remarks.liz.crystal', 'remarks.liz.spot',
+    'remarks.rin.any', 'inner.first', 'inner.deep', 'doran.tools', 'doran.made1', 'doran.made2',
+  ];
+  const at = (o: unknown, path: string): unknown => path.split('.').reduce<unknown>((v, k) => (v as Record<string, unknown>)?.[k], o);
+  /** A copy of the slots with one line in each, for the checks that walk words (the real slots are empty). */
+  const filled = (): GatherText => {
+    const t = structuredClone(GATHER_TEXT);
+    for (const p of SLOTS) (at(t, p) as string[]).push('「好。」');
+    return t;
+  };
+
+  it('the slots are there and empty', () => {
+    const leaves: string[] = [];
+    const walk = (v: unknown, path: string[]): void => {
+      if (Array.isArray(v)) { leaves.push(path.join('.')); return; }
+      for (const [k, x] of Object.entries(v as object)) walk(x, [...path, k]);
+    };
+    walk(GATHER_TEXT, []);
+    expect(leaves.sort()).toEqual([...SLOTS].sort());
+    for (const p of SLOTS) expect(at(GATHER_TEXT, p), p).toEqual([]);
+    expect(storyTexts().filter((t) => t.key.startsWith('gather.'))).toEqual([]);   // nothing walked today: no line to say
+  });
+
+  it('every gathering slot has a speaker', () => {
+    const texts = storyTexts(filled()).filter((t) => t.key.startsWith('gather.'));
+    expect(texts.map((t) => t.key).sort()).toEqual(SLOTS.map((p) => `gather.${p}.0`).sort());
+    const want = (key: string): string => {
+      const [, a, b] = key.split('.');
+      return a === 'remarks' ? b : a === 'inner' ? 'hero' : 'doran';
+    };
+    for (const t of texts) expect(speakerOf(t.key, t.line), t.key).toBe(want(t.key));
+    expect(speakerOf('gather.remarks.sylvie.herb.0')).toBe('sylvie');
+    expect(speakerOf('gather.inner.first.0')).toBe('hero');
+    expect(speakerOf('gather.doran.made2.0')).toBe('doran');
+  });
+
+  it('system words are plain', () => {
+    const G = T.ui2.gather;
+    const words: [string, string][] = [
+      ...Object.entries(G.points).map(([k, v]): [string, string] => [`points.${k}`, v]),
+      ['rich', G.rich], ['hint', G.hint(G.points.vein + G.rich)], ['looks', G.looks('銅礦石')],
+      ...Object.entries(G.modes).map(([k, v]): [string, string] => [`modes.${k}`, v]),
+      ['modeRow', G.modeRow(3, 21, 44, T.map.danger.yellow, G.next.maybe)],
+      ...Object.entries(G.next).map(([k, v]): [string, string] => [`next.${k}`, v]),
+      ...Object.entries(G.rules).map(([k, f]): [string, string] => [`rules.${k}`, f(6)]),
+      ['got', G.got('銅礦石', 5)], ['toll.hp', G.toll.hp('燙手', 6)], ['toll.tp', G.toll.tp('帶電', 12)],
+      ['full.desc', G.full.desc('銅礦石', 5, 1.5)], ['full.left', G.full.left],
+      ['tools.row', G.tools.row], ['tools.made', G.tools.made], ['tools.effect.1', G.tools.effect[1]], ['tools.effect.2', G.tools.effect[2]],
+      ['tools.needs', G.tools.needs(TOOL_LEVELS[0].name)], ['made', G.made(TOOL_LEVELS[0].name)], ['altTag', G.altTag('回復藥')], ['pinQty', G.pinQty(2)],
+    ];
+    expect(Object.keys(G.points)).toHaveLength(10);
+    for (const r of Object.keys(SPOT_RULES) as (keyof typeof SPOT_RULES)[]) expect(G.points[r]).toBe(SPOT_RULES[r].point);
+    for (const t of GENERIC_TYPES) expect(G.points[t]).toBe(GATHER_TABLE[t].name);
+    // each rule's line starts with the rule's own name
+    for (const r of Object.values(SPOT_RULES)) expect(G.rules[r.rule](6).startsWith(`${r.name}：`), r.rule).toBe(true);
+    for (const [k, w] of words) {
+      expect(w.length, k).toBeGreaterThan(0);
+      expect(w, k).not.toContain('……');
+      expect(w, k).not.toMatch(/[！!]/);
+    }
   });
 });

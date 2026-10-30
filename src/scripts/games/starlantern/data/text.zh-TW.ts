@@ -5,7 +5,7 @@ import { KEYSTONE_GATE } from './talents';
 import { EQUIPMENT } from './equipment';
 import { ITEMS } from './items';
 import { MATERIALS } from './materials';
-import { TOOL_LEVELS } from './gather';
+import { GATHER_NOISE, GATHER_NOISE_TOOL2, GATHER_TABLE, GENERIC_TYPES, SPOT_REGIONS, SPOT_RULES, TOOL_LEVELS, type GenericType, type SpotRegion, type SpotRule } from './gather';
 import { SETS, SPECIALS } from './gear';
 import { ENEMIES } from './enemies';
 import type { RegionId } from './regions';
@@ -980,6 +980,56 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
       badgeLabel: (name: string) => `難度：${name}`,
       /** One affix in the target note, a line each (Task 7b): its name as the row above the foe shows it, then its line. */
       affixLine: (name: string, line: string) => `${name}：${line}`,
+    },
+    /**
+     * Gathering's interface words (gathering spec §9.1, plan ruling 11): plain system text, no one's voice, numbers in digits,
+     * no ellipsis and no exclamation mark. Nobody speaks here: the companions', Lorne's and Doran's slots are data/gather.zh-TW.ts.
+     */
+    gather: {
+      /** The points' names: the four ordinary kinds and each region's spot (the names live with the data). */
+      points: {
+        ...Object.fromEntries(GENERIC_TYPES.map((t) => [t, GATHER_TABLE[t].name])),
+        ...Object.fromEntries(SPOT_REGIONS.map((r) => [r, SPOT_RULES[r].point])),
+      } as Record<GenericType | SpotRegion, string>,
+      rich: '（豐）',
+      /** The hint while standing on a point: its name, and the key that opens it. */
+      hint: (name: string) => `腳下：${name}　確定鍵採集`,
+      looks: (item: string) => `看起來是${item}。`,
+      modes: { light: '輕手採集', full: '全力採集' },
+      /** A way's right column: the goods, the gauge before and after with its lamp, and whether the next step meets a battle. */
+      modeRow: (qty: number, from: number, to: number, lamp: string, next: string) => `${qty} 個  遇敵 ${from} → ${to} ${lamp}  下一步：${next}`,
+      next: { never: '不會', maybe: '可能', sure: '一定' },
+      /** Each spot's rule, one line in the window: `n` is the HP lost (scald, fumes) or the TP share (charge). */
+      rules: {
+        scald: (n: number) => `${SPOT_RULES.blaze.name}：不論怎麼採，全員 HP −${n}（最低剩 1）`,
+        hush: () => `${SPOT_RULES.frost.name}：採集不會增加遇敵計量`,
+        charge: (n: number) => `${SPOT_RULES.storm.name}：不論怎麼採，全員 TP −${n}%，多採 1 個`,
+        fumes: (n: number) => `${SPOT_RULES.mire.name}：不論怎麼採，全員 HP −${n}（最低剩 1）`,
+        hidden: () => `${SPOT_RULES.shade.name}：走到旁邊才看得見，遇敵計量只加一半`,
+        clang: () => `${SPOT_RULES.iron.name}：遇敵計量加倍，產量加倍`,
+      } as Record<SpotRule, (n: number) => string>,
+      got: (item: string, n: number) => `採到了${item} ×${n}。`,
+      /** What the land took, after the goods: the rule's name and the HP lost, or the most TP any member lost. */
+      toll: {
+        hp: (rule: string, n: number) => `${rule}：全員 HP −${n}。`,
+        tp: (rule: string, n: number) => `${rule}：全員 TP 最多減少 ${n}。`,
+      },
+      /** The full pack's window, gathering's version (review M1): what is short, and what giving up leaves. */
+      full: {
+        desc: (item: string, qty: number, need: number) => `還差 ${need} 的重量才放得下 ${item} ×${qty}。`,
+        left: '採集點還在。',
+      },
+      /** The forge's tools row (spec §10.5): its name, the made mark, each level's effect, and why the second waits. */
+      tools: {
+        row: '採集工具', made: '已打造',
+        effect: { 1: '每個採集點多採 1 個。', 2: `採集增加的遇敵計量基數從 ${GATHER_NOISE} 降為 ${GATHER_NOISE_TOOL2}。` } as Record<1 | 2, string>,
+        needs: (name: string) => `要先打造${name}。`,
+      },
+      made: (name: string) => `打造好了${name}。`,
+      /** A consumable's second recipe, under its first (spec §7.2). */
+      altTag: (name: string) => `${name}（採集材料）`,
+      /** A spot's count beside its name in the reroll's pin list (spec §7.3). */
+      pinQty: (n: number) => `×${n}`,
     },
     event: {
       leave: '離開',
