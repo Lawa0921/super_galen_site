@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { ENEMIES } from '../data/enemies';
 import { MATERIALS } from '../data/materials';
 import { REGIONS, type RegionId } from '../data/regions';
-import { DELIVER_GIVER, DELIVER_KINDS, GUILD_MAX, GUILD_RUNES, HUNT_N, KIND_GIVER, MERIT, RANKS, REWARD, SWEEP_N, deliverQty, runeTierAt } from '../data/guild';
+import { DELIVER_GIVER, DELIVER_KINDS, GUILD_MAX, GUILD_RUNES, HUNT_N, KIND_GIVER, MERIT, RANKS, REWARD, SWEEP_N, deliverGiver, deliverQty, runeTierAt } from '../data/guild';
+import { GATHER_MATERIALS, SPOT_OF, gatherTypeOf, spotRegionOf } from '../data/gather';
 import { ROSTER_LIVE, TREASURE } from '../data/monsters';
 import { MEETINGS } from '../data/meetings';
 import { RUNES, RUNE_IDS, RUNE_STACK } from '../data/runes';
@@ -14,7 +15,7 @@ import {
 } from './guild';
 import { grantRune } from './loot/runes';
 import { activeIds, meet } from './party';
-import { withGuildLive, withGuildOff, withRosterOnly } from './testing';
+import { withGatherLive, withGuildLive, withGuildOff, withRosterOnly } from './testing';
 import { dayOf } from './calendar';
 import type { QuestOffer } from './state';
 import { MAX_REACHED } from './levels';
@@ -136,8 +137,8 @@ describe('guild pools: only what the party has seen (guild quests plan Task A2)'
       return by.length > 0 && by.every(excluded);
     });
     expect(fromData).toEqual(EXCLUDED_GOODS);
-    // and everything else that may be asked for is known once all is felled
-    expect(goods.length + EXCLUDED_GOODS.length).toBe(Object.values(MATERIALS).filter((m) => DELIVER_KINDS.includes(m.kind)).length);
+    // and everything else that may be asked for is known once all is felled (a gathered good once gathered: gathering C1)
+    expect(goods.length + EXCLUDED_GOODS.length).toBe(Object.values(MATERIALS).filter((m) => DELIVER_KINDS.includes(m.kind) && m.kind !== 'gather').length);
   });
 
   it('a bounty waits for the road', () => {
@@ -738,4 +739,113 @@ describe('take, track, drop and turn in guild quests; the lamp ranks (guild ques
     t = check(t, (x) => abandon(x, x.guild!.active[0].id));
     expect(t.guild!.active).toEqual([]);
   }));
+});
+
+describe('the guild buys gathered goods (gathering plan Task C1)', () => {
+  const GATHERED = GATHER_MATERIALS.map((m) => m.id);
+  const gathered = (s: GameState, ids: readonly string[]): GameState => {
+    s.gather = { got: Object.fromEntries(ids.map((id) => [id, 1])) };
+    return s;
+  };
+
+  it('gathered goods once gathered', () => withGatherLive(() => {
+    const s = seenAll(12);
+    const today = deliverPool(s);
+    expect(today.some((id) => GATHERED.includes(id))).toBe(false);
+    // nothing gathered yet: the pool as it is today, one by one
+    expect(deliverPool(gathered(seenAll(12), []))).toEqual(today);
+    const none = seenAll(12);
+    none.gather = { got: { 'copper-ore': 0 } };
+    expect(deliverPool(none)).toEqual(today);
+    // copper gathered once: the pool has it too, after the goods it had
+    const copper = gathered(seenAll(12), ['copper-ore']);
+    expect(deliverPool(copper)).toEqual([...today, 'copper-ore']);
+    expect(knownMaterial(copper, 'copper-ore')).toBe(true);
+    expect(knownMaterial(copper, 'silver-ore')).toBe(false);
+    // everything gathered: all fourteen, in MATERIALS order, after today's
+    expect(deliverPool(gathered(seenAll(12), [...GATHERED].reverse()))).toEqual([...today, ...GATHERED]);
+    // and on a new game, only what was gathered
+    expect(deliverPool(gathered(newGame(), ['bog-resin', 'stanch-herb']))).toEqual(['stanch-herb', 'bog-resin']);
+  }, { open: true }));
+
+  it('gathered goods stay off the board while gathering is shut', () => {
+    const s = gathered(seenAll(12), GATHERED);
+    const today = deliverPool(seenAll(12));
+    expect(deliverPool(s)).toEqual(today);   // the shipped switch (GATHER_LIVE off)
+    withGatherLive(() => expect(deliverPool(s)).toEqual(today), { open: false });
+    // a board posted with a gathering record but nothing gathered is today's board, seed by seed
+    withGatherLive(() => {
+      for (let seed = 0; seed < 200; seed++) {
+        const a = atRank(seenAll(1 + (seed % 60)), seed % RANKS.length);
+        a.forgeSalt = seed;
+        const b = structuredClone(a);
+        b.gather = { got: {} };
+        expect(postBoard(b).guild, `seed ${seed}`).toEqual(postBoard(a).guild);
+      }
+    }, { open: true });
+  });
+
+  it('who asks for gathered goods', () => withGatherLive(() => {
+    // herbs and mushrooms: Marta; ore, crystal and the spots: Doran
+    expect(Object.fromEntries(GATHERED.map((id) => [id, deliverGiver(id)]))).toEqual({
+      'copper-ore': 'doran', 'silver-ore': 'doran', 'stanch-herb': 'marta', 'moonbell-herb': 'marta', 'cap-mushroom': 'marta', 'glow-mushroom': 'marta',
+      'quartz-chip': 'doran', 'deep-quartz': 'doran', 'ember-glass': 'doran', 'rime-moss': 'doran', 'charged-ore': 'doran', 'bog-resin': 'doran',
+      'shade-silk': 'doran', 'scrap-iron': 'doran',
+    });
+    for (const id of GATHERED) expect(deliverGiver(id), id).toBe(gatherTypeOf(id) === 'herb' || gatherTypeOf(id) === 'fungus' ? 'marta' : 'doran');
+    // the three old kinds as they were
+    for (const m of Object.values(MATERIALS).filter((x) => x.kind === 'monster' || x.kind === 'region' || x.kind === 'trophy')) {
+      expect(deliverGiver(m.id), m.id).toBe(DELIVER_GIVER[m.kind as 'monster' | 'region' | 'trophy']);
+    }
+    // and on real boards
+    let posted = 0;
+    for (let seed = 0; seed < 300; seed++) {
+      const s = atRank(gathered(newGame(), GATHERED), seed % RANKS.length);
+      s.forgeSalt = seed;
+      for (const o of postBoard(s).guild!.offers) {
+        if (o.kind !== 'deliver') continue;
+        posted++;
+        expect(GATHERED, o.target).toContain(o.target);
+        expect(o.giver, o.target).toBe(deliverGiver(o.target));
+        expect(o.n, o.target).toBe(deliverQty(MATERIALS[o.target].price, 'gather'));
+        expect(o.reward, o.target).toEqual({ gold: Math.round(1.6 * o.n * MATERIALS[o.target].price) });
+        expect(o.depth, o.target).toBe(0);
+      }
+    }
+    expect(posted).toBeGreaterThan(300);
+  }, { open: true }));
+
+  it("gathered goods are no excluded foe's", () => {
+    expect(GATHERED).toHaveLength(14);
+    expect(GATHERED.filter((id) => EXCLUDED_GOODS.includes(id))).toEqual([]);
+    for (const id of GATHERED) {
+      expect(MATERIALS[id].kind, id).toBe('gather');
+      expect(MATERIALS[id].owner, id).toBeUndefined();
+      expect(everyone.filter((e) => ENEMIES[e].drops.some((d) => d.mat === id)), id).toEqual([]);
+    }
+    expect(DELIVER_KINDS).toContain('gather');
+  });
+
+  it("a spot's land", () => live(() => {
+    const s = boardWith([]);
+    s.party = meet(s.party, 'chizuru', 1);   // found in the frost
+    s.party = meet(s.party, 'scarlet', 1);
+    const home = (id: string) => MEETINGS.find((m) => m.id === id)?.region;
+    const said = (target: string) => remarkFor(s, { ...offer('deliver', target, 2), giver: deliverGiver(target) });
+    expect(said('rime-moss')).toBe('chizuru');
+    expect(spotRegionOf('rime-moss')).toBe('frost');
+    expect(said(SPOT_OF[home('scarlet') as keyof typeof SPOT_OF])).toBe('scarlet');
+    // an ordinary point's goods belong to no land; a region's material as it was
+    for (const id of ['copper-ore', 'deep-quartz', 'stanch-herb', 'glow-mushroom']) expect(said(id), id).toBeUndefined();
+    expect(said('frost-heart')).toBe('chizuru');
+    expect(said('moss')).toBeUndefined();
+  }));
+
+  it('the quantities', () => {
+    // gathering spec §8.3: clamp(round(120 / price), 2, 8)
+    expect(Object.fromEntries(GATHER_MATERIALS.map((m) => [m.id, deliverQty(m.price, 'gather')]))).toEqual({
+      'copper-ore': 8, 'silver-ore': 5, 'stanch-herb': 8, 'moonbell-herb': 7, 'cap-mushroom': 8, 'glow-mushroom': 7, 'quartz-chip': 8,
+      'deep-quartz': 4, 'ember-glass': 5, 'rime-moss': 8, 'charged-ore': 5, 'bog-resin': 5, 'shade-silk': 6, 'scrap-iron': 7,
+    });
+  });
 });

@@ -23,6 +23,8 @@ import { GuildScene } from './guild';
 import { portalArt } from './gate';
 
 const B = T.ui2.board;
+/** The notes as shipped, before any test writes over them (gathering plan Task C1: two registered, both empty). */
+const SHIPPED_NOTES = structuredClone(GUILD_TEXT.notes);
 const nm = (id: string) => ITEMS[id]?.name ?? MATERIALS[id]?.name;
 
 /** One of each kind, as the board posts them (spec §9.3): a hunt, a bounty on a boss, a scout, a delivery and a sweep. */
@@ -580,5 +582,53 @@ describe('the guild board end to end, with the switch on as the game ships since
     expect(root.querySelector('.slx-board-head')!.textContent).toBe(B.head('一燈', 12, 40));
     expect(selTab(root)).toBe(B.tabs.active(0, 3));
     expect(saved(game)).toContain('"merit":12');
+  }));
+});
+
+describe('the guild buys gathered goods (gathering plan Task C1)', () => {
+  const deliver = (day: number, target: string, n: number, giver: QuestOffer['giver']): QuestOffer =>
+    ({ id: `${day}:${target}`, kind: 'deliver', giver, variant: 0, target, n, depth: 0, reward: { gold: Math.round(1.6 * n * MATERIALS[target].price) }, merit: 2 });
+  const board = (o: Parameters<typeof open>[0] = {}) => open({
+    ...o, prep: (g) => { const day = g.state.guild!.day; g.state.guild!.offers = [deliver(day, 'rime-moss', 8, 'doran'), deliver(day, 'copper-ore', 8, 'doran'), deliver(day, 'stanch-herb', 8, 'marta'), deliver(day, 'frost-heart', 5, 'doran')]; },
+  });
+
+  it('the two notes are registered, and empty', () => {
+    expect(SHIPPED_NOTES).toEqual({ deliverPantry: ['', ''], deliverOre: ['', ''] });
+  });
+
+  it("a spot's note is about its land", () => withGuildLive(() => {
+    GUILD_TEXT.notes.deliverOre = ['{place}的{target}，{n}個。', '另一天的。'];
+    GUILD_TEXT.notes.deliverPantry = ['{place}的草：{target}。', '另一天的。'];
+    GUILD_TEXT.notes.region = ['{place}的{target}，{n}個。', '另一天的。'];
+    const { root, s } = board();
+    const note = () => info(root).querySelector('.slx-board-note')?.textContent;
+    // a spot: its land, in the note and the detail
+    expect(note()).toBe(`${REGIONS.frost.name}的${MATERIALS['rime-moss'].name}，八個。`);
+    expect(lines(root)).toContain(B.haunts(REGIONS.frost.name));
+    expect(lines(root)[0]).toBe(B.giver('多蘭'));
+    // an ordinary point's goods: the main road, no land line
+    s.onAction('down');
+    expect(note()).toBe(`${B.main}的${MATERIALS['copper-ore'].name}，八個。`);
+    expect(lines(root).filter((l) => l.startsWith(B.haunts('')))).toEqual([]);
+    s.onAction('down');
+    expect(note()).toBe(`${B.main}的草：${MATERIALS['stanch-herb'].name}。`);
+    expect(lines(root)[0]).toBe(B.giver('瑪莎'));
+    // a region's material as it was
+    s.onAction('down');
+    expect(note()).toBe(`${REGIONS.frost.name}的${MATERIALS['frost-heart'].name}，五個。`);
+    expect(lines(root)).toContain(B.haunts(REGIONS.frost.name));
+    // a delivery's row shows its goods' icon, gathered or not
+    const full = board({ art: { has: () => true } });
+    expect(rows(full.root).map((r) => r.querySelector('img')?.getAttribute('src'))).toEqual(['rime-moss', 'copper-ore', 'stanch-herb', 'frost-heart'].map((id) => art.icon(id)));
+  }));
+
+  it('an empty note says nothing', () => withGuildLive(() => {
+    GUILD_TEXT.notes = structuredClone(SHIPPED_NOTES);
+    const { root, s } = board();
+    for (let i = 0; i < 3; i++) {
+      expect(info(root).querySelector('.slx-board-note'), `row ${i}`).toBeNull();
+      expect(lines(root)[1], `row ${i}`).toBe(B.target(B.count(MATERIALS[['rime-moss', 'copper-ore', 'stanch-herb'][i]].name, 8)));
+      s.onAction('down');
+    }
   }));
 });

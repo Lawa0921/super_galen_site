@@ -5,6 +5,7 @@ import { ENEMIES } from '../data/enemies';
 import { EQUIPMENT } from '../data/equipment';
 import { GEAR_SLOTS, SETS } from '../data/gear';
 import { ITEMS } from '../data/items';
+import { GATHER_MATERIALS } from '../data/gather';
 import { MATERIALS } from '../data/materials';
 import { BOSS_PARTS } from '../data/monsters';
 import { RUNE_SELL, RUNE_STOCK } from '../data/runeEconomy';
@@ -16,7 +17,7 @@ import { BAND_DEPTHS } from './story/handbook';
 import { buyRune } from './runeTrade';
 import { loadGame, saveGame } from './save';
 import { newGame, type GameState, type QuestOffer } from './state';
-import { memoryStorage, withGuildLive } from './testing';
+import { memoryStorage, withGatherLive, withGuildLive } from './testing';
 import { buy } from './town';
 import type { Rarity } from './types';
 
@@ -323,6 +324,97 @@ describe('6. a board has a ceiling', () => {
       if (!realistic(k)) continue;
       const ex = BOARD_CAP_EXCEPTIONS[k];
       if (ex) console.log(`[guild cap] exception ${k}: ${w.v} (bound ${ex.max}, cap ${cap(k)}): ${ex.why}`);
+      expect(w.v, `${k} seed ${w.seed}`).toBeLessThanOrEqual(ex ? ex.max : cap(k));
+    }
+  }, SWEEP_MS);
+});
+
+/**
+ * Gathering plan Task C1 (ruling 19, gathering spec §8.4, review M3): gathered goods get a sweep of their own, so the
+ * pinned one above (`capSweep`, BOARD_CAP_EXCEPTIONS) is never touched. The same ranks × depths × seeds, each save also
+ * having gathered every gathered good once (gathering open). Its own worst board and its own named exceptions, measured
+ * the same way (realistic pairs, a delivery counted net; guild spec §0 item 20: no formula is changed).
+ */
+const GATHERED = GATHER_MATERIALS.map((m) => m.id);
+/** FNV-1a over a sweep's worst boards, in the order the sweep walks the pairs. */
+function sweepDigest(worst: Record<string, { v: number; seed: number }>): string {
+  let h = 0x811c9dc5;
+  for (const ch of JSON.stringify(worst)) h = Math.imul(h ^ ch.charCodeAt(0), 0x01000193) >>> 0;
+  return h.toString(16).padStart(8, '0');
+}
+/** The pinned sweep's worst boards at 40 seeds a pair, digested, measured 2026-10-30 before gathered goods could be asked for. */
+const CAP_SWEEP_40 = '54145de0';
+/**
+ * The realistic pair whose worst board comes nearest its cap (or goes furthest over it), from the full sweep with every
+ * good gathered (GUILD_CAP_FULL=1, measured 2026-10-30): the full sweep finds exactly this, a smaller one never worse.
+ */
+const GATHER_BOARD_WORST: { pair: string; seed: number; v: number } = { pair: '4:22', seed: 297, v: 3290 };
+/** Named exceptions of the gathered sweep, as BOARD_CAP_EXCEPTIONS (bound = measured + 0.01 × cap). */
+const GATHER_BOARD_EXCEPTIONS: Record<string, { measured: number; max: number; why: string }> = {
+  // measured 2026-10-30 with the full sweep (GUILD_CAP_FULL=1), the formulas untouched (guild spec §0 item 20)
+  '4:22': { measured: 3290, max: 3322.4, why: 'seed 297 of the full gathered sweep: 3290 against a cap of 3240 (the pair of BOARD_CAP_EXCEPTIONS 4:22, to-do G1)' },
+};
+
+let gatherMemo: { worst: Record<string, { v: number; seed: number }>; asked: number } | null = null;
+function gatherCapSweep() {
+  if (gatherMemo) return gatherMemo;
+  return withGatherLive(() => {
+    const worst: Record<string, { v: number; seed: number }> = {};
+    let asked = 0;
+    for (let r = 0; r < RANKS.length; r++) {
+      for (const d of DEPTHS) {
+        const k = `${r}:${d}`;
+        for (let seed = 0; seed < CAP_SEEDS; seed++) {
+          const s = atDepth(d, r, seed);
+          s.gather = { got: Object.fromEntries(GATHERED.map((id) => [id, 1])) };
+          const b = postBoard(s).guild!.offers;
+          asked += b.filter((o) => o.kind === 'deliver' && GATHERED.includes(o.target)).length;
+          const v = boardValue(b);
+          if (!worst[k] || v > worst[k].v) worst[k] = { v, seed };
+        }
+      }
+    }
+    return (gatherMemo = { worst, asked });
+  }, { open: true });
+}
+
+describe('6b. gathered deliveries keep the board under its cap', () => {
+  const cap = (k: string) => BOARD_CAP(Number(k.split(':')[1]));
+  const realistic = (k: string) => Number(k.split(':')[1]) >= RANK_MIN_DEPTH[Number(k.split(':')[0])];
+
+  it('the pinned sweep is untouched', () => {
+    const { worst } = capSweep();
+    if (CAP_FULL) {
+      expect(worst['1:5']).toEqual({ v: 1210, seed: 902 });
+      expect(worst['4:22']).toEqual({ v: 3308, seed: 357 });
+    } else {
+      expect(sweepDigest(worst)).toBe(CAP_SWEEP_40);
+    }
+  }, SWEEP_MS);
+
+  it(`gathered deliveries keep the board under BOARD_CAP (${CAP_SEEDS} seeds a pair)`, () => {
+    const { worst, asked } = gatherCapSweep();
+    expect(Object.keys(worst)).toHaveLength(RANKS.length * DEPTHS.length);
+    const over = Object.entries(worst).filter(([k, w]) => w.v > cap(k));
+    console.log(`[gather cap] ${CAP_SEEDS} seeds a pair, ${asked} gathered deliveries; over the cap where no player stands yet (not asserted): ${over.filter(([k]) => !realistic(k)).map(([k, w]) => `${k} ${w.v}/${cap(k)} (seed ${w.seed})`).join(', ') || 'none'}`);
+    console.log(`[gather cap] realistic pairs over the cap: ${over.filter(([k]) => realistic(k)).map(([k, w]) => `${k} ${w.v}/${cap(k)} (seed ${w.seed})`).join(', ') || 'none'}`);
+    // the realistic pair nearest (or furthest over) its cap, the first found on a tie
+    let top: { pair: string; seed: number; v: number } | undefined;
+    for (const [k, w] of Object.entries(worst)) if (realistic(k) && (!top || w.v - cap(k) > top.v - cap(top.pair))) top = { pair: k, seed: w.seed, v: w.v };
+    console.log(`[gather cap] worst realistic board: ${top!.pair} ${top!.v}/${cap(top!.pair)} (seed ${top!.seed})`);
+    expect(asked, 'gathered goods were really asked for').toBeGreaterThan(CAP_SEEDS * 20);
+    if (CAP_FULL) expect(top).toEqual(GATHER_BOARD_WORST);
+    else expect(top!.v - cap(top!.pair)).toBeLessThanOrEqual(GATHER_BOARD_WORST.v - cap(GATHER_BOARD_WORST.pair));
+    for (const [k, ex] of Object.entries(GATHER_BOARD_EXCEPTIONS)) {
+      expect(realistic(k), `${k} is a realistic pair`).toBe(true);
+      expect(ex.max, k).toBe(Math.round((ex.measured + 0.01 * cap(k)) * 100) / 100);
+      if (CAP_FULL) expect(worst[k].v, `${k} measured`).toBe(ex.measured);
+      else expect(worst[k].v, `${k} measured`).toBeLessThanOrEqual(ex.measured);
+    }
+    for (const [k, w] of Object.entries(worst)) {
+      if (!realistic(k)) continue;
+      const ex = GATHER_BOARD_EXCEPTIONS[k];
+      if (ex) console.log(`[gather cap] exception ${k}: ${w.v} (bound ${ex.max}, cap ${cap(k)}): ${ex.why}`);
       expect(w.v, `${k} seed ${w.seed}`).toBeLessThanOrEqual(ex ? ex.max : cap(k));
     }
   }, SWEEP_MS);
