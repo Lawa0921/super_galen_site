@@ -7,7 +7,7 @@ import { ITEMS } from './items';
 import { MATERIALS } from './materials';
 import { isFragmentItem } from './story/fragments';
 import { newGame } from '../engine/state';
-import { withGuildLive } from '../engine/testing';
+import { withGuildLive, withGuildOff } from '../engine/testing';
 
 const unlocked = () => {
   const s = newGame();
@@ -16,23 +16,42 @@ const unlocked = () => {
 };
 
 describe('guild board data (guild quests plan Task A1)', () => {
-  it('the switch is off', () => {
-    expect(GUILD_SWITCH.live).toBe(false);
-    expect(guildOpen(unlocked())).toBe(false);
+  // Plan Task D1: the board goes up. Open once the first act is over, shut before it; withGuildLive still puts back what it found.
+  it('the switch is on', () => {
+    expect(GUILD_SWITCH.live).toBe(true);
+    expect(guildOpen(unlocked())).toBe(true);
+    expect(guildOpen(newGame())).toBe(false);   // before the first act
     expect(withGuildLive(() => GUILD_SWITCH.live)).toBe(true);
     expect(withGuildLive(() => guildOpen(unlocked()))).toBe(true);
     expect(withGuildLive(() => guildOpen(newGame()))).toBe(false);   // before the first act
-    expect(GUILD_SWITCH.live).toBe(false);
+    expect(GUILD_SWITCH.live).toBe(true);
     expect(() => withGuildLive(() => { throw new Error('boom'); })).toThrow('boom');
-    expect(GUILD_SWITCH.live).toBe(false);
+    expect(GUILD_SWITCH.live).toBe(true);
     // review M6: the unlock held shut, the act cleared or not; put back afterwards, a throw too
     const open = GUILD_SWITCH.open;
     expect(withGuildLive(() => guildOpen(unlocked()), { open: false })).toBe(false);
     expect(GUILD_SWITCH.open).toBe(open);
     expect(() => withGuildLive(() => { throw new Error('boom'); }, { open: false })).toThrow('boom');
     expect(GUILD_SWITCH.open).toBe(open);
-    expect(GUILD_SWITCH.live).toBe(false);
+    expect(GUILD_SWITCH.live).toBe(true);
     expect(withGuildLive(() => guildOpen(unlocked()))).toBe(true);
+  });
+
+  // Controller ruling 2026-10-30 (spec §0 item 24): with the board up, a test of the switched-off game says so.
+  it('withGuildOff shuts the board for its callback and puts the switch back, sync, async or thrown', async () => {
+    expect(withGuildOff(() => [GUILD_SWITCH.live, guildOpen(unlocked())])).toEqual([false, false]);
+    expect(GUILD_SWITCH.live).toBe(true);
+    expect(() => withGuildOff(() => { throw new Error('boom'); })).toThrow('boom');
+    expect(GUILD_SWITCH.live).toBe(true);
+    const tick = () => new Promise<void>((r) => setTimeout(r, 0));
+    const pending = withGuildOff(async () => { await tick(); return GUILD_SWITCH.live; });
+    expect(GUILD_SWITCH.live).toBe(false);   // still off while the callback awaits
+    expect(await pending).toBe(false);
+    expect(GUILD_SWITCH.live).toBe(true);
+    await expect(withGuildOff(async () => { await tick(); throw new Error('later'); })).rejects.toThrow('later');
+    expect(GUILD_SWITCH.live).toBe(true);
+    expect(withGuildLive(() => withGuildOff(() => GUILD_SWITCH.live))).toBe(false);
+    expect(GUILD_SWITCH.live).toBe(true);
   });
 
   it('ranks climb', () => {

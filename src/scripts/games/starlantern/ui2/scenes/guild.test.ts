@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { Game } from '../../engine/game';
-import { constRng, memoryStorage, plainItem, withGuildLive } from '../../engine/testing';
+import { constRng, memoryStorage, plainItem, withGuildLive, withGuildOff } from '../../engine/testing';
 import { GUILD_TEXT } from '../../data/guild.zh-TW';
 import { NO_ART, type ArtIndex } from '../../render/textures';
 import { GuildScene } from './guild';
@@ -46,7 +46,7 @@ function setup(from?: 'formation' | 'status' | 'workshop', lineup: readonly stri
 describe('GuildScene', () => {
   it('lists the guild commands', () => {
     const { root } = setup();
-    expect([...root.querySelectorAll('.slx-cmd [role=option]')].map((o) => o.textContent)).toEqual(['編隊', T.ui2.guild.recall, '裝備', '狀態', '技能樹', T.ui2.guild.workshop, '天賦', T.ui2.exchange.title, T.ui2.handbook.title, '離開']);
+    expect([...root.querySelectorAll('.slx-cmd [role=option]')].map((o) => o.textContent)).toEqual(['編隊', T.ui2.guild.recall, '裝備', '狀態', '技能樹', T.ui2.guild.workshop, '天賦', T.ui2.exchange.title, T.ui2.handbook.title, T.ui2.board.title, '離開']);   // 委託 since PR D (plan Task D1)
   });
 
   it('the guild opens the workshop', () => {
@@ -534,7 +534,7 @@ describe('GuildScene: the guild board on the list (guild quests plan Task B1)', 
   };
 
   it("the board is not on the guild's list while the switch is off", () => {
-    expect(commands(setup(undefined, LEGACY_LINEUP, open).root)).toEqual(LIST);
+    withGuildOff(() => expect(commands(setup(undefined, LEGACY_LINEUP, open).root)).toEqual(LIST));   // ruling, spec §0 item 24
   });
 
   it('with the switch on, the board comes last before leaving', () => withGuildLive(() => {
@@ -570,7 +570,7 @@ describe('GuildScene: the guild board on the list (guild quests plan Task B1)', 
   }, { open: false }));
 
   it("listed, the board makes the window's rows 16px tall (slx-cmd-board) so its eleven stand above Anna's box; off, today's window", () => {
-    expect(setup().root.querySelector('.slx-cmd')!.classList.contains('slx-cmd-board')).toBe(false);
+    withGuildOff(() => expect(setup().root.querySelector('.slx-cmd')!.classList.contains('slx-cmd-board')).toBe(false));   // ruling, spec §0 item 24
     withGuildLive(() => expect(setup().root.querySelector('.slx-cmd')!.classList.contains('slx-cmd-board')).toBe(true));
   });
 

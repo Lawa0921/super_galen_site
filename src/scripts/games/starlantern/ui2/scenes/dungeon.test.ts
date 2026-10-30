@@ -9,7 +9,7 @@ import { SHARD_IDS, fragmentName } from '../../data/story/fragments';
 import type { ItemInstance } from '../../engine/types';
 import { constRng } from '../../engine/testing';
 import { dayOf } from '../../engine/calendar';
-import { withGuildLive } from '../../engine/testing';
+import { withGuildLive, withGuildOff } from '../../engine/testing';
 import { NO_ART } from '../../render/textures';
 import { capacity, carried, formatWeight as kg, weightOf } from '../../data/weights';
 import { MATERIALS } from '../../data/materials';
@@ -1300,9 +1300,11 @@ describe('DungeonScene: the guild board in the labyrinth (guild quests plan Task
 
   it('the field menu keeps its eleven while the board is shut, or open but locked', () => {
     const eleven = ['status', 'skills', 'items', 'equip', 'workshop', 'formation', 'lamp', 'condition', 'handbook', 'settings', 'close'];
-    const off = setup(undefined, true, {}, holding);
-    off.s.onAction('menu');
-    expect(ids(off.root)).toEqual(eleven);
+    withGuildOff(() => {   // switched off (controller ruling, spec §0 item 24)
+      const off = setup(undefined, true, {}, holding);
+      off.s.onAction('menu');
+      expect(ids(off.root)).toEqual(eleven);
+    });
     withGuildLive(() => {
       const locked = setup(undefined, true, {}, holding);
       locked.s.onAction('menu');

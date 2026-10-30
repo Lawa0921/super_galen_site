@@ -10,7 +10,7 @@ import type { Portal } from './dungeon/run';
 import { statsOf } from './party';
 import { saveGame, SAVE_KEY } from './save';
 import { sell } from './town';
-import { memoryStorage, withGuildLive } from './testing';
+import { memoryStorage, withGuildLive, withGuildOff } from './testing';
 import type { GameState } from './state';
 import type { Pos } from './types';
 
@@ -139,7 +139,20 @@ function townScript(opts: { strip?: boolean } = {}): TownRun {
 }
 
 describe('the guild board leaves the town as it was (guild quests plan Task A0)', () => {
+  // Plan Task D1: the board is up, so the game as shipped posts it after the act-one clear. Every step equals the fixture
+  // once the board is left out (no hash recorded again), and there is no board before that return.
   it('the town as it was before the guild board', () => {
+    const now = townScript({ strip: true });
+    expect(existsSync(FIXTURE), 'the town fixture is recorded (GUILD_RECORD=1, with the switch off)').toBe(true);
+    expect(now.steps).toEqual(JSON.parse(readFileSync(FIXTURE, 'utf8')));
+    const at = now.steps.findIndex((x) => x.step === 'home after the act-one clear');
+    expect(now.guilds.slice(0, at).every((x) => x === undefined)).toBe(true);
+    expect(now.guilds.slice(at).every((x) => x !== undefined)).toBe(true);
+  });
+
+  // Controller ruling 2026-10-30 (spec §0 item 24): the switch off is the town as it was, hash for hash, and never a board.
+  // The fixture is recorded here, with the switch off, as Task A0 recorded it.
+  it('the switch off: the same town, and never a board', () => withGuildOff(() => {
     const now = townScript();
     if (process.env.GUILD_RECORD === '1') {
       if (!existsSync(dirname(FIXTURE))) mkdirSync(dirname(FIXTURE), { recursive: true });
@@ -148,7 +161,7 @@ describe('the guild board leaves the town as it was (guild quests plan Task A0)'
     expect(existsSync(FIXTURE), 'the town fixture is recorded (GUILD_RECORD=1)').toBe(true);
     expect(now.steps).toEqual(JSON.parse(readFileSync(FIXTURE, 'utf8')));
     expect(now.guilds.every((x) => x === undefined)).toBe(true);
-  });
+  }));
 
   // Task A7 (ruling 15, review M6): the same script and the same fixture, with the board on.
   it('the board on but the unlock held shut: the same town, and never a board', () => {
