@@ -59,11 +59,11 @@ spec 沒寫細的地方，全部是「計畫裁定」，同時抄進 spec §0。
 2. **檔名**：`data/wander.ts`、`data/wander.test.ts`、`engine/dungeon/wander.ts`（`placeWanderers`、`openPath`）、`engine/dungeon/wander.test.ts`、`engine/wander.ts`（`nextOf`、`wanderTurn`、`spotWanderers`、`wanderView`）、`engine/wander.test.ts`、`engine/wander.guard.test.ts`、`engine/wander.legacy.test.ts`、`engine/wander.placements.test.ts`、`engine/wander.walk.test.ts`、`engine/wander.bands.test.ts`、`engine/__fixtures__/wander/placements.json`、`ui2/debugWander.ts`。
 3. **`data/wander.ts` 的介面**（A1）：
    - `WANDER_SWITCH: { live: boolean; open: (s: GameState) => boolean; pool?: readonly string[] } = { live: false, open: (s) => s.story.act1Cleared }`、`wanderOpen(s)`、`WANDER_SALT = 0x3956c25b`。`pool` 只給測試輔助用（設了就取代名單，不過 `listedEnemy`／`artEnemy`）。
-   - `WanderKind = 'patrol' | 'guard' | 'chase'`；`WANDER_KINDS`（這個順序）；`WANDER_WEIGHTS = [4, 3, 3]`；`WANDER_FROM = 4`；`wanderCount(depth)`（spec §6.1）；`WANDER_POOL: Record<RegionId, { id: string; from: number }[]>`（spec §6.2）；`wanderPool(region, depth): string[]`（`from ≤ depth`、`listedEnemy && artEnemy`，表的順序）。
-   - `WANDER_ROUTE_MAX = 4`、`WANDER_CHASE = 3`、`WANDER_GIVE_UP = 6`、`WANDER_NOTICE = 4`、`WANDER_NOTICE_FOG = 2`、`WANDER_REST = 3`、`WANDER_RARE_QTY = 2`；`WANDER_EXCEPTIONS: Record<string, { rate: number; why: string }> = {}`（A4 量到才寫）；`WANDER_ART: ReadonlySet<string>`（空，PR D 填）。
-4. **型別**（A2）：`Rect = { x; y; w; h }`；`Wanderer = { id: number; foe: string; kind: WanderKind; home: Pos; pos: Pos; route?: Pos[]; leg?: number; dir?: 1 | -1; chasing?: true; rest?: number; seen?: true; down?: true }`（`id` 是這一層的放置順序）；`WanderFloor = { list: Wanderer[]; keepOut: Rect[]; told?: true }`。`Run.wander?: true`、`Run.wanderers?: Record<number, WanderFloor>`，都不存檔。
-5. **`placeWanderers` 的抽法**：照 spec §5.2 的順序寫死，註解逐步編號；不抽的情況（沒有房間、太淺、頭目層、名單空、`wanderCount` 是 0）回 `{ list: [], keepOut }` 而且一次都不呼叫 `rng`。路線取段的算式：沿 `axis` 的可用連續格依座標排序成 `line`、`home` 在第 `k` 格、`cap = min(WANDER_ROUTE_MAX, 房間在那個方向的寬 − 1)`；`line.length < 2` 或 `cap < 2` 就換方向；`start = clamp(k − ⌊(cap − 1) ÷ 2⌋, 0, line.length − cap)`；`route = line.slice(start, start + min(cap, line.length))`；`leg = k − start`；`dir = leg === route.length − 1 ? −1 : 1`。
-6. **`Game.move` 的形狀**（A3）：今天的 `move(dir)` 本體原封不動搬成 `private stepParty(dir)`；新的 `move(dir)`：
+   - `WanderKind = 'patrol' | 'guard' | 'chase'`；`WANDER_KINDS`（這個順序）；`WANDER_WEIGHTS: Record<WanderKind, number> = { patrol: 4, guard: 3, chase: 3 }`（依 `WANDER_KINDS` 的順序讀）；`WANDER_FROM = 4`；`wanderCount(depth)`（spec §6.1）；`WANDER_POOL: Record<RegionId, { id: string; from: number }[]>`（spec §6.2）；`wanderPool(region, depth): string[]`（`from ≤ depth`、`listedEnemy && artEnemy`，表的順序）。
+   - `WANDER_ROUTE_MAX = 4`、`WANDER_CHASE = 3`、`WANDER_GIVE_UP = 6`、`WANDER_NOTICE = 4`、`WANDER_NOTICE_FOG = 2`、`WANDER_REST = 3`、`WANDER_RARE_QTY = 2`；`WANDER_EXCEPTIONS: Record<string, { rate: number; why: string }> = {}`（A2 量到才寫）；`WANDER_ART: ReadonlySet<string>`（空，PR D 填）。
+4. **型別**（A3）：`Rect = { x; y; w; h }`；`Wanderer = { id: number; foe: string; kind: WanderKind; home: Pos; pos: Pos; route?: Pos[]; leg?: number; dir?: 1 | -1; chasing?: true; rest?: number; seen?: true; down?: true }`（`id` 是這一層的放置順序）；`WanderFloor = { list: Wanderer[]; keepOut: Rect[]; told?: true }`。`Run.wander?: true`、`Run.wanderers?: Record<number, WanderFloor>`，都不存檔。
+5. **`placeWanderers` 的抽法**：照 spec §5.2 的順序寫死，註解逐步編號；不抽的情況（沒有房間、太淺、頭目層、名單空、`wanderCount` 是 0）回 `{ list: [], keepOut }` 而且一次都不呼叫 `rng`。「可站的格」是 `'floor'` 或 `'trap'`（spec §5.2，審查 L4）。路線取段的算式（審查 M1）：沿 `axis` 經過 `home`、在房間矩形內、可站而且沒被佔用的連續格依座標排序成 `line`、`home` 在第 `k` 格、`cap = min(WANDER_ROUTE_MAX, 房間在那個方向的寬 − 1)`、`len = min(cap, line.length)`；`len < 2` 就換方向；`start = clamp(k − ⌊(len − 1) ÷ 2⌋, 0, line.length − len)`；`route = line.slice(start, start + len)`；`leg = k − start`；`dir = leg === route.length − 1 ? −1 : 1`。
+6. **`Game.move` 的形狀**（A4）：今天的 `move(dir)` 本體原封不動搬成 `private stepParty(dir)`；新的 `move(dir)`：
    ```ts
    move(dir: Dir): MoveResult {
      const w = this.run?.wander ? this.wandererAhead(dir) : null;   // phase 'map' and the cell ahead holds a live wanderer
@@ -79,21 +79,22 @@ spec 沒寫細的地方，全部是「計畫裁定」，同時抄進 spec §0。
 9. **`wanderNotes`**：`Game.wanderNotes?: { how: 'seen' | 'down' | 'shaken'; name?: string }[]`，不存檔；地圖讀完清掉（照 `scoutDone`，`engine/game.ts:190-194`）。`'seen'`：一層第一次有徘徊者 `seen` 時加一次（`WanderFloor.told`）。
 10. **`wanderView()`**（給介面，唯讀）：這一層 `seen && !down` 的每一隻 `{ id, foe, kind, pos, next: Pos | null, chasing, resting }`；`next` 是 `nextOf` 的結果，`rest > 0` 時 `null`。`run.wander` 為假回 `[]`。
 11. **快照與證據的做法**（spec §5.6）：
-    - **樓層不動**（`engine/wander.legacy.test.ts`，A2）：`withRosterOnly([])` 與 `withWanderLive(f, { open: true, pool: ['false-moon'] })` 下，`newRun` 之後設 `run.wander = true`，每一層的 `map` 與 `contents` 整份等於 `__fixtures__/roster/floors.before.json`（不去掉任何東西）；另一個 `it`：同一個 `Run` 開與關的相對比較，樣本涵蓋 `rescuesFor` 的救援房、`run.glimmers[depth]` 強制的回憶光點、`withRosterLive` 的守關者層、`run.gather = true` 的採集點；每一種另斷言至少一層真的放了徘徊者。
-    - **放置釘住**（`engine/wander.placements.test.ts`，A2 錄）：種子 1–3 × 七個地區 × 深度 1–40 的每一層 `{ list, keepOut }`（出貨的名冊），`WANDER_RECORD=1` 寫 `engine/__fixtures__/wander/placements.json`；A2 之後任何任務都不准重錄；fixture 不存在時失敗。
-    - **潛行快照**（A3）：`engine/storyL.dive.test.ts` 新 `it('the dive past wanderers it never touches is the dive it was')`：`withRosterOnly([], () => withBondScale(0, () => withWanderLive(() => dive(watch), { open: true, pool: ['false-moon'] })))`；同一份 fixture；`watch` 多記每一層的徘徊者數與「被清掉」的次數；斷言第 4、6 層至少一層有徘徊者、整段沒有接觸（`MoveResult` 沒有 `wanderer`）。測試檔裡 `stepOnto` 在放位置之前，把站在 `from`、目標格與目標格四個鄰格上的徘徊者從 `run.wanderers[floor].list` 拿掉；`plantGlimmer`／`plantElite` 選好格子之後，拿掉站在那一格上的（都記數）。腳本的每一步都經過 `stepOnto`，而接觸只發生在「徘徊者在隊伍這一步的新格子旁邊」時，所以這樣清掉就保證整段沒有接觸；其他輔助函式不動，任何 fixture 都不動。非空的斷言在清之前記（進入那一層時的隻數）。
-    - **城鎮快照**（A3）：`engine/guild.legacy.test.ts` 新 `it('the town as it was, with wanderers open')`：`withWanderLive(() => townScript({ strip: true }), { open: true })`；同一份 fixture；斷言每一趟的每一層 `run.wanderers[d].list` 都是空的（腳本只到第 3 層；這是深度閘門的證據，不是非空的證據）。`TownRun` 多記這一項，照採集加 `gathers` 的做法。
-    - **接觸之前逐步相同**（`engine/wander.walk.test.ts`，A3）：照 `engine/gather.walk.test.ts` 的骨架（隊伍 50 級、每場戰鬥後補滿、抄來的 `fight()`、BFS 避開會開固定戰鬥的格子；出貨的名冊）；段落：本道 `start: 6`、鋼鐵 `start: 5`，各三層。同一個種子跑兩次：開（`{ open: true }`）與關（`{ open: false }`）；路線由**關的那一次**算出並記下（每層依序走到每個房間的中心再到樓梯），開的那一次照走同一串方向；每一步記結果種類、注入計數的 `game.rng` 次數、計量、位置；兩串逐一相同，直到開的那一次第一次出現 `wanderer`（之後不比、這一段結束）。斷言：全部段落合計，接觸之前徘徊者移動 ≥ 40 步（`wanderTurn` 的移動計數，從 `run.wanderers` 的位置變化算）、至少一隻 `seen`。沒有 fixture。
-    - **會壞才算證明**（A3 Step 3b）：暫時把 `floorOf` 的 `placeWanderers` 那一行改成什麼都不做 → 潛行快照的非空斷言與行走的「≥ 40 步」紅；改回來；暫時在 `wanderTurn` 開頭加一次 `this.rng()` → 行走的逐步相同紅；改回來。兩次的輸出存 SDD `A/task-A3-stub.txt`。都不 commit。
-12. **不堵路的證明**（A2，`engine/dungeon/wander.test.ts`）：抽樣（Global Constraints 的大小）種子 × 七個地區 × 深度 4–60：`openPath(map, blocked)`（把每一隻的靜態格當牆，從入口走 `tileAt !== 'wall'` 到 `map.down`）為真；另一個 `it`：手工的樓層（兩個房間之間只有一格寬的走道、`rng` 寫死選到會切斷的那一格）證明那一隻被丟掉、`list` 少一隻、`rng` 的呼叫次數照常。
+    - **樓層不動**（`engine/wander.legacy.test.ts`，A3）：`withRosterOnly([])` 與 `withWanderLive(f, { open: true, pool: ['false-moon'] })` 下，`newRun` 之後設 `run.wander = true`，每一層的 `map` 與 `contents` 整份等於 `__fixtures__/roster/floors.before.json`（不去掉任何東西）；另一個 `it`：同一個 `Run` 開與關的相對比較，樣本涵蓋 `rescuesFor` 的救援房、`run.glimmers[depth]` 強制的回憶光點、`withRosterLive` 的守關者層、`run.gather = true` 的採集點；每一種另斷言至少一層真的放了徘徊者。
+    - **放置釘住**（`engine/wander.placements.test.ts`，A3 錄；在 A2 的量測定案之後，見計畫裁定 14）：種子 1–3 × 七個地區 × 深度 1–40 的每一層 `{ list, keepOut }`（出貨的名冊），`WANDER_RECORD=1` 寫 `engine/__fixtures__/wander/placements.json`；A3 之後任何任務都不准重錄；fixture 不存在時失敗。
+    - **潛行快照**（A4）：`engine/storyL.dive.test.ts` 新 `it('the dive past wanderers it never touches is the dive it was')`：`withRosterOnly([], () => withBondScale(0, () => withWanderLive(() => dive(watch), { open: true, pool: ['false-moon'] })))`；同一份 fixture；`watch` 多記每一層的徘徊者數與「被清掉」的次數；斷言第 4、6 層至少一層有徘徊者、整段沒有接觸（`MoveResult` 沒有 `wanderer`）。測試檔裡 `stepOnto` 在放位置之前，把站在 `from`、目標格與目標格四個鄰格上的徘徊者從 `run.wanderers[floor].list` 拿掉；`plantGlimmer`／`plantElite` 選好格子之後，拿掉站在那一格上的（都記數）。腳本的每一步都經過 `stepOnto`，而接觸只發生在「徘徊者在隊伍這一步的新格子旁邊」時，所以這樣清掉就保證整段沒有接觸；其他輔助函式不動，任何 fixture 都不動。非空的斷言在清之前記（進入那一層時的隻數）。
+    - **城鎮快照**（A4）：`engine/guild.legacy.test.ts` 新 `it('the town as it was, with wanderers open')`：`withWanderLive(() => townScript({ strip: true }), { open: true })`；同一份 fixture；斷言每一趟的每一層 `run.wanderers[d].list` 都是空的（腳本只到第 3 層；這是深度閘門的證據，不是非空的證據）。`TownRun` 多記這一項，照採集加 `gathers` 的做法。
+    - **接觸之前逐步相同**（`engine/wander.walk.test.ts`，A4）：照 `engine/gather.walk.test.ts` 的骨架（隊伍 50 級、每場戰鬥後補滿、抄來的 `fight()`、BFS 避開會開固定戰鬥的格子；出貨的名冊）；段落（審查 M2）：本道 `start: 6`（6–9 層）、鋼鐵 `start: 5`（第 5 層照潛行快照的做法走到頭目、打倒、走它留下的樓梯，再 6–9 層），每段四層以上；實際的起點與層數照 A2 量測之後的名單，選「每層名單都非空」的一段，寫進報告。同一個種子跑兩次：先開（`{ open: true }`），路線**在開的這一次一步一步算**：每層依序以每個房間的中心、最後以樓梯為目標，每一步走 BFS 的第一步，BFS 避開徘徊者站的格與牠們的 `next` 格（避不開就照不避的 BFS），把每一步的方向記下；再關（`{ open: false }`），照走同一串方向；每一步記結果種類、注入計數的 `game.rng` 次數、計量、位置；兩串逐一相同，直到開的那一次第一次出現 `wanderer`（之後不比、這一段結束）。斷言：全部段落合計，接觸之前徘徊者移動 ≥ 40 步（`wanderTurn` 的移動計數，從 `run.wanderers` 的位置變化算）、至少一隻 `seen`。沒有 fixture。
+    - **會壞才算證明**（A4 Step 3b）：暫時把 `floorOf` 的 `placeWanderers` 那一行改成什麼都不做 → 潛行快照的非空斷言與行走的「≥ 40 步」紅；改回來；暫時在 `wanderTurn` 開頭加一次 `this.rng()` → 行走的逐步相同紅；改回來。兩次的輸出存 SDD `A/task-A4-stub.txt`。都不 commit。
+12. **不堵路的證明**（A3，`engine/dungeon/wander.test.ts`）：抽樣（Global Constraints 的大小）種子 × 七個地區 × 深度 4–60：`openPath(map, blocked)`（把每一隻的靜態格當牆，從入口走 `tileAt !== 'wall'` 到 `map.down`）為真；另一個 `it`：手工的樓層（兩個房間之間只有一格寬的走道、`rng` 寫死選到會切斷的那一格）證明那一隻被丟掉、`list` 少一隻、`rng` 的呼叫次數照常。
 13. **e2e 的開關**：`ui2/debugWander.ts` 只在 dev build 把 `WANDER_SWITCH` 掛到除錯把手上（照 `gatherHandle`），B3 的可讀性 e2e 在開關關著時也能量畫面。
-14. **強度量測的處理**（A4，spec §6.3）：一次調整只動 `WANDER_POOL` 的 `from`；`WANDER_EXCEPTIONS` 的鍵是 `<region>:<depth>:<foe>`。量測檔 opt-in，平常的全套不跑它（`describe.skipIf(process.env.WANDER_BANDS !== '1')`，照 `balance.roster.test.ts` 的 opt-in 寫法）。
+14. **強度量測的處理**（A2，spec §6.3；審查 H3）：量測排在放置之前（只要 A1 的表與 `engine/sim.ts`），`from` 的調整在放置的釘子錄之前定案，所以釘子錄了之後就不會再因為名單而變；行走測試、A4 的 `the start floor has them` 與 B3、C2 的 e2e 用的深度，從量測之後的名單挑（每一段、每一層名單都非空）。一次調整只動 `WANDER_POOL` 的 `from`；`WANDER_EXCEPTIONS` 的鍵是 `<region>:<depth>:<foe>`。量測檔 opt-in，平常的全套不跑它（`describe.skipIf(process.env.WANDER_BANDS !== '1')`，照 `balance.roster.test.ts:29`、`:325` 的 opt-in 寫法）。
+15. **第一輪審查（`fa7c3866f`）的計畫面**：任務順序改成 A2 量測、A3 放置、A4 移動與戰鬥（H3）；行走測試的段落與路線（M2）；C1 的已知會紅擴大（M4）；`won` 的 `lootDraws` 是 +1（M5）；安全的房間、追丟回家、陷阱可站、取段的算式、觸發條件、逃跑之後的規則照 spec §0 第 19 條。
 
 ## 分期與 PR
 
 | PR | 分支 | 內容 | 任務 | sim gate | 美術 |
 |---|---|---|---|---|---|
-| **A** 引擎 | `feat/starlantern-wander-a` | 基準、開關與資料、放置、移動與戰鬥、強度量測 | A0–A4（5） | identical | 0 |
+| **A** 引擎 | `feat/starlantern-wander-a` | 基準、開關與資料、強度量測、放置、移動與戰鬥 | A0–A4（5） | identical | 0 |
 | **B** 介面 | `feat/starlantern-wander-b` | 地圖與小地圖的標記、場景的通知、可讀性 e2e | B1–B3（3） | identical | 0 |
 | **C** 上線 | `feat/starlantern-wander-live` | 打開 `WANDER_LIVE`、`withWanderOff`、e2e | C1–C2（2） | identical | 0 |
 | **D** 美術（等使用者） | `feat/starlantern-wander-art` | 地圖標記 ×3：契約、樣本、生成與發布、接線 | D1–D4（4） | 不跑（D4 只動 `ui2/`、`render/`） | 3 張 |
@@ -113,7 +114,7 @@ spec 沒寫細的地方，全部是「計畫裁定」，同時抄進 spec §0。
 
 **模擬閘門**（每一個碰到 `engine/`、`data/` 的任務都跑；每個 PR 的第一個任務錄 `gate-0`）
 - 指令：`rtk proxy bash scripts/starlantern-sim-gate.sh <SDD>/gate-<N> <SDD>/gate-0 > <SDD>/gate-<N>.stdout`；最後一行必須是 `gate: identical`；`cmp <SDD>/gate-<N>/contribution.json src/scripts/games/starlantern/engine/__fixtures__/sim-gate/contribution.8d-final.160.json` 沒有輸出。`engine/parity.test.ts` 的 `PARITY_TASK` 維持 `between plans`。
-- **逐位元的其他證據**（每個碰 `engine/`、`data/` 的任務都跑，一律不重錄；任何一個紅就 BLOCKED）：`engine/legacyFights.test.ts`、`engine/floors.snapshot.test.ts`、`engine/storyL.dive.test.ts`（`STORY_L_RECORD` 不准設）、`engine/guild.legacy.test.ts`（`GUILD_RECORD` 不准設）、`engine/gather.legacy.test.ts`、`engine/gather.points.test.ts`（`GATHER_RECORD` 不准設）、`engine/gather.walk.test.ts`、`engine/game.test.ts` 的 `Normal drops are as before`、`engine/battle.test.ts` 的 `keystones in battle`；A2 起 `engine/wander.legacy.test.ts`、`engine/wander.placements.test.ts`（`WANDER_RECORD` 只在 A2 錄 fixture 時設）；A3 起 `engine/wander.walk.test.ts`。
+- **逐位元的其他證據**（每個碰 `engine/`、`data/` 的任務都跑，一律不重錄；任何一個紅就 BLOCKED）：`engine/legacyFights.test.ts`、`engine/floors.snapshot.test.ts`、`engine/storyL.dive.test.ts`（`STORY_L_RECORD` 不准設）、`engine/guild.legacy.test.ts`（`GUILD_RECORD` 不准設）、`engine/gather.legacy.test.ts`、`engine/gather.points.test.ts`（`GATHER_RECORD` 不准設）、`engine/gather.walk.test.ts`、`engine/game.test.ts` 的 `Normal drops are as before`、`engine/battle.test.ts` 的 `keystones in battle`；A3 起 `engine/wander.legacy.test.ts`、`engine/wander.placements.test.ts`（`WANDER_RECORD` 只在 A3 錄 fixture 時設）；A4 起 `engine/wander.walk.test.ts`。
 - 不用 `Math.random`、不讀 `Date`；新串流只有 `WANDER_SALT` 那一條，只在 `placeWanderers` 用。
 
 **測試與檢查**
@@ -123,8 +124,8 @@ spec 沒寫細的地方，全部是「計畫裁定」，同時抄進 spec §0。
 - **e2e**：`E2E_PORT=4353 rtk proxy npx playwright test tests/e2e/starlantern.spec.ts --project=chromium --project=chromium-dpr125 --project=chromium-dpr150`；headless、靜音。**絕不用 4354、4321**；不結束任何程序。**不用 Playwright MCP、任何瀏覽器 MCP、Claude in Chrome、內建瀏覽器、computer-use。**
 - **重的工作**（閘門、e2e、全套、`WANDER_FULL=1`、`WANDER_BANDS=1`、生成）之前：照控制者當時指定的 `heavy.lock` 規則；沒有指定時 PowerShell `(Get-CimInstance Win32_OperatingSystem).FreePhysicalMemory` ≥ 6291456（KB），一次只跑一套；瑪奇的模擬器在跑時先問控制者（`heavy-tests-yield-to-emulators`）。
 - 本專案沒有 prettier、eslint。一次性的探測程式跑完就刪，絕不 commit。
-- **測試修改規則**：每個任務的 Files 列出已知會紅的既有測試與改法；不放寬門檻、不刪斷言、不加 `skip`／`only`／`todo`／`it.fails`（A4 的 opt-in `skipIf` 是新檔自己的開關，不算）；全套出現沒列到的紅燈就 NEEDS_CONTEXT。
-- **抽樣的大小**：種子 × 七地區 × 深度的抽樣（A2）平常跑每組前 40 個種子，`WANDER_FULL=1` 跑一千；PR A 的最後一個碰 `engine/` 的任務跑一次完整的，結果記進報告。
+- **測試修改規則**：每個任務的 Files 列出已知會紅的既有測試與改法；不放寬門檻、不刪斷言、不加 `skip`／`only`／`todo`／`it.fails`（A2 的 opt-in `skipIf` 是新檔自己的開關，不算）；全套出現沒列到的紅燈就 NEEDS_CONTEXT。
+- **抽樣的大小**：種子 × 七地區 × 深度的抽樣（A3）平常跑每組前 40 個種子，`WANDER_FULL=1` 跑一千；PR A 的最後一個碰 `engine/` 的任務跑一次完整的，結果記進報告。
 
 **決定性**
 - `engine/dungeon/wander.ts` 只用呼叫者給的 `rng`；`engine/wander.ts` 一個亂數都不抽（`engine/wander.guard.test.ts` 掃原始碼：不出現 `this.rng`、`rng(`、`Rng`、`mulberry32(`、`lootRng`、`memoryRng`、`trophyRng`、`runeRng`、`Math.random`、`Date`；`engine/dungeon/wander.ts` 不出現 `mulberry32(`、`Math.random`、`Date`；`engine/dungeon/run.ts` 裡 `WANDER_SALT` 恰好出現一次）。
@@ -155,12 +156,12 @@ spec 沒寫細的地方，全部是「計畫裁定」，同時抄進 spec §0。
 
 ## Review Focus
 
-1. **關著或沒打開就是今天的遊戲**：`run.wander` 不存在；`move()` 只多讀一次屬性；閘門 identical；所有釘子不動。→ A0、A3、C1。
-2. **樓層不動**：放置在最後、只讀樓層、自己的串流；開著時樓層逐一等於快照（不用去掉東西）。→ A2。
-3. **開著沒碰就不動，而且證明不是空的**：移動不抽亂數；潛行快照同一份 fixture 而且有徘徊者；行走在接觸之前逐步相同而且徘徊者真的走了；兩種破壞都會紅。→ A3。
-4. **一步一件事**：只在 `moved` 之後行動；接觸不走 `walk()`；計量不動；接觸與事件、隨機遇敵、固定戰鬥不同步。→ A3。
-5. **不堵路、安全的房間**：通行檢查與窄走道的反例；`keepOut` 的房間走不進去；追丟回原位。→ A2、A3。
-6. **戰後的規則**：勝 → 消失、精英報酬、素材 ×2、沒有碎片；逃 → 停 3 回合；敗 → 全滅；詞綴以 `home` 為鍵。→ A3。
+1. **關著或沒打開就是今天的遊戲**：`run.wander` 不存在；`move()` 只多讀一次屬性；閘門 identical；所有釘子不動。→ A0、A4、C1。
+2. **樓層不動**：放置在最後、只讀樓層、自己的串流；開著時樓層逐一等於快照（不用去掉東西）。→ A3。
+3. **開著沒碰就不動，而且證明不是空的**：移動不抽亂數；潛行快照同一份 fixture 而且有徘徊者；行走在接觸之前逐步相同而且徘徊者真的走了；兩種破壞都會紅。→ A4。
+4. **一步一件事**：只在 `moved` 之後行動；接觸不走 `walk()`；計量不動；接觸與事件、隨機遇敵、固定戰鬥不同步。→ A4。
+5. **不堵路、安全的房間**：通行檢查與窄走道的反例；`keepOut` 的房間走不進去；追丟回原位。→ A3、A4。
+6. **戰後的規則**：勝 → 消失、精英報酬、素材 ×2、沒有碎片；逃 → 停 3 回合；敗 → 全滅；詞綴以 `home` 為鍵。→ A4。
 7. **看得懂**：看見才畫、現在的位置、提示格與 `nextOf` 同一個函式、文字標記、沒有佔位圖、通知只有系統文字。→ B 系列。
 
 ---
@@ -186,8 +187,8 @@ spec 沒寫細的地方，全部是「計畫裁定」，同時抄進 spec §0。
 **Files:** SDD `A/baseline.md`。
 
 - [ ] **Step 1**：`git status` 乾淨；`baseline.md` 記下 `git rev-parse HEAD`、tsc 總數與 starlantern 底下的數字、全套兩行、`legacyFights.test.ts` 的兩個釘子值、`floorOf` 的最後一行是什麼（採集之後若又有別的計畫加了一行，徘徊者加在最後，寫明）、SHA-256 的 K[4] `0x3956c25b` 有沒有被用（grep 全 repo）。
-- [ ] **Step 2**：讀 `engine/storyL.dive.test.ts`、`engine/guild.legacy.test.ts`、`engine/gather.walk.test.ts` 的輔助函式：`stepOnto`、`plantGlimmer`、`plantElite`、`fight()`、BFS；記進 `baseline.md`（A3 依此寫「清掉站在那幾格的徘徊者」）。
-- [ ] **Step 3**：grep 既有測試裡窮舉 `MoveResult`、`BattleEnd` 鍵、`startBattle` 參數、`Run` 鍵（例如 `Object.keys(run)`、`toEqual(newRun(...))`）的地方，清單記進 `baseline.md`；A2、A3 的「已知會紅」以它為準。
+- [ ] **Step 2**：讀 `engine/storyL.dive.test.ts`、`engine/guild.legacy.test.ts`、`engine/gather.walk.test.ts` 的輔助函式：`stepOnto`、`plantGlimmer`、`plantElite`、`fight()`、BFS；記進 `baseline.md`（A4 依此寫「清掉站在那幾格的徘徊者」）。
+- [ ] **Step 3**：grep 既有測試裡窮舉 `MoveResult`、`BattleEnd` 鍵、`startBattle` 參數、`Run` 鍵（例如 `Object.keys(run)`、`toEqual(newRun(...))`）的地方，清單記進 `baseline.md`；A3、A4 的「已知會紅」以它為準。另列**第一幕之後、在第 4 層以後的非頭目層出發**的既有測試（至少 `engine/game.test.ts` 的 `tiered`（`:5053-5060`）與它在第 12 層出發的測試、用 `plantAt`（`:139-147`）種東西的；`ui2/scenes/*.test.ts`；e2e 注入的存檔）：上線之後牠們的樓層會有徘徊者，C1 依這份清單把它們包進 `withWanderOff`（審查 M4）。
 - [ ] **Step 4**：閘門錄 `gate-0`，`cmp` 沒有輸出；逐位元的其他證據全綠。
 - [ ] **Step 5**：e2e 三個專案各跑一次，通過數記進 `baseline.md`。（A0 不 commit。）
 
@@ -209,7 +210,19 @@ spec 沒寫細的地方，全部是「計畫裁定」，同時抄進 spec §0。
 - [ ] **Step 4**：這些測試檔、全套、tsc、閘門、逐位元的其他證據。
 - [ ] **Step 5**：收尾 G，commit：`feat(starlantern): wanderers' switch, salt and tables, all off`。
 
-### Task A2：放置（最後一步、自己的串流、不寫樓層）
+### Task A2：強度的量測（opt-in）
+
+**Files:**
+- Create：`engine/wander.bands.test.ts`。
+- Modify：`data/wander.ts`（只在量到紅時：`WANDER_POOL` 的 `from` 或 `WANDER_EXCEPTIONS`）、`data/wander.test.ts`（照實際值）、spec §6.2 的表（`from` 有改時）。
+
+- [ ] **Step 1**：照 spec §6.3 與名冊 22i 寫測試（期望隊伍、`levelAt`、`KITS`、種子照 22i 抄，不 import 凍結檔）；`WANDER_BANDS` 沒設時跳過；`WANDER_EXCEPTIONS` 裡的格子另斷言「量到的值等於記下的值」。
+- [ ] **Step 2**：`WANDER_BANDS=1` 跑一次（重的工作）；每一格的勝率與回合數記進報告。
+- [ ] **Step 3**：紅的格子照計畫裁定 14：一次調整（`from`），重跑；還紅就寫進 `WANDER_EXCEPTIONS` 並在 SDD `A/todo.md` 記一條。綠的格子不動。
+- [ ] **Step 4**：全套（不設變數，這個檔跳過）、tsc、閘門、逐位元的其他證據。
+- [ ] **Step 5**：收尾 G，commit：`test(starlantern): wanderers measured against the expected party`。
+
+### Task A3：放置（最後一步、自己的串流、不寫樓層）
 
 **Files:**
 - Create：`engine/dungeon/wander.ts`、`engine/dungeon/wander.test.ts`、`engine/wander.legacy.test.ts`、`engine/wander.placements.test.ts`、`engine/__fixtures__/wander/placements.json`。
@@ -220,7 +233,8 @@ spec 沒寫細的地方，全部是「計畫裁定」，同時抄進 spec §0。
   - `engine/dungeon/wander.test.ts`：
     - `the draws in order`：寫死回傳序列的假 `rng`，驗 spec §5.2 與計畫裁定 5 的每一步：房間與格子的排序、行為的權重切點、名單的 `pick`、只有巡邏抽方向、路線取段的算式（房間寬 3、4、5 × 兩個方向 × `home` 在邊、中間）、兩個方向都不到 2 格變看守、`rng` 的呼叫次數；
     - `none drawn`：沒有房間、深度 3、頭目層（本道 3、5、10，地區 5）、名單空：`list` 空、`rng` 一次都沒被呼叫；
-    - `where they may stand`（抽樣）：每一隻的 `home` 與路線在同一層 `run.wander` 沒設時是 `'floor'`、不在 `keepOut`、一個房間最多一隻、彼此不重疊；隻數 ≤ `wanderCount`；`keepOut` 正好是入口、出口與有精英／守關者／救援的房間；
+    - `where they may stand`（抽樣）：每一隻的 `home` 與路線在同一層 `run.wander` 沒設時是 `'floor'` 或 `'trap'`、不在 `keepOut`、一個房間最多一隻、彼此不重疊；隻數 ≤ `wanderCount`；`keepOut` 正好是入口、出口與有精英／守關者／救援的房間；
+    - `a short line`（審查 M1）：房間寬 5（`cap` 4）而可用的連續格只有 3 格時，路線是那 3 格、`start` 不為負；
     - `the way out stays open`（計畫裁定 12）：抽樣的每一層 `openPath` 為真；手工窄走道的反例丟掉一隻；
     - `the same floor twice`：同一個 `(seed, region, depth)` 兩次逐一相同；
     - `the floor is only read`：`placeWanderers` 前後 `f` 用 `structuredClone` 比 `toEqual`。
@@ -231,7 +245,7 @@ spec 沒寫細的地方，全部是「計畫裁定」，同時抄進 spec §0。
 - [ ] **Step 4**：錄釘子：`WANDER_RECORD=1 rtk proxy npx vitest run src/scripts/games/starlantern/engine/wander.placements.test.ts`；不帶變數再跑兩次都綠。然後這些測試檔、`engine/dungeon/{rooms,run,gen,gather}.test.ts`、全套、tsc、閘門、逐位元的其他證據。
 - [ ] **Step 5**：收尾 G，commit：`feat(starlantern): wanderers placed last from a stream of their own, the floor only read`。
 
-### Task A3：移動、接觸與戰鬥
+### Task A4：移動、接觸與戰鬥
 
 **Files:**
 - Create：`engine/wander.ts`、`engine/wander.test.ts`、`engine/wander.guard.test.ts`、`engine/wander.walk.test.ts`。
@@ -242,21 +256,22 @@ spec 沒寫細的地方，全部是「計畫裁定」，同時抄進 spec §0。
   - `engine/wander.test.ts`（純函式，手工的小地圖）：
     - `a patrol walks its line`：來回、端點折返、被別隻擋住時等待而且不折返、走到隊伍那一格是接觸；
     - `a guard stands`：`nextOf` 永遠 `null`；
-    - `a chaser`：距離 3 開始追、4 不追；追的時候到 6 還追、7 放棄並走回原位、回到原位停；沒有路就放棄；鄰格順序「上、右、下、左」的同步數平手；
-    - `the safe rooms`：`keepOut` 裡的格子永遠不是 `next`（隊伍站在裡面時追蹤者在邊上等，不接觸）；
+    - `a chaser`：距離 3 開始追、4 不追；追的時候到 6 還追、7 放棄並走回原位、回到原位停；沒有路就放棄；鄰格順序「上、右、下、左」的同步數平手；離原位 15 步時放棄，照樣一步一步走回原位（審查 H2）；
+    - `traps are floor to them`：還沒觸發的陷阱可站可走、不觸發、格子不變（審查 L4）；
+    - `the safe rooms`（審查 H1）：`keepOut` 裡的格子永遠不是 `next`；隊伍站在入口房邊上的格、追蹤者在緊鄰的走道格上：不接觸、追蹤者等著；隊伍走出房間的那一步之後才接觸；
     - `rest`：`rest > 0` 時不動、每回合減一；
     - `one contact a turn`：兩隻同時能接觸時只有 `list` 前面那一隻，後面的不動；
     - `seen`：步行距離 4 看見、5 不見、隔牆不算；`sight === 0` 時 2；看見之後一直是 `seen`；
     - `nothing drawn, nothing changed by a look`：`nextOf`、`wanderView` 前後狀態 `toEqual`。
   - `engine/wander.guard.test.ts`：Global Constraints「決定性」的掃描。
-  - `engine/game.test.ts`（新 `describe('wanderers in the game (wanderers plan Task A3)')`）：
+  - `engine/game.test.ts`（新 `describe('wanderers in the game (wanderers plan Task A4)')`）：
     - `off, nothing at all`：開關關著，出發之後 `run.wander` 不存在、`run.wanderers` 不存在、`wanderView()` 是 `[]`；同一串 `move()` 的結果、`game.rng` 次數、計量和 `withWanderLive(f, { open: false })` 下逐一相同；
     - `shut until act one is cleared`：`withWanderLive`（不給 `open`）、`act1Cleared` 假：同上；
     - `the start floor has them`：用 `floorOf(newRun(...))` 找一個出發層（第 6 層）會放的種子；`{ open: true }` 下出發，`game.run.wanderers[6].list` 非空；
     - `a bump`：隊伍旁邊放一隻（測試直接改 `pos`）→ `move` 回 `battle` 帶 `wanderer.by === 'bump'`；隊伍沒移動、`facing` 對、計量不變、`game.rng` 在開戰之前沒有被 `walk()` 抽；戰鬥只有那一隻、名字沒有 ★、`scale.elite` 是牠；
     - `caught`：追蹤者在 2 步外 → 隊伍走一般的一步 → 回 `battle` 帶 `by: 'caught'`；隊伍在新的格子上；
-    - `one thing a step`：隊伍踩上事件格、撞牆、或這一步遇敵時，徘徊者的位置不變；踩採集點時照常動；
-    - `won`：用既有的打法打贏 → `down`、`wanderView()` 不再有牠、這一層再也沒有接觸；報酬：一件裝備、稀有素材 2 個（同一種）、沒有碎片、`lootDraws` 的增量和同一個種子的精英戰相同；`wanderNotes` 有 `down`；
+    - `one thing a step`（審查 L1）：隊伍踩上**還沒用過的**事件格、樓梯、入口、撞牆、或這一步遇敵時，徘徊者的位置不變；踩採集點、用過的泉水、開過的寶箱時照常動（結果是 `moved`）；
+    - `won`：用既有的打法打贏 → `down`、`wanderView()` 不再有牠、這一層再也沒有接觸；報酬：一件裝備、稀有素材 2 個（同一種）、沒有碎片、`lootDraws` 的增量是 1（單獨一隻沒有護衛，審查 M5）、`trophyDraws` 只在專屬傳說或刻印的規則觸發時增加；`wanderNotes` 有 `down`；
     - `fled`：逃跑成功（注入讓逃跑必中的 `rng` 序列，照既有逃跑測試的做法）→ `rest === 3`、`chasing` 不在、位置不變；接下來三步牠不動；`wanderNotes` 有 `shaken`；
     - `lost`：輸了 → `wipe` 照舊，`run` 是 `null`；
     - `affixes by home`：地獄難度下同一隻在兩個不同的格子被碰到，詞綴相同；
@@ -266,20 +281,8 @@ spec 沒寫細的地方，全部是「計畫裁定」，同時抄進 spec §0。
 - [ ] **Step 2**：執行，確認紅。
 - [ ] **Step 3**：實作。`stepParty` 是今天 `move` 本體的原樣搬移（`git diff` 只看得到縮排以外的那一行方法名）。
 - [ ] **Step 3b：會壞才算證明**（計畫裁定 11）：兩次暫時的破壞，各自確認紅，再用編輯改回（不用 `git checkout`／`restore`），重跑全綠。
-- [ ] **Step 4**：這些測試檔、全套、tsc、閘門、逐位元的其他證據。
+- [ ] **Step 4**：這些測試檔、全套、tsc、閘門、逐位元的其他證據；`WANDER_FULL=1` 跑一次 A3 的完整抽樣（PR A 最後一個碰 `engine/` 的任務），結果記進報告。
 - [ ] **Step 5**：收尾 G，commit：`feat(starlantern): wanderers walk when the party walks, and fight when they meet`。
-
-### Task A4：強度的量測（opt-in）
-
-**Files:**
-- Create：`engine/wander.bands.test.ts`。
-- Modify：`data/wander.ts`（只在量到紅時：`WANDER_POOL` 的 `from` 或 `WANDER_EXCEPTIONS`）、`data/wander.test.ts`（照實際值）、spec §6.2 的表（`from` 有改時）。
-
-- [ ] **Step 1**：照 spec §6.3 與名冊 22i 寫測試（期望隊伍、`levelAt`、`KITS`、種子照 22i 抄，不 import 凍結檔）；`WANDER_BANDS` 沒設時跳過；`WANDER_EXCEPTIONS` 裡的格子另斷言「量到的值等於記下的值」。
-- [ ] **Step 2**：`WANDER_BANDS=1` 跑一次（重的工作）；每一格的勝率與回合數記進報告。
-- [ ] **Step 3**：紅的格子照計畫裁定 14：一次調整（`from`），重跑；還紅就寫進 `WANDER_EXCEPTIONS` 並在 SDD `A/todo.md` 記一條。綠的格子不動。
-- [ ] **Step 4**：全套（不設變數，這個檔跳過）、tsc、閘門、逐位元的其他證據；`WANDER_FULL=1` 跑一次 A2 的完整抽樣，結果記進報告。
-- [ ] **Step 5**：收尾 G，commit：`test(starlantern): wanderers measured against the expected party`。
 
 **PR A 收尾**：控制者派全新脈絡的審查者看 diff（重點：Review Focus 1–6；`stepParty` 是原樣搬移；樓層只讀；兩種破壞真的會紅）。
 
@@ -330,7 +333,7 @@ spec 沒寫細的地方，全部是「計畫裁定」，同時抄進 spec §0。
 
 **Files:**
 - Modify：`data/wander.ts`（`WANDER_SWITCH.live = true`）、`data/wander.test.ts`（`the switch is off` 改成 `the switch is on`）、`engine/testing.ts`（`withWanderOff(f)`，照 `withGatherOff`，自己有一條紅綠測試）、spec §0（計畫裁定與實作偏離抄回）。
-- 已知會紅與改法（意圖不變）：測「開關關著」的測試（A3 的 `off, nothing at all` 等）不能再靠預設值：只把「關著的那一半」包進 `withWanderOff`，斷言一個字都不改。`storyL.dive` 與 `guild.legacy` 的原情境：潛行快照用舊怪物表（名單空、不放）、城鎮腳本只到第 3 層，預期仍逐一相同；任何紅燈都是設計被破壞，BLOCKED，不准重錄。其他清單測試若因為打開而多了東西，照實際改並列進報告；其他 NEEDS_CONTEXT。
+- 已知會紅與改法（意圖不變）：測「開關關著」的測試（A4 的 `off, nothing at all` 等）不能再靠預設值：只把「關著的那一半」包進 `withWanderOff`，斷言一個字都不改。A0 Step 3 列出的「第一幕之後、第 4 層以後的非頭目層出發」的測試，一律包進 `withWanderOff`（它們測的不是徘徊者；審查 M4），列進報告。`storyL.dive` 與 `guild.legacy` 的原情境：潛行快照用舊怪物表（名單空、不放）、城鎮腳本只到第 3 層，預期仍逐一相同；任何紅燈都是設計被破壞，BLOCKED，不准重錄。其他清單測試若因為打開而多了東西，照實際改並列進報告；其他 NEEDS_CONTEXT。
 
 - [ ] **Step 1**：開關打開前跑一次閘門與逐位元的其他證據：全部 identical。
 - [ ] **Step 2**：先寫 `withWanderOff` 的紅綠測試（回傳、丟例外、promise 結束之後都還原），再打開開關，改清單測試。
