@@ -5,14 +5,19 @@ import type { FloorMap, Tile } from '../map';
 import { posKey, reachable } from '../map';
 import { pick, type Rng } from '../rng';
 import type { CharacterId, Pos } from '../types';
+import type { GatherType } from '../../data/gather';
 import type { GenFloor } from './gen';
 
 export type RoomKind = 'empty' | 'chest' | 'fountain' | 'trap' | 'merchant' | 'altar' | 'elite' | 'vault';
 /**
  * `stock` is a merchant's three item ids, drawn once when the floor is filled; `who` is the companion a `rescue` room holds; `owner` is the chain a forced `glimmer` holds a piece of;
- * `warden` is the roster warden a `warden` room holds (roster plan ruling 10).
+ * `warden` is the roster warden a `warden` room holds (roster plan ruling 10); `gather` is what a gathering point holds,
+ * fixed when it is placed (gathering spec §5.2: its kind, its material, its goods with the rich two, and whether it is rich).
  */
-export interface Content { kind: RoomKind | 'key' | 'rescue' | 'glimmer' | 'warden'; at: Pos; room: number; stock?: string[]; who?: Meetable; owner?: CharacterId; warden?: string }
+export interface Content {
+  kind: RoomKind | 'key' | 'rescue' | 'glimmer' | 'warden' | 'gather'; at: Pos; room: number; stock?: string[]; who?: Meetable; owner?: CharacterId; warden?: string;
+  gather?: { type: GatherType; item: string; qty: number; rich?: true };
+}
 type Placed = Exclude<Content['kind'], 'empty'>;
 
 /** Share of ordinary rooms by kind. Elite and vault are capped at one per floor. */
@@ -22,6 +27,7 @@ const WEIGHTS: [RoomKind, number][] = [
 
 const TILE: Record<Placed, Tile> = {
   chest: 'chest', fountain: 'fountain', trap: 'trap', merchant: 'merchant', altar: 'altar', elite: 'elite', vault: 'vault', key: 'key', rescue: 'rescue', glimmer: 'glimmer', warden: 'warden',
+  gather: 'gather',
 };
 
 /** Three distinct buyable items. */

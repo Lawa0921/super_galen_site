@@ -9,6 +9,8 @@ import type { BuffStat, CharacterId, ItemInstance } from '../types';
 import type { Difficulty } from '../battle';
 import { genFloor } from './gen';
 import { fillRooms, placeRescue, placeSpecial, type Content } from './rooms';
+import { GATHER_SALT } from '../../data/gather';
+import { placeGather } from './gather';
 
 /** A gate's destination: where it leads and the run condition there. */
 export interface Portal { region: RegionId; condition: ConditionId }
@@ -72,6 +74,15 @@ export interface Run {
    * another floor, so its return posts a new board. Not saved (a run never is), drawn from nothing; set by the Game, read by `toTown` and `wipe`.
    */
   worked?: true;
+  /**
+   * Gathering spec §0 item 14: this trip's floors hold gathering points. Set by `Game.depart` when gathering is open, right
+   * after `newRun` (before the start floor is made); `newRun` never sets it, so a run made anywhere else has none. Not saved.
+   */
+  gather?: true;
+  /** Gathering plan ruling 6: this trip's first gathering has had its remark (only set when one was given). Not saved. */
+  gatherTalked?: true;
+  /** Gathering spec §5.3 (review L3): the shade spots seen on this trip (`depth:x,y`), marked from then on. Not saved. */
+  spotted?: Set<string>;
 }
 
 export function newRun(seed: number, region: RegionId, condition: ConditionId, startDepth: number, rescues: Record<number, Meetable> = {}, difficulty?: Difficulty): Run {
@@ -131,6 +142,8 @@ export function floorOf(run: Run, depth: number): RunFloor {
   // Last of all, so nothing above moves (ruling 10): a live warden's room on depths 8, 13, 18 ... (never a boss depth).
   const warden = isBossDepth(run.region, depth) ? null : wardenFor(run.region, depth);
   if (warden) placeSpecial(f, g, mulberry32(seed ^ WARDEN_SALT), { kind: 'warden', warden });
+  // Gathering spec §5.2: the very last line, from the points' own stream, only on plain floor left over; nothing above moves.
+  if (run.gather) placeGather(f, g, mulberry32(seed ^ GATHER_SALT), run.region, depth);
   run.floors.set(depth, f);
   return f;
 }
