@@ -222,6 +222,12 @@ describe('the guild board: tabs, rows and the detail (guild quests plan Task B2)
     expect(root.querySelector('.slx-cmd')!.hasAttribute('inert')).toBe(false);
   }));
 
+  it('closing the board sounds the cancel cue once', () => withGuildLive(() => {
+    const { s, sfx } = open();
+    s.onAction('cancel');
+    expect(sfx.cancel).toHaveBeenCalledTimes(1);
+  }));
+
   it('no inline style', () => withGuildLive(() => {
     const { root, s } = open({ art: { has: () => true } });
     for (const a of ['down', 'right', 'right'] as const) s.onAction(a);

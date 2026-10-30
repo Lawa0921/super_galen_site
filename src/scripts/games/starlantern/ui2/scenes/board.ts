@@ -172,7 +172,7 @@ export class BoardLayer implements Layer {
     this.view = new MenuView(menu, {
       pick: (it) => { this.cursors.set(tab, menu.cursor); this.pick(tab, it.id); },
       moved: () => { this.cursors.set(tab, menu.cursor); this.host.ctx.sfx.cursor(); this.drawDetail(); },
-      cancel: () => { this.host.ctx.sfx.cancel(); this.close(); },
+      cancel: () => this.close(),   // the guild's pop sounds the cancel cue
     }, BOARD_ROWS);
     this.listEl.replaceChildren(this.view.el);
     this.drawDetail();
