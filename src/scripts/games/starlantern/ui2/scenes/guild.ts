@@ -17,6 +17,9 @@ import { awaitArt, lateArt, type LateArt } from '../lateArt';
 import { Menu, type MenuItem } from '../menu';
 import type { SceneCtx } from '../scene';
 import { MenuView, QtyView, confirmBox, win } from '../widgets';
+import { GUILD_SWITCH, guildOpen } from '../../data/guild';
+import { GUILD_TEXT } from '../../data/guild.zh-TW';
+import { openBoard, type BoardHost } from './board';
 import { FacilityScene } from './facility';
 
 const name = (id: CharacterId) => CHARACTERS[id].name;
@@ -48,7 +51,18 @@ export class GuildScene extends FacilityScene {
 
   protected commands(): MenuItem[] {
     const g = T.ui2.guild;
-    return [{ id: 'formation', label: g.formation }, { id: 'recall', label: g.recall, disabled: this.waiting().length === 0 }, { id: 'equip', label: g.equip }, { id: 'status', label: g.status }, { id: 'tree', label: g.tree }, { id: 'workshop', label: g.workshop }, { id: 'talent', label: g.talent }, { id: 'exchange', label: T.ui2.exchange.title }, { id: 'handbook', label: T.ui2.handbook.title }];
+    return [{ id: 'formation', label: g.formation }, { id: 'recall', label: g.recall, disabled: this.waiting().length === 0 }, { id: 'equip', label: g.equip }, { id: 'status', label: g.status }, { id: 'tree', label: g.tree }, { id: 'workshop', label: g.workshop }, { id: 'talent', label: g.talent }, { id: 'exchange', label: T.ui2.exchange.title }, { id: 'handbook', label: T.ui2.handbook.title },
+      // Guild quests spec §0 item 1: the board comes last, before 離開, so no command above it moves (locked or not).
+      ...(GUILD_SWITCH.live ? [{ id: 'board', label: T.ui2.board.title }] : [])];
+  }
+
+  /**
+   * Controller ruling 2026-10-30 (guild quests spec §0 item 23): with 委託 on the list the window holds eleven rows, so its
+   * rows are 16px tall (slx-cmd-board) and it stands whole above Anna's box; without it, the window is today's.
+   */
+  protected refresh(): void {
+    super.refresh();
+    this.root.querySelector('.slx-cmd')?.classList.toggle('slx-cmd-board', GUILD_SWITCH.live);
   }
 
   protected onCommand(id: string): void {
@@ -56,6 +70,30 @@ export class GuildScene extends FacilityScene {
     else if (id === 'exchange') this.exchangeMenu();
     else if (id === 'formation' || id === 'equip' || id === 'status' || id === 'handbook' || id === 'workshop') this.ctx.go(id);
     else if (id === 'tree' || id === 'talent') this.ctx.go('status', `tab:${id}`);
+    else if (id === 'board') this.board();
+  }
+
+  /**
+   * Spec §8.1: before the board opens (`guildOpen`, the one predicate) Anna says one line and nothing is written; nothing
+   * of hers is written before PR C, so then only the error cue. Open, the board goes up (ui2/scenes/board.ts).
+   */
+  private board(): void {
+    if (!guildOpen(this.ctx.game.state)) {
+      this.ctx.sfx.error();
+      if (GUILD_TEXT.anna.locked) void this.say(GUILD_TEXT.anna.locked);
+      return;
+    }
+    openBoard(this.boardHost());
+  }
+
+  /** The guild's stage, windows and dialogue box, for the board (plan ruling 14). */
+  private boardHost(): BoardHost {
+    return {
+      ctx: this.ctx, stage: this.stage,
+      push: (l) => this.push(l), pop: (silent) => this.pop(silent), popAll: () => this.popAll(),
+      say: (t, mood) => this.say(t, mood), speakAs: (who, t, mood) => this.speakAs(who, t, mood),
+      refresh: () => this.refresh(),
+    };
   }
 
   private titled(id: CharacterId): string { return titleOf(this.ctx.game.state.party.roster[id]); }

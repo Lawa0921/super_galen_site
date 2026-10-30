@@ -31,6 +31,8 @@ import { STORY } from '../../data/story.zh-TW';
 import { clearPillars, dropMoment, skipPillar } from '../lootFx';
 import { eventLayer, showPickUp, stairsLayer, type EventHost } from './event';
 import { mapArtUrls } from '../../render/artPaths';
+import { guildOpen } from '../../data/guild';
+import { heldRight, questLabel } from './board';
 
 const DIRS: Dir[] = ['up', 'down', 'left', 'right'];
 const ENCOUNTER_MS = 520;
@@ -269,7 +271,7 @@ export class DungeonScene implements Scene {
         if (this.ctx.game.finaleWaiting) { this.refresh(); void this.finaleWait(); return; }
         break;
       case 'entrance': s.step?.(); this.refresh(); this.askTown(); return;
-      case 'floor': s.stairs?.(); this.refresh(); this.say(T.map.floor(r.floor, FLOORS[this.ctx.game.terrain(r.floor) - 1].name)); return;
+      case 'floor': s.stairs?.(); this.refresh(); this.say(this.floorLine(r.floor)); return;
       case 'stairs': s.step?.(); this.refresh(); this.push(stairsLayer(this.host(), r, () => this.descend())); return;
       case 'chest': case 'pickup': showPickUp(this.host(), r); return;
       case 'event': s.step?.(); this.refresh(); this.push(eventLayer(this.host(), r.content)); return;
@@ -355,13 +357,24 @@ export class DungeonScene implements Scene {
     else setTimeout(() => this.ctx.go('battle'), ENCOUNTER_MS);
   }
 
+  /**
+   * The new floor's name, and under it each scout this floor finished (guild quests spec §8.5): Game.scoutDone, read once
+   * and cleared here.
+   */
+  private floorLine(floor: number): string {
+    const g = this.ctx.game;
+    const done = (g.scoutDone ?? []).map((id) => g.state.guild?.active.find((q) => q.id === id)).filter((q) => q !== undefined);
+    g.scoutDone = undefined;
+    return [T.map.floor(floor, FLOORS[g.terrain(floor) - 1].name), ...done.map((q) => T.ui2.board.done(questLabel(q)))].join('\n');
+  }
+
   /** 前往 on the stairs window: go down and name the new floor, then pay the depth-clear exp in a second line. */
   private descend(): void {
     const r = this.ctx.game.descend();
     if (r?.kind !== 'floor') { this.refresh(); return; }
     this.ctx.sfx.stairs?.();
     this.refresh();
-    const named = this.say(T.map.floor(r.floor, FLOORS[this.ctx.game.terrain(r.floor) - 1].name));
+    const named = this.say(this.floorLine(r.floor));
     const clear = r.clear;
     if (!clear) return;
     const lines = [T.map.cleared(clear.exp), ...levelUpLines(clear.levelUps, this.ctx.game.state.party).map((l) => l.text)];
@@ -443,9 +456,13 @@ export class DungeonScene implements Scene {
       ...(cond ? [{ id: 'condition', label: d.conditionItem(cond.name) }] : []),
       { id: 'handbook', label: d.handbook },
       { id: 'settings', label: T.ui2.title.settings },
+      // Guild quests spec §8.5 (review L2): the quests held, read only, once the board is open (`guildOpen`, not the switch
+      // alone); the twelfth line, so the menu still shows whole (FIELD_MENU_ROWS).
+      ...(guildOpen(g.state) ? [{ id: 'quests', label: T.ui2.board.title }] : []),
       { id: 'close', label: d.close },
     ], (it) => {
       if (it.id === 'close') { this.pop(); return; }
+      if (it.id === 'quests') { this.questList(); return; }
       if (it.id === 'condition' && cond) { this.popAll(); this.say(d.conditionLine(cond.name, cond.desc)); return; }
       if (it.id === 'lamp') { this.askLamp(); return; }
       if (it.id === 'settings') { this.popAll(); this.leaving = true; this.ctx.go('settings'); return; }
@@ -456,6 +473,23 @@ export class DungeonScene implements Scene {
       if (it.id === 'items') { this.itemList(); return; }
       this.statusList();
     }, 'slx-list slx-field-menu', undefined, FIELD_MENU_ROWS);
+  }
+
+  /**
+   * The quests held, from the field menu (guild quests spec §8.5): each with its progress, read only. A delivery counts the
+   * stock in town, so with one held a line says what is in the pack counts once home.
+   */
+  private questList(): void {
+    const s = this.ctx.game.state;
+    const held = s.guild?.active ?? [];
+    const B = T.ui2.board;
+    const v = new MenuView(new Menu(held.length ? held.map((q) => ({ id: q.id, label: questLabel(q), ...heldRight(s, q) })) : [{ id: '', label: B.emptyActive, disabled: true }]), {
+      pick: () => {},
+      moved: () => this.ctx.sfx.cursor(),
+      cancel: () => { this.ctx.sfx.cancel(); this.pop(); },
+    }, FIELD_MENU_ROWS);
+    const note = held.some((q) => q.kind === 'deliver') ? [el('p', { class: 'slx-hint', text: B.fieldNote })] : [];
+    this.push({ el: win('slx-list slx-field-quests', [el('div', { class: 'slx-who', text: B.title }), v.el, ...note]), onAction: (a) => v.onAction(a) });
   }
 
   /** Members on the field who can cast in the field: standing, with a field skill learned. */

@@ -1061,6 +1061,63 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
         hero: '從迷宮深處走出來的人。什麼都能學，五條分支任意組合。',
       } as Record<string, string>,
     },
+    /**
+     * The guild board's interface words (guild quests plan ruling 17, Task B1): tab and kind names, the rows' and the
+     * detail's formats, buttons, status words and empty states. Nobody speaks here: the townsfolk's notes and thanks, Anna's
+     * lines and a companion's word are data/guild.zh-TW.ts (`GUILD_TEXT`, PR C).
+     */
+    board: {
+      title: '委託',
+      tabs: { board: '布告', active: (n: number, cap: number) => `進行中 ${n}／${cap}`, rank: '評等' },
+      kinds: { hunt: '討伐', sweep: '掃蕩', bounty: '懸賞', scout: '探路', deliver: '收購' },
+      /** A row's label: 【討伐】灰燼小鬼 ×4. */
+      row: (kind: string, target: string) => `【${kind}】${target}`,
+      count: (name: string, n: number) => `${name} ×${n}`,
+      depthAt: (place: string, d: number) => `${place} 第 ${d} 層`,
+      /** The main road, short, where a row or a target names a place. */
+      main: '本道',
+      progress: (have: number, need: number) => `${have}／${need}`,
+      deepest: (have: number, need: number) => `最深 ${have}／${need}`,
+      held: (have: number, need: number) => `持有 ${have}／${need}`,
+      ready: '可回報',
+      giver: (name: string) => `委託人：${name}`,
+      target: (text: string) => `目標：${text}`,
+      natives: (place: string, n: number) => `${place}的原生怪物 ×${n}`,
+      haunts: (text: string) => `出沒：${text}`,
+      progressLine: (text: string) => `進度：${text}`,
+      reward: (parts: string) => `報酬：${parts}`,
+      merit: (n: number) => `功績：${n}`,
+      rankNames: ['見習', '一燈', '二燈', '三燈', '四燈'] as readonly string[],
+      /** The board's head line: 公會評等：一燈　功績 18／40 (no threshold past the last rank). */
+      head: (rank: string, merit: number, next?: number) => `公會評等：${rank}　功績 ${next === undefined ? merit : `${merit}／${next}`}`,
+      acceptAsk: (label: string) => `要接下${label}嗎？`,
+      accepted: (label: string) => `已接下委託：${label}。`,
+      abandonAsk: (label: string) => `要放棄${label}嗎？`,
+      turnIn: '回報', abandon: '放棄', back: '返回',
+      emptyBoard: '下次回城會貼新的委託。',
+      emptyActive: '還沒有接下委託。',
+      /** Before a giver's thanks, said in the guild's box: 「瑪莎留了話：」. */
+      note: (giver: string) => `${giver}留了話：`,
+      rankUp: (rank: string) => `公會評等升到${rank}。`,
+      gift: (parts: string) => `升級賀禮：${parts}。`,
+      /** The rank tab: where the party stands, and what each lamp brings. */
+      rankNow: (rank: string) => `目前評等：${rank}`,
+      rankNext: (rank: string, merit: number) => `下一級：${rank}（功績 ${merit}）`,
+      rankTop: '已是最高評等。',
+      rankFrom: (merit: number) => `功績 ${merit}`,
+      perks: (list: string) => `可接：${list}`,
+      offers: (n: number) => `布告 ${n} 則`,
+      cap: (n: number) => `手上最多 ${n} 件`,
+      runeBounty: '懸賞附符文',
+      doubleBounty: '每張布告兩則懸賞',
+      current: '目前',
+      /** Coming home from the labyrinth with quests done (spec §8.5). */
+      questsReady: (n: number) => `有 ${n} 件委託可以回報了。`,
+      /** A quest a fight or a floor finished: 委託達成：【討伐】灰燼小鬼 ×4. */
+      done: (label: string) => `委託達成：${label}`,
+      /** The labyrinth's read-only page: a delivery counts the stock in town. */
+      fieldNote: '收購看的是倉庫，背包裡的回城後才算。',
+    },
   },
   forge: {
     kind: { essence: '精華', monster: '怪物素材', region: '地區素材', rare: '稀有素材', junk: '雜物', trophy: '戰利品', keepsake: '遺物' } as Record<MaterialKind, string>,

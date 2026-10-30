@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Game } from '../../engine/game';
 import { constRng } from '../../engine/testing';
+import { dayOf } from '../../engine/calendar';
+import { GUILD_SWITCH } from '../../data/guild';
 import { NO_ART, type ArtIndex } from '../../render/textures';
 import { art } from '../../render/artPaths';
 import type { ItemInstance } from '../../engine/types';
@@ -946,5 +948,115 @@ describe('TownScene: an after-story stands on its own place (review of bond plan
     for (let i = 0; i < 30 && !g.state.story.seen.includes('ending:liz'); i++) { s.onAction('confirm'); await tick(); }
     expect(g.state.story.seen).toContain('ending:liz');
     expect(root.querySelector('.slx-backdrop')).toBeNull();
+  });
+});
+
+describe('TownScene: the guild board on the way home (guild quests plan Task B4)', () => {
+  const B = T.ui2.board;
+  /** `withGuildLive` for a test that awaits: on until the test is over, not only until its first await. */
+  const live = async (f: () => Promise<void>) => {
+    const was = GUILD_SWITCH.live;
+    GUILD_SWITCH.live = true;
+    try { await f(); } finally { GUILD_SWITCH.live = was; }
+  };
+  /**
+   * A town entered from `from`, the first act over, holding a hunt of six slimes with `felled` of them felled (six: ready),
+   * the day's board seen unless `unread`. Every rng draw is counted.
+   */
+  const enter = (o: { from?: 'dungeon' | 'battle' | 'shop'; felled?: number; notice?: boolean; ups?: boolean; unread?: boolean; guild?: boolean } = {}) => {
+    let draws = 0;
+    const g = new Game(() => { draws++; return 0.5; }, null);
+    g.arrival = [];
+    g.state.story.act1Cleared = true;
+    const day = dayOf(g.state);
+    if (o.guild !== false) {
+      g.state.guild = { day, offers: [], merit: 0, paid: 0, viewed: o.unread ? undefined : day,
+        active: [{ id: `${day}:1`, kind: 'hunt', giver: 'marta', variant: 0, target: 'slime', n: 6, depth: 2, reward: { gold: 78 }, merit: 2, base: 0 }] };
+    }
+    g.state.bestiary = { ...g.state.bestiary, slime: { seen: 6, felled: o.felled ?? 6 } };
+    if (o.notice) { g.notice = 'banked'; g.banked = { items: { moss: 1 }, gold: 0, viaLamp: false, gear: [], overflow: [] }; }
+    if (o.ups) g.bondUps.push({ id: 'rin', tier: 2 });
+    const base = draws;
+    const root = document.createElement('div');
+    const s = new TownScene({ game: g, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn(), ...(o.from ? { from: o.from } : {}) }, Infinity);
+    s.enter(root);
+    return { g, root, s, draws: () => draws - base };
+  };
+  const tick = () => new Promise((r) => setTimeout(r, 0));
+  /** Every line of the arrival, in order, each closed with a confirm. */
+  const said = async (t: ReturnType<typeof enter>): Promise<string[]> => {
+    const out: string[] = [];
+    for (let i = 0; i < 12; i++) {
+      await tick();
+      if (t.root.querySelector<HTMLElement>('.slx-talk')!.hidden) break;
+      out.push(t.root.querySelector('.slx-talk .slx-text')!.textContent!);
+      t.s.onAction('confirm');
+    }
+    return out;
+  };
+  const guildRow = (root: HTMLElement) => root.querySelector('.slx-town-menu [data-id=guild]')!;
+
+  it('the quest line never moves the day line\'s draw (review H2): the only line before it, the same draws', () => live(async () => {
+    const ready = enter({ from: 'dungeon' });
+    const lines = await said(ready);
+    expect(lines[0]).toBe(B.questsReady(1));
+    expect(lines).toHaveLength(2);   // then the day's line
+    const none = enter({ from: 'dungeon', felled: 5 });
+    const plain = await said(none);
+    expect(plain).toHaveLength(1);
+    expect(lines[1]).toBe(plain[0]);   // the same day's line, drawn as it was
+    expect(ready.draws()).toBe(none.draws());
+    expect(ready.draws()).toBe(1);   // the day's line still draws
+  }));
+
+  it('coming home tells how many are ready after what came home and before the bonds; the day line as before', () => live(async () => {
+    const t = enter({ from: 'dungeon', notice: true, ups: true });
+    const lines = await said(t);
+    expect(lines[0]).toContain('發光苔');
+    expect(lines.slice(1, 3)).toEqual([B.questsReady(1), '凜的好感度提升到『信賴』。']);
+    expect(lines).toHaveLength(4);
+    const without = enter({ from: 'dungeon', notice: true, ups: true, felled: 5 });
+    const plain = await said(without);
+    expect(plain).toEqual([lines[0], lines[2], lines[3]]);
+    expect(t.draws()).toBe(without.draws());
+  }));
+
+  it('a wipe brings it too', () => live(async () => {
+    const t = enter({ from: 'battle' });
+    expect((await said(t))[0]).toBe(B.questsReady(1));
+  }));
+
+  it('back from a facility, or with nothing ready, no quest line', () => live(async () => {
+    expect(await said(enter({ from: 'shop' }))).not.toContain(B.questsReady(1));
+    expect(await said(enter({}))).not.toContain(B.questsReady(1));
+    expect(await said(enter({ from: 'dungeon', felled: 5 }))).not.toContain(B.questsReady(1));
+  }));
+
+  it('the guild is marked new when a quest is ready or the board is unread', () => live(async () => {
+    const ready = enter({ from: 'shop' });
+    await said(ready);
+    expect(guildRow(ready.root).querySelector('.slx-fresh')!.textContent).toBe(T.ui2.handbook.fresh);
+    const unread = enter({ from: 'shop', felled: 5, unread: true });
+    await said(unread);
+    expect(guildRow(unread.root).querySelector('.slx-fresh')).not.toBeNull();
+    const none = enter({ from: 'shop', guild: false });   // open, no board yet: one waits
+    await said(none);
+    expect(guildRow(none.root).querySelector('.slx-fresh')).not.toBeNull();
+    const seen = enter({ from: 'shop', felled: 5 });
+    await said(seen);
+    expect(guildRow(seen.root).querySelector('.slx-fresh')).toBeNull();
+  }));
+
+  it('with the switch off, or the board locked, neither the line nor the mark', async () => {
+    const check = async () => {
+      const t = enter({ from: 'dungeon', unread: true });
+      expect(await said(t)).not.toContain(B.questsReady(1));
+      expect(guildRow(t.root).querySelector('.slx-fresh')).toBeNull();
+      expect(t.draws()).toBe(1);
+    };
+    await check();
+    const was = GUILD_SWITCH.open;
+    GUILD_SWITCH.open = () => false;
+    try { await live(check); } finally { GUILD_SWITCH.open = was; }
   });
 });

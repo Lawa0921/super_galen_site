@@ -381,6 +381,22 @@ export const SWEEP: { name: string; visit(page: Page, w: SpecHelpers): Promise<v
     },
   },
   {
+    // Guild quests PR B (controller ruling, spec §0 item 23): the guild's window with 委託 listed, its eleven 16px rows. The
+    // switch (off until PR D) is on only while the guild draws its list, and Anna's greeting on this second visit draws from a
+    // stand-in rng, so the game's own stream (the labyrinth screens after this one) is what it was without this screen.
+    name: 'guild-board-listed', visit: async (page, w) => {
+      const live = (on: boolean) => page.evaluate((v) => {
+        const d = (window as unknown as { __starlanternDebug: { guild: { GUILD_SWITCH: { live: boolean } }; game: { rng: () => number; keep?: () => number } } }).__starlanternDebug;
+        d.guild.GUILD_SWITCH.live = v;
+        if (v) { d.game.keep = d.game.rng; d.game.rng = () => 0; } else { d.game.rng = d.game.keep!; delete d.game.keep; }
+      }, on);
+      await live(true);
+      await facility(page, w, 'guild', '.slx-guild');
+      await live(false);
+      await expect(page.locator('.slx-guild .slx-cmd.slx-cmd-board [role=option]')).toHaveCount(11);
+    },
+  },
+  {
     name: 'shop-buy', visit: async (page, w) => {
       await facility(page, w, 'shop', '.slx-shop');
       await page.locator('.slx-shop .slx-cmd [data-id=buy]').click();

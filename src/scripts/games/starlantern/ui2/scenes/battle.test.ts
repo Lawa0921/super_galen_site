@@ -4,6 +4,8 @@ import { Game } from '../../engine/game';
 import type { Combatant } from '../../engine/combatant';
 import type { CharacterId, ItemInstance } from '../../engine/types';
 import { constRng } from '../../engine/testing';
+import { dayOf } from '../../engine/calendar';
+import { GUILD_SWITCH } from '../../data/guild';
 import { NO_ART } from '../../render/textures';
 import { art } from '../../render/artPaths';
 import { chainLength } from '../../data/story/chains';
@@ -1939,5 +1941,42 @@ describe('BattleScene with a member inside a foe (roster plan B10, M28)', () => 
     expect(submit).toHaveBeenCalledTimes(1);
     expect(submit.mock.calls[0][0][game.battle!.party[0].key]).toEqual({ kind: 'attack', target: 'e1' });
     s.exit?.();
+  });
+});
+
+describe('BattleScene: a quest finished in the fight (guild quests plan Task B4)', () => {
+  /** A hunt of six slimes held (the board as it is saved); the switch is on for the test, as the engine reports it only then. */
+  const hunting = (g: Game) => {
+    const day = dayOf(g.state);
+    g.state.story.act1Cleared = true;
+    g.state.guild = { day, offers: [], merit: 0, paid: 0, active: [{ id: `${day}:1`, kind: 'hunt', giver: 'marta', variant: 0, target: 'slime', n: 6, depth: 2, reward: { gold: 78 }, merit: 2, base: 0 }] };
+  };
+  const result = async (quests: boolean) => {
+    const was = GUILD_SWITCH.live;
+    GUILD_SWITCH.live = true;
+    try {
+      const { game, s, root } = setup(hunting);
+      game.state.party.roster.noel.level = 6;
+      const levelUps = [{ id: 'noel' as const, levels: 1, points: { skill: 1, talent: 0 } }];
+      const end = { outcome: 'win' as const, exp: 5, gold: 7, drops: { moss: 1 }, levelUps, left: {}, gear: [], gearLeft: [], ...(quests ? { quests: [game.state.guild!.active[0].id] } : {}) };
+      vi.spyOn(game, 'submitRound').mockImplementation(() => { game.phase = 'map'; return { battle: { ...game.battle!, outcome: 'win', log: [] }, end }; });
+      for (let i = 0; i < 5; i++) s.onAction('down');
+      s.onAction('confirm');
+      await flush();
+      return root;
+    } finally { GUILD_SWITCH.live = was; }
+  };
+  const lines = (root: HTMLElement) => [...root.querySelectorAll('.slx-result-lines p')].map((p) => p.textContent);
+
+  it('a finished quest gets a line in the spoils, after the drops and before the level-ups', async () => {
+    const root = await result(true);
+    expect(lines(root)).toEqual(['經驗值 +5', '金錢 +7', '發光苔 ×1', T.ui2.board.done('【討伐】苔蘚史萊姆 ×6'), '諾艾兒 升到 Lv 6', '諾艾兒 獲得技能點 1（狀態→技能樹）']);
+    expect(root.querySelector('.slx-result-lines .slx-quest')!.textContent).toBe(T.ui2.board.done('【討伐】苔蘚史萊姆 ×6'));
+  });
+
+  it('none finished: the spoils as they were', async () => {
+    const root = await result(false);
+    expect(lines(root)).toEqual(['經驗值 +5', '金錢 +7', '發光苔 ×1', '諾艾兒 升到 Lv 6', '諾艾兒 獲得技能點 1（狀態→技能樹）']);
+    expect(root.querySelector('.slx-quest')).toBeNull();
   });
 });

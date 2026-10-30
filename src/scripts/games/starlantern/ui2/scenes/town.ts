@@ -22,6 +22,7 @@ import { playAndRecord, playBeat, playNight, putBackdrop, sceneStaging, shouldPl
 import { Dialogue, MenuView, backControl, confirmBox, win, type Rich, type RichPart } from '../widgets';
 import { innNews } from './inn';
 import { ROMANCE_LINES } from '../../data/bond.zh-TW';
+import { guildOpen } from '../../data/guild';
 
 const FACILITIES = ['guild', 'shop', 'inn', 'gate', 'forge', 'handbook', 'settings'] as const;
 /** The notices of a return home: the day's line still follows them (staging S2). The others are about the interface. */
@@ -120,6 +121,11 @@ export class TownScene implements Scene {
     if (endedLine) says.push({ who: '', text: endedLine });
     // bond plan ruling 14: who rose a tier on the dive, after what came home; the day's line draws as it did without it
     const draw = says.length === 0;
+    // Guild quests plan ruling 20 (review H2): the quest line goes in only now that `draw` is taken, so the day's line draws
+    // as it would without it. Only coming in from the labyrinth (a return home), never back from a facility (controller
+    // ruling 2026-10-30, spec §0 item 22).
+    const ready = this.ctx.from === 'dungeon' || this.ctx.from === 'battle' ? game.questsReady : 0;
+    if (ready > 0) says.push({ who: '', text: T.ui2.board.questsReady(ready) });
     for (const u of game.bondUps.splice(0)) says.push({ who: '', text: T.ui2.bond.rose(CHARACTERS[u.id].name, T.ui2.bond.tiers[u.tier]) });
     // The day's line. With nothing before it, it is drawn from the game rng as it always was; after a notice it is picked
     // without a draw, so the rng stream (the next portal roll, the next run's seed) is what it was before staging S2.
@@ -130,11 +136,22 @@ export class TownScene implements Scene {
     this.refreshMenu();
   }
 
-  /** The town's menu: each facility, the inn marked 新 while a talk waits there (bond plan Task 12). */
+  /**
+   * The town's menu: each facility, the inn marked 新 while a talk waits there (bond plan Task 12), the guild while its
+   * board has news (guild quests spec §8.1).
+   */
   private menuItems() {
     const t = T.ui2.town;
-    const fresh = innNews(this.ctx.game);
-    return FACILITIES.map((id) => ({ id, label: t.facilities[id], ...(id === 'inn' && fresh ? { right: T.ui2.handbook.fresh, rightClass: 'slx-fresh' } : {}) }));
+    const fresh: Partial<Record<(typeof FACILITIES)[number], boolean>> = { inn: innNews(this.ctx.game), guild: this.boardNews() };
+    return FACILITIES.map((id) => ({ id, label: t.facilities[id], ...(fresh[id] ? { right: T.ui2.handbook.fresh, rightClass: 'slx-fresh' } : {}) }));
+  }
+
+  /** Spec §8.1: the board is open and a quest held is done, or today's board is not read yet (none posted yet counts). */
+  private boardNews(): boolean {
+    const game = this.ctx.game;
+    if (!guildOpen(game.state)) return false;
+    const g = game.state.guild;
+    return !g || g.viewed !== g.day || game.questsReady > 0;
   }
 
   /** The menu's marks read again once the arrival's scenes have played (they may have opened a talk). */

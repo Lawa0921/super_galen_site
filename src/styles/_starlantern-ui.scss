@@ -1595,3 +1595,36 @@ $slx-starlit: #bff6ff;
 .slx-bd-note { color: $slx-dim; }
 .slx-bd-note:empty { display: none; }
 .slx-bd-msg { color: $slx-up; }
+
+// Guild quests (ui2/scenes/board.ts, plan Task B2): the board's list on the left of the guild and its detail beside it,
+// over Anna's bust (spec §8.3). Measured in board.test.ts: a 340px list holds the longest row (the label's 「…」 is only for
+// a scout past depth 99); the 276px detail takes the rest of the 640px stage, 8px from each edge and between. Both start at
+// 56, under the place plate and the 返回 and gold windows (spec §8.3 started at 40, which cut the plate's foot).
+.slx-guild .slx-board { left: 8px; top: 56px; box-sizing: border-box; width: 340px; max-height: 296px; overflow: hidden; }
+.slx-board-head { margin: 0 0 4px; color: $slx-gold; }
+.slx-board .slx-ico { width: 16px; height: 16px; }
+.slx-board .slx-label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.slx-board .slx-right { flex: none; white-space: nowrap; }
+.slx-guild .slx-board-info { left: 356px; top: 56px; box-sizing: border-box; width: 276px; max-height: 296px; overflow-y: auto; scrollbar-width: none; }
+// The board stands where the command window does (it would peek out under the list): the window waits out of sight.
+.slx-guild:has(.slx-board) .slx-cmd { visibility: hidden; }
+.slx-guild .slx-board-info::-webkit-scrollbar { display: none; }
+.slx-board-info p { margin: 0 0 2px; line-height: 16px; }
+.slx-board-info h4 { margin: 6px 0 4px; font-size: $slx-fs; font-weight: normal; color: $slx-gold; }
+// The giver's face and the foe side by side, both 1:1 (whole stage pixels at every scale; object-fit: none never scales)
+// and cut to the top of a 64px-tall window: her face, its head. Review of PR B: a warden drawn twice (202px) ran the detail
+// past its 280px; at 64 the art, the 64px note PR C writes and seven lines (the reward on three) fit in 274.
+.slx-board-art { display: flex; align-items: flex-start; justify-content: center; gap: 8px; margin-bottom: 4px; }
+.slx-board-info .slx-board-art img { display: block; height: 64px; margin: 0; object-fit: none; object-position: 50% 0; image-rendering: pixelated; }
+.slx-board-info .slx-board-face { width: 56px; }
+.slx-board-info .slx-board-foe { width: 168px; }
+// A note is four lines tall whatever its length, so the lines under it stay put as the cursor moves (spec §8.3).
+.slx-board-note { min-height: 64px; color: $slx-dim; }
+// Guild quests (plan Task B4): a quest a fight finished reads in gold among the spoils; a held quest's 可回報 is gold on
+// the board and on the labyrinth's quest page, as the town's 新 is.
+.slx-result .slx-quest { color: $slx-gold; }
+.slx-guild .slx-fresh, .slx-dungeon .slx-fresh { color: $slx-gold; }
+.slx-field-quests .slx-hint { margin: 4px 0 0; }
+// Controller ruling 2026-10-30 (guild quests spec §0 item 23): with 委託 listed the guild's window has eleven rows; 16px
+// rows (the 12px text's own line, no padding) put its bottom at 248, above Anna's box (264). Without it, today's 20px rows.
+.slx-guild .slx-cmd.slx-cmd-board .slx-opt { padding-top: 0; padding-bottom: 0; line-height: 16px; }
