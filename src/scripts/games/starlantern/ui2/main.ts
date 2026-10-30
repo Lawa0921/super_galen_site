@@ -31,6 +31,7 @@ import { BONDS_WRITTEN } from '../data/story/scenes';
 import { GIFT_LINES, RIN_OATH } from '../data/bond.zh-TW';
 import { rosterHandle } from './debugRoster';
 import { guildHandle } from './debugGuild';
+import { gatherHandle } from './debugGather';
 
 function safeStorage(): Storage | null {
   try { return window.localStorage; } catch { return null; }
@@ -114,6 +115,8 @@ export async function mountNext(): Promise<void> {
     ...rosterHandle(import.meta.env.DEV),
     /** Tests only, and only in a dev build (the e2e's): the guild board's switch, off until its PR D (guild quests PR B). */
     ...guildHandle(import.meta.env.DEV),
+    /** Tests only, and only in a dev build (the e2e's): gathering's switch, off until its PR D (gathering plan ruling 12). */
+    ...gatherHandle(import.meta.env.DEV),
   };
   ui.dataset.ready = 'true';
   await router.go('title');

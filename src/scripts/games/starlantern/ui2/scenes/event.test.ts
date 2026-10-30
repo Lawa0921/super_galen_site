@@ -7,7 +7,8 @@ import { RUNE_DROP } from '../../data/runeEconomy';
 import { Game } from '../../engine/game';
 import { DELTA, tileAt, type Dir, type Tile } from '../../engine/map';
 import { statsOf, LEGACY_LINEUP } from '../../engine/party';
-import { constRng } from '../../engine/testing';
+import { constRng, withGatherLive } from '../../engine/testing';
+import type { Portal } from '../../engine/dungeon/run';
 import { NO_ART, type ArtIndex } from '../../render/textures';
 import { art } from '../../render/artPaths';
 import { ITEMS } from '../../data/items';
@@ -16,12 +17,21 @@ import type { ItemInstance } from '../../engine/types';
 import { DungeonScene } from './dungeon';
 import { STORY } from '../../data/story.zh-TW';
 import { chainLength } from '../../data/story/chains';
+import { SPOT_OF, SPOT_REGIONS, SPOT_RULES, type GatherType, type SpotRegion } from '../../data/gather';
+import { GATHER_TEXT } from '../../data/gather.zh-TW';
+import { MATERIALS } from '../../data/materials';
+import { CHARACTERS } from '../../data/characters';
+import { T } from '../../data/text.zh-TW';
+import { POISON_TP_LOSS_PCT } from '../../engine/events';
+import { spotHurt, type GatherOutcome } from '../../engine/gather';
 
 const DIRS: Dir[] = ['up', 'down', 'left', 'right'];
 
-function setup(artIdx: ArtIndex = NO_ART) {
-  const game = new Game(constRng(0.99), null, undefined, 0, LEGACY_LINEUP);   // 0.99: no encounter roll, and a trap is always poison
-  expect(game.depart({ region: 'mainline', condition: 'plain' }, 1)).toEqual({ ok: true });
+/** `o.gather`: departs with gathering on and open (gathering plan B2), so the floors are flagged for points. */
+function setup(artIdx: ArtIndex = NO_ART, o: { gather?: boolean; portal?: Portal; rng?: () => number } = {}) {
+  const game = new Game(o.rng ?? constRng(0.99), null, undefined, 0, LEGACY_LINEUP);   // 0.99: no encounter roll, and a trap is always poison
+  const depart = () => game.depart(o.portal ?? { region: 'mainline', condition: 'plain' }, 1);
+  expect(o.gather ? withGatherLive(depart, { open: true }) : depart()).toEqual({ ok: true });
   const sfx = { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn(), bump: vi.fn(), step: vi.fn(), chest: vi.fn(), encounter: vi.fn(), heal: vi.fn(), hit: vi.fn(), loot: vi.fn() };
   const go = vi.fn();
   const root = document.createElement('div');
@@ -576,5 +586,204 @@ describe('runes from chests and the vault (plan 8f Task 3)', () => {
     } finally {
       RUNE_DROP.chest = saved;
     }
+  });
+});
+
+/** Gathering plan Task B2 (spec §10.2, §10.3): standing on a point, its window, and what gathering says. */
+describe('the gathering window (gathering plan Task B2)', () => {
+  type Planted = { type: GatherType; item: string; qty: number; rich?: true };
+  const G = T.ui2.gather;
+  const VEIN: Planted = { type: 'vein', item: 'copper-ore', qty: 3 };
+  /** A game with gathering on; a point planted beside the party and stepped onto. */
+  function onPoint(point: Planted = VEIN, o: { portal?: Portal; rng?: () => number; art?: ArtIndex } = {}) {
+    const t = setup(o.art ?? NO_ART, { gather: true, ...o });
+    const { dir, at } = t.plant('gather', { gather: { ...point } });
+    t.game.encounter = 0;
+    t.s.onAction(dir);
+    expect(t.game.pos).toEqual(at);
+    return { ...t, at };
+  }
+  const rights = (root: HTMLElement) => [...root.querySelectorAll('.slx-layer:last-child [role=option]')].map((o) => o.querySelector('.slx-right')?.textContent ?? '');
+  const cursorAt = (root: HTMLElement) => root.querySelector('.slx-layer:last-child [role=option][aria-selected=true] .slx-label')?.textContent;
+  const rowOf = (o: GatherOutcome) => G.modeRow(o.qty, o.gauge.from, o.gauge.to, T.map.danger[o.danger.to], G.next[o.next]);
+  const flush = async () => { for (let i = 0; i < 5; i++) await Promise.resolve(); };
+  const SPOTS = Object.fromEntries(SPOT_REGIONS.map((r) => [r, { type: 'spot', item: SPOT_OF[r], qty: 2 }])) as Record<SpotRegion, Planted>;
+
+  it('the window shows both ways', () => {
+    const { game, s, root, layer, options } = onPoint({ ...VEIN, rich: true });
+    const seen = new Set<string>();
+    for (const gauge of [0, 40, 70, 95]) {
+      game.encounter = gauge;
+      s.onAction('confirm');
+      const box = layer()!;
+      expect(box.classList.contains('slx-event-gather')).toBe(true);
+      expect(box.querySelector('.slx-event-title')!.textContent).toBe(`${G.points.vein}${G.rich}`);
+      expect(box.textContent).toContain(G.looks('銅礦石'));
+      expect(box.querySelector('.slx-gather-rule')).toBeNull();   // an ordinary point has no rule
+      expect(options()).toEqual([G.modes.light, G.modes.full, T.ui2.event.leave]);
+      const p = game.gatherPreview()!;
+      expect(rights(root).slice(0, 2)).toEqual([rowOf(p.light), rowOf(p.full)]);
+      seen.add(p.full.next);
+      s.onAction('cancel');
+      expect(layer()).toBeNull();
+    }
+    expect(seen.size).toBeGreaterThan(1);   // 下一步 follows the gauge
+  });
+
+  it("下一步 follows the trip's step", () => {
+    // the same gauge, in calm weather (fewer encounters): the window still says what the preview says
+    for (const condition of ['plain', 'calm'] as const) {
+      const { game, s, root } = onPoint(VEIN, { portal: { region: 'mainline', condition } });
+      game.encounter = 60;
+      s.onAction('confirm');
+      const p = game.gatherPreview()!;
+      expect(rights(root).slice(0, 2)).toEqual([rowOf(p.light), rowOf(p.full)]);
+    }
+  });
+
+  it("each spot's rule is a line with its number", () => {
+    for (const r of SPOT_REGIONS) {
+      const { game, s, layer } = onPoint(SPOTS[r], { portal: { region: r, condition: 'plain' } });
+      s.onAction('confirm');
+      const box = layer()!;
+      const rule = SPOT_RULES[r];
+      expect(box.querySelector('.slx-event-title')!.textContent, r).toBe(G.points[r]);
+      const n = rule.hurt ? spotHurt(rule.hurt, game.floor) : rule.tp ? POISON_TP_LOSS_PCT : 0;
+      expect(box.querySelector('.slx-gather-rule')!.textContent, r).toBe(G.rules[rule.rule](n));
+    }
+  });
+
+  it('the cursor avoids the red', () => {
+    const { game, s, root } = onPoint(VEIN);
+    const at = (gauge: number) => { game.encounter = gauge; s.onAction('confirm'); const c = cursorAt(root); s.onAction('cancel'); return c; };
+    const p = (gauge: number) => { game.encounter = gauge; return game.gatherPreview()!; };
+    // full would turn the lamp red, light would not: light
+    const turns = [...Array(99).keys()].find((v) => p(v).full.danger.to === 'red' && p(v).light.danger.to !== 'red');
+    expect(turns).toBeDefined();
+    expect(at(turns!)).toBe(G.modes.light);
+    // both red: full
+    expect(p(95).light.danger.to).toBe('red');
+    expect(at(95)).toBe(G.modes.full);
+    // neither red: full
+    expect(p(0).full.danger.to).not.toBe('red');
+    expect(at(0)).toBe(G.modes.full);
+  });
+
+  it('gathering says what came', async () => {
+    const { game, s, text, talking } = onPoint(VEIN);
+    s.onAction('confirm');
+    s.onAction('confirm');   // 全力採集, under the cursor
+    expect(text()).toBe(G.got(MATERIALS['copper-ore'].name, 3));
+    expect(game.run!.loot.items['copper-ore']).toBe(3);
+    expect(tileAt(game.map(), game.pos)).toBe('floor');
+    s.onAction('confirm');
+    await flush();
+    expect(talking()).toBe(false);   // the slots are empty: nothing more is said
+  });
+
+  it('a scalding spot says its toll after the goods', () => {
+    const { game, s, text } = onPoint(SPOTS.blaze, { portal: { region: 'blaze', condition: 'plain' } });
+    s.onAction('confirm');
+    s.onAction('confirm');
+    const n = spotHurt('hurt', game.floor);
+    expect(text()).toBe(`${G.got(MATERIALS[SPOT_OF.blaze].name, 2)}\n${G.toll.hp(SPOT_RULES.blaze.name, n)}`);
+  });
+
+  it('a slot with words is said with its speaker, and only then', async () => {
+    const pool = GATHER_TEXT.remarks.liz.crystal;
+    pool.push('「這塊亮亮的。」');
+    try {
+      const { s, root, text, talking } = onPoint({ type: 'crystal', item: 'quartz-chip', qty: 2 });   // Liz is on the field
+      s.onAction('confirm');
+      s.onAction('confirm');
+      expect(text()).toBe(G.got(MATERIALS['quartz-chip'].name, 2));
+      s.onAction('confirm');
+      await flush();
+      expect(talking()).toBe(true);
+      expect(text()).toBe('「這塊亮亮的。」');
+      expect(root.querySelector('.slx-talk .slx-name')!.textContent).toBe(CHARACTERS.liz.name);
+      s.onAction('confirm');
+      expect(talking()).toBe(false);
+    } finally {
+      pool.length = 0;
+    }
+  });
+
+  it('a full pack retries the gathering', () => {
+    const { game, s, root, options, pick, text, at } = onPoint(VEIN);
+    game.run!.loot.items['old-coin'] = 400;   // far over the limit
+    s.onAction('confirm');
+    s.onAction('confirm');
+    const box = root.querySelector('.slx-full')!;
+    expect(box.querySelector('.slx-event-title')!.textContent).toBe(T.ui2.event.full.title);
+    const need = carried(game.state, game.run!) + 3 * weightOf('copper-ore') - capacity(game.state.party);
+    expect(box.textContent).toContain(G.full.desc(MATERIALS['copper-ore'].name, 3, Math.round(need * 10) / 10));
+    expect(box.textContent).not.toContain('放不下（還差重量');
+    expect(game.run!.loot.items['copper-ore']).toBeUndefined();
+    // giving up: the point is still there
+    pick(T.ui2.event.full.keep);
+    expect(text()).toBe(G.full.left);
+    expect(tileAt(game.map(), at)).toBe('gather');
+    s.onAction('confirm');
+    // again, and this time throw coins away: the same gathering runs again (not a pick-up)
+    s.onAction('confirm');
+    s.onAction('confirm');
+    expect(options()).toContain('古代銀幣');
+    const pickUp = vi.spyOn(game, 'pickUpHere');
+    const gather = vi.spyOn(game, 'gather');
+    pick('古代銀幣');
+    pick('是');
+    expect(pickUp).not.toHaveBeenCalled();
+    expect(gather).toHaveBeenCalledWith('full');
+    expect(text()).toBe(G.got(MATERIALS['copper-ore'].name, 3));
+    expect(game.run!.loot.items['copper-ore']).toBe(3);
+    expect(tileAt(game.map(), at)).toBe('floor');
+  });
+
+  it("a chest's full window reads as before", () => {
+    const { game, s, root, pick, plant, text } = setup();
+    game.run!.loot.items['old-coin'] = 400;
+    const { dir } = plant('chest', {}, (spot) => !chestHasGear(game.run!, game.floor, spot));
+    s.onAction(dir);
+    expect(root.querySelector('.slx-full')!.textContent).toMatch(/放不下（還差重量 [\d.]+）。/);
+    pick(T.ui2.event.full.keep);
+    expect(text()).toBe(T.ui2.event.full.left);
+  });
+
+  it('no art is asked for yet', () => {
+    const asked: string[] = [];
+    const spy = { has: (u: string) => { asked.push(u); return false; } } as unknown as ArtIndex;
+    const { s, layer } = onPoint(VEIN, { art: spy });
+    asked.length = 0;
+    s.onAction('confirm');
+    expect(layer()).not.toBeNull();
+    expect(asked.filter((u) => /event-gather|gather-/.test(u))).toEqual([]);
+  });
+
+  it('opening the window draws nothing', () => {
+    let draws = 0;
+    const counted = () => { draws++; return 0.99; };
+    const { s, layer } = onPoint(VEIN, { rng: counted });
+    const before = draws;
+    s.onAction('confirm');
+    expect(layer()).not.toBeNull();
+    s.onAction('cancel');
+    s.onAction('confirm');
+    s.onAction('confirm');   // gathered
+    expect(layer()).toBeNull();
+    expect(draws).toBe(before);
+  });
+
+  it('off, confirm does nothing', () => {
+    const { game, s, root, plant, layer, talking } = setup();
+    const { dir, at } = plant('gather', { gather: { ...VEIN } });
+    game.encounter = 0;
+    s.onAction(dir);
+    expect(game.pos).toEqual(at);
+    expect(game.run!.gather).toBeUndefined();
+    s.onAction('confirm');
+    expect(layer()).toBeNull();
+    expect(talking()).toBe(false);
+    expect((root.querySelector('.slx-gather-hint') as HTMLElement | null)?.hidden ?? true).toBe(true);
   });
 });

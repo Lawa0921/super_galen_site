@@ -16,7 +16,7 @@ import { fromMember, skillFor } from '../../engine/battle';
 import { fieldCost, fieldSkills, fieldTargets } from '../../engine/field';
 import { useFieldItem } from '../../engine/town';
 import type { CharacterId } from '../../engine/types';
-import { el } from '../../ui/dom';
+import { el, itemName } from '../../ui/dom';
 import type { UiAction } from '../input';
 import { Menu, type MenuItem } from '../menu';
 import { Minimap } from '../minimap';
@@ -29,7 +29,10 @@ import { faceCandidates, speakerOf, storyCtx } from '../story';
 import { meetingPlate } from '../rescue';
 import { STORY } from '../../data/story.zh-TW';
 import { clearPillars, dropMoment, skipPillar } from '../lootFx';
-import { eventLayer, showPickUp, stairsLayer, type EventHost } from './event';
+import { eventLayer, fullLayer, gatherLayer, showPickUp, stairsLayer, type EventHost } from './event';
+import { SPOT_RULES, spotRegionOf, type GatherMode } from '../../data/gather';
+import { GATHER_TEXT } from '../../data/gather.zh-TW';
+import type { GatherResult } from '../../engine/game';
 import { mapArtUrls } from '../../render/artPaths';
 import { guildOpen } from '../../data/guild';
 import { heldRight, questLabel } from './board';
@@ -58,6 +61,8 @@ export class DungeonScene implements Scene {
   private backEl!: HTMLElement;
   private weightEl!: HTMLElement;
   private hintEl!: HTMLElement;
+  /** Gathering spec §10.2: 「腳下：礦脈　確定鍵採集」 while the party stands on a point; tapping it is the confirm key. */
+  private gatherHint!: HTMLElement;
   private minimap!: Minimap;
   private layers: Layer[] = [];
   private talk: Dialogue;
@@ -91,9 +96,11 @@ export class DungeonScene implements Scene {
     this.backEl.hidden = true;
     this.hintEl = el('p', { class: 'slx-keyhint', text: T.ui2.hints.dungeon });
     this.weightEl = el('p', { class: 'slx-weight', attrs: { 'aria-live': 'polite' } });
+    this.gatherHint = this.tapper('slx-gather-hint', '', 'confirm');
+    this.gatherHint.hidden = true;
     this.minimap = new Minimap();
     this.body = el('div', { class: 'slx-scene slx-dungeon' }, [
-      this.floorName, ...this.conditionBadge(), this.lamp, menuBtn, this.minimap.el, this.backEl, this.weightEl, this.hintEl, this.pad, this.bar.el, this.talk.el,
+      this.floorName, ...this.conditionBadge(), this.lamp, menuBtn, this.minimap.el, this.backEl, this.gatherHint, this.weightEl, this.hintEl, this.pad, this.bar.el, this.talk.el,
     ]);
     root.append(this.body);
     this.ctx.stage?.show('map');
@@ -122,6 +129,7 @@ export class DungeonScene implements Scene {
     if (top && a === 'menu') { this.ctx.sfx.cancel(); this.popAll(); return; }   // C toggles the menu
     if (top) { top.onAction(a); return; }
     if (a === 'up' || a === 'down' || a === 'left' || a === 'right') { this.move(a); return; }
+    if (a === 'confirm') { this.gatherWindow(); return; }   // only on a gathering point; elsewhere nothing, as before
     if (a === 'menu' || a === 'cancel') this.openMenu();
   }
 
@@ -147,6 +155,68 @@ export class DungeonScene implements Scene {
     this.ctx.stage?.mapView.draw(g, { width: 640, height: 296 });
     this.minimap.draw(g);
     this.showWeight();
+    this.showGatherHint();
+  }
+
+  /** The hint while the party stands on a gathering point (none when gathering is shut, `Game.gatherHere`); hidden under a window. */
+  private showGatherHint(): void {
+    if (!this.gatherHint) return;
+    const here = this.ctx.game.gatherHere();
+    this.gatherHint.hidden = !here || this.layers.length > 0;
+    if (!here) return;
+    const G = T.ui2.gather;
+    const region = here.type === 'spot' ? spotRegionOf(here.item) : undefined;
+    this.gatherHint.textContent = G.hint(`${region ? G.points[region] : G.points[here.type as Exclude<typeof here.type, 'spot'>]}${here.rich ? G.rich : ''}`);
+  }
+
+  /** The confirm key on the map (gathering spec §10.2): on a point, its window; anywhere else nothing. */
+  private gatherWindow(): void {
+    const layer = gatherLayer(this.host(), (mode) => { this.popAll(); this.afterGather(this.ctx.game.gather(mode), mode); });
+    if (!layer) return;
+    this.ctx.sfx.cursor();
+    this.push(layer);
+  }
+
+  /**
+   * What gathering did (gathering spec §10.3): the goods, then the land's toll on the next line; then a companion's remark
+   * when its slot has words (her plate and face, as a labyrinth line). Lorne's inner voice has no way to be shown in the
+   * labyrinth yet, so its key is never said. A full pack opens the full window, whose retry gathers again the same way.
+   */
+  private afterGather(r: GatherResult, mode: GatherMode): void {
+    const c = this.ctx;
+    if (r.kind === 'none') { c.sfx.error(); return; }
+    if (r.kind === 'full') {
+      c.sfx.error();
+      const G = T.ui2.gather;
+      this.push(fullLayer(this.host(), r, () => this.afterGather(c.game.gather(mode), mode), undefined, [], { left: G.full.left, desc: G.full.desc }));
+      return;
+    }
+    c.sfx.chest?.();
+    this.refresh();
+    const G = T.ui2.gather;
+    const lines = [G.got(itemName(r.item), r.qty)];
+    const spot = spotRegionOf(r.item);
+    const rule = spot ? SPOT_RULES[spot].name : '';
+    if (r.hurt?.hp) lines.push(G.toll.hp(rule, r.hurt.hp));
+    else if (r.hurt?.tp) lines.push(G.toll.tp(rule, r.hurt.tp));
+    const said = this.say(lines.join('\n'));
+    const remark = r.remark ? this.gatherLine(r.remark.key, r.remark.index) : null;
+    if (!remark) return;
+    const turn = this.said;
+    void said.then(() => {
+      if (this.exited || this.said !== turn) return;
+      const sp = speakerOf(remark.who, c.game.state, c.art);
+      void this.say(remark.text, sp.name, sp.face ? { src: sp.face, side: 'left' } : undefined, faceCandidates(remark.who, c.game.state));
+    });
+  }
+
+  /** A remark slot's line and its speaker (`remarks.<who>.<kind>`), or null when the slot holds no such line. */
+  private gatherLine(key: string, index: number): { who: CharacterId; text: string } | null {
+    const [top, who, kind] = key.split('.');
+    if (top !== 'remarks') return null;
+    const pool = (GATHER_TEXT.remarks as Record<string, Record<string, string[]>>)[who]?.[kind] ?? [];
+    const text = pool[index];
+    return text ? { who: who as CharacterId, text } : null;
   }
 
   /** Carried weight against the limit; refreshed after every step, pick-up, discard and battle (the scene is re-entered). */
@@ -304,7 +374,7 @@ export class DungeonScene implements Scene {
 
   /** The pad and the two text lines under the dialogue box step aside while a scene plays. */
   private hideHud(on: boolean): void {
-    for (const e of [this.pad, this.weightEl, this.hintEl]) e.classList.toggle('slx-cmd-hidden', on);
+    for (const e of [this.pad, this.weightEl, this.hintEl, this.gatherHint]) e.classList.toggle('slx-cmd-hidden', on);
   }
 
   /** Runs `go`: nothing waits in the labyrinth any more (story L: memories are told at night in town). */
@@ -408,6 +478,7 @@ export class DungeonScene implements Scene {
     lock(this.backEl, busy);
     this.backEl.hidden = this.layers.length === 0;
     this.layers.forEach((l, i) => lock(l.el, busy || i < this.layers.length - 1));
+    if (this.gatherHint) { lock(this.gatherHint, busy || this.layers.length > 0); this.showGatherHint(); }
   }
 
   private list(items: MenuItem[], pick: (it: MenuItem) => void, cls = 'slx-list', title?: string, rows = 10): void {

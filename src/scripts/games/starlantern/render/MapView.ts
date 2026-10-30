@@ -5,7 +5,7 @@ import type { FloorMap, Tile } from '../engine/map';
 import { art, tileKey } from './artPaths';
 import { pixelText } from './pixelText';
 import { fogState } from './fog';
-import { MARKER_GLYPH, markersOf, type MarkerKind } from './markers';
+import { GATHER_GLYPH, MARKER_GLYPH, markersOf, type Marker, type MarkerKind } from './markers';
 import type { TextureBank } from './textures';
 
 /** The fog's own dark, under the fog art (and alone until that art lands). */
@@ -18,9 +18,15 @@ export const MAP_CELL = 48;
 const FOG_PAD = 14;
 const HOP_FRAMES = 10;
 /** Tile kinds that stand on plain floor: the floor is drawn under them and a marker on top. */
-const ON_FLOOR = new Set<Tile>(['fountain', 'trap', 'merchant', 'altar', 'elite', 'vault', 'key', 'rescue', 'glimmer', 'warden']);
+const ON_FLOOR = new Set<Tile>(['fountain', 'trap', 'merchant', 'altar', 'elite', 'vault', 'key', 'rescue', 'glimmer', 'warden', 'gather']);
 /** Text marker colours: danger in red, everything else in the UI gold. */
-const GLYPH_FILL: Partial<Record<MarkerKind, number>> = { elite: 0xff8a6a, warden: 0xff8a6a, trap: 0xff7a6b };
+const GLYPH_FILL: Partial<Record<MarkerKind, number>> = { elite: 0xff8a6a, warden: 0xff8a6a, trap: 0xff7a6b, gather: 0x8fd18b };
+/** A rich gathering point's glyph is gold (gathering spec §10.1). */
+const GATHER_RICH_FILL = 0xe8c46a;
+/** A marker's text glyph and its colour: a gathering point's by its kind, pale green or (rich) gold. */
+const glyphOf = (m: Marker): { text: string; fill: number } => (m.kind === 'gather'
+  ? { text: GATHER_GLYPH[m.type ?? 'spot'], fill: m.rich ? GATHER_RICH_FILL : GLYPH_FILL.gather! }
+  : { text: MARKER_GLYPH[m.kind], fill: GLYPH_FILL[m.kind] ?? 0xe8c46a });
 
 /**
  * The labyrinth from above: large cells, one seamless fog over everything unexplored, and a camera that keeps the party
@@ -167,8 +173,9 @@ export class MapView {
       if (m.kind === 'chest' && chestArt && !m.waiting) continue;
       const memory = fogState(seen, game.pos, m.x, m.y, sight) === 'memory';
       const cx = m.x * cell + cell / 2, cy = m.y * cell + cell / 2;
-      // No art for these: a text marker. A warden's room wears the elite's tile (roster plan B5: no art of its own).
-      const tex = m.kind === 'chest' || m.kind === 'rescue' || m.kind === 'glimmer' ? null : this.bank?.get(art.eventTile(m.kind === 'warden' ? 'elite' : m.kind)) ?? null;
+      // No art for these: a text marker. A warden's room wears the elite's tile (roster plan B5: no art of its own). A
+      // gathering point's art waits for its approval (gathering PR E, E4): a text marker until then, never asked for.
+      const tex = m.kind === 'chest' || m.kind === 'rescue' || m.kind === 'glimmer' || m.kind === 'gather' ? null : this.bank?.get(art.eventTile(m.kind === 'warden' ? 'elite' : m.kind)) ?? null;
       if (tex) {
         const s = new Sprite(tex);
         s.anchor.set(0.5);
@@ -180,11 +187,12 @@ export class MapView {
         this.bobbing.push({ s, y: cy, phase: (m.x * 7 + m.y * 13) % 10 });
         continue;
       }
-      const id = `${m.kind}@${m.x},${m.y}`;
+      const g = glyphOf(m);
+      const id = `${m.kind}:${g.text}:${g.fill}@${m.x},${m.y}`;
       keep.add(id);
       let t = this.glyphs.get(id);
       if (!t) {
-        t = pixelText(MARKER_GLYPH[m.kind], 24, GLYPH_FILL[m.kind] ?? 0xe8c46a, 0x14100a);
+        t = pixelText(g.text, 24, g.fill, 0x14100a);
         t.anchor.set(0.5);
         t.x = cx; t.y = cy;
         t.label = `glyph-${m.kind}`;

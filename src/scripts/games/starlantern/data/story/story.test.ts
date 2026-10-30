@@ -420,6 +420,7 @@ function position(key: string): Stage {
     }
     case 'town': return fragmentStage(a);
     case 'absorb': case 'merchant': case 'survived': return 'prologue';
+    case 'gather': return 'prologue';   // gathering plan Task B1: from the first return on, the earliest stage that holds it
     default: throw new Error(`no position for ${key}`);
   }
 }
@@ -806,6 +807,13 @@ describe('the script gates', () => {
     expect(position('bellkeeper.oath.0')).toBe(rinSeventh());
     expect(position('bellkeeper.after.0')).toBe('after');
     expect(() => position('nope.0')).toThrow();
+  });
+
+  // Gathering plan Task B1 (ruling 10): a gathering slot's line is heard from the first gathering on, after the first return;
+  // the first return plays in the prologue stage, so that is the earliest stage it can be placed in.
+  it('a gathering slot is placed after the first return', () => {
+    expect(position('scenes.first-return.lines.0.text')).toBe('prologue');
+    for (const key of ['gather.remarks.sylvie.herb.0', 'gather.inner.deep.0', 'gather.doran.made2.0']) expect(position(key), key).toBe('prologue');
   });
 
   it('position reads every kind of gate: pieces, seen, full and before her choice (story depth Task 1 review)', () => {

@@ -2,7 +2,9 @@ import { describe, expect, it, vi } from 'vitest';
 import { Game } from '../engine/game';
 import { LEGACY_LINEUP } from '../engine/party';
 import { dayOf } from '../engine/calendar';
-import { constRng, withGuildLive } from '../engine/testing';
+import { constRng, withGatherLive, withGuildLive } from '../engine/testing';
+import { floorOf } from '../engine/dungeon/run';
+import { DELTA } from '../engine/map';
 import { allArtUrls } from '../render/artPaths';
 import type { ArtIndex } from '../render/textures';
 import { drawLanded } from './lateArt';
@@ -65,6 +67,40 @@ const board: Make = (c) => {
   return { enter: (root) => { s.enter(root); withGuildLive(() => (s as unknown as { board(): void }).board()); }, exit: () => s.exit(), onAction: (a) => s.onAction(a) };
 };
 
+/**
+ * Gathering plan Task B4: standing on a point with its window open (no art of its own before PR E: the screen's other
+ * pictures still land as they do), and the forge's tools list with gathering open.
+ */
+const onPoint = (): Game => {
+  const g = withGatherLive(() => inDungeon(), { open: true });
+  const m = g.map();
+  const dir = (['right', 'left', 'down', 'up'] as const).find((d) => m.tiles[g.pos.y + DELTA[d].y]?.[g.pos.x + DELTA[d].x] === 'floor')!;
+  const at = { x: g.pos.x + DELTA[dir].x, y: g.pos.y + DELTA[dir].y };
+  m.tiles[at.y][at.x] = 'gather';
+  floorOf(g.run!, g.floor).contents.push({ kind: 'gather', at, room: 0, gather: { type: 'spot', item: 'scrap-iron', qty: 2, rich: true } });
+  g.encounter = 0;
+  expect(g.move(dir).kind).toBe('moved');
+  return g;
+};
+const gatherWindow: Make = (c) => {
+  const s = new DungeonScene(c, Infinity);
+  return { enter: (root) => { s.enter(root); s.onAction('confirm'); expect(root.querySelector('.slx-event-gather')).not.toBeNull(); }, exit: () => s.exit(), onAction: (a) => s.onAction(a), artArrived: (u) => s.artArrived(u) };
+};
+const forgeTools: Make = (c) => {
+  const s = new ForgeScene(c, Infinity);
+  return {
+    enter: (root) => withGatherLive(() => {
+      s.enter(root);
+      s.onAction('confirm');
+      for (let i = 0; i < 4; i++) s.onAction('down');
+      s.onAction('confirm');   // 製作
+      (root.querySelector('.slx-forge-list [data-id="tool"]') as HTMLElement).click();
+      expect(root.querySelector('.slx-forge-list [data-id="tool@1"]')).not.toBeNull();
+    }, { open: true }),
+    exit: () => s.exit(), onAction: (a) => s.onAction(a),
+  };
+};
+
 const SCREENS: [string, () => Game, Make][] = [
   ['title', town, (c) => new TitleScene(c)],
   ['town', town, (c) => new TownScene(c, Infinity)],
@@ -81,6 +117,8 @@ const SCREENS: [string, () => Game, Make][] = [
   ['handbook', town, (c) => new HandbookScene(c, Infinity)],
   ['dungeon', inDungeon, (c) => new DungeonScene(c, Infinity)],
   ['battle', inBattle, (c) => new BattleScene(c, Infinity)],
+  ['gathering window', onPoint, gatherWindow],
+  ['forge tools', town, forgeTools],
 ];
 
 function draw(game: Game, make: Make, idx: ArtIndex): { root: HTMLElement; scene: Scene } {

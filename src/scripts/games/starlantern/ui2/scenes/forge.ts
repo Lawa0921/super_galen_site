@@ -8,6 +8,7 @@ import { ENEMIES } from '../../data/enemies';
 import { ROSTER_LIVE } from '../../data/monsters';
 import { REGIONS, type RegionId } from '../../data/regions';
 import { MATERIALS } from '../../data/materials';
+import { GATHER_PIN_QTY, SPOT_OF, SPOT_REGIONS, gatherOpen } from '../../data/gather';
 import { compareDelta } from '../../engine/compare';
 import { enhanceChance, enhanceCost, findItem, fuseCost, fuseSlots, inscribeCost, inscriptionAffix, rerollCost, rerollRange, signatureOf, swapPool } from '../../engine/forge/cost';
 import { dismantleYield } from '../../engine/forge/forge';
@@ -436,7 +437,8 @@ export function rerollPage(h: ForgeHost): void {
           ...(swappable ? [row('swap', F.rerollSwap), ...Object.keys(REGION_AFFIX_GROUP).map((m) => {
             const region = regionOfMaterial(m);
             return row(`mat:${m}`, F.rerollWith(MATERIALS[m]?.name ?? m, region ? T.forge.group[region] : ''));
-          })] : []),
+          }), ...spotPins().map((spot) => row(`mat:${SPOT_OF[spot]}`,
+            F.rerollWith(`${MATERIALS[SPOT_OF[spot]].name}${T.ui2.gather.pinQty(GATHER_PIN_QTY)}`, T.forge.group[spot])))] : []),
           ...inscribeRows(it),
         ];
       };
@@ -456,6 +458,14 @@ export function rerollPage(h: ForgeHost): void {
           : { id, label, disabled: true, right: why, note: why };
         return { ...base, ...(icon ? { icon } : {}) };
       }));
+      /**
+       * Gathering plan ruling 14: while gathering is open, after the region materials, each region's spot the stores hold
+       * GATHER_PIN_QTY of pins that region's affixes (spec §7.3), in the regions' order; a spot held fewer is not listed.
+       */
+      function spotPins(): (typeof SPOT_REGIONS)[number][] {
+        if (!gatherOpen(game.state)) return [];
+        return SPOT_REGIONS.filter((r) => (game.state.inventory[SPOT_OF[r]] ?? 0) >= GATHER_PIN_QTY);
+      }
       const insOf = (id: string | undefined): string | undefined => (id?.startsWith('ins:') ? id.slice(4) : undefined);
       const mview: MenuView = new MenuView(new Menu(methods()), {
         pick: (row) => {

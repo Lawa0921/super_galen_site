@@ -370,6 +370,10 @@ $slx-upright: '(orientation: portrait) and (max-width: #{$slx-w - 1px})';
 .slx-weight { position: absolute; left: 8px; bottom: 84px; margin: 0; font-size: $slx-fs; line-height: 14px; color: $slx-ink; text-shadow: 0 1px 0 #000, 0 0 3px #000; pointer-events: none; }
 .slx-weight-heavy { color: $slx-gold; }
 .slx-weight-full { color: #ff7a6b; }
+// Gathering spec §10.2: standing on a point, a small button above the weight readout; tapping it is the confirm key.
+.slx-gather-hint { left: 4px; bottom: 102px; padding: 2px 8px; font-size: $slx-fs; line-height: 14px; white-space: nowrap; cursor: pointer; pointer-events: auto; }
+.slx-gather-hint:hover { color: $slx-gold; }
+.slx-dungeon .slx-gather-hint.slx-cmd-hidden, .slx-dungeon:has(.slx-field-menu) .slx-gather-hint { visibility: hidden; }
 
 // Party bar (labyrinth and battle)
 .slx-partybar { position: absolute; left: 4px; right: 4px; bottom: 2px; height: 62px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
@@ -1392,6 +1396,10 @@ $slx-starlit: #bff6ff;
 .slx-confirm-warn { color: #ff7a6b; }
 .slx-event .slx-menu { margin-top: 2px; }
 .slx-event-elite { border-color: #ff7a6b; }
+// Gathering spec §10.3: two ways side by side with their goods, gauge, lamp and next step, so the window is wider.
+.slx-layer.slx-event.slx-event-gather { width: 420px; }
+.slx-event-gather .slx-right { white-space: nowrap; }
+.slx-gather-rule { color: #ff9a8a; }
 .slx-full { border-color: #ff7a6b; }
 .slx-full .slx-event-title { color: #ff9a8a; }
 

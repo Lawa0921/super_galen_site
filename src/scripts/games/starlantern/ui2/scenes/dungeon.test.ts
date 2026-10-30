@@ -9,7 +9,7 @@ import { SHARD_IDS, fragmentName } from '../../data/story/fragments';
 import type { ItemInstance } from '../../engine/types';
 import { constRng } from '../../engine/testing';
 import { dayOf } from '../../engine/calendar';
-import { withGuildLive, withGuildOff } from '../../engine/testing';
+import { withGatherLive, withGuildLive, withGuildOff } from '../../engine/testing';
 import { NO_ART } from '../../render/textures';
 import { capacity, carried, formatWeight as kg, weightOf } from '../../data/weights';
 import { MATERIALS } from '../../data/materials';
@@ -1315,5 +1315,86 @@ describe('DungeonScene: the guild board in the labyrinth (guild quests plan Task
       early.s.onAction('menu');
       expect(ids(early.root)).toEqual(eleven);
     });
+  });
+});
+
+/** Gathering plan Task B2 (spec §10.2): the hint while standing on a point, and the confirm key. */
+describe('DungeonScene gathering (gathering plan Task B2)', () => {
+  const VEIN = { type: 'vein' as const, item: 'copper-ore', qty: 3 };
+  /** Gathering on; a point on a plain cell beside the party with plain floor beyond it (the direction to step on it). */
+  function onLane(gather = true) {
+    const t = gather ? withGatherLive(() => setup(), { open: true }) : setup();
+    const m = t.game.map();
+    const dir = (['right', 'left', 'down', 'up'] as const).find((d) => {
+      const a = { x: t.game.pos.x + DELTA[d].x, y: t.game.pos.y + DELTA[d].y };
+      return m.tiles[a.y]?.[a.x] === 'floor' && m.tiles[a.y + DELTA[d].y]?.[a.x + DELTA[d].x] === 'floor';
+    })!;
+    const at = { x: t.game.pos.x + DELTA[dir].x, y: t.game.pos.y + DELTA[dir].y };
+    m.tiles[at.y][at.x] = 'gather';
+    floorOf(t.game.run!, t.game.floor).contents.push({ kind: 'gather', at, room: 0, gather: { ...VEIN, rich: true } });
+    const back = ({ up: 'down', down: 'up', left: 'right', right: 'left' } as const)[dir];
+    const hint = () => t.root.querySelector('.slx-gather-hint') as HTMLElement;
+    const layers = () => t.root.querySelectorAll('.slx-layer').length;
+    return { ...t, dir, back, at, hint, layers };
+  }
+
+  it('the hint appears on a point and leaves with it', () => {
+    const { game, s, dir, back, hint } = onLane();
+    expect(hint().hidden).toBe(true);
+    game.encounter = 0;
+    s.onAction(dir);
+    expect(hint().hidden).toBe(false);
+    expect(hint().textContent).toBe(T.ui2.gather.hint(`${T.ui2.gather.points.vein}${T.ui2.gather.rich}`));
+    game.encounter = 0;
+    s.onAction(dir);
+    expect(hint().hidden).toBe(true);   // stepped off, on past it
+    game.encounter = 0;
+    s.onAction(back);
+    expect(hint().hidden).toBe(false);
+    s.onAction('confirm');
+    s.onAction('confirm');   // gathered: the point is gone, and the hint with it
+    expect(game.gatherHere()).toBeNull();
+    expect(hint().hidden).toBe(true);
+  });
+
+  it('confirm on a point opens the window, elsewhere does nothing', () => {
+    const { game, s, dir, layers, root } = onLane();
+    s.onAction('confirm');
+    expect(layers()).toBe(0);
+    expect(root.querySelector('.slx-talk')!.hasAttribute('hidden')).toBe(true);
+    game.encounter = 0;
+    s.onAction(dir);
+    s.onAction('confirm');
+    expect(layers()).toBe(1);
+    expect(root.querySelector('.slx-event-gather')).not.toBeNull();
+  });
+
+  it('tapping the hint is the confirm key', () => {
+    const { game, s, dir, hint, layers } = onLane();
+    game.encounter = 0;
+    s.onAction(dir);
+    hint().click();
+    expect(layers()).toBe(1);
+  });
+
+  it('holding a direction walks over a point without a window', () => {
+    const { game, s, dir, at, layers } = onLane();
+    for (let i = 0; i < 3; i++) {
+      game.encounter = 0;
+      const was = { ...game.pos };
+      s.onAction(dir);
+      expect(layers()).toBe(0);
+      if (game.pos.x === was.x && game.pos.y === was.y) break;
+    }
+    expect(game.pos).not.toEqual(at);   // walked on past it
+  });
+
+  it('off, no hint', () => {
+    const { game, s, dir, hint, layers } = onLane(false);
+    game.encounter = 0;
+    s.onAction(dir);
+    expect(hint().hidden).toBe(true);
+    s.onAction('confirm');
+    expect(layers()).toBe(0);
   });
 });

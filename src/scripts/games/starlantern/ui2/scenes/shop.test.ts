@@ -6,6 +6,7 @@ import { Game } from '../../engine/game';
 import { START_ITEMS } from '../../engine/state';
 import { BAG_SIZE } from '../../engine/loot/bag';
 import { materialUses } from '../../engine/forge/uses';
+import { MATERIALS } from '../../data/materials';
 import { T } from '../../data/text.zh-TW';
 import { sellPrice } from '../../engine/loot/item';
 import { activeIds, defaultSlotFor } from '../../engine/party';
@@ -386,6 +387,23 @@ describe('ShopScene', () => {
     expect(game.state.sold['old-coin']).toBe(3);
     expect(root.querySelector('.slx-talk .slx-text')!.textContent).toBe(T.ui2.shop.soldJunk(3, 120));
     expect([...topLayer(root)!.querySelectorAll('[role=option]')].some((o) => o.textContent!.includes('古代銀幣'))).toBe(false);
+  });
+
+  // Gathering plan Task B3 (spec §10.4): a gathered good is sold as any material, its kind 採集素材 and its uses named.
+  it('the shop names the kind and its uses', () => {
+    const { game, pick, root } = setup();
+    game.state.inventory = { 'stanch-herb': 3 };
+    pick('販賣');
+    pick('素材');
+    const info = root.querySelector('.slx-info')!.textContent!;
+    expect(info).toContain(MATERIALS['stanch-herb'].name);
+    expect(info).toContain(T.forge.kind.gather);
+    expect(info).toContain('採集素材');
+    const uses = materialUses('stanch-herb');
+    expect(uses.length).toBeGreaterThan(0);
+    expect(info).toContain(T.forge.usedFor(uses.map(T.forge.use).join('、')));
+    // the reroll pin and the tools name their uses too
+    expect(materialUses('ember-glass').map((u) => u.kind)).toEqual(expect.arrayContaining(['regionReroll', 'tool']));
   });
 
   it('the material detail lists every use', () => {

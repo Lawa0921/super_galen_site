@@ -24,6 +24,7 @@ import { MEMORY_SALT } from '../engine/story/memories';
 import { AFFIX_SALT } from '../engine/tiers';
 import { GUILD_SALT } from './guild';
 import { GATHER_MATERIALS, GATHER_SALT, GATHER_TABLE, GENERIC_TYPES, SPOT_REGIONS, SPOT_RULES, TOOL_LEVELS } from './gather';
+import { T } from './text.zh-TW';
 
 /** The art factory's registry: what is published, from where (read independently of the switches it is checked against). */
 const REGISTRY = JSON.parse(readFileSync('art-factory/starlantern/registry.json', 'utf8')) as {
@@ -785,6 +786,22 @@ describe('roster names keep every secret (roster plan Task A5)', () => {
     for (const [id, raw] of texts) {
       const text = APPROVED_WORDS.reduce((t, { word }) => t.split(word).join('〇'), raw);
       for (const { re, from } of SECRET_WORDS) expect(re.test(text), `${id} 「${raw}」 matches ${re} (${from})`).toBe(false);
+    }
+  });
+
+  // Gathering plan Task B1 (ruling 11): the gathering window's and the forge's system words keep the same secrets. Every
+  // string of T.ui2.gather, and every format's output (filled with plain stand-ins).
+  it('no gathering system word gives a secret away', () => {
+    const texts: [string, string][] = [];
+    const walk = (v: unknown, path: string): void => {
+      if (typeof v === 'string') texts.push([path, v]);
+      else if (typeof v === 'function') texts.push([path, String((v as (...a: unknown[]) => unknown)('甲', 2, 3, '乙', '丙'))]);
+      else if (v && typeof v === 'object') for (const [k, x] of Object.entries(v)) walk(x, `${path}.${k}`);
+    };
+    walk(T.ui2.gather, 'T.ui2.gather');
+    expect(texts.length).toBeGreaterThan(30);
+    for (const [id, raw] of texts) {
+      for (const { re, from } of SECRET_WORDS) expect(re.test(raw), `${id} 「${raw}」 matches ${re} (${from})`).toBe(false);
     }
   });
 });
