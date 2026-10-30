@@ -1,0 +1,145 @@
+{
+  "batches": {
+    "t0": {
+      "label": "gather-t0",
+      "jobs": [
+        "sheet-gather-sample-object",
+        "sheet-gather-sample-ground",
+        "sheet-gather-icons-sample"
+      ],
+      "assets": [
+        "sample-gather-object-vein",
+        "sample-gather-object-herb",
+        "sample-gather-object-fungus",
+        "sample-gather-object-crystal",
+        "sample-gather-object-blaze",
+        "sample-gather-object-frost",
+        "sample-gather-object-storm",
+        "sample-gather-object-mire",
+        "sample-gather-object-shade",
+        "sample-gather-object-iron",
+        "sample-gather-ground-vein",
+        "sample-gather-ground-herb",
+        "sample-gather-ground-fungus",
+        "sample-gather-ground-crystal",
+        "sample-gather-ground-blaze",
+        "sample-gather-ground-frost",
+        "sample-gather-ground-storm",
+        "sample-gather-ground-mire",
+        "sample-gather-ground-shade",
+        "sample-gather-ground-iron",
+        "sample-icon-copper-ore",
+        "sample-icon-stanch-herb",
+        "sample-icon-cap-mushroom",
+        "sample-icon-ember-glass",
+        "sample-icon-tool-1",
+        "sample-icon-tool-2"
+      ],
+      "runtime": {}
+    },
+    "t1": {
+      "label": "gather-t1",
+      "jobs": [
+        "sheet-gather-tiles"
+      ],
+      "assets": [
+        "tile-gather-vein",
+        "tile-gather-herb",
+        "tile-gather-fungus",
+        "tile-gather-crystal",
+        "tile-gather-blaze",
+        "tile-gather-frost",
+        "tile-gather-storm",
+        "tile-gather-mire",
+        "tile-gather-shade",
+        "tile-gather-iron"
+      ],
+      "runtime": {
+        "tile-gather-vein": "/assets/games/starlantern/tiles/gather-vein.png",
+        "tile-gather-herb": "/assets/games/starlantern/tiles/gather-herb.png",
+        "tile-gather-fungus": "/assets/games/starlantern/tiles/gather-fungus.png",
+        "tile-gather-crystal": "/assets/games/starlantern/tiles/gather-crystal.png",
+        "tile-gather-blaze": "/assets/games/starlantern/tiles/gather-blaze.png",
+        "tile-gather-frost": "/assets/games/starlantern/tiles/gather-frost.png",
+        "tile-gather-storm": "/assets/games/starlantern/tiles/gather-storm.png",
+        "tile-gather-mire": "/assets/games/starlantern/tiles/gather-mire.png",
+        "tile-gather-shade": "/assets/games/starlantern/tiles/gather-shade.png",
+        "tile-gather-iron": "/assets/games/starlantern/tiles/gather-iron.png"
+      }
+    },
+    "i1": {
+      "label": "gather-i1",
+      "jobs": [
+        "sheet-gather-icons-1"
+      ],
+      "assets": [
+        "icon-copper-ore",
+        "icon-silver-ore",
+        "icon-stanch-herb",
+        "icon-moonbell-herb",
+        "icon-cap-mushroom",
+        "icon-glow-mushroom",
+        "icon-quartz-chip",
+        "icon-deep-quartz",
+        "icon-ember-glass",
+        "icon-rime-moss",
+        "icon-charged-ore",
+        "icon-bog-resin",
+        "icon-shade-silk",
+        "icon-scrap-iron",
+        "icon-tool-1",
+        "icon-tool-2"
+      ],
+      "runtime": {
+        "icon-copper-ore": "/assets/games/starlantern/icon/copper-ore.png",
+        "icon-silver-ore": "/assets/games/starlantern/icon/silver-ore.png",
+        "icon-stanch-herb": "/assets/games/starlantern/icon/stanch-herb.png",
+        "icon-moonbell-herb": "/assets/games/starlantern/icon/moonbell-herb.png",
+        "icon-cap-mushroom": "/assets/games/starlantern/icon/cap-mushroom.png",
+        "icon-glow-mushroom": "/assets/games/starlantern/icon/glow-mushroom.png",
+        "icon-quartz-chip": "/assets/games/starlantern/icon/quartz-chip.png",
+        "icon-deep-quartz": "/assets/games/starlantern/icon/deep-quartz.png",
+        "icon-ember-glass": "/assets/games/starlantern/icon/ember-glass.png",
+        "icon-rime-moss": "/assets/games/starlantern/icon/rime-moss.png",
+        "icon-charged-ore": "/assets/games/starlantern/icon/charged-ore.png",
+        "icon-bog-resin": "/assets/games/starlantern/icon/bog-resin.png",
+        "icon-shade-silk": "/assets/games/starlantern/icon/shade-silk.png",
+        "icon-scrap-iron": "/assets/games/starlantern/icon/scrap-iron.png",
+        "icon-tool-1": "/assets/games/starlantern/icon/tool-1.png",
+        "icon-tool-2": "/assets/games/starlantern/icon/tool-2.png"
+      }
+    }
+  },
+  "tile_keys": [
+    "vein",
+    "herb",
+    "fungus",
+    "crystal",
+    "blaze",
+    "frost",
+    "storm",
+    "mire",
+    "shade",
+    "iron"
+  ],
+  "materials": [
+    "copper-ore",
+    "silver-ore",
+    "stanch-herb",
+    "moonbell-herb",
+    "cap-mushroom",
+    "glow-mushroom",
+    "quartz-chip",
+    "deep-quartz",
+    "ember-glass",
+    "rime-moss",
+    "charged-ore",
+    "bog-resin",
+    "shade-silk",
+    "scrap-iron"
+  ],
+  "tools": [
+    "tool-1",
+    "tool-2"
+  ]
+}

@@ -816,6 +816,14 @@ def _roster(entry):
     return str(entry.get('batch', '')).startswith(ROSTER_BATCH)
 
 
+GATHER_BATCH = 'gather-'
+
+
+def _gather(entry):
+    """The gathering art is approved and published only through gather_art.py (gathering plan PR E)."""
+    return str(entry.get('batch', '')).startswith(GATHER_BATCH)
+
+
 def _swap_in(tmp, path, retry_for=10.0):
     """os.replace with retries: on Windows the swap is refused while another process has the file open for reading."""
     import os, time
@@ -868,6 +876,8 @@ class Registry:
                                   '`gear_art.py approve --batch B --by ...` after the user approves its review page')
         if _roster(self.get(aid)):
             raise PermissionError(f'{aid} belongs to roster round {self.get(aid)["batch"]}: approve it with `roster_art.py approve --batch rN`')
+        if _gather(self.get(aid)):
+            raise PermissionError(f'{aid} belongs to gathering batch {self.get(aid)["batch"]}: approve it with `gather_art.py approve --batch B`')
         if self.get(aid).get('status') not in ('qa_passed', 'published'):
             raise PermissionError(f'{aid} has not passed QA')
         self.set(aid, status='approved')
@@ -883,6 +893,8 @@ class Registry:
             raise PermissionError(f'{aid} belongs to plan 5d batch {e["batch"]}: publish it with `gear_art.py publish --batch B`')
         if _roster(e) and not roster:
             raise PermissionError(f'{aid} belongs to roster round {e["batch"]}: publish it with `roster_art.py publish --batch rN`')
+        if _gather(e):
+            raise PermissionError(f'{aid} belongs to gathering batch {e["batch"]}: publish it with `gather_art.py publish --batch B`')
         if e.get('status') != 'approved':
             raise PermissionError(f'{aid} is not approved')
         if not e.get('runtime'): raise ValueError(f'{aid} has no runtime path')
