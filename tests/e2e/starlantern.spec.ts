@@ -3195,7 +3195,8 @@ test.describe('starlantern', () => {
     // + roster R3 (independent review 2026-10-28): 27 foes, 26 material icons, 12 own uniques x 2 (deferred: icon-mourning-veil with ash-mourner) = 919
     // + roster R4 (independent review 2026-10-29): 27 foes, 27 material icons, 12 own uniques x 2 = 997
     // + roster R3 (independent review 2026-10-28): 1 foes, 1 material icons, 0 own uniques x 2 = 999
-    expect(manifest.length).toBe(999);
+    // + gathering PR E (使用者 2026-10-30「A 獨立物件 (Recommended)」; independent review): 10 point tiles, 14 material icons, 2 tool icons = 1025
+    expect(manifest.length).toBe(1025);
     // Every file the manifest lists answers 200.
     for (const u of manifest) expect((await page.request.get(u)).status(), u).toBe(200);
     // Walk the screens that show the new art (equipment, shop, forge, portal codex) with every sample piece in the bag.

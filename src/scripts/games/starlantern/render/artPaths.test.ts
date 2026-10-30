@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { ENEMIES } from '../data/enemies';
 import { artEnemy, artMaterial, artSpecial } from '../data/monsters';
 import type { BattleEvent } from '../engine/combatant';
-import { ART_BASE, ART_CHARACTER_IDS, ART_VARIANT_IDS, CORE_MOODS, FRAMED_RARITIES, MOODS, MOODS_OF, PUBLISHED_FACES, SKILL_ICON_SIZES, SPECIAL_MOODS_OF, allArtUrls, art, codexArtId, effectFor, enemyArt, gearArtId, moodFor, parseManifest, tileKey } from './artPaths';
+import { ART_BASE, ART_CHARACTER_IDS, GATHER_TILE_KEYS, ART_VARIANT_IDS, CORE_MOODS, FRAMED_RARITIES, MOODS, MOODS_OF, PUBLISHED_FACES, SKILL_ICON_SIZES, SPECIAL_MOODS_OF, allArtUrls, art, codexArtId, effectFor, enemyArt, gearArtId, moodFor, parseManifest, tileKey } from './artPaths';
 import { RARITIES, SETS, SPECIALS, regionSpecials } from '../data/gear';
 import { EQUIPMENT } from '../data/equipment';
 import { REGIONS, type RegionId } from '../data/regions';
@@ -48,8 +48,14 @@ describe('artPaths', () => {
     // + roster R3 (independent review 2026-10-28): 27 foes, 26 material icons, 12 own uniques x 2 (deferred: icon-mourning-veil with ash-mourner) = 919
     // + roster R4 (independent review 2026-10-29): 27 foes, 27 material icons, 12 own uniques x 2 = 997
     // + roster R3 (independent review 2026-10-28): 1 foes, 1 material icons, 0 own uniques x 2 = 999
-    expect(urls).toHaveLength(999);
-    expect(new Set(urls).size).toBe(999);
+    // + gathering PR E (使用者 2026-10-30「A 獨立物件 (Recommended)」; independent review): 10 point tiles, 14 material icons, 2 tool icons = 1025
+    expect(urls).toHaveLength(1025);
+    expect(new Set(urls).size).toBe(1025);
+    for (const k of GATHER_TILE_KEYS) expect(urls).toContain(art.gatherTile(k));
+    expect(GATHER_TILE_KEYS).toEqual(['vein', 'herb', 'fungus', 'crystal', 'blaze', 'frost', 'storm', 'mire', 'shade', 'iron']);
+    for (const l of [1, 2] as const) expect(urls).toContain(art.toolIcon(l));
+    expect(art.gatherTile('vein')).toBe(`${ART_BASE}/tiles/gather-vein.png`);
+    expect(art.toolIcon(2)).toBe(`${ART_BASE}/icon/tool-2.png`);
     for (const id of Object.keys(SKILLS)) {
       expect(urls, id).not.toContain(art.icon(id));
       for (const px of SKILL_ICON_SIZES) expect(urls, id).toContain(art.skillIcon(id, px));

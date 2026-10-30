@@ -180,9 +180,10 @@ describe('gathering data (gathering plan Task A1)', () => {
     expect(TOOL_LEVELS[1].cost.mats['scrap-iron']).toBeGreaterThan(0);
   });
 
-  it('nothing to draw yet', () => {
-    expect(GATHER_ART.size).toBe(0);
-    expect(allArtUrls()).toHaveLength(BASELINE_ART_URLS);
+  it('every gathered good wears its published icon (PR E), and the art list grows by the tiles and icons only', () => {
+    expect([...GATHER_ART]).toEqual(GATHER_MATERIALS.map((m) => m.id));
+    // 10 point tiles, 14 material icons, 2 tool icons (gathering plan Task E3)
+    expect(allArtUrls()).toHaveLength(BASELINE_ART_URLS + 10 + 14 + 2);
   });
 });
 

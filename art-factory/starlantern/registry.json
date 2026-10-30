@@ -52979,11 +52979,12 @@
         "erased": 0,
         "spec": "gather-tile:a348427b301c"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gather-tile",
       "chosen_attempt": "a1",
       "source_id": "sheet-gather-sample-object",
-      "batch": "gather-t0"
+      "batch": "gather-t0",
+      "approved_by": "A 獨立物件 (Recommended) 2026-10-30"
     },
     "sample-gather-object-herb": {
       "defringe": "strong",
@@ -53014,11 +53015,12 @@
         "erased": 0,
         "spec": "gather-tile:a348427b301c"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gather-tile",
       "chosen_attempt": "a1",
       "source_id": "sheet-gather-sample-object",
-      "batch": "gather-t0"
+      "batch": "gather-t0",
+      "approved_by": "A 獨立物件 (Recommended) 2026-10-30"
     },
     "sample-gather-object-fungus": {
       "defringe": "strong",
@@ -53049,11 +53051,12 @@
         "erased": 0,
         "spec": "gather-tile:a348427b301c"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gather-tile",
       "chosen_attempt": "a1",
       "source_id": "sheet-gather-sample-object",
-      "batch": "gather-t0"
+      "batch": "gather-t0",
+      "approved_by": "A 獨立物件 (Recommended) 2026-10-30"
     },
     "sample-gather-object-crystal": {
       "defringe": "strong",
@@ -53084,11 +53087,12 @@
         "erased": 0,
         "spec": "gather-tile:a348427b301c"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gather-tile",
       "chosen_attempt": "a1",
       "source_id": "sheet-gather-sample-object",
-      "batch": "gather-t0"
+      "batch": "gather-t0",
+      "approved_by": "A 獨立物件 (Recommended) 2026-10-30"
     },
     "sample-gather-object-blaze": {
       "defringe": "strong",
@@ -53119,11 +53123,12 @@
         "erased": 0,
         "spec": "gather-tile:a348427b301c"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gather-tile",
       "chosen_attempt": "a1",
       "source_id": "sheet-gather-sample-object",
-      "batch": "gather-t0"
+      "batch": "gather-t0",
+      "approved_by": "A 獨立物件 (Recommended) 2026-10-30"
     },
     "sample-gather-object-frost": {
       "defringe": "strong",
@@ -53156,11 +53161,12 @@
         "erased": 1,
         "spec": "gather-tile:a348427b301c"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gather-tile",
       "chosen_attempt": "a1",
       "source_id": "sheet-gather-sample-object",
-      "batch": "gather-t0"
+      "batch": "gather-t0",
+      "approved_by": "A 獨立物件 (Recommended) 2026-10-30"
     },
     "sample-gather-object-storm": {
       "defringe": "strong",
@@ -53191,11 +53197,12 @@
         "erased": 0,
         "spec": "gather-tile:a348427b301c"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gather-tile",
       "chosen_attempt": "a1",
       "source_id": "sheet-gather-sample-object",
-      "batch": "gather-t0"
+      "batch": "gather-t0",
+      "approved_by": "A 獨立物件 (Recommended) 2026-10-30"
     },
     "sample-gather-object-mire": {
       "defringe": "strong",
@@ -53226,11 +53233,12 @@
         "erased": 0,
         "spec": "gather-tile:a348427b301c"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gather-tile",
       "chosen_attempt": "a1",
       "source_id": "sheet-gather-sample-object",
-      "batch": "gather-t0"
+      "batch": "gather-t0",
+      "approved_by": "A 獨立物件 (Recommended) 2026-10-30"
     },
     "sample-gather-object-shade": {
       "defringe": "strong",
@@ -53263,11 +53271,12 @@
         "erased": 1,
         "spec": "gather-tile:a348427b301c"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gather-tile",
       "chosen_attempt": "a1",
       "source_id": "sheet-gather-sample-object",
-      "batch": "gather-t0"
+      "batch": "gather-t0",
+      "approved_by": "A 獨立物件 (Recommended) 2026-10-30"
     },
     "sample-gather-object-iron": {
       "defringe": "strong",
@@ -53298,11 +53307,12 @@
         "erased": 0,
         "spec": "gather-tile:a348427b301c"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gather-tile",
       "chosen_attempt": "a1",
       "source_id": "sheet-gather-sample-object",
-      "batch": "gather-t0"
+      "batch": "gather-t0",
+      "approved_by": "A 獨立物件 (Recommended) 2026-10-30"
     },
     "sample-gather-ground-vein": {
       "defringe": "strong",
@@ -53693,11 +53703,12 @@
         "erased": 0,
         "spec": "roster-icon:8da249263f71"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "roster-icon",
       "chosen_attempt": "a1",
       "source_id": "sheet-gather-icons-sample",
-      "batch": "gather-t0"
+      "batch": "gather-t0",
+      "approved_by": "A 獨立物件 (Recommended) 2026-10-30"
     },
     "sample-icon-stanch-herb": {
       "final": "art-factory/starlantern/work/sheet-gather-icons-sample/sample-icon-stanch-herb.png",
@@ -53722,11 +53733,12 @@
         "erased": 0,
         "spec": "roster-icon:8da249263f71"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "roster-icon",
       "chosen_attempt": "a1",
       "source_id": "sheet-gather-icons-sample",
-      "batch": "gather-t0"
+      "batch": "gather-t0",
+      "approved_by": "A 獨立物件 (Recommended) 2026-10-30"
     },
     "sample-icon-cap-mushroom": {
       "final": "art-factory/starlantern/work/sheet-gather-icons-sample/sample-icon-cap-mushroom.png",
@@ -53753,11 +53765,12 @@
         "erased": 1,
         "spec": "roster-icon:8da249263f71"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "roster-icon",
       "chosen_attempt": "a1",
       "source_id": "sheet-gather-icons-sample",
-      "batch": "gather-t0"
+      "batch": "gather-t0",
+      "approved_by": "A 獨立物件 (Recommended) 2026-10-30"
     },
     "sample-icon-ember-glass": {
       "final": "art-factory/starlantern/work/sheet-gather-icons-sample/sample-icon-ember-glass.png",
@@ -53782,11 +53795,12 @@
         "erased": 0,
         "spec": "roster-icon:8da249263f71"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "roster-icon",
       "chosen_attempt": "a1",
       "source_id": "sheet-gather-icons-sample",
-      "batch": "gather-t0"
+      "batch": "gather-t0",
+      "approved_by": "A 獨立物件 (Recommended) 2026-10-30"
     },
     "sample-icon-tool-1": {
       "final": "art-factory/starlantern/work/sheet-gather-icons-sample/sample-icon-tool-1.png",
@@ -53811,11 +53825,12 @@
         "erased": 0,
         "spec": "roster-icon:8da249263f71"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "roster-icon",
       "chosen_attempt": "a1",
       "source_id": "sheet-gather-icons-sample",
-      "batch": "gather-t0"
+      "batch": "gather-t0",
+      "approved_by": "A 獨立物件 (Recommended) 2026-10-30"
     },
     "sample-icon-tool-2": {
       "final": "art-factory/starlantern/work/sheet-gather-icons-sample/sample-icon-tool-2.png",
@@ -53840,11 +53855,886 @@
         "erased": 0,
         "spec": "roster-icon:8da249263f71"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "roster-icon",
       "chosen_attempt": "a1",
       "source_id": "sheet-gather-icons-sample",
-      "batch": "gather-t0"
+      "batch": "gather-t0",
+      "approved_by": "A 獨立物件 (Recommended) 2026-10-30"
+    },
+    "tile-gather-vein": {
+      "defringe": "strong",
+      "deblend": true,
+      "final": "art-factory/starlantern/work/sheet-gather-tiles/tile-gather-vein.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gather-tiles\\sheet-gather-tiles-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": [
+          42,
+          41
+        ],
+        "block": 7,
+        "size": [
+          62,
+          62
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "gather-tile:a348427b301c"
+      },
+      "status": "published",
+      "kind": "gather-tile",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gather-tiles",
+      "batch": "gather-t1",
+      "approved_by": "art-factory/starlantern/work/review/gather-t1-review.md",
+      "runtime": "/assets/games/starlantern/tiles/gather-vein.png"
+    },
+    "tile-gather-herb": {
+      "defringe": "strong",
+      "deblend": true,
+      "final": "art-factory/starlantern/work/sheet-gather-tiles/tile-gather-herb.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gather-tiles\\sheet-gather-tiles-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": [
+          44,
+          42
+        ],
+        "block": 7,
+        "size": [
+          62,
+          62
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "gather-tile:a348427b301c"
+      },
+      "status": "published",
+      "kind": "gather-tile",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gather-tiles",
+      "batch": "gather-t1",
+      "approved_by": "art-factory/starlantern/work/review/gather-t1-review.md",
+      "runtime": "/assets/games/starlantern/tiles/gather-herb.png"
+    },
+    "tile-gather-fungus": {
+      "defringe": "strong",
+      "deblend": true,
+      "final": "art-factory/starlantern/work/sheet-gather-tiles/tile-gather-fungus.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gather-tiles\\sheet-gather-tiles-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": [
+          42,
+          41
+        ],
+        "block": 7,
+        "size": [
+          62,
+          62
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "gather-tile:a348427b301c"
+      },
+      "status": "published",
+      "kind": "gather-tile",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gather-tiles",
+      "batch": "gather-t1",
+      "approved_by": "art-factory/starlantern/work/review/gather-t1-review.md",
+      "runtime": "/assets/games/starlantern/tiles/gather-fungus.png"
+    },
+    "tile-gather-crystal": {
+      "defringe": "strong",
+      "deblend": true,
+      "final": "art-factory/starlantern/work/sheet-gather-tiles/tile-gather-crystal.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gather-tiles\\sheet-gather-tiles-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": [
+          44,
+          49
+        ],
+        "block": 7,
+        "size": [
+          62,
+          62
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "gather-tile:a348427b301c"
+      },
+      "status": "published",
+      "kind": "gather-tile",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gather-tiles",
+      "batch": "gather-t1",
+      "approved_by": "art-factory/starlantern/work/review/gather-t1-review.md",
+      "runtime": "/assets/games/starlantern/tiles/gather-crystal.png"
+    },
+    "tile-gather-blaze": {
+      "defringe": "strong",
+      "deblend": true,
+      "final": "art-factory/starlantern/work/sheet-gather-tiles/tile-gather-blaze.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gather-tiles\\sheet-gather-tiles-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": [
+          43,
+          43
+        ],
+        "block": 7,
+        "size": [
+          62,
+          62
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "gather-tile:a348427b301c"
+      },
+      "status": "published",
+      "kind": "gather-tile",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gather-tiles",
+      "batch": "gather-t1",
+      "approved_by": "art-factory/starlantern/work/review/gather-t1-review.md",
+      "runtime": "/assets/games/starlantern/tiles/gather-blaze.png"
+    },
+    "tile-gather-frost": {
+      "defringe": "strong",
+      "deblend": true,
+      "final": "art-factory/starlantern/work/sheet-gather-tiles/tile-gather-frost.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gather-tiles\\sheet-gather-tiles-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": [
+          43,
+          44
+        ],
+        "block": 7,
+        "size": [
+          62,
+          62
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "gather-tile:a348427b301c"
+      },
+      "status": "published",
+      "kind": "gather-tile",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gather-tiles",
+      "batch": "gather-t1",
+      "approved_by": "art-factory/starlantern/work/review/gather-t1-review.md",
+      "runtime": "/assets/games/starlantern/tiles/gather-frost.png"
+    },
+    "tile-gather-storm": {
+      "defringe": "strong",
+      "deblend": true,
+      "final": "art-factory/starlantern/work/sheet-gather-tiles/tile-gather-storm.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gather-tiles\\sheet-gather-tiles-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": [
+          43,
+          44
+        ],
+        "block": 7,
+        "size": [
+          62,
+          62
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "gather-tile:a348427b301c"
+      },
+      "status": "published",
+      "kind": "gather-tile",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gather-tiles",
+      "batch": "gather-t1",
+      "approved_by": "art-factory/starlantern/work/review/gather-t1-review.md",
+      "runtime": "/assets/games/starlantern/tiles/gather-storm.png"
+    },
+    "tile-gather-mire": {
+      "defringe": "strong",
+      "deblend": true,
+      "final": "art-factory/starlantern/work/sheet-gather-tiles/tile-gather-mire.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gather-tiles\\sheet-gather-tiles-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": [
+          47,
+          35
+        ],
+        "block": 7,
+        "size": [
+          62,
+          62
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "gather-tile:a348427b301c"
+      },
+      "status": "published",
+      "kind": "gather-tile",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gather-tiles",
+      "batch": "gather-t1",
+      "approved_by": "art-factory/starlantern/work/review/gather-t1-review.md",
+      "runtime": "/assets/games/starlantern/tiles/gather-mire.png"
+    },
+    "tile-gather-shade": {
+      "defringe": "strong",
+      "deblend": true,
+      "final": "art-factory/starlantern/work/sheet-gather-tiles/tile-gather-shade.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gather-tiles\\sheet-gather-tiles-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": [
+          43,
+          44
+        ],
+        "block": 7,
+        "size": [
+          62,
+          62
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "gather-tile:a348427b301c"
+      },
+      "status": "published",
+      "kind": "gather-tile",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gather-tiles",
+      "batch": "gather-t1",
+      "approved_by": "art-factory/starlantern/work/review/gather-t1-review.md",
+      "runtime": "/assets/games/starlantern/tiles/gather-shade.png"
+    },
+    "tile-gather-iron": {
+      "defringe": "strong",
+      "deblend": true,
+      "final": "art-factory/starlantern/work/sheet-gather-tiles/tile-gather-iron.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gather-tiles\\sheet-gather-tiles-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": [
+          44,
+          44
+        ],
+        "block": 7,
+        "size": [
+          62,
+          62
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "gather-tile:a348427b301c"
+      },
+      "status": "published",
+      "kind": "gather-tile",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gather-tiles",
+      "batch": "gather-t1",
+      "approved_by": "art-factory/starlantern/work/review/gather-t1-review.md",
+      "runtime": "/assets/games/starlantern/tiles/gather-iron.png"
+    },
+    "icon-copper-ore": {
+      "final": "art-factory/starlantern/work/sheet-gather-icons-1/icon-copper-ore.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gather-icons-1\\sheet-gather-icons-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 8,
+        "size": [
+          32,
+          30
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "roster-icon:8da249263f71"
+      },
+      "status": "published",
+      "kind": "roster-icon",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gather-icons-1",
+      "batch": "gather-i1",
+      "approved_by": "art-factory/starlantern/work/review/gather-i1-review.md",
+      "runtime": "/assets/games/starlantern/icon/copper-ore.png"
+    },
+    "icon-silver-ore": {
+      "final": "art-factory/starlantern/work/sheet-gather-icons-1/icon-silver-ore.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gather-icons-1\\sheet-gather-icons-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 7,
+        "size": [
+          36,
+          35
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "roster-icon:8da249263f71"
+      },
+      "status": "published",
+      "kind": "roster-icon",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gather-icons-1",
+      "batch": "gather-i1",
+      "approved_by": "art-factory/starlantern/work/review/gather-i1-review.md",
+      "runtime": "/assets/games/starlantern/icon/silver-ore.png"
+    },
+    "icon-stanch-herb": {
+      "final": "art-factory/starlantern/work/sheet-gather-icons-1/icon-stanch-herb.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gather-icons-1\\sheet-gather-icons-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 8,
+        "size": [
+          32,
+          32
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "roster-icon:8da249263f71"
+      },
+      "status": "published",
+      "kind": "roster-icon",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gather-icons-1",
+      "batch": "gather-i1",
+      "approved_by": "art-factory/starlantern/work/review/gather-i1-review.md",
+      "runtime": "/assets/games/starlantern/icon/stanch-herb.png"
+    },
+    "icon-moonbell-herb": {
+      "final": "art-factory/starlantern/work/sheet-gather-icons-1/icon-moonbell-herb.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gather-icons-1\\sheet-gather-icons-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 8,
+        "size": [
+          31,
+          32
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "roster-icon:8da249263f71"
+      },
+      "status": "published",
+      "kind": "roster-icon",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gather-icons-1",
+      "batch": "gather-i1",
+      "approved_by": "art-factory/starlantern/work/review/gather-i1-review.md",
+      "runtime": "/assets/games/starlantern/icon/moonbell-herb.png"
+    },
+    "icon-cap-mushroom": {
+      "final": "art-factory/starlantern/work/sheet-gather-icons-1/icon-cap-mushroom.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gather-icons-1\\sheet-gather-icons-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 8,
+        "size": [
+          33,
+          31
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "roster-icon:8da249263f71"
+      },
+      "status": "published",
+      "kind": "roster-icon",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gather-icons-1",
+      "batch": "gather-i1",
+      "approved_by": "art-factory/starlantern/work/review/gather-i1-review.md",
+      "runtime": "/assets/games/starlantern/icon/cap-mushroom.png"
+    },
+    "icon-glow-mushroom": {
+      "final": "art-factory/starlantern/work/sheet-gather-icons-1/icon-glow-mushroom.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gather-icons-1\\sheet-gather-icons-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 7,
+        "size": [
+          32,
+          34
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "roster-icon:8da249263f71"
+      },
+      "status": "published",
+      "kind": "roster-icon",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gather-icons-1",
+      "batch": "gather-i1",
+      "approved_by": "art-factory/starlantern/work/review/gather-i1-review.md",
+      "runtime": "/assets/games/starlantern/icon/glow-mushroom.png"
+    },
+    "icon-quartz-chip": {
+      "final": "art-factory/starlantern/work/sheet-gather-icons-1/icon-quartz-chip.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gather-icons-1\\sheet-gather-icons-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 7,
+        "size": [
+          34,
+          35
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "roster-icon:8da249263f71"
+      },
+      "status": "published",
+      "kind": "roster-icon",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gather-icons-1",
+      "batch": "gather-i1",
+      "approved_by": "art-factory/starlantern/work/review/gather-i1-review.md",
+      "runtime": "/assets/games/starlantern/icon/quartz-chip.png"
+    },
+    "icon-deep-quartz": {
+      "final": "art-factory/starlantern/work/sheet-gather-icons-1/icon-deep-quartz.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gather-icons-1\\sheet-gather-icons-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 8,
+        "size": [
+          23,
+          33
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "roster-icon:8da249263f71"
+      },
+      "status": "published",
+      "kind": "roster-icon",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gather-icons-1",
+      "batch": "gather-i1",
+      "approved_by": "art-factory/starlantern/work/review/gather-i1-review.md",
+      "runtime": "/assets/games/starlantern/icon/deep-quartz.png"
+    },
+    "icon-ember-glass": {
+      "final": "art-factory/starlantern/work/sheet-gather-icons-1/icon-ember-glass.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gather-icons-1\\sheet-gather-icons-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 7,
+        "size": [
+          36,
+          34
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "roster-icon:8da249263f71"
+      },
+      "status": "published",
+      "kind": "roster-icon",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gather-icons-1",
+      "batch": "gather-i1",
+      "approved_by": "art-factory/starlantern/work/review/gather-i1-review.md",
+      "runtime": "/assets/games/starlantern/icon/ember-glass.png"
+    },
+    "icon-rime-moss": {
+      "final": "art-factory/starlantern/work/sheet-gather-icons-1/icon-rime-moss.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gather-icons-1\\sheet-gather-icons-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 8,
+        "size": [
+          33,
+          32
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "roster-icon:8da249263f71"
+      },
+      "status": "published",
+      "kind": "roster-icon",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gather-icons-1",
+      "batch": "gather-i1",
+      "approved_by": "art-factory/starlantern/work/review/gather-i1-review.md",
+      "runtime": "/assets/games/starlantern/icon/rime-moss.png"
+    },
+    "icon-charged-ore": {
+      "final": "art-factory/starlantern/work/sheet-gather-icons-1/icon-charged-ore.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gather-icons-1\\sheet-gather-icons-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 8,
+        "size": [
+          33,
+          34
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "roster-icon:8da249263f71"
+      },
+      "status": "published",
+      "kind": "roster-icon",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gather-icons-1",
+      "batch": "gather-i1",
+      "approved_by": "art-factory/starlantern/work/review/gather-i1-review.md",
+      "runtime": "/assets/games/starlantern/icon/charged-ore.png"
+    },
+    "icon-bog-resin": {
+      "final": "art-factory/starlantern/work/sheet-gather-icons-1/icon-bog-resin.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gather-icons-1\\sheet-gather-icons-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 7,
+        "size": [
+          36,
+          34
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "roster-icon:8da249263f71"
+      },
+      "status": "published",
+      "kind": "roster-icon",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gather-icons-1",
+      "batch": "gather-i1",
+      "approved_by": "art-factory/starlantern/work/review/gather-i1-review.md",
+      "runtime": "/assets/games/starlantern/icon/bog-resin.png"
+    },
+    "icon-shade-silk": {
+      "final": "art-factory/starlantern/work/sheet-gather-icons-1/icon-shade-silk.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gather-icons-1\\sheet-gather-icons-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 8,
+        "size": [
+          32,
+          33
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "roster-icon:8da249263f71"
+      },
+      "status": "published",
+      "kind": "roster-icon",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gather-icons-1",
+      "batch": "gather-i1",
+      "approved_by": "art-factory/starlantern/work/review/gather-i1-review.md",
+      "runtime": "/assets/games/starlantern/icon/shade-silk.png"
+    },
+    "icon-scrap-iron": {
+      "final": "art-factory/starlantern/work/sheet-gather-icons-1/icon-scrap-iron.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gather-icons-1\\sheet-gather-icons-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 8,
+        "size": [
+          35,
+          30
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "roster-icon:8da249263f71"
+      },
+      "status": "published",
+      "kind": "roster-icon",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gather-icons-1",
+      "batch": "gather-i1",
+      "approved_by": "art-factory/starlantern/work/review/gather-i1-review.md",
+      "runtime": "/assets/games/starlantern/icon/scrap-iron.png"
+    },
+    "icon-tool-1": {
+      "final": "art-factory/starlantern/work/sheet-gather-icons-1/icon-tool-1.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gather-icons-1\\sheet-gather-icons-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 8,
+        "size": [
+          35,
+          33
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "roster-icon:8da249263f71"
+      },
+      "status": "published",
+      "kind": "roster-icon",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gather-icons-1",
+      "batch": "gather-i1",
+      "approved_by": "art-factory/starlantern/work/review/gather-i1-review.md",
+      "runtime": "/assets/games/starlantern/icon/tool-1.png"
+    },
+    "icon-tool-2": {
+      "final": "art-factory/starlantern/work/sheet-gather-icons-1/icon-tool-2.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gather-icons-1\\sheet-gather-icons-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 8,
+        "size": [
+          34,
+          35
+        ],
+        "bright_key": 0,
+        "pink_outlier": 0,
+        "erased": 0,
+        "spec": "roster-icon:8da249263f71"
+      },
+      "status": "published",
+      "kind": "roster-icon",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-gather-icons-1",
+      "batch": "gather-i1",
+      "approved_by": "art-factory/starlantern/work/review/gather-i1-review.md",
+      "runtime": "/assets/games/starlantern/icon/tool-2.png"
     }
   },
   "requa_log": [
@@ -56109,6 +56999,72 @@
         "icon-trait-poison": "54b993d51c32be3a41df9fc6ba6cbfd317a463012d2565963ed03013efc9139b",
         "icon-crab-plate": "977462b6c54d1fc1ff9d3bfe7e0a7a0f7fc3cada182a00f9946e2107706d8971"
       }
+    },
+    "gather-t0": {
+      "date": "2026-10-30",
+      "record": "art-factory/starlantern/work/review/gather-t0-shown.json",
+      "shown": {
+        "sample-gather-object-vein": "28edd6a24feb4e1442b60f97ea751d5724ad8d90e01f383923eef3225d571a68",
+        "sample-gather-object-herb": "a399d36622fc40734400d5edc60c6987eac44648622fea827601c7c8fa0756c8",
+        "sample-gather-object-fungus": "f801a11f32bee1a6ac5b955a443fd298cb7f168d6fb5d2457157bc8e0fd8effa",
+        "sample-gather-object-crystal": "bfe7f8a5b40422507789965b8be9be9bc16e1b08ceb6b003e961ce4bf31dd5c7",
+        "sample-gather-object-blaze": "076a967958d5864be81d70ce008954d893a22ba65fd1fe8c1287b9b6684e7219",
+        "sample-gather-object-frost": "254fbcefc21bcebbc319f4b31582467bbf1d421bd969c30bfe912f49f3826f32",
+        "sample-gather-object-storm": "21fa5d052be76ba458c2e007d0e12c61b2b69a8503c6c3da229ca88a4b0361df",
+        "sample-gather-object-mire": "fea1543b3ceb33e10c2e65cabe4b23f2e6f21bd39db5ce63e496a9be329bc13a",
+        "sample-gather-object-shade": "4794795fd40a1eb9eccf5e7f9115c1b93a70b2d752a4c5642a325ad60c954a7d",
+        "sample-gather-object-iron": "b6a8afa798866a54f114a8e911cb5b7204a064c2a5c03cb98dbefe3d74a54551",
+        "sample-icon-copper-ore": "3651607f177e6e1c2a8a2979fbd45b06f64105bb9d3f0df448c2b2830636088e",
+        "sample-icon-stanch-herb": "fb1be4e27fcaa635cf95828b1b63d66b8ab5e450b3fca5dc7a74240f3fa4a861",
+        "sample-icon-cap-mushroom": "5761fb09ec07990df8540d503275115064adeace466c277a10f9e4a93facdc93",
+        "sample-icon-ember-glass": "9b553cc767726406a2d01cec06a8ef7a3f738c62c4916829aa25d190f63b3bee",
+        "sample-icon-tool-1": "e018461ec2e8c839877255733ca3987858d98bec388b5be21dbc1872ccbeac89",
+        "sample-icon-tool-2": "6c39d2caf524b7e970cc767cb869fa88ca7cf28a7d0f9fa1bbf856b02221b2e4"
+      },
+      "by": "A 獨立物件 (Recommended) 2026-10-30",
+      "direction": "object"
+    },
+    "gather-t1": {
+      "date": "2026-10-30",
+      "record": "art-factory/starlantern/work/review/gather-t1-shown.json",
+      "shown": {
+        "tile-gather-vein": "78d3b0e0a615908358e84c7a141a1f543a6c2ccb8ccfeeebdd266418ac159115",
+        "tile-gather-herb": "7dc0791efe8918f6d423df8fda10d89e04320034e3e12d41b99e03faf4e33a5c",
+        "tile-gather-fungus": "8506df598097fd45e9a7e9681e53c6c08e2f8037abdbfcba2bcb82ab6f9da931",
+        "tile-gather-crystal": "4201b097b4108c7fdde95ae23f97ab29b22c617f4cad9bb1fc96fe9315c4bb9e",
+        "tile-gather-blaze": "fd961fd806fdb28d8ed86f42c6efdfac1e21abc15cab59f003fdc1fb36c48b57",
+        "tile-gather-frost": "bb8c5a95691404c1f3a5ac859de5e0bcecbe1c455ebbbd19e0bbf88bdefd2b83",
+        "tile-gather-storm": "71466e476834f9ca875dcb7a5da71870e945fe7884d7407cd096d9f331cca933",
+        "tile-gather-mire": "a22f97544496fd043939724bf2e3c094afc189eb0223dd0b08ac10ae6ba4567d",
+        "tile-gather-shade": "c67b784b1ba0da6cdfc4a3302cf8780fbef10c55e257427e673d800379fc3c51",
+        "tile-gather-iron": "9f50725cda51ac382d29c95713b441d770e4b5073306e198b022394f4ef9e031"
+      },
+      "review": "art-factory/starlantern/work/review/gather-t1-review.md",
+      "review_sha256": "845ebda7882fe6e8f6186e3df7be9a5e5776a46576648c80ce1ba634d6e254ab"
+    },
+    "gather-i1": {
+      "date": "2026-10-30",
+      "record": "art-factory/starlantern/work/review/gather-i1-shown.json",
+      "shown": {
+        "icon-copper-ore": "ebb742a385a1ee25c5639c951ae3778bbcfa8432b6e9abf1742c3a9bf8a7538e",
+        "icon-silver-ore": "1eb4c3c2878494601a02f81d9769239b4b2ef7ad684406e92b2e07bf0666d8cd",
+        "icon-stanch-herb": "4f9d57b024891e1bad2d220439b2b137465f1184f01a09262e583a34e82e500a",
+        "icon-moonbell-herb": "615459412ccab0359e50f434372116e57d660ccc55311621e25bd45014947582",
+        "icon-cap-mushroom": "e9c7d5afc9de93eadfdb7efad9023778eda0c352053288433dcd089eeea409b4",
+        "icon-glow-mushroom": "dd174d9925220fa9132ba7d0c4a60a5c65725bea245f0ede7f7c9a9163d53881",
+        "icon-quartz-chip": "df143d0aea8c472323b183b3ef46c39c7f51ee2b18126f864efc8f4fc833e71c",
+        "icon-deep-quartz": "847641fc3a8f8489d8122e92b3df6000cd963de8af17200136a1a9f180b5bc1f",
+        "icon-ember-glass": "484029e0af50d90b231369b1f3b93b409d259309cde1832416b63dfcf716182a",
+        "icon-rime-moss": "7d63ff6f89afd49a8e6835e712e642e6338296ff386cff51ffe83f6d9e982916",
+        "icon-charged-ore": "7d93ef28118ffaf598ef7abbc794e6cb29b73828292f5e74ff2186e2d156002a",
+        "icon-bog-resin": "27b314649d575245b8e506ae151a774c8677eb188b45bf5d2698cf9ca48e6e1a",
+        "icon-shade-silk": "44c12e74315623af6010f5c052c01e3b49a7bc4b9cb49dd10495802e9d9567f4",
+        "icon-scrap-iron": "60a19a90e99ee4e24a0a02698f80d0904c061105832c3d0514645227b20b67d5",
+        "icon-tool-1": "c147dcb1df6b2c05c60f0b002871a3c5ea8ff80bfa9d1e2ffd68271fc44fd10b",
+        "icon-tool-2": "29b8bc8bd432d999320d94cbf21bccbc6b242cfef0d1af418035249e97d8c919"
+      },
+      "review": "art-factory/starlantern/work/review/gather-i1-review.md",
+      "review_sha256": "845ebda7882fe6e8f6186e3df7be9a5e5776a46576648c80ce1ba634d6e254ab"
     }
   },
   "style_anchor": {
@@ -56218,5 +57174,10 @@
         "review": "C:/msys64/tmp/claude/C--Users-bag57/50dcf669-8aa8-4bb5-ac8e-fe7a03cde69f/scratchpad/roster-r4/r4-review.md"
       }
     ]
+  },
+  "gather_tile_style_approved": "2026-10-30",
+  "gather_tile_style_anchor": {
+    "direction": "object",
+    "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gather-sample-object\\sheet-gather-sample-object-a1.png"
   }
 }

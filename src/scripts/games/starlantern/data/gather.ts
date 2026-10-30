@@ -176,7 +176,8 @@ export const GATHER_FLOOR_CAP = (depth: number): number => 600 + 10 * Math.min(d
 export const GATHER_MAX = 1e9;
 
 /**
- * Plan ruling 9: the gathered materials whose icon is published (PR E fills it). The art list (`allArtUrls`) takes a
- * gathered material's icon only from here, so a material added before its art never asks for a file that is not there.
+ * Plan ruling 9: the gathered materials whose icon is published (PR E: all fourteen, independent review 2026-10-30). The art
+ * list (`allArtUrls`) takes a gathered material's icon only from here, so a material added before its art never asks for a
+ * file that is not there.
  */
-export const GATHER_ART: ReadonlySet<string> = new Set<string>();
+export const GATHER_ART: ReadonlySet<string> = new Set<string>(GATHER_MATERIALS.map((m) => m.id));
