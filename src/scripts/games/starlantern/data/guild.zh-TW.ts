@@ -11,8 +11,11 @@ import type { GiverId } from './guild';
  * The interface's own words (tabs, buttons, formats) are `T.ui2.board` (data/text.zh-TW.ts).
  */
 
-/** Which note a quest posts (spec §7.2): a bounty by what it is, a delivery by the goods' kind (C1 may rename them). */
-export type NoteKey = 'hunt' | 'sweep' | 'scout' | 'warden' | 'boss' | 'monster' | 'region' | 'trophy';
+/**
+ * Which note a quest posts (spec §7.2): a bounty by what it is, a delivery by the goods' kind (C1 may rename them); a
+ * gathered good's by its point (gathering plan ruling 13): herbs and mushrooms `deliverPantry`, the rest `deliverOre`.
+ */
+export type NoteKey = 'hunt' | 'sweep' | 'scout' | 'warden' | 'boss' | 'monster' | 'region' | 'trophy' | 'deliverPantry' | 'deliverOre';
 
 export interface GuildText {
   /** A note on the board, a variant a day (`day % 2`); slots {target}, {n} (a numeral) and {place}. */
@@ -37,4 +40,5 @@ export interface GuildText {
   remarks: Partial<Record<CharacterId, string>>;
 }
 
-export const GUILD_TEXT: GuildText = { notes: {}, thanks: {}, anna: { intro: [], stamp: {} }, remarks: {} };
+/** Gathering plan ruling 13: the gathered goods' two notes are registered, their words left empty (an empty note says nothing). */
+export const GUILD_TEXT: GuildText = { notes: { deliverPantry: ['', ''], deliverOre: ['', ''] }, thanks: {}, anna: { intro: [], stamp: {} }, remarks: {} };

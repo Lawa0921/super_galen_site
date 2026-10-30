@@ -132,6 +132,6 @@ describe('guild board data (guild quests plan Task A1)', () => {
       expect(q).toBeLessThanOrEqual(8);
       expect(REWARD.deliver(q, m.price)).toEqual({ gold: Math.round(1.6 * q * m.price) });
     }
-    expect(DELIVER_KINDS).toEqual(['monster', 'region', 'trophy']);
+    expect(DELIVER_KINDS).toEqual(['monster', 'region', 'trophy', 'gather']);   // gathered goods since gathering plan C1
   });
 });
