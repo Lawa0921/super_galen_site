@@ -1,6 +1,6 @@
 import { afterEach, describe, it, expect } from 'vitest';
 import { BACKUP_KEY, SAVE_KEY, V8_KEY, loadGame, saveGame } from './save';
-import { SAVE_VERSION, newGame, type GameState, type GuildState, type QuestOffer } from './state';
+import { SAVE_VERSION, newGame, type GameState, type GatherState, type GuildState, type QuestOffer } from './state';
 import { STANDARD_LINEUP } from './party';
 import { socketable, validRuneFields } from './sockets';
 import { RUNE_STACK, type RuneRef } from '../data/runes';
@@ -1704,7 +1704,8 @@ describe('gathering in the save (gathering plan Task A5)', () => {
   it('the save version stays 9', () => expect(SAVE_VERSION).toBe(9));
 
   it('a gathering record round-trips', () => {
-    for (const gather of [{ tool: 2 as const, got: { 'copper-ore': 14, 'ember-glass': 3 } }, { got: { 'rime-moss': 1 } }, { tool: 1 as const, got: {} }]) {
+    const records: GatherState[] = [{ tool: 2, got: { 'copper-ore': 14, 'ember-glass': 3 } }, { got: { 'rime-moss': 1 } }, { tool: 1, got: {} }];
+    for (const gather of records) {
       const st = memoryStorage();
       const g = newGame();
       g.gather = gather;
