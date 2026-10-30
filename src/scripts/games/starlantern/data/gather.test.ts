@@ -10,7 +10,7 @@ import { EQUIPMENT } from './equipment';
 import { REGIONS } from './regions';
 import { CONSUMABLE_RECIPES } from './forge';
 import { newGame } from '../engine/state';
-import { withGatherLive } from '../engine/testing';
+import { withGatherLive, withGatherOff } from '../engine/testing';
 import { allArtUrls } from '../render/artPaths';
 import { GATHER_TEXT, type GatherText } from './gather.zh-TW';
 import { speakerOf, storyTexts } from './story/voiceGates';
@@ -26,31 +26,52 @@ const seenFirstReturn = () => {
 };
 
 describe('gathering data (gathering plan Task A1)', () => {
-  it('the switch is off', () => {
-    expect(GATHER_SWITCH.live).toBe(false);
+  // Plan Task D1: gathering goes live. Open once the prologue's first return is seen, shut before it; withGatherLive still
+  // puts back what it found.
+  it('the switch is on', () => {
+    expect(GATHER_SWITCH.live).toBe(true);
     const fresh = newGame();
     const back = seenFirstReturn();
     // the default unlock: the prologue's first return
     expect(GATHER_SWITCH.open(fresh)).toBe(false);
     expect(GATHER_SWITCH.open(back)).toBe(true);
-    expect(gatherOpen(back)).toBe(false);
+    expect(gatherOpen(back)).toBe(true);
+    expect(gatherOpen(fresh)).toBe(false);   // before the first return
     const open = GATHER_SWITCH.open;
     expect(withGatherLive(() => [GATHER_SWITCH.live, gatherOpen(fresh), gatherOpen(back)])).toEqual([true, false, true]);
-    expect(GATHER_SWITCH.live).toBe(false);
+    expect(GATHER_SWITCH.live).toBe(true);
     expect(GATHER_SWITCH.open).toBe(open);
     expect(() => withGatherLive(() => { throw new Error('boom'); })).toThrow('boom');
-    expect(GATHER_SWITCH.live).toBe(false);
+    expect(GATHER_SWITCH.live).toBe(true);
     expect(GATHER_SWITCH.open).toBe(open);
     // held shut: never open, whatever the story
     expect(withGatherLive(() => [gatherOpen(fresh), gatherOpen(back)], { open: false })).toEqual([false, false]);
     expect(GATHER_SWITCH.open).toBe(open);
     // held open: always open, the first return or not (review H1)
     expect(withGatherLive(() => [gatherOpen(fresh), gatherOpen(back)], { open: true })).toEqual([true, true]);
-    expect(GATHER_SWITCH.live).toBe(false);
+    expect(GATHER_SWITCH.live).toBe(true);
     expect(GATHER_SWITCH.open).toBe(open);
     expect(() => withGatherLive(() => { throw new Error('boom'); }, { open: true })).toThrow('boom');
     expect(GATHER_SWITCH.open).toBe(open);
     expect(GATHER_SWITCH.open(fresh)).toBe(false);
+  });
+
+  // As the guild's (guild spec §0 item 24): with gathering live, a test of the switched-off game says so.
+  it('withGatherOff shuts gathering for its callback and puts the switch back, sync, async or thrown', async () => {
+    const back = seenFirstReturn();
+    expect(withGatherOff(() => [GATHER_SWITCH.live, gatherOpen(back)])).toEqual([false, false]);
+    expect(GATHER_SWITCH.live).toBe(true);
+    expect(() => withGatherOff(() => { throw new Error('boom'); })).toThrow('boom');
+    expect(GATHER_SWITCH.live).toBe(true);
+    const tick = () => new Promise<void>((r) => setTimeout(r, 0));
+    const pending = withGatherOff(async () => { await tick(); return GATHER_SWITCH.live; });
+    expect(GATHER_SWITCH.live).toBe(false);   // still off while the callback awaits
+    expect(await pending).toBe(false);
+    expect(GATHER_SWITCH.live).toBe(true);
+    await expect(withGatherOff(async () => { await tick(); throw new Error('later'); })).rejects.toThrow('later');
+    expect(GATHER_SWITCH.live).toBe(true);
+    expect(withGatherLive(() => withGatherOff(() => GATHER_SWITCH.live))).toBe(false);
+    expect(GATHER_SWITCH.live).toBe(true);
   });
 
   it('fourteen gathered materials', () => {
@@ -203,6 +224,13 @@ describe('gathering words (gathering plan Task B1)', () => {
     expect(speakerOf('gather.remarks.sylvie.herb.0')).toBe('sylvie');
     expect(speakerOf('gather.inner.first.0')).toBe('hero');
     expect(speakerOf('gather.doran.made2.0')).toBe('doran');
+  });
+
+  // Review nit (PR D): the result line keeps the window's floor of 1, so a member stopped at 1 HP is not told a bigger loss.
+  it("the toll's result line says the floor of 1, as the window's rule line does", () => {
+    const G = T.ui2.gather;
+    expect(G.toll.hp('燙手', 6)).toBe('燙手：全員 HP −6（最低剩 1）。');
+    for (const rule of ['scald', 'fumes'] as const) expect(G.rules[rule](6).endsWith('（最低剩 1）'), rule).toBe(true);
   });
 
   it('system words are plain', () => {

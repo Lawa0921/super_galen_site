@@ -113,9 +113,9 @@ export async function mountNext(): Promise<void> {
     bond: { STORY, BONDS_WRITTEN, GIFT_LINES, RIN_OATH },
     /** Tests only, and only in a dev build (the e2e's): the roster's switches (roster plan Task C6, PR C review L1). */
     ...rosterHandle(import.meta.env.DEV),
-    /** Tests only, and only in a dev build (the e2e's): the guild board's switch, off until its PR D (guild quests PR B). */
+    /** Tests only, and only in a dev build (the e2e's): the guild board's switch, on since its PR D (guild quests PR B). */
     ...guildHandle(import.meta.env.DEV),
-    /** Tests only, and only in a dev build (the e2e's): gathering's switch, off until its PR D (gathering plan ruling 12). */
+    /** Tests only, and only in a dev build (the e2e's): gathering's switch, on since its PR D (gathering plan ruling 12). */
     ...gatherHandle(import.meta.env.DEV),
   };
   ui.dataset.ready = 'true';

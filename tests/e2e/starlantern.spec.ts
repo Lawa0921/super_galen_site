@@ -25,7 +25,9 @@ import { GIFT_LINES } from '../../src/scripts/games/starlantern/data/bond.zh-TW'
 import { BESTIARY_UI } from '../../src/scripts/games/starlantern/data/bestiary.zh-TW';
 import { ENEMIES } from '../../src/scripts/games/starlantern/data/enemies';
 import { MAINLINE_TABLES } from '../../src/scripts/games/starlantern/data/monsters';
-import { SPOT_OF, SPOT_RULES } from '../../src/scripts/games/starlantern/data/gather';
+import { SPOT_OF, SPOT_RULES, TOOL_LEVELS } from '../../src/scripts/games/starlantern/data/gather';
+import { MATERIALS } from '../../src/scripts/games/starlantern/data/materials';
+import { spotHurt } from '../../src/scripts/games/starlantern/engine/gather';
 import { SWEEP, asDesktop, asPhone, expectedMode, fitTo, go, legibility, longestGear, placeBeside, snap, stageBox, stageScale, startSweepGame, sweep, writeReviewIndex } from './starlantern-legibility';
 
 test.use({ launchOptions: { args: ['--mute-audio'] } });
@@ -3527,8 +3529,8 @@ test.describe('starlantern', () => {
     expect(missing).toEqual([]);
   });
 
-  // Gathering plan Task B4: gathering is legible. Its switch is off until PR D, so the dev build's debug handle turns it on
-  // (plan ruling 12). On a point: the hint is whole and clear of the weight readout and the party bar; its window, with the
+  // Gathering plan Task B4: gathering is legible. Written while its switch was off (until PR D), so the dev build's debug
+  // handle turns it on and holds the unlock open (plan ruling 12). On a point: the hint is whole and clear of the weight readout and the party bar; its window, with the
   // longest spot rule, keeps both rows' right columns whole inside it; the forge's tools list and detail stay apart.
   test('gathering is legible (gathering plan Task B4) @dpr', async ({ page }) => {
     const w = await setup(page, 7);
@@ -3628,6 +3630,160 @@ test.describe('starlantern', () => {
       expect(await legibility(page, { requireReady: true })).toEqual([]);
       await w.key('ArrowDown');
     }
+    expect(w.errors).toEqual([]);
+  });
+
+  // Gathering plan Task D2: gathering as shipped (no debug switch). A test save in play: the prologue's first return seen,
+  // five copper ore and two quartz chips in the stock, gold enough for the first tool.
+  const gatherSave = (page: Page) => page.evaluate(() => {
+    const s = (window as unknown as Dbg).__starlanternDebug.game.state;
+    if (!s.story.seen.includes('first-return')) s.story.seen.push('first-return');
+    Object.assign(s.inventory, { 'copper-ore': 5, 'quartz-chip': 2, 'return-lamp': 1 });
+    s.gold = Math.max(s.gold, 500);
+  });
+  /** Walk to the nearest point of this floor whose material is `item`, the gauge held at 0; null when none is reachable. */
+  const walkToPoint = async (page: Page, item: string) => {
+    const skip: string[] = await page.evaluate((item) => {
+      const g = (window as unknown as Dbg).__starlanternDebug.game;
+      return g.run.floors.get(g.floor).contents
+        .filter((c: { kind: string; gather?: { item: string } }) => c.kind === 'gather' && c.gather!.item !== item)
+        .map((c: { at: { x: number; y: number } }) => `${c.at.x},${c.at.y}`);
+    }, item);
+    const path = await pathTo(page, 'gather', skip);
+    if (!path) return null;
+    for (const k of path.keys) {
+      await page.evaluate(() => { (window as unknown as Dbg).__starlanternDebug.game.encounter = 0; });
+      await page.keyboard.press(k);
+    }
+    expect(await page.evaluate(() => { const g = (window as unknown as Dbg).__starlanternDebug.game; return `${g.pos.x},${g.pos.y}`; })).toBe(path.at);
+    return path.at;
+  };
+  const hpOf = (page: Page) => page.evaluate(() => {
+    const p = (window as unknown as Dbg).__starlanternDebug.game.state.party;
+    return Object.fromEntries(p.recruited.map((id: string) => [id, p.roster[id].hp])) as Record<string, number>;
+  });
+
+  test('gathering: see both ways, gather, bring it home, make a tool (gathering plan Task D2) @dpr', async ({ page }) => {
+    const w = await setup(page, 8);   // its first floor holds one point, a copper vein the party can walk to
+    const G = T.ui2.gather;
+    await gatherSave(page);
+    await depart(page, w);
+    await w.closeTalk();
+    expect(await page.evaluate(() => (window as unknown as Dbg).__starlanternDebug.game.run.gather)).toBe(true);
+    expect(await walkToPoint(page, 'copper-ore'), 'a copper vein on the first floor').not.toBeNull();
+    // A little noise already, so the gathering moves the lamp.
+    await page.evaluate(() => { (window as unknown as Dbg).__starlanternDebug.game.encounter = 20; });
+
+    // The hint, then the window: both rows say what the handle's preview says.
+    const hint = page.locator('.slx-gather-hint');
+    await expect(hint).toBeVisible();
+    await expect(hint).toContainText(G.points.vein);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const preview: any = await page.evaluate(() => (window as unknown as Dbg).__starlanternDebug.game.gatherPreview());
+    expect(preview.full.danger).toEqual({ from: 'green', to: 'yellow' });
+    await w.key('Enter');
+    const box = page.locator('.slx-event-gather');
+    await expect(box).toBeVisible();
+    await expect(box.locator('.slx-event-title')).toContainText(G.points.vein);
+    for (const mode of ['light', 'full'] as const) {
+      const o = preview[mode];
+      await expect(box.locator(`[data-id=${mode}] .slx-right`)).toHaveText(G.modeRow(o.qty, o.gauge.from, o.gauge.to, T.map.danger[o.danger.to as 'green'], G.next[o.next as 'never']));
+    }
+    await expect(box.locator('[aria-selected=true]')).toHaveAttribute('data-id', 'full');
+    await w.key('Enter');   // 全力採集
+    await expect(box).toHaveCount(0);
+    await expect(page.locator('.slx-dungeon .slx-talk .slx-text')).toHaveText(G.got(MATERIALS['copper-ore'].name, preview.full.qty));
+    await expect(page.locator('.slx-lamp')).toHaveClass(new RegExp(`slx-lamp-${preview.full.danger.to}`));
+    await expect(hint).toBeHidden();
+    expect(await page.evaluate(() => {
+      const g = (window as unknown as Dbg).__starlanternDebug.game;
+      return { encounter: g.encounter, carried: g.run.loot.items['copper-ore'], here: g.gatherHere() };
+    })).toEqual({ encounter: preview.full.gauge.to, carried: preview.full.qty, here: null });
+    expect(await legibility(page, { requireReady: true })).toEqual([]);
+
+    // Home by the lamp: the ore in the stock, a gathered material at the shop.
+    await lampHome(page, w);
+    await w.closeTalk();
+    const stock = () => page.evaluate(() => {
+      const s = (window as unknown as Dbg).__starlanternDebug.game.state;
+      return JSON.parse(JSON.stringify({ inventory: s.inventory, gold: s.gold, gather: s.gather }));
+    });
+    const home = await stock();
+    expect(home.inventory['copper-ore']).toBe(5 + preview.full.qty);
+    expect(home.gather).toEqual({ got: { 'copper-ore': preview.full.qty } });
+    await w.choose('.slx-town', '道具店');
+    await expect(page.locator('.slx-shop')).toBeVisible(); await w.closeTalk();
+    await page.locator('.slx-shop .slx-cmd [data-id=sell]').click();
+    await page.locator('.slx-shop .slx-layer').last().locator('[data-id=mats]').click();
+    await expect(page.locator('.slx-mat-page [data-id="copper-ore"]')).toHaveCount(1);
+    for (let i = 0; i < 40 && (await page.locator('.slx-mat-page [aria-selected=true]').getAttribute('data-id')) !== 'copper-ore'; i++) await w.key('ArrowDown');
+    await expect(page.locator('.slx-mat-page [aria-selected=true]')).toHaveAttribute('data-id', 'copper-ore');
+    await expect(page.locator('.slx-mat-page > .slx-info')).toContainText(T.forge.kind.gather);
+    await toTown(page, w);
+
+    // The forge: 製作 → 採集工具, the first level made, the row reads 已打造.
+    const tool = TOOL_LEVELS[0];
+    await w.choose('.slx-town', '鍛造屋');
+    await expect(page.locator('.slx-forge')).toBeVisible(); await w.closeTalk();
+    await page.locator('.slx-forge .slx-cmd [data-id=craft]').click();
+    await page.locator('.slx-forge .slx-layer [data-id=tool]').click();
+    await page.locator('.slx-forge [data-id="tool@1"]').click();
+    await page.locator('.slx-confirm [data-id=yes]').click();
+    await expect(page.locator('.slx-talk .slx-text')).toHaveText(G.made(tool.name));
+    await w.closeTalk();
+    await expect(page.locator('.slx-forge [data-id="tool@1"] .slx-right')).toHaveText(G.tools.made);
+    expect(await legibility(page, { requireReady: true })).toEqual([]);
+
+    // A reload: the tool kept, the stock as it came home less the tool's cost.
+    await page.reload();
+    await page.locator('.slx-title [data-id=cont]').click();
+    await expect(page.locator('.slx-town')).toBeVisible(); await w.closeTalk();
+    const spent = { ...home.inventory } as Record<string, number>;
+    for (const [id, n] of Object.entries(tool.cost.mats ?? {})) { spent[id] -= n; if (!spent[id]) delete spent[id]; }
+    expect(await stock()).toEqual({ inventory: spent, gold: home.gold - (tool.cost.gold ?? 0), gather: { ...home.gather, tool: 1 } });
+    expect(w.errors).toEqual([]);
+  });
+
+  test('gathering: a land\'s toll (gathering plan Task D2)', async ({ page }) => {
+    const w = await setup(page, 7);
+    const G = T.ui2.gather;
+    await gatherSave(page);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const run = <R = unknown>(src: string) => page.evaluate((s) => new Function('g', s)((window as any).__starlanternDebug.game), src) as Promise<R>;
+    // Down to 熾焰之地, floor by floor until one holds its spot.
+    const depth = await run<number>(`g.state.dungeon.reached.blaze = 10;
+      const r = g.depart({ region: 'blaze', condition: 'plain' }, 1); if (!r.ok) throw new Error('no departure: ' + r.reason);
+      for (let d = 1; d <= 10; d++) {
+        if (g.floor !== d) g.changeFloor(d);
+        if (g.run.floors.get(d).contents.some((c) => c.kind === 'gather' && c.gather.item === '${SPOT_OF.blaze}')) return d;
+      }
+      return 0;`);
+    expect(depth, 'a blaze spot within ten floors').toBeGreaterThan(0);
+    await go(page, 'dungeon');
+    await expect(page.locator('.slx-dungeon')).toBeVisible(); await w.closeTalk();
+    expect(await walkToPoint(page, SPOT_OF.blaze), 'the spot is reachable').not.toBeNull();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const preview: any = await page.evaluate(() => (window as unknown as Dbg).__starlanternDebug.game.gatherPreview());
+    expect(preview.rule).toBe('scald');
+    const n = spotHurt('hurt', depth);
+    const before = await hpOf(page);
+    for (const [id, t] of Object.entries(preview.full.toll as Record<string, { hp: number }>)) expect(t.hp, id).toBe(before[id] - Math.max(1, before[id] - n));
+    const bar = page.locator('.slx-partybar .slx-pm-num');
+    const hp = (t: string) => Number(t.split('/')[0]);
+    const shown = (await bar.allTextContents()).map(hp);
+
+    // The window says the toll on its own line; gathered, every member's HP drops as foretold.
+    await expect(page.locator('.slx-gather-hint')).toBeVisible();
+    await w.key('Enter');
+    const box = page.locator('.slx-event-gather');
+    await expect(box.locator('.slx-gather-rule')).toHaveText(G.rules.scald(n));
+    await expect(box.locator('[aria-selected=true]')).toHaveAttribute('data-id', 'full');
+    await w.key('Enter');   // 全力採集
+    await expect(box).toHaveCount(0);
+    await expect(page.locator('.slx-dungeon .slx-talk .slx-text')).toContainText(G.toll.hp(SPOT_RULES.blaze.name, n));
+    await expect.poll(async () => (await bar.allTextContents()).map(hp)).toEqual(shown.map((h) => Math.max(1, h - n)));
+    expect(await hpOf(page)).toEqual(Object.fromEntries(Object.entries(before).map(([id, h]) => [id, h - (preview.full.toll[id]?.hp ?? 0)])));
+    expect(await legibility(page, { requireReady: true })).toEqual([]);
     expect(w.errors).toEqual([]);
   });
 
