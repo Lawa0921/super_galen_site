@@ -11,6 +11,9 @@ import { BAG_SIZE } from '../../engine/loot/bag';
 import { itemWeight } from '../../engine/loot/item';
 import { fragmentItem } from '../../engine/story/fragments';
 import { fragmentLines } from '../battleText';
+import { SPOT_RULES, spotRegionOf, type GatherMode } from '../../data/gather';
+import { spotHurt, type GatherOutcome } from '../../engine/gather';
+import { POISON_TP_LOSS_PCT } from '../../engine/events';
 import type { FullResult, MoveResult, RuneFind } from '../../engine/game';
 import { RUNE_STACK } from '../../data/runes';
 import type { ItemInstance, Pos } from '../../engine/types';
@@ -27,7 +30,8 @@ import { MenuView, confirmBox, richInto, win, type Rich, type RichPart } from '.
 
 export interface Layer { el: HTMLElement; onAction(a: UiAction): boolean }
 export type { FullResult } from '../../engine/game';
-export type EventKind = 'fountain' | 'merchant' | 'altar' | 'vault' | 'elite';
+/** `gather`: a gathering point's window (gathering spec §10.3); no art until its PR E. */
+export type EventKind = 'fountain' | 'merchant' | 'altar' | 'vault' | 'elite' | 'gather';
 
 /** What an event window needs from the labyrinth screen that hosts it. */
 export interface EventHost {
@@ -65,8 +69,8 @@ function eventWindow(host: EventHost, kind: EventKind | 'full' | 'stairs', title
   }, 6);
   if (start) { view.menu.setCursor(start); view.render(); }
   const head = el('div', { class: 'slx-event-head' }, [el('span', { class: 'slx-event-title', text: title })]);
-  // Its art now, or when it lands (ui2/lateArt).
-  if (kind !== 'full' && kind !== 'stairs') bestPicture(head, 'art', ctx.art, [eventArt(kind)], (src) => el('img', { class: 'slx-event-art', attrs: { src, alt: '' } }), (n) => head.prepend(n));
+  // Its art now, or when it lands (ui2/lateArt). A gathering point's art is not asked for before its PR E (plan ruling 22).
+  if (kind !== 'full' && kind !== 'stairs' && kind !== 'gather') bestPicture(head, 'art', ctx.art, [eventArt(kind)], (src) => el('img', { class: 'slx-event-art', attrs: { src, alt: '' } }), (n) => head.prepend(n));
   const box = win(`slx-event ${kind === 'full' ? 'slx-full' : `slx-event-${kind}`}`, [head, ...body, view.el]);
   box.setAttribute('role', 'dialog');
   box.setAttribute('aria-label', title);
@@ -218,15 +222,42 @@ function carriedItems(host: EventHost): Record<string, number> {
 }
 
 /**
+ * Gathering spec §10.3: the window of the point the party stands on, or null when there is none. The title is the point's
+ * name (rich: with 「（豐）」), the first line says the material, a spot's rule follows with its number, and each way's row
+ * says, from `Game.gatherPreview()`, the goods, the gauge before and after with its lamp, and whether the next step meets a
+ * battle. The cursor starts on the light way when only the full way would turn the lamp red, else on the full way
+ * (plan ruling 15); 離開 is last. `pick` gets the way chosen. Draws nothing and asks for no art.
+ */
+export function gatherLayer(host: EventHost, pick: (mode: GatherMode) => void): Layer | null {
+  const g = host.ctx.game;
+  const here = g.gatherHere();
+  const p = g.gatherPreview();
+  if (!here || !p) return null;
+  const G = T.ui2.gather;
+  const region = here.type === 'spot' ? spotRegionOf(here.item) : undefined;
+  const title = `${region ? G.points[region] : G.points[here.type as Exclude<typeof here.type, 'spot'>]}${here.rich ? G.rich : ''}`;
+  const body: HTMLElement[] = [line(G.looks(itemName(here.item)))];
+  const rule = region ? SPOT_RULES[region] : undefined;
+  if (rule && p.rule) body.push(line(G.rules[rule.rule](rule.hurt ? spotHurt(rule.hurt, g.floor) : rule.tp ? POISON_TP_LOSS_PCT : 0), 'slx-event-text slx-gather-rule'));
+  const row = (mode: GatherMode, o: GatherOutcome): MenuItem => ({
+    id: mode, label: G.modes[mode], right: G.modeRow(o.qty, o.gauge.from, o.gauge.to, T.map.danger[o.danger.to], G.next[o.next]),
+  });
+  const start = p.full.danger.to === 'red' && p.light.danger.to !== 'red' ? 0 : 1;
+  return eventWindow(host, 'gather', title, body, [row('light', p.light), row('full', p.full), leaveItem()], (id) => pick(id as GatherMode), undefined, start);
+}
+
+/**
  * 背包已滿: the pick-up stays where it is until something is thrown away (after a yes), or the player gives up. Two limits:
  * - weight (`r.need` over the limit): carried materials and consumables, and run-pack gear (it has weight), all help;
  * - bag slots (`r.bag`, titled 背包已滿（60 件）): only throwing away run-pack gear frees a slot, so when the run pack holds
  *   none, nothing is offered but 放棄.
  * Once both fit, `retry` takes the pick-up (Game.pickUpHere through showPickUp; still not fitting opens this window again);
  * without it the line says to step on it again. `opened` is the loot line of a chest or vault that opened while its gear
- * stayed behind; `more` the lines after it (its rune, plan 8f).
+ * stayed behind; `more` the lines after it (its rune, plan 8f). `opts` (gathering plan ruling 18): a gathering point's own
+ * words for what is short (`desc`) and for giving up (`left`); without them the window reads as it always has.
  */
-export function fullLayer(host: EventHost, r: FullResult, retry?: () => void, opened?: Rich, more: Rich[] = []): Layer {
+export function fullLayer(host: EventHost, r: FullResult, retry?: () => void, opened?: Rich, more: Rich[] = [],
+  opts: { left?: string; desc?: (item: string, qty: number, need: number) => string } = {}): Layer {
   const F = T.ui2.event.full;
   const { ctx } = host;
   const g = ctx.game;
@@ -234,7 +265,7 @@ export function fullLayer(host: EventHost, r: FullResult, retry?: () => void, op
   const stuck = !!r.bag && gear.length === 0;   // no slot can be freed from here
   const body: HTMLElement[] = [...(opened ? [richLine(opened)] : []), ...more.map((m) => richLine(m))];
   if (r.bag && r.gear) body.push(richLine(fillRich(F.bagDesc, [gearOf(host, r.gear)])));
-  if (r.need > 0 && r.item) body.push(line(F.desc(itemName(r.item), r.qty ?? 1, Number(fmtWeight(r.need)))));
+  if (r.need > 0 && r.item) body.push(line((opts.desc ?? F.desc)(itemName(r.item), r.qty ?? 1, Number(fmtWeight(r.need)))));
   else if (r.need > 0 && r.gear) body.push(richLine(fillRich((name) => F.gearHeavy(name, Number(fmtWeight(r.need))), [gearOf(host, r.gear)])));
   if (r.fragments?.length) body.push(line(F.fragments(r.fragments.map(itemName).join('、'))));
   body.push(line(stuck ? F.noGear : r.bag ? F.whichGear : F.which, 'slx-event-ask'));
@@ -244,7 +275,7 @@ export function fullLayer(host: EventHost, r: FullResult, retry?: () => void, op
     ...Object.entries(held).map(([id, n]) => ({ id, label: itemName(id), right: `×${n}` })),
     { id: 'leave', label: F.keep },   // leaving it destroys nothing: it stays in the chest, the vault or on the ground
   ];
-  const leaveIt = () => { ctx.sfx.cancel(); host.pop(); host.say(F.left); };
+  const leaveIt = () => { ctx.sfx.cancel(); host.pop(); host.say(opts.left ?? F.left); };
   return eventWindow(host, 'full', r.bag ? F.bagTitle(BAG_SIZE) : F.title, body, items, (id) => {
     const piece = gear.find((it) => `gear:${it.uid}` === id);
     const n = piece ? 1 : Math.min(held[id], Math.ceil(r.need / weightOf(id)));
@@ -258,7 +289,7 @@ export function fullLayer(host: EventHost, r: FullResult, retry?: () => void, op
       if (need > 0 && !r.bag) {
         // Still too heavy: show the window again with what is left.
         host.pop();
-        host.push(fullLayer(host, { ...r, need }, retry));
+        host.push(fullLayer(host, { ...r, need }, retry, undefined, [], opts));
         return;
       }
       host.popAll();
