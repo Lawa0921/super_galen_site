@@ -2,7 +2,7 @@ import { Container, Graphics, Sprite, Text, Texture, TilingSprite } from 'pixi.j
 import { CONDITIONS } from '../data/conditions';
 import type { Game } from '../engine/game';
 import type { FloorMap, Tile } from '../engine/map';
-import { art, tileKey } from './artPaths';
+import { art, tileKey, type GatherTileKey } from './artPaths';
 import { pixelText } from './pixelText';
 import { fogState } from './fog';
 import { GATHER_GLYPH, MARKER_GLYPH, markersOf, type Marker, type MarkerKind } from './markers';
@@ -23,6 +23,22 @@ const ON_FLOOR = new Set<Tile>(['fountain', 'trap', 'merchant', 'altar', 'elite'
 const GLYPH_FILL: Partial<Record<MarkerKind, number>> = { elite: 0xff8a6a, warden: 0xff8a6a, trap: 0xff7a6b, gather: 0x8fd18b };
 /** A rich gathering point's glyph is gold (gathering spec §10.1). */
 const GATHER_RICH_FILL = 0xe8c46a;
+/**
+ * A rich point's art (gathering spec §12: no art of its own, done in code): its tile warmed gold, over the same tile tinted
+ * gold, spread a little past the cell and faint, as a glow.
+ */
+export const GATHER_RICH_TINT = 0xffe7a6;
+export const GATHER_GLOW_TINT = 0xffc83d;
+const GATHER_GLOW_SCALE = 1.22;
+/** A rich point's tile tint: gold, or gold dimmed as any remembered cell is (both multiplied, per channel). */
+export const gatherRichTint = (memory: boolean): number => {
+  if (!memory) return GATHER_RICH_TINT;
+  const ch = (c: number, s: number) => Math.round((((GATHER_RICH_TINT >> s) & 0xff) * ((c >> s) & 0xff)) / 255) << s;
+  return ch(MEMORY_TINT, 16) | ch(MEMORY_TINT, 8) | ch(MEMORY_TINT, 0);
+};
+const GATHER_GLOW_ALPHA = 0.55;
+/** A gathering point's tile: the ordinary kinds by kind, a land's spot by its land (gathering PR E). */
+const gatherKey = (m: Marker): GatherTileKey | null => (m.type === 'spot' ? m.spot ?? null : m.type ?? null);
 /** A marker's text glyph and its colour: a gathering point's by its kind, pale green or (rich) gold. */
 const glyphOf = (m: Marker): { text: string; fill: number } => (m.kind === 'gather'
   ? { text: GATHER_GLYPH[m.type ?? 'spot'], fill: m.rich ? GATHER_RICH_FILL : GLYPH_FILL.gather! }
@@ -42,7 +58,7 @@ export class MapView {
   private edgeTex: Texture | null = null;
   /** Event markers: art with a gentle bob and glow once published, text glyphs until then. */
   private marks = new Container();
-  private bobbing: { s: Sprite; y: number; phase: number }[] = [];
+  private bobbing: { s: Sprite; y: number; phase: number; alpha?: number }[] = [];
   /** Text glyphs by `kind@x,y`, kept across draws; a marker that is gone is destroyed. */
   private glyphs = new Map<string, Text>();
   private clock = 0;
@@ -174,17 +190,32 @@ export class MapView {
       const memory = fogState(seen, game.pos, m.x, m.y, sight) === 'memory';
       const cx = m.x * cell + cell / 2, cy = m.y * cell + cell / 2;
       // No art for these: a text marker. A warden's room wears the elite's tile (roster plan B5: no art of its own). A
-      // gathering point's art waits for its approval (gathering PR E, E4): a text marker until then, never asked for.
-      const tex = m.kind === 'chest' || m.kind === 'rescue' || m.kind === 'glimmer' || m.kind === 'gather' ? null : this.bank?.get(art.eventTile(m.kind === 'warden' ? 'elite' : m.kind)) ?? null;
+      // gathering point wears its kind's (or its land's) tile (gathering PR E, E4), its text marker until that lands.
+      const key = m.kind === 'gather' ? gatherKey(m) : null;
+      const tex = m.kind === 'gather' ? (key ? this.bank?.get(art.gatherTile(key)) ?? null : null)
+        : m.kind === 'chest' || m.kind === 'rescue' || m.kind === 'glimmer' ? null : this.bank?.get(art.eventTile(m.kind === 'warden' ? 'elite' : m.kind)) ?? null;
       if (tex) {
+        const phase = (m.x * 7 + m.y * 13) % 10;
+        if (m.kind === 'gather' && m.rich) {
+          const glow = new Sprite(tex);
+          glow.anchor.set(0.5);
+          glow.width = cell * GATHER_GLOW_SCALE; glow.height = cell * GATHER_GLOW_SCALE;
+          glow.x = cx; glow.y = cy;
+          glow.label = 'gather-glow';
+          glow.tint = GATHER_GLOW_TINT;
+          glow.alpha = GATHER_GLOW_ALPHA * (memory ? 0.5 : 1);
+          this.marks.addChild(glow);
+          this.bobbing.push({ s: glow, y: cy, phase, alpha: glow.alpha });
+        }
         const s = new Sprite(tex);
         s.anchor.set(0.5);
         s.width = cell; s.height = cell;
         s.x = cx; s.y = cy;
-        s.label = `event-${m.kind}`;
-        if (memory) s.tint = MEMORY_TINT;
+        s.label = m.kind === 'gather' ? `gather-${key}` : `event-${m.kind}`;
+        if (m.kind === 'gather' && m.rich) s.tint = gatherRichTint(memory);
+        else if (memory) s.tint = MEMORY_TINT;
         this.marks.addChild(s);
-        this.bobbing.push({ s, y: cy, phase: (m.x * 7 + m.y * 13) % 10 });
+        this.bobbing.push({ s, y: cy, phase });
         continue;
       }
       const g = glyphOf(m);
@@ -339,7 +370,7 @@ export class MapView {
       if (b.s.destroyed) continue;
       const w = this.clock * 0.05 + b.phase;
       b.s.y = this.calm ? b.y : b.y - 2 - Math.sin(w) * 2;
-      b.s.alpha = 0.88 + Math.sin(w * 0.8) * 0.12;
+      b.s.alpha = (b.alpha ?? 1) * (0.88 + Math.sin(w * 0.8) * 0.12);
     }
     const lift = Math.sin((this.hop / HOP_FRAMES) * Math.PI) * MAP_CELL * 0.12;
     this.icon.y = MAP_CELL * 0.95 - lift;

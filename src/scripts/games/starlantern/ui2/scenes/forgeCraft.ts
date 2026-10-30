@@ -13,9 +13,10 @@ import { BAG_SIZE } from '../../engine/loot/bag';
 import type { GameState } from '../../engine/state';
 import { priceOf } from '../../engine/town';
 import type { GearSlot } from '../../engine/types';
-import { codexArtId } from '../../render/artPaths';
+import { art, codexArtId } from '../../render/artPaths';
 import { el } from '../../ui/dom';
 import { gearIconLate } from '../gearArt';
+import { lateArt } from '../lateArt';
 import { fillRich, gearPart } from '../loot';
 import { Menu, type MenuItem } from '../menu';
 import { GEAR_ROWS, MenuView, QtyView, confirmBox, richNodes, win, type Rich } from '../widgets';
@@ -279,12 +280,13 @@ export function openCraft(h: ForgeHost): void {
     layer(info, {
       rows: () => TOOL_LEVELS.map((t): MenuItem => {
         const id = `tool@${t.level}`;
-        if (held() >= t.level) return { id, label: t.name, disabled: true, right: G.tools.made, note: G.tools.made };
+        const icon = lateArt(h.ctx.art, art.toolIcon(t.level));   // its icon once it has landed (gathering PR E)
+        if (held() >= t.level) return { id, label: t.name, disabled: true, right: G.tools.made, note: G.tools.made, icon };
         if (held() !== t.needs) {
           const why = G.tools.needs(TOOL_LEVELS.find((x) => x.level === t.needs)!.name);
-          return { id, label: t.name, disabled: true, right: T.reasons.locked, note: why };   // short, so the name stays whole
+          return { id, label: t.name, disabled: true, right: T.reasons.locked, note: why, icon };   // short, so the name stays whole
         }
-        return recipeRow(game.state, { id, label: t.name, cost: t.cost });
+        return { ...recipeRow(game.state, { id, label: t.name, cost: t.cost }), icon };
       }),
       detail: (rowId) => {
         const level = levelOf(rowId);

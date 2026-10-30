@@ -1,11 +1,11 @@
-import type { GatherType } from '../data/gather';
+import { spotRegionOf, type GatherType, type SpotRegion } from '../data/gather';
 import type { Game } from '../engine/game';
 import { floorOf } from '../engine/dungeon/run';
 import { visibleGather } from '../engine/gather';
 
 /** Things worth a marker on the map: unspent event tiles, and traps once they have gone off. */
 /** `warden`: a warden's room (roster plan B5), drawn as an elite is: the elite's event tile, or its ★. */
-/** `gather`: a gathering point (gathering spec §10.1), its glyph by its kind (`GATHER_GLYPH`) until its art is published. */
+/** `gather`: a gathering point (gathering spec §10.1): its tile once its art is here, its glyph by its kind (`GATHER_GLYPH`) until then. */
 export type MarkerKind = 'chest' | 'fountain' | 'merchant' | 'altar' | 'elite' | 'vault' | 'key' | 'trap' | 'rescue' | 'glimmer' | 'warden' | 'gather';
 
 /** Text markers used until the event tile art is approved. */
@@ -18,9 +18,9 @@ export const GATHER_GLYPH: Record<GatherType, string> = { vein: '礦', herb: '�
 
 /**
  * `waiting`: an opened chest whose gear did not fit and still lies in it (`run.waiting`). `type` and `rich`: a gathering
- * point's kind, and whether it is rich (drawn gold).
+ * point's kind, and whether it is rich (drawn gold). `spot`: a land's special point's land (its tile, gathering PR E).
  */
-export interface Marker { kind: MarkerKind; x: number; y: number; waiting?: true; type?: GatherType; rich?: true }
+export interface Marker { kind: MarkerKind; x: number; y: number; waiting?: true; type?: GatherType; rich?: true; spot?: SpotRegion }
 
 const LIVE = new Set<string>(['chest', 'fountain', 'merchant', 'altar', 'elite', 'vault', 'key', 'rescue', 'glimmer', 'warden', 'gather']);
 
@@ -44,7 +44,10 @@ export function markersOf(game: Game): Marker[] {
     if (c.kind === 'trap') { if (t !== 'trap') out.push({ kind: 'trap', x, y }); continue; }
     if (t !== c.kind || !LIVE.has(t)) continue;
     if (c.kind === 'gather') {
-      if (c.gather && visibleGather(run, game.floor, c)) out.push({ kind: 'gather', x, y, type: c.gather.type, ...(c.gather.rich ? { rich: true as const } : {}) });
+      if (c.gather && visibleGather(run, game.floor, c)) {
+        const spot = c.gather.type === 'spot' ? spotRegionOf(c.gather.item) : undefined;
+        out.push({ kind: 'gather', x, y, type: c.gather.type, ...(c.gather.rich ? { rich: true as const } : {}), ...(spot ? { spot } : {}) });
+      }
       continue;
     }
     const spot = `${game.floor}:${x},${y}`;

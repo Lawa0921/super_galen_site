@@ -750,14 +750,36 @@ describe('the gathering window (gathering plan Task B2)', () => {
     expect(text()).toBe(T.ui2.event.full.left);
   });
 
-  it('no art is asked for yet', () => {
+  it("the window wears its point's tile (gathering plan Task E4, ruling 22)", () => {
+    const ALL: ArtIndex = { has: () => true };
+    const vein = onPoint(VEIN, { art: ALL });
+    vein.s.onAction('confirm');
+    expect(vein.layer()!.querySelector('img.slx-event-art')!.getAttribute('src')).toBe(art.gatherTile('vein'));
+    // a land's spot wears its land's tile; never an event-gather picture
+    const scrap = onPoint(SPOTS.iron, { art: ALL, portal: { region: 'iron', condition: 'plain' } });
+    scrap.s.onAction('confirm');
+    expect(scrap.layer()!.querySelector('img.slx-event-art')!.getAttribute('src')).toBe(art.gatherTile('iron'));
+  });
+
+  it('the tile is not drawn before its art is here', () => {
     const asked: string[] = [];
     const spy = { has: (u: string) => { asked.push(u); return false; } } as unknown as ArtIndex;
     const { s, layer } = onPoint(VEIN, { art: spy });
     asked.length = 0;
     s.onAction('confirm');
-    expect(layer()).not.toBeNull();
-    expect(asked.filter((u) => /event-gather|gather-/.test(u))).toEqual([]);
+    expect(layer()!.querySelector('img')).toBeNull();
+    expect(asked.filter((u) => /gather/.test(u))).toEqual([art.gatherTile('vein')]);
+  });
+
+  it('what came wears its icon in front of its name (gathering plan Task E4)', () => {
+    const { s, root, text } = onPoint(VEIN, { art: { has: () => true } });
+    s.onAction('confirm');
+    s.onAction('confirm');
+    expect(text()).toBe(G.got(MATERIALS['copper-ore'].name, 3));   // the words are the same
+    const box = root.querySelector('.slx-talk .slx-text')!;
+    const img = box.querySelector('img')!;
+    expect(img.getAttribute('src')).toBe(art.icon('copper-ore'));
+    expect(img.nextElementSibling!.textContent).toBe(MATERIALS['copper-ore'].name);
   });
 
   it('opening the window draws nothing', () => {

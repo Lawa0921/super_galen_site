@@ -1,4 +1,4 @@
-import { Container, Graphics, Text, Texture, TilingSprite } from 'pixi.js';
+import { Container, Graphics, Sprite, Text, Texture, TilingSprite } from 'pixi.js';
 import { describe, expect, it } from 'vitest';
 import { Game } from '../engine/game';
 import { DELTA, tileAt } from '../engine/map';
@@ -6,7 +6,7 @@ import { mulberry32 } from '../engine/rng';
 import { floorOf } from '../engine/dungeon/run';
 import { constRng, withGatherLive, withRosterLive } from '../engine/testing';
 import { fogState } from './fog';
-import { MAP_CELL, MapView } from './MapView';
+import { GATHER_GLOW_TINT, GATHER_RICH_TINT, MAP_CELL, MapView, gatherRichTint } from './MapView';
 import { MARKER_GLYPH, markersOf } from './markers';
 import { PIXEL_FONT } from './pixelText';
 import { chestHasGear } from '../engine/loot/drops';
@@ -483,11 +483,54 @@ describe('MapView gathering points (gathering plan Task B1)', () => {
     expect(rich.style.fill).toBe(0xe8c46a);
   });
 
-  it('asks for no gathering art', () => {
+  /** Gathering art here (gathering plan Task E4); no event art, so only the points wear art. */
+  const gatherArt = { get: (u: string) => (u.includes('/tiles/event-') || u.endsWith('-chest.png') ? null : Texture.WHITE), has: () => true } as unknown as TextureBank;
+  const markSprites = (view: MapView): Sprite[] => {
+    const world = view.root.children[0] as Container;
+    const marks = world.children.find((c) => c.label === 'markers') as Container;
+    return marks.children.filter((c): c is Sprite => c instanceof Sprite && c.label.startsWith('gather-'));
+  };
+
+  it("a point wears its tile once the art is here: a spot its land's, no glyph", () => {
+    const { game } = planted();
+    const urls: string[] = [];
+    const spy = { get: (u: string) => { urls.push(u); return gatherArt.get(u); }, has: () => true } as unknown as TextureBank;
+    const view = new MapView(spy);
+    view.draw(game, SIZE);
+    expect(glyphTexts(view)).toEqual([]);
+    const tiles = markSprites(view).filter((s) => s.label !== 'gather-glow');
+    expect(tiles.map((s) => s.label).sort()).toEqual(['gather-crystal', 'gather-fungus', 'gather-herb', 'gather-iron', 'gather-vein']);
+    for (const s of tiles) expect([s.width, s.height]).toEqual([MAP_CELL, MAP_CELL]);
+    expect(urls).toContain(art.gatherTile('iron'));   // the iron fortress's spot wears the scrap heap
+    expect(urls).not.toContain(art.gatherTile('spot' as never));
+  });
+
+  it('a rich point is tinted gold over a gold glow drawn in code, no art of its own', () => {
+    const { game } = planted();
+    const view = new MapView(gatherArt);
+    view.draw(game, SIZE);
+    const all = markSprites(view);
+    const rich = all.find((s) => s.label === 'gather-iron')!;
+    const glow = all.filter((s) => s.label === 'gather-glow');
+    expect(glow).toHaveLength(1);   // only the rich point glows
+    const p = { x: Math.floor(rich.x / MAP_CELL), y: Math.floor(rich.y / MAP_CELL) };
+    const memory = fogState(seenOf(game), game.pos, p.x, p.y) === 'memory';
+    expect(rich.tint).toBe(gatherRichTint(memory));   // gold; out of sight, gold dimmed as any remembered cell
+    expect(gatherRichTint(false)).toBe(GATHER_RICH_TINT);
+    expect(gatherRichTint(true)).not.toBe(GATHER_RICH_TINT);
+    expect(glow[0].tint).toBe(GATHER_GLOW_TINT);
+    expect(glow[0].texture).toBe(rich.texture);   // the point's own tile, tinted and spread: no glow image
+    expect(glow[0].width).toBeGreaterThan(MAP_CELL);
+    expect(glow[0].alpha).toBeLessThan(1);
+    expect(all.indexOf(glow[0])).toBeLessThan(all.indexOf(rich));   // under the point
+    for (const s of all.filter((x) => x !== rich && x !== glow[0])) expect([GATHER_RICH_TINT, gatherRichTint(true)]).not.toContain(s.tint);
+  });
+
+  it('without its art a point keeps its glyph and asks only for its tile', () => {
     const { game } = planted();
     const urls: string[] = [];
     const spy = { get: (u: string) => { urls.push(u); return noEventArt.get(u); }, has: () => true } as unknown as TextureBank;
     new MapView(spy).draw(game, SIZE);
-    expect(urls.filter((u) => /gather/.test(u))).toEqual([]);
+    expect(urls.filter((u) => /gather/.test(u)).sort()).toEqual(['crystal', 'fungus', 'herb', 'iron', 'vein'].map((k) => art.gatherTile(k as never)).sort());
   });
 });

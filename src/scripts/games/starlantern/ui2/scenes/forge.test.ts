@@ -1369,12 +1369,12 @@ describe('the forge and gathered goods (gathering plan Task B3)', () => {
   const G = T.ui2.gather;
   const live = <R>(f: () => R): R => withGatherLive(f, { open: true });
   /** The forge's 製作 page, as the craft page's tests open it. */
-  function craft(prep: (g: Game) => void = () => {}) {
+  function craft(prep: (g: Game) => void = () => {}, artIdx: ArtIndex = NO_ART) {
     const game = new Game(constRng(0.5), memoryStorage());
     game.state.gold = 5000;
     game.state.inventory = {};
     prep(game);
-    const t = setup(game);
+    const t = setup(game, artIdx);
     t.s.onAction('confirm');                // greeting
     for (let i = 0; i < 4; i++) t.s.onAction('down');
     t.s.onAction('confirm');                // 製作
@@ -1387,6 +1387,17 @@ describe('the forge and gathered goods (gathering plan Task B3)', () => {
     return { ...t, game, rows, ids, row, info, go };
   }
   const TOOL_MATS = { 'copper-ore': 6, 'quartz-chip': 2, 'silver-ore': 6, 'deep-quartz': 2, 'ember-glass': 2, 'scrap-iron': 2 };
+
+  it('each tool row wears its icon once the art is here (gathering plan Task E4)', () => {
+    live(() => {
+      const bare = craft();
+      bare.row('tool').click();
+      expect(bare.row('tool@1').querySelector('img')).toBeNull();
+      const { row } = craft(() => {}, { has: () => true });
+      row('tool').click();
+      for (const l of [1, 2] as const) expect(row(`tool@${l}`).querySelector('img.slx-ico')!.getAttribute('src')).toBe(art.toolIcon(l));
+    });
+  });
 
   it('the tools row opens with gathering', () => {
     const shut = craft();
