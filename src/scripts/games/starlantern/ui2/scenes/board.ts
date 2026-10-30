@@ -231,11 +231,10 @@ export class BoardLayer implements Layer {
     this.host.push({ el: box.el, onAction: (a) => box.view.onAction(a) });
   }
 
-  /** A refusal: the error cue, then Anna's own line for a full hand once written, else the general reason. */
+  /** A refusal: the error cue, then for a full hand Anna's own line once written (a plain one until then), else the reason. */
   private refuse(reason: string): void {
     this.host.ctx.sfx.error();
-    const line = reason === 'full' ? GUILD_TEXT.anna.full : T.reasons[reason] ?? T.reasons.invalid;
-    if (line) void this.host.say(line);
+    void this.host.say(reason === 'full' ? GUILD_TEXT.anna.full ?? B.full : T.reasons[reason] ?? T.reasons.invalid);
   }
 
   /** Spec §8.4: a held quest's small menu: 回報 when it is done (a delivery with its goods in stock), 放棄, 返回. */
@@ -373,7 +372,8 @@ export class BoardLayer implements Layer {
 
 /**
  * The board opened at the guild (spec §8.1): today's board is posted if none is yet and marked seen (Game.openBoard, the
- * board's own stream only), the window goes up, and the first time Anna tells how it works (once PR C has written it).
+ * board's own stream only), the window goes up, and the first time Anna tells how it works: her lines once PR C writes
+ * them, one plain line until then (spec §0 item 24).
  */
 export function openBoard(host: BoardHost): BoardLayer | null {
   const r = host.ctx.game.openBoard();
@@ -381,7 +381,7 @@ export function openBoard(host: BoardHost): BoardLayer | null {
   const layer = new BoardLayer(host);
   host.push(layer);
   void (async () => {
-    if (r.first) for (const line of GUILD_TEXT.anna.intro) await host.say(line);
+    if (r.first) for (const line of GUILD_TEXT.anna.intro.length ? GUILD_TEXT.anna.intro : [B.intro]) await host.say(line);
     else if (!host.ctx.game.state.guild!.offers.length && GUILD_TEXT.anna.empty) await host.say(GUILD_TEXT.anna.empty);
   })();
   return layer;

@@ -549,7 +549,11 @@ describe('GuildScene: the guild board on the list (guild quests plan Task B1)', 
     expect(game.state.guild).toBeUndefined();
     expect(root.querySelector('.slx-layer')).toBeNull();
     expect(error).toHaveBeenCalledTimes(1);
-    expect(root.querySelector<HTMLElement>('.slx-talk')!.hidden).toBe(true);   // nothing written for Anna yet: nothing said
+    // Nothing written for Anna (PR C deferred, spec §0 item 24): the guild's box says when the board opens, in plain words.
+    expect(root.querySelector<HTMLElement>('.slx-talk')!.hidden).toBe(false);
+    expect(root.querySelector('.slx-talk .slx-text')!.textContent).toBe(T.ui2.board.locked);
+    s.onAction('confirm');   // the line read
+    expect(root.querySelector<HTMLElement>('.slx-talk')!.hidden).toBe(true);
     withLocked('LOCKED', () => {
       pick(T.ui2.board.title);
       expect(root.querySelector('.slx-talk .slx-text')!.textContent).toBe('LOCKED');

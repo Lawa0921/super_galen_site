@@ -2085,15 +2085,20 @@ test.describe('starlantern', () => {
     expect(await legibility(page, { requireReady: true })).toEqual([]);
     const openBoard = () => page.locator('.slx-cmd [role=option]').filter({ hasText: B.title }).click();
 
-    // Locked before the first act is over: nothing opens and nothing is written.
+    // Locked before the first act is over: nothing opens and nothing is written; the guild's box says when it opens, in
+    // plain words until Anna's own are written (spec §0 item 24).
     await openBoard();
+    await expect(page.locator('.slx-talk .slx-text')).toHaveText(B.locked);
     await expect(page.locator('.slx-board')).toHaveCount(0);
     expect(await run('return g.state.guild === undefined;')).toBe(true);
+    await w.closeTalk();
 
-    // The first act over: the first look posts today's board. Then a board of every kind in its place.
+    // The first act over: the first look posts today's board and says how it works. Then a board of every kind in its place.
     await run('g.state.story.act1Cleared = true;');
     await openBoard();
     await expect(page.locator('.slx-board')).toBeVisible();
+    await expect(page.locator('.slx-talk .slx-text')).toHaveText(B.intro);
+    await w.closeTalk();
     await w.key('Escape');
     await expect(page.locator('.slx-board')).toHaveCount(0);
     await run(`const day = g.state.guild.day;
