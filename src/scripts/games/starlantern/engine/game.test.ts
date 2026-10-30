@@ -25,7 +25,7 @@ import { scaleEnemy } from './scaling';
 import { CHARACTERS } from '../data/characters';
 import { handbook } from './story/handbook';
 import { SETS } from '../data/gear';
-import { activeIds, expToNext, gainExp, MAX_LEVEL, meet, memoryStats, newMember, rowOfCell, statsOf, LEGACY_LINEUP, START_LINEUP } from './party';
+import { activeIds, expToNext, gainExp, hasPassive, MAX_LEVEL, meet, memoryStats, newMember, rowOfCell, statsOf, LEGACY_LINEUP, START_LINEUP } from './party';
 import { depthClearExp, empower, encounterGroup, groupCap } from './scaling';
 import { favouredRegions } from '../data/meetings';
 import { MAX_ACTIVE } from './formation';
@@ -7047,4 +7047,98 @@ describe('the guild board in the game (guild quests plan Task A7)', () => {
     expect(back.state.guild).toEqual(kept.guild);
     expect(back.state.bestiary).toEqual(kept.bestiary);
   }));
+});
+
+/**
+ * Gathering plan Task A3 Step 0 (second review M2): today's walking, pinned before the gathering preview reuses `walk()`'s
+ * multiplier (`stepMod()`). A seeded game walks back and forth between two plain floor cells of the start floor with
+ * `move()` only, under each multiplier `walk()` can make (stealth or not × plain, fog, calm: 1, 0.8, 0.6, 0.5, 0.4, 0.3),
+ * and fights out every battle it meets. The gauge after each step and the steps that met a battle are written out as they
+ * were on today's code; extracting the multiplier must leave them as they are.
+ */
+describe("walking as it is today (gathering plan Task A3 Step 0)", () => {
+  const STEPS = 60;
+  const COMBOS: { mod: number; condition: 'plain' | 'fog' | 'calm'; stealth: boolean }[] = [
+    { mod: 1, condition: 'plain', stealth: false }, { mod: 0.8, condition: 'fog', stealth: false }, { mod: 0.6, condition: 'calm', stealth: false },
+    { mod: 0.5, condition: 'plain', stealth: true }, { mod: 0.4, condition: 'fog', stealth: true }, { mod: 0.3, condition: 'calm', stealth: true },
+  ];
+  /** Walks STEPS steps under one combination: the gauge after each, each step's result kind, the steps that met a battle. */
+  const walkToday = (condition: 'plain' | 'fog' | 'calm', stealth: boolean) => {
+    const g = Game.fresh(mulberry32(0x57e9), null);
+    if (stealth) {
+      g.state.party = meet(g.state.party, 'liz', 1);
+      g.state.party.roster.liz.tree = { 'twin-slash': 1, stealth: 1 };
+    }
+    for (const id of g.state.party.recruited) {
+      const m = g.state.party.roster[id];
+      m.level = 30;
+      const st = statsOf(m);
+      m.hp = st.hp;
+      m.tp = st.tp;
+    }
+    expect(g.depart({ region: 'mainline', condition }, 1)).toEqual({ ok: true });
+    const mod = (hasPassive(g.state.party, 'encounterDown') ? 0.5 : 1) * CONDITIONS[condition].encounterMul;
+    // the first two side-by-side plain floor cells of the start floor, row by row
+    const m = g.map();
+    let a: Pos | null = null;
+    for (let y = 0; y < m.height && !a; y++) for (let x = 0; x + 1 < m.width && !a; x++) {
+      if (m.tiles[y][x] === 'floor' && m.tiles[y][x + 1] === 'floor') a = { x, y };
+    }
+    g.pos = { ...a! };
+    const gauges: number[] = [], kinds: string[] = [], battles: number[] = [];
+    let wiped: number | null = null;
+    for (let i = 1; i <= STEPS; i++) {
+      const r = g.move(g.pos.x === a!.x ? 'right' : 'left');
+      kinds.push(r.kind);
+      gauges.push(g.encounter);
+      if (r.kind !== 'battle') continue;
+      battles.push(i);
+      for (let k = 0; k < 500 && g.phase === 'battle'; k++) {
+        const b = g.battle!;
+        const foe = b.enemies.find((e) => e.alive)!.key;
+        g.submitRound(Object.fromEntries(b.party.filter((c) => c.alive).map((c) => [c.key, { kind: 'attack' as const, target: foe }])));
+      }
+      if ((g.phase as string) === 'town') { wiped = i; break; }
+      expect(g.phase).toBe('map');
+    }
+    return { mod, gauges, kinds: [...new Set(kinds)].sort(), battles, wiped };
+  };
+
+  /** Today's walking, written out on today's code (gathering plan Task A3 Step 0): the gauge after each step, the steps that met a battle. */
+  const TODAY: Record<number, { gauges: number[]; battles: number[] }> = {
+    1: {
+      gauges: [4,  11,  18,  24,  30,  37,  43,  50,  0,  8,  14,  21,  28,  35,  43,  48,  54,  58,  63,  67,  71,  0,  8,  14,  21,  28,  34,  40,  46,  52,  59,  64,  70,  78,  0,  7,  15,  21,  26,  30,  37,  45,  49,  54,  59,  64,  70,  74,  82,  90,  97,  0,  8,  13,  17,  21,  27,  33,  40,  46],
+      battles: [9,  22,  35,  52],
+    },
+    0.8: {
+      gauges: [3,  9,  15,  19,  23,  29,  34,  39,  45,  51,  0,  6,  12,  18,  25,  32,  36,  43,  48,  54,  0,  3,  7,  11,  18,  22,  29,  34,  40,  44,  48,  54,  59,  65,  69,  74,  80,  84,  89,  94,  0,  3,  6,  10,  14,  18,  23,  27,  33,  37,  43,  48,  53,  57,  61,  67,  70,  74,  0,  4],
+      battles: [11,  21,  41,  59],
+    },
+    0.6: {
+      gauges: [3,  7,  11,  14,  17,  21,  25,  29,  33,  38,  43,  48,  53,  57,  60,  64,  69,  73,  78,  83,  87,  91,  0,  4,  7,  12,  15,  18,  21,  26,  31,  36,  41,  46,  51,  54,  57,  60,  63,  66,  70,  74,  0,  5,  9,  12,  15,  19,  23,  28,  32,  36,  40,  45,  48,  51,  55,  59,  0,  3],
+      battles: [23,  43,  59],
+    },
+    0.5: {
+      gauges: [2,  6,  10,  13,  16,  20,  23,  26,  30,  34,  38,  40,  42,  44,  46,  50,  53,  57,  61,  64,  67,  71,  75,  77,  80,  82,  84,  86,  88,  0,  3,  5,  9,  11,  15,  18,  22,  26,  29,  32,  34,  37,  41,  44,  48,  50,  53,  57,  59,  62,  65,  69,  73,  75,  78,  0,  2,  6,  10,  13],
+      battles: [30,  56],
+    },
+    0.4: {
+      gauges: [2,  5,  8,  10,  12,  15,  18,  21,  24,  27,  30,  32,  35,  37,  40,  43,  45,  48,  51,  54,  57,  60,  63,  66,  0,  2,  5,  7,  9,  11,  14,  17,  20,  23,  26,  29,  32,  35,  38,  40,  42,  44,  46,  48,  51,  54,  56,  59,  62,  65,  67,  69,  72,  0,  2,  5,  7,  9,  12,  15],
+      battles: [25,  54],
+    },
+    0.3: {
+      gauges: [1,  3,  5,  7,  9,  11,  13,  15,  17,  19,  21,  22,  25,  26,  29,  30,  32,  33,  34,  36,  38,  40,  42,  45,  47,  49,  51,  54,  55,  57,  58,  59,  60,  61,  63,  65,  67,  68,  70,  71,  74,  76,  78,  80,  81,  83,  84,  85,  86,  88,  90,  0,  2,  3,  4,  6,  8,  10,  12,  14],
+      battles: [52],
+    },
+  };
+
+  it.each(COMBOS)('the gauge and the battles at multiplier $mod ($condition, stealth $stealth)', ({ mod, condition, stealth }) => {
+    const now = walkToday(condition, stealth);
+    expect(now.mod).toBe(mod);
+    expect(now.wiped).toBeNull();
+    expect(now.kinds).toEqual(['battle', 'moved']);
+    expect({ gauges: now.gauges, battles: now.battles }).toEqual(TODAY[mod]);
+    // a battle empties the gauge; every other step is a plain move
+    for (const b of now.battles) expect(now.gauges[b - 1]).toBe(0);
+  });
 });
