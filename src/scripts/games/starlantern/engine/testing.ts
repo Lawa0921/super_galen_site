@@ -263,3 +263,25 @@ export function withGatherLive<T>(f: () => T, opts: { open?: boolean } = {}): T 
     GATHER_SWITCH.open = was.open;
   }
 }
+
+/**
+ * Gathering plan Task D1, as `withGuildOff` (guild spec §0 item 24): gathering is live since PR D, so a test of the
+ * switched-off game (the kill switch, GATHER_LIVE false) runs `f` under this, then the switch is put back as it was: after
+ * `f` returns, after it throws, or, when `f` returns a promise, once that promise settles. Test support only: nothing in the
+ * game imports it.
+ */
+export function withGatherOff<T>(f: () => T): T {
+  const was = GATHER_SWITCH.live;
+  GATHER_SWITCH.live = false;
+  let later = false;
+  try {
+    const r = f();
+    if (r instanceof Promise) {
+      later = true;
+      return r.finally(() => { GATHER_SWITCH.live = was; }) as T;
+    }
+    return r;
+  } finally {
+    if (!later) GATHER_SWITCH.live = was;
+  }
+}

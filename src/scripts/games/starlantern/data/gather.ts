@@ -11,11 +11,11 @@ import type { RegionId } from './regions';
  */
 
 /**
- * The switch (spec §0 item 13), as GUILD_SWITCH: `live` is GATHER_LIVE, false until the gathering plan's PR D; `open` is
- * the unlock, the prologue's first return seen. Shipped code never changes either; tests go through `withGatherLive`
- * (engine/testing.ts).
+ * The switch (spec §0 item 13), as GUILD_SWITCH: `live` is GATHER_LIVE, on since the gathering plan's PR D; `open` is the
+ * unlock, the prologue's first return seen. Shipped code never changes either; tests go through `withGatherLive` and
+ * `withGatherOff` (engine/testing.ts).
  */
-export const GATHER_SWITCH: { live: boolean; open: (s: GameState) => boolean } = { live: false, open: (s) => s.story.seen.includes('first-return') };
+export const GATHER_SWITCH: { live: boolean; open: (s: GameState) => boolean } = { live: true, open: (s) => s.story.seen.includes('first-return') };
 
 /** The one predicate: every entry of the engine, the screens and the save that reads or writes gathering asks this. */
 export const gatherOpen = (s: GameState): boolean => GATHER_SWITCH.live && GATHER_SWITCH.open(s);

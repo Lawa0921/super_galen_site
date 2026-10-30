@@ -69,7 +69,7 @@ import { GIFT_LINES, RIN_OATH, type GiftPools } from '../data/bond.zh-TW';
 import { BOND_RUN_CAP, FIELD_POINTS } from '../data/story/bond';
 import { BONDS_WRITTEN, ROMANCES_WRITTEN, TOGETHER_WRITTEN, sceneTime } from '../data/story/scenes';
 import { today } from './story/bond';
-import { WAVE_2_LIVE, withBondEarn, withBondScale, withGatherLive, withGuildLive, withGuildOff, withRosterLive, withRosterOnly } from './testing';
+import { WAVE_2_LIVE, withBondEarn, withBondScale, withGatherLive, withGatherOff, withGuildLive, withGuildOff, withRosterLive, withRosterOnly } from './testing';
 /**
  * Bond plan Task 17: the registries hold what is written now, so a test that registers its own puts back what was there
  * (`bondsBack`), registers a companion only once (`bondsAdd`), and gives a written scene back instead of deleting it.
@@ -7187,7 +7187,7 @@ describe('gathering in the game (gathering plan Task A3)', () => {
   const vein: Planted = { type: 'vein', item: 'copper-ore', qty: 3 };
   const pointsOn = (g: Game): number => g.map().tiles.flat().filter((t) => t === 'gather').length;
 
-  it('off, nothing at all', () => {
+  it('off, nothing at all', () => withGatherOff(() => {   // switched off (gathering spec §0 item 24)
     const g = ready();
     g.state.story.seen.push('first-return');
     expect(g.depart(MAIN, 1)).toEqual({ ok: true });
@@ -7198,7 +7198,7 @@ describe('gathering in the game (gathering plan Task A3)', () => {
     expect(g.gatherPreview()).toBeNull();
     expect(g.gather('full')).toEqual({ kind: 'none' });
     expect(g.state.gather).toBeUndefined();
-  });
+  }));
 
   it('on, shut until the first return', () => {
     for (const [opts, seen] of [[undefined, false], [{ open: false }, true]] as const) {
@@ -7470,7 +7470,7 @@ describe("the forge's gathering work (gathering plan Task A4)", () => {
       expect(g.craftItem('potion', 1).ok).toBe(true);
       expect(g.reroll(1, 1, { swap: true, mat: 'iron-shard' }).ok).toBe(true);
     };
-    shut(atForge());                                                       // off
+    withGatherOff(() => shut(atForge()));                                  // off (gathering spec §0 item 24)
     withGatherLive(() => shut(atForge(undefined, undefined, false)));      // on, before the first return
     withGatherLive(() => shut(atForge()), { open: false });                // on, held shut
     withGatherLive(() => {
