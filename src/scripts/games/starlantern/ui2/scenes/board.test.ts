@@ -151,22 +151,22 @@ describe('the guild board: tabs, rows and the detail (guild quests plan Task B2)
     expect(lines(root)[1]).toBe(info(root).querySelector('.slx-board-note')!.textContent);   // under the giver
   }));
 
-  it('a foe is drawn only once its art lands, at the handbook\'s size', () => withGuildLive(() => {
+  it('a foe is drawn only once its art lands, at its own size whatever it is (review of PR B: never twice)', () => withGuildLive(() => {
     const bare = open();
-    expect(info(bare.root).querySelector('.slx-hb-foe')).toBeNull();
+    expect(info(bare.root).querySelector('.slx-board-foe')).toBeNull();
     const landed = new Set<string>();
     const late = open({ art: { has: (u) => landed.has(u) } });
-    expect(info(late.root).querySelector('.slx-hb-foe')).toBeNull();
+    expect(info(late.root).querySelector('.slx-board-foe')).toBeNull();
     const full = open({ art: { has: () => true } });
-    const boss = info(full.root).querySelector('.slx-hb-foe')!;
+    const boss = info(full.root).querySelector('.slx-board-foe')!;
     expect(boss.getAttribute('src')).toBe(enemyArt('fog-warden'));
-    expect(boss.classList.contains('slx-hb-foe-x2')).toBe(false);   // a boss at its own size
     full.s.onAction('down');
-    const slime = info(full.root).querySelector('.slx-hb-foe')!;
+    const slime = info(full.root).querySelector('.slx-board-foe')!;
     expect(slime.getAttribute('src')).toBe(enemyArt('slime'));
-    expect(slime.classList.contains('slx-hb-foe-x2')).toBe(true);
+    // Not the handbook's picture classes (its twice-size zoom): the stylesheet shows a board's foe 1:1.
+    expect(info(full.root).querySelectorAll('.slx-hb-foe, .slx-hb-foe-x2')).toHaveLength(0);
     full.s.onAction('down');   // a scout: no foe
-    expect(info(full.root).querySelector('.slx-hb-foe')).toBeNull();
+    expect(info(full.root).querySelector('.slx-board-foe')).toBeNull();
   }));
 
   it("the giver's face only once it lands", () => withGuildLive(() => {
@@ -310,6 +310,36 @@ describe('the guild board: take, drop, turn in, the rank tab (guild quests plan 
     o.s.onAction('confirm');
     o.s.onAction('confirm');
     expect(await drain(o)).toEqual([{ who: '安娜', text: 'TAKEN' }]);
+  }));
+
+  it('是 to a note sounds the confirm cue, 否 the cancel cue (review of PR B)', () => withGuildLive(() => {
+    const yes = open();
+    yes.sfx.confirm.mockClear();   // the guild's 委託 that opened the board
+    yes.s.onAction('confirm');   // the note
+    yes.s.onAction('confirm');   // 是
+    expect(yes.game.state.guild!.active).toHaveLength(1);
+    expect(yes.sfx.confirm).toHaveBeenCalledTimes(2);
+    expect(yes.sfx.cancel).not.toHaveBeenCalled();
+    const no = open();
+    no.sfx.confirm.mockClear();
+    no.s.onAction('confirm');
+    no.s.onAction('down');
+    no.s.onAction('confirm');   // 否
+    expect(no.sfx.confirm).toHaveBeenCalledTimes(1);
+    expect(no.sfx.cancel).toHaveBeenCalledTimes(1);
+  }));
+
+  it('是 to dropping a quest sounds the confirm cue too', () => withGuildLive(() => {
+    const o = open({ prep: (g) => { g.state.guild!.active = [held(notes(g.state.guild!.day)[1])]; } });
+    o.sfx.confirm.mockClear();
+    o.s.onAction('right');
+    o.s.onAction('confirm');   // the quest
+    o.s.onAction('confirm');   // 放棄
+    o.s.onAction('up');
+    o.s.onAction('confirm');   // 是
+    expect(o.game.state.guild!.active).toEqual([]);
+    expect(o.sfx.cancel).not.toHaveBeenCalled();
+    expect(o.sfx.confirm).toHaveBeenCalledTimes(3);   // the quest, 放棄, 是
   }));
 
   it('declining the question takes nothing', () => withGuildLive(() => {

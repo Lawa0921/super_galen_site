@@ -4,6 +4,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { GUILD_SWITCH } from '../data/guild';
+import { GUILD_TEXT } from '../data/guild.zh-TW';
 import { guildHandle } from './debugGuild';
 
 /**
@@ -14,6 +15,7 @@ describe('the debug handle and the guild board (guild quests PR B)', () => {
   it("the board's switch is a dev build's only", () => {
     expect(guildHandle(false)).toEqual({});
     expect(guildHandle(true).guild?.GUILD_SWITCH).toBe(GUILD_SWITCH);
+    expect(guildHandle(true).guild?.GUILD_TEXT).toBe(GUILD_TEXT);   // the e2e measures the detail with PR C's longest note
   });
 
   it('main.ts hands it out through import.meta.env.DEV alone', () => {

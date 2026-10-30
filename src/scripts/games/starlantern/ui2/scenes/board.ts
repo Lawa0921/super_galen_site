@@ -220,8 +220,9 @@ export class BoardLayer implements Layer {
     ctx.sfx.confirm();
     const label = questLabel(o);
     const box = confirmBox(B.acceptAsk(label), (yes) => {
-      this.host.pop();
+      this.host.pop(yes);   // 否 sounds the cancel cue as it closes; 是 the confirm cue (review of PR B)
       if (!yes) return;
+      ctx.sfx.confirm();
       const r = this.game.acceptQuest(id);
       this.render();
       if (!r.ok) { this.refuse(r.reason); return; }
@@ -258,8 +259,9 @@ export class BoardLayer implements Layer {
   /** Dropping asks again, 否 first; on 是 the quest goes (free, saved at once) and the small menu with it. */
   private askAbandon(q: ActiveQuest): void {
     const box = confirmBox(B.abandonAsk(questLabel(q)), (yes) => {
-      this.host.pop();
+      this.host.pop(yes);
       if (!yes) return;
+      this.host.ctx.sfx.confirm();
       this.host.pop(true);
       const r = this.game.abandonQuest(q.id);
       this.render();
@@ -308,7 +310,8 @@ export class BoardLayer implements Layer {
   }
 
   /**
-   * The detail (spec §8.2): the giver's face and the foe once their pictures have landed (never a stand-in), then who
+   * The detail (spec §8.2): the giver's face and the foe once their pictures have landed (never a stand-in), each 1:1 and cut
+   * to the top of a 64px window by the stylesheet, then who
    * posted it, the note (once written), the target, where it haunts, the progress of a held quest, the reward, the merit.
    */
   private drawDetail(): void {
@@ -324,7 +327,8 @@ export class BoardLayer implements Layer {
     else missing.push(face);
     if (q.kind === 'hunt' || q.kind === 'bounty') {
       const src = enemyArt(q.target);
-      if (idx.has(src)) pictures.push(el('img', { class: ENEMIES[q.target].boss ? 'slx-hb-foe' : 'slx-hb-foe slx-hb-foe-x2', attrs: { src, alt: ENEMIES[q.target].name } }));
+      // At its own size, boss or not (review of PR B: the handbook's twice-size foe ran the detail out of room).
+      if (idx.has(src)) pictures.push(el('img', { class: 'slx-board-foe', attrs: { src, alt: ENEMIES[q.target].name } }));
       else missing.push(src);
     }
     const note = noteOf(q);

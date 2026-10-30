@@ -2103,7 +2103,7 @@ test.describe('starlantern', () => {
         { id: day + ':1', kind: 'hunt', giver: 'marta', variant: 0, target: 'slime', n: 6, depth: 2, reward: { gold: 78, items: { 'essence-magic': 1 } }, merit: 2 },
         { id: day + ':2', kind: 'scout', giver: 'glen', variant: 0, target: 'frost', n: 9, depth: 9, reward: { gold: 140, items: { 'return-lamp': 1 } }, merit: 3 },
         { id: day + ':3', kind: 'deliver', giver: 'orik', variant: 0, target: 'moss', n: 8, depth: 0, reward: { gold: 77 }, merit: 2 },
-        { id: day + ':4', kind: 'sweep', giver: 'glen', variant: 0, target: 'frost', n: 8, depth: 5, reward: { gold: 130, items: { 'essence-rare': 1 } }, merit: 3 },
+        { id: day + ':4', kind: 'bounty', giver: 'anna', variant: 0, target: 'requiem-conductor', n: 1, depth: 23, reward: { gold: 534, items: { 'ancient-gear': 1, 'shard-clear': 1, 'shard-vivid': 1 }, rune: 'focus@rare' }, merit: 5 },
       ];`);
     await openBoard();
     const tabs = page.locator('.slx-board .slx-tab');
@@ -2112,7 +2112,8 @@ test.describe('starlantern', () => {
     const hunt = B.row(B.kinds.hunt, B.count(ENEMIES.slime.name, 6));
     await expect(tabs).toHaveText([B.tabs.board, B.tabs.active(0, 3), B.tabs.rank]);
     await expect(page.locator('.slx-board .slx-tab-sel')).toHaveText(B.tabs.board);
-    await expect(rows).toHaveText([B.row(B.kinds.bounty, ENEMIES['fog-warden'].name), hunt, B.row(B.kinds.scout, B.depthAt('霜凍之地', 9)), B.row(B.kinds.deliver, B.count('發光苔', 8)), B.row(B.kinds.sweep, '霜凍之地')]);
+    const warden = B.row(B.kinds.bounty, ENEMIES['requiem-conductor'].name);
+    await expect(rows).toHaveText([B.row(B.kinds.bounty, ENEMIES['fog-warden'].name), hunt, B.row(B.kinds.scout, B.depthAt('霜凍之地', 9)), B.row(B.kinds.deliver, B.count('發光苔', 8)), warden]);
     await expect(info).toContainText(B.giver('安娜'));
     await w.key('ArrowDown');
     await expect(info).toContainText(B.giver('瑪莎'));
@@ -2153,6 +2154,51 @@ test.describe('starlantern', () => {
     await w.closeTalk();
     await expect(page.locator('.slx-gold')).toHaveText(`${gold + 78} G`);
     expect(await run('return [g.state.guild.active.length, g.state.guild.merit];')).toEqual([0, 2]);
+
+    // Review of PR B: the detail holds a boss's bounty and a warden's (a warden is no boss: the handbook drew it twice) with
+    // the longest note PR C may write (60 characters, four lines), on the board and held; nothing runs past its window, and
+    // the giver's face and the foe are drawn 1:1, cut by their 64px windows, never scaled.
+    const note = '紙'.repeat(60);
+    await page.evaluate((n) => {
+      const t = (window as unknown as { __starlanternDebug: { guild: { GUILD_TEXT: { notes: Record<string, string[]> } } } }).__starlanternDebug.guild.GUILD_TEXT;
+      t.notes.boss = [n, n]; t.notes.warden = [n, n];
+    }, note);
+    await expect(rows).toHaveText([B.emptyActive]);
+    await w.key('ArrowLeft');
+    const cursorTo = async (label: string) => {
+      for (let i = 0; i < 6 && (await page.locator('.slx-board [aria-selected=true] .slx-label').textContent()) !== label; i++) await w.key('ArrowDown');
+      await expect(page.locator('.slx-board [aria-selected=true] .slx-label')).toHaveText(label);
+    };
+    const fits = async (what: string) => {
+      await expect(info.locator('.slx-board-note')).toHaveText(note);
+      await expect(info.locator('.slx-board-art img')).toHaveCount(2);   // the face and the foe, both landed
+      await expect.poll(() => info.evaluate((e) => [...e.querySelectorAll('img')].every((i) => (i as HTMLImageElement).complete && (i as HTMLImageElement).naturalWidth > 0))).toBe(true);
+      const m = await info.evaluate((e) => ({ scroll: e.scrollHeight, client: e.clientHeight, imgs: [...e.querySelectorAll('img')].map((i) => {
+        const cs = getComputedStyle(i);
+        return { fit: cs.objectFit, zoom: cs.zoom, h: (i as HTMLElement).offsetHeight, natural: (i as HTMLImageElement).naturalHeight };
+      }) }));
+      expect(m.scroll, `${what}: the detail holds it all`).toBeLessThanOrEqual(m.client);
+      for (const i of m.imgs) expect([i.fit, i.zoom, i.h, i.natural > 0], `${what}: a picture at 1:1`).toEqual(['none', '1', 64, true]);
+      expect(await legibility(page, { requireReady: true })).toEqual([]);
+    };
+    await cursorTo(B.row(B.kinds.bounty, ENEMIES['fog-warden'].name));
+    await fits('a boss on the board');
+    await cursorTo(warden);
+    await fits('a warden on the board');
+    await shot('warden');
+    await w.key('Enter');
+    await w.key('Enter');   // 是
+    await w.closeTalk();
+    await w.key('ArrowRight');
+    await expect(page.locator('.slx-board [role=option] .slx-right')).toHaveText([B.progress(0, 1)]);
+    await expect(info).toContainText(B.progressLine(B.progress(0, 1)));
+    await fits('a warden held, with its progress');
+    await shot('warden-held');
+    await w.key('Enter');
+    await expect(page.locator('.slx-board-menu [role=option] .slx-label')).toHaveText([B.abandon, B.back]);
+    await w.key('Enter');   // 放棄
+    await w.key('ArrowUp');
+    await w.key('Enter');   // 是
 
     // The empty lists: nothing held, then nothing left on the board; each a greyed line.
     await expect(rows).toHaveText([B.emptyActive]);

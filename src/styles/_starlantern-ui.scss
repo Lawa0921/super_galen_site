@@ -1609,13 +1609,15 @@ $slx-starlit: #bff6ff;
 // The board stands where the command window does (it would peek out under the list): the window waits out of sight.
 .slx-guild:has(.slx-board) .slx-cmd { visibility: hidden; }
 .slx-guild .slx-board-info::-webkit-scrollbar { display: none; }
-.slx-board-info p { margin: 0 0 4px; line-height: 16px; }
+.slx-board-info p { margin: 0 0 2px; line-height: 16px; }
 .slx-board-info h4 { margin: 6px 0 4px; font-size: $slx-fs; font-weight: normal; color: $slx-gold; }
-// The giver's face (half its size) and the foe (the handbook's size: a boss as it is, any other foe twice) side by side.
-.slx-board-art { display: flex; align-items: flex-end; justify-content: center; gap: 8px; margin-bottom: 4px; }
-.slx-board-info .slx-board-art img { margin: 0; }
-.slx-board-info .slx-board-face { height: auto; zoom: 0.5; }
-.slx-board-info .slx-hb-foe { height: auto; }
+// The giver's face and the foe side by side, both 1:1 (whole stage pixels at every scale; object-fit: none never scales)
+// and cut to the top of a 64px-tall window: her face, its head. Review of PR B: a warden drawn twice (202px) ran the detail
+// past its 280px; at 64 the art, the 64px note PR C writes and seven lines (the reward on three) fit in 274.
+.slx-board-art { display: flex; align-items: flex-start; justify-content: center; gap: 8px; margin-bottom: 4px; }
+.slx-board-info .slx-board-art img { display: block; height: 64px; margin: 0; object-fit: none; object-position: 50% 0; image-rendering: pixelated; }
+.slx-board-info .slx-board-face { width: 56px; }
+.slx-board-info .slx-board-foe { width: 168px; }
 // A note is four lines tall whatever its length, so the lines under it stay put as the cursor moves (spec §8.3).
 .slx-board-note { min-height: 64px; color: $slx-dim; }
 // Guild quests (plan Task B4): a quest a fight finished reads in gold among the spoils; a held quest's 可回報 is gold on
